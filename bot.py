@@ -10,6 +10,15 @@ from telegram.utils.request import Request
 import json
 
 
+class FilterRegex(Filters.regex):
+
+    def filter(self, message):
+        text = message.text or message.caption
+        if text:
+            return bool(self.pattern.search(text))
+        return False
+
+
 class FASearchBot:
     FA_LINK = re.compile(r"furaffinity.net/view/([0-9]+)", re.I)
 
@@ -30,7 +39,7 @@ class FASearchBot:
         start_handler = CommandHandler('beep', self.beep)
         dispatcher.add_handler(start_handler)
 
-        neaten_handler = MessageHandler(Filters.regex(self.FA_LINK), self.neaten_image)
+        neaten_handler = MessageHandler(FilterRegex(self.FA_LINK), self.neaten_image)
         dispatcher.add_handler(neaten_handler)
 
         updater.start_polling()
