@@ -14,7 +14,7 @@ import json
 class FilterRegex(Filters.regex):
 
     def filter(self, message):
-        text = message.text or message.caption
+        text = message.text_markdown_urled or message.caption_markdown_urled
         if text:
             return bool(self.pattern.search(text))
         return False
@@ -65,7 +65,7 @@ class FASearchBot:
         bot.send_message(chat_id=update.message.chat_id, text="boop")
 
     def neaten_image(self, bot, update):
-        message = update.message.text or update.message.caption
+        message = update.message.text_markdown_urled or update.message.caption_markdown_urled
         for match in self.FA_LINK.finditer(message):
             self._handle_fa_submission_link(bot, update, match.group(1))
 

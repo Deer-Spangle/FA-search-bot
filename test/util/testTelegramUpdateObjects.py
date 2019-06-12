@@ -89,7 +89,7 @@ class _MockMessage:
         self.message_id = message_id
         self.chat_id = chat_id
         self.text = text
-        self.text_markdown_urled = text_markdown_urled
+        self.text_markdown_urled = text_markdown_urled or text
         self.chat = _MockChat(chat_type=chat_type)
         # Set defaults
         self.photo = []

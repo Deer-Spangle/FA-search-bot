@@ -323,3 +323,27 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
         bot.send_document.assert_not_called()
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_link_in_markdown(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="Hello",
+            text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
