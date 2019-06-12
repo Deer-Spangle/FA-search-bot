@@ -3,7 +3,6 @@ This is a telegram bot which can:
 - Neaten up FA links into photos/documents, with captions
 
 Future feature plans:
-- Neaten up e6 links
 - Neaten up FA links by direct file link
 - Inline FA searches
 - FA subscriptions
