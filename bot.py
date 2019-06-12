@@ -53,7 +53,7 @@ class FASearchBot:
             time.sleep(30)
 
     def welcome_message(self, bot, update):
-        self.bot.send_message(
+        bot.send_message(
             chat_id=update.message.chat_id,
             text="Hello, I'm a new bot so I'm still learning. I can't do a whole lot yet. "
                  "If you have any suggestions, requests, or questions, direct them to @deerspangle.\n"
@@ -61,14 +61,14 @@ class FASearchBot:
         )
 
     def beep(self, bot, update):
-        self.bot.send_message(chat_id=update.message.chat_id, text="boop")
+        bot.send_message(chat_id=update.message.chat_id, text="boop")
 
     def neaten_image(self, bot, update):
         message = update.message.text or update.message.caption
         for match in self.FA_LINK.finditer(message):
             print("Found a link, ID:{}".format(match.group(1)))
             sub_data = requests.get("{}/submission/{}.json".format(self.config['api_url'], match.group(1))).json()
-            self.bot.send_photo(
+            bot.send_photo(
                 chat_id=update.message.chat_id,
                 photo=sub_data['download'],
                 caption=sub_data['link'],
