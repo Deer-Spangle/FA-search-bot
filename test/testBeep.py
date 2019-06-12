@@ -7,7 +7,7 @@ from bot import FASearchBot
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
 
-class MockObjectsTest(unittest.TestCase):
+class BeepTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_beep(self, bot):

@@ -7,7 +7,7 @@ from bot import FASearchBot
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
 
-class MockObjectsTest(unittest.TestCase):
+class WelcomeTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_welcome_message(self, bot):
