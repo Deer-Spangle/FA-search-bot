@@ -4,6 +4,7 @@ from unittest.mock import patch, call
 
 import requests_mock
 import telegram
+from telegram import Chat
 
 from bot import FASearchBot
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
@@ -54,6 +55,30 @@ class NeatenImageTest(unittest.TestCase):
     def test_submission_link(self, bot, r):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_submission_group_chat(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="https://www.furaffinity.net/view/{}/".format(post_id),
+            chat_type=Chat.GROUP
+        )
         r.get(
             "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
             json={
@@ -144,6 +169,25 @@ class NeatenImageTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
+    def test_deleted_submission_group_chat(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            status_code=404,
+            json={
+                "error": "error",
+                "url": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_not_called()
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
     def test_gif_submission(self, bot, r):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
@@ -163,3 +207,119 @@ class NeatenImageTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['document'] == "dl-{}.gif".format(post_id)
         assert bot.send_document.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_pdf_submission(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.pdf".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_called_once()
+        assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_document.call_args[1]['document'] == "dl-{}.pdf".format(post_id)
+        assert bot.send_document.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_swf_submission(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="https://www.furaffinity.net/view/{}/".format(post_id),
+            chat_type=Chat.PRIVATE
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.swf".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_message.assert_called_once()
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_not_called()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "I'm sorry, I can't neaten \".swf\" files."
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_swf_submission_groupchat(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="https://www.furaffinity.net/view/{}/".format(post_id),
+            chat_type=Chat.GROUP
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.swf".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_message.assert_not_called()
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_not_called()
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_unknown_type_submission(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="https://www.furaffinity.net/view/{}/".format(post_id),
+            chat_type=Chat.PRIVATE
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.zzz".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_message.assert_called_once()
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_not_called()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "I'm sorry, I don't understand that file extension (zzz)."
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_unknown_type_submission_groupchat(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="https://www.furaffinity.net/view/{}/".format(post_id),
+            chat_type=Chat.GROUP
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            json={
+                "download": "dl-{}.zzz".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_message.assert_not_called()
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_not_called()

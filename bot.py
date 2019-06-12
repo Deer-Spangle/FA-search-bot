@@ -77,18 +77,15 @@ class FASearchBot:
             sub_data = sub_resp.json()
             self._send_neat_fa_response(bot, update, sub_data)
         else:
-            # Only send an error message in private message
-            if update.message.chat.type == Chat.PRIVATE:
-                bot.send_message(
-                    chat_id=update.message.chat_id,
-                    text="This doesn't seem to be a valid FA submission: {}".format(link),
-                    reply_to_message_id=update.message.message_id
-                )
+            self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: {}".format(link))
 
     def _send_neat_fa_response(self, bot, update, submission_data):
-        # Handle gifs
-        ext = submission_data['download'].split(".")[-1]
-        if ext == "gif":
+        ext = submission_data['download'].split(".")[-1].lower()
+        document_extensions = ["gif", "doc", "docx", "rtf", "txt", "pdf", "odt", "mid", "wav", "mp3", "mpeg"]
+        photo_extensions = ["jpg", "jpeg", "png"]
+        error_extensions = ["swf"]
+        # Handle gifs, stories, music
+        if ext in document_extensions:
             bot.send_document(
                 chat_id=update.message.chat_id,
                 document=submission_data['download'],
@@ -97,10 +94,25 @@ class FASearchBot:
             )
             return
         # Handle photos
-        bot.send_photo(
-            chat_id=update.message.chat_id,
-            photo=submission_data['download'],
-            caption=submission_data['link'],
-            reply_to_message_id=update.message.message_id
-        )
-        return
+        if ext in photo_extensions:
+            bot.send_photo(
+                chat_id=update.message.chat_id,
+                photo=submission_data['download'],
+                caption=submission_data['link'],
+                reply_to_message_id=update.message.message_id
+            )
+            return
+        # Handle known error extensions
+        if ext in error_extensions:
+            self._return_error_in_privmsg(bot, update, "I'm sorry, I can't neaten \".{}\" files.".format(ext))
+            return
+        self._return_error_in_privmsg(bot, update, "I'm sorry, I don't understand that file extension ({}).".format(ext))
+
+    def _return_error_in_privmsg(self, bot, update, error_message):
+        # Only send an error message in private message
+        if update.message.chat.type == Chat.PRIVATE:
+            bot.send_message(
+                chat_id=update.message.chat_id,
+                text=error_message,
+                reply_to_message_id=update.message.message_id
+            )
