@@ -118,3 +118,25 @@ class NeatenImageTest(unittest.TestCase):
             reply_to_message_id=update.message.message_id
         ) for post_id in [id1, id2]]
         bot.send_photo.assert_has_calls(calls)
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_deleted_submission(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
+        r.get(
+            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            status_code=404,
+            json={
+                "error": "error",
+                "url": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_called_once()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "This doesn't seem to be a valid FA submission."
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id

@@ -4,6 +4,7 @@ import requests
 import telegram
 import time
 
+from telegram import Chat
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler
 import logging
 from telegram.utils.request import Request
@@ -67,10 +68,18 @@ class FASearchBot:
         message = update.message.text or update.message.caption
         for match in self.FA_LINK.finditer(message):
             print("Found a link, ID:{}".format(match.group(1)))
-            sub_data = requests.get("{}/submission/{}.json".format(self.config['api_url'], match.group(1))).json()
-            bot.send_photo(
-                chat_id=update.message.chat_id,
-                photo=sub_data['download'],
-                caption=sub_data['link'],
-                reply_to_message_id=update.message.message_id
-            )
+            sub_resp = requests.get("{}/submission/{}.json".format(self.config['api_url'], match.group(1)))
+            if sub_resp.status_code == 200:
+                sub_data = sub_resp.json()
+                bot.send_photo(
+                    chat_id=update.message.chat_id,
+                    photo=sub_data['download'],
+                    caption=sub_data['link'],
+                    reply_to_message_id=update.message.message_id
+                )
+            if update.message.chat.type == Chat.PRIVATE:
+                bot.send_message(
+                    chat_id=update.message.chat_id,
+                    text="This doesn't seem to be a valid FA submission.",
+                    reply_to_message_id=update.message.message_id
+                )

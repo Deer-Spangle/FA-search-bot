@@ -1,6 +1,8 @@
 import unittest
 import uuid
 
+from telegram import Chat
+
 
 def generate_key():
     return str(uuid.uuid4())
@@ -15,12 +17,13 @@ class MockTelegramUpdate:
         self.callback_query = None
 
     @staticmethod
-    def with_message(message_id=None, chat_id=None, text=None, text_markdown_urled=None):
+    def with_message(message_id=None, chat_id=None, text=None, text_markdown_urled=None, chat_type=Chat.PRIVATE):
         return _MockTelegramMessage(
             message_id=message_id,
             chat_id=chat_id,
             text=text,
-            text_markdown_urled=text_markdown_urled
+            text_markdown_urled=text_markdown_urled,
+            chat_type=chat_type
         )
 
     @classmethod
@@ -39,14 +42,15 @@ class MockTelegramUpdate:
 
 class _MockTelegramMessage(MockTelegramUpdate):
 
-    def __init__(self, *, message_id=None, text=None, text_markdown_urled=None, chat_id=None):
+    def __init__(self, *, message_id=None, text=None, text_markdown_urled=None, chat_id=None, chat_type=None):
         super().__init__()
         # Set up message data
         self.message = _MockMessage(
             message_id=message_id,
             chat_id=chat_id,
             text=text,
-            text_markdown_urled=text_markdown_urled
+            text_markdown_urled=text_markdown_urled,
+            chat_type=chat_type
         )
 
     def with_photo(self, photo_file_id=None, caption=None):
@@ -81,11 +85,12 @@ class _MockTelegramCommand(MockTelegramUpdate):
 
 class _MockMessage:
 
-    def __init__(self, *, message_id=None, chat_id=None, text=None, text_markdown_urled=None):
+    def __init__(self, *, message_id=None, chat_id=None, text=None, text_markdown_urled=None, chat_type=None):
         self.message_id = message_id
         self.chat_id = chat_id
         self.text = text
         self.text_markdown_urled = text_markdown_urled
+        self.chat = _MockChat(chat_type=chat_type)
         # Set defaults
         self.photo = []
         self.caption = None
@@ -110,6 +115,12 @@ class _MockMessage:
             file_id,
             mime_type
         )
+
+
+class _MockChat:
+
+    def __init__(self, chat_type=None):
+        self.type = chat_type
 
 
 class _MockDocument:
