@@ -56,7 +56,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -80,7 +80,7 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -101,7 +101,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -126,7 +126,7 @@ class NeatenImageTest(unittest.TestCase):
         )
         for post_id in [id1, id2]:
             r.get(
-                "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+                "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
                     "download": "dl-{}.jpg".format(post_id),
                     "link": "link-{}".format(post_id)
@@ -150,7 +150,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             status_code=404,
             json={
                 "error": "error",
@@ -173,7 +173,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             status_code=404,
             json={
                 "error": "error",
@@ -192,7 +192,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.gif".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -214,7 +214,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.pdf".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -239,7 +239,7 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.PRIVATE
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.swf".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -264,7 +264,7 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.swf".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -286,7 +286,7 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.PRIVATE
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.zzz".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -311,7 +311,7 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.zzz".format(post_id),
                 "link": "link-{}".format(post_id)
@@ -333,7 +333,7 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.config['api_url'], post_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
