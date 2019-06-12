@@ -67,19 +67,40 @@ class FASearchBot:
     def neaten_image(self, bot, update):
         message = update.message.text or update.message.caption
         for match in self.FA_LINK.finditer(message):
-            print("Found a link, ID:{}".format(match.group(1)))
-            sub_resp = requests.get("{}/submission/{}.json".format(self.config['api_url'], match.group(1)))
-            if sub_resp.status_code == 200:
-                sub_data = sub_resp.json()
-                bot.send_photo(
-                    chat_id=update.message.chat_id,
-                    photo=sub_data['download'],
-                    caption=sub_data['link'],
-                    reply_to_message_id=update.message.message_id
-                )
+            self._handle_fa_submission_link(bot, update, match.group(1))
+
+    def _handle_fa_submission_link(self, bot, update, link):
+        print("Found a link, ID:{}".format(link))
+        sub_resp = requests.get("{}/submission/{}.json".format(self.config['api_url'], link))
+        # If API returns fine
+        if sub_resp.status_code == 200:
+            sub_data = sub_resp.json()
+            self._send_neat_fa_response(bot, update, sub_data)
+        else:
+            # Only send an error message in private message
             if update.message.chat.type == Chat.PRIVATE:
                 bot.send_message(
                     chat_id=update.message.chat_id,
-                    text="This doesn't seem to be a valid FA submission.",
+                    text="This doesn't seem to be a valid FA submission: {}".format(link),
                     reply_to_message_id=update.message.message_id
                 )
+
+    def _send_neat_fa_response(self, bot, update, submission_data):
+        # Handle gifs
+        ext = submission_data['download'].split(".")[-1]
+        if ext == "gif":
+            bot.send_document(
+                chat_id=update.message.chat_id,
+                document=submission_data['download'],
+                caption=submission_data['link'],
+                reply_to_message_id=update.message.message_id
+            )
+            return
+        # Handle photos
+        bot.send_photo(
+            chat_id=update.message.chat_id,
+            photo=submission_data['download'],
+            caption=submission_data['link'],
+            reply_to_message_id=update.message.message_id
+        )
+        return
