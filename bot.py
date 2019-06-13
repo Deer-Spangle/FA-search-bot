@@ -146,21 +146,17 @@ class FASearchBot:
         return False
 
     def _find_submission_in_folder(self, username, image_id, folder):
-        page = self._find_correct_page(username, image_id, folder)
+        page_listing = self._find_correct_page(username, image_id, folder)
         if not page:
             # No page is valid.
             return False
-        # Binary search page
-        return self._find_submission_on_page(username, image_id, folder, page)
+        return self._find_submission_on_page(username, image_id, folder, page_listing)
 
-    def _find_submission_on_page(self, username, image_id, folder, page):
-        listing = requests.get(
-            "{}/user/{}/{}.json?page={}".format(self.api_url, username, folder, page)
-        ).json()
-        for submission_id in listing:
-            test_image_id = self._get_image_id_from_submission(submission_id)
+    def _find_submission_on_page(self, image_id, page_listing):
+        for submission_data in page_listing:
+            test_image_id = self._get_image_id_from_submission(submission_data)
             if image_id == test_image_id:
-                return submission_id
+                return submission_data['id']
             if test_image_id < image_id:
                 return False
         return False
@@ -169,18 +165,15 @@ class FASearchBot:
         page = 1
         while True:
             listing = requests.get(
-                "{}/user/{}/{}.json?page={}".format(self.api_url, username, folder, page)
+                "{}/user/{}/{}.json?page={}&full=1".format(self.api_url, username, folder, page)
             ).json()
             if len(listing) == 0:
                 return False
-            last_submission_id = listing[-1]
-            if self._get_image_id_from_submission(last_submission_id) < image_id:
-                return page
+            last_submission_data = listing[-1]
+            if self._get_image_id_from_submission(last_submission_data) < image_id:
+                return listing
             page += 1
 
-    def _get_image_id_from_submission(self, submission_id):
-            submission_data = requests.get(
-                "{}/submission/{}.json".format(self.api_url, last_submission)
-            ).json()
-            match = self.FA_DIRECT_LINK.search(submission_data['download'])
+    def _get_image_id_from_submission(self, submission_data):
+            match = re.split("-|\.", submission_data['thumbnail'])[-2]
             return int(match.group(2))
