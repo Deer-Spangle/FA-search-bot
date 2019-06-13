@@ -22,7 +22,7 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
     FA_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
-    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/])+/([0-9]+)/", re.I)
+    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/(?:|stories/|poetry/|music/)([^/])+/([0-9]+)/", re.I)
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
