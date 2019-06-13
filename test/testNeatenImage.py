@@ -146,6 +146,29 @@ class NeatenImageTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
+    def test_duplicate_submission_links(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id)
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
     def test_deleted_submission(self, bot, r):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
