@@ -12,7 +12,7 @@ class WelcomeTest(unittest.TestCase):
     @patch.object(telegram, "Bot")
     def test_welcome_message(self, bot):
         update = MockTelegramUpdate.with_command()
-        searchBot = FASearchBot("config.json")
+        searchBot = FASearchBot("config-test.json")
 
         searchBot.welcome_message(bot, update)
 
