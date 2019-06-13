@@ -71,7 +71,9 @@ class FASearchBot:
 
     def neaten_image(self, bot, update):
         message = update.message.text_markdown_urled or update.message.caption_markdown_urled
-        submission_ids = {match.group(1) for match in self.FA_LINK.finditer(message)}
+        submission_ids = [match.group(1) for match in self.FA_LINK.finditer(message)]
+        # Remove duplicates, preserving order
+        submission_ids = list(dict.fromkeys(submission_ids))
         for submission_id in submission_ids:
             self._handle_fa_submission_link(bot, update, submission_id)
 
