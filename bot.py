@@ -179,7 +179,7 @@ class FASearchBot:
             if len(listing) == 0:
                 return False
             last_submission_data = listing[-1]
-            if self._get_image_id_from_submission(last_submission_data) < image_id:
+            if self._get_image_id_from_submission(last_submission_data) <= image_id:
                 return listing
             page += 1
 

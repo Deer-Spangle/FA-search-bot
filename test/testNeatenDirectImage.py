@@ -381,3 +381,451 @@ class NeatenDirectImageTest(unittest.TestCase):
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id2, post_id1]]
         bot.send_photo.assert_has_calls(calls)
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_on_first_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+1,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                },
+                {
+                    "id": post_id-2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                },
+                {
+                    "id": post_id-3,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                }
+            ]
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_on_third_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        for page in [1, 2, 3]:
+            r.get(
+                "{}/user/{}/gallery.json?page={}&full=1".format(searchBot.api_url, username, page),
+                json=[
+                    {
+                        "id": post_id+1 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56)
+                    },
+                    {
+                        "id": post_id + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56)
+                    },
+                    {
+                        "id": post_id-2 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56)
+                    },
+                    {
+                        "id": post_id-3 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56)
+                    }
+                ]
+            )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_missing_from_first_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+1,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3)
+                },
+                {
+                    "id": post_id-2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                },
+                {
+                    "id": post_id-3,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                }
+            ]
+        )
+        r.get(
+            "{}/user/{}/scraps.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_called_once()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_missing_from_second_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        for page in [1, 2]:
+            r.get(
+                "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+                json=[
+                    {
+                        "id": post_id+1 + (2-page)*6,
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (2-page)*56)
+                    },
+                    {
+                        "id": post_id + (2-page)*6,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3 + (2-page)*56)
+                    },
+                    {
+                        "id": post_id-2,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (2-page)*56)
+                    },
+                    {
+                        "id": post_id-3,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (2-page)*56)
+                    }
+                ]
+            )
+        r.get(
+            "{}/user/{}/scraps.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_called_once()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_missing_between_pages(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+1,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3)
+                }
+            ]
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=2&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id-2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                },
+                {
+                    "id": post_id-3,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                }
+            ]
+        )
+        r.get(
+            "{}/user/{}/scraps.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_called_once()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_last_on_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+4,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id+3,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+2)
+                },
+                {
+                    "id": post_id+2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+1)
+                },
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                }
+            ]
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_first_on_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+3,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id+2,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+8)
+                }
+            ]
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                },
+                {
+                    "id": post_id-2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-2)
+                },
+                {
+                    "id": post_id-7,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-4)
+                },
+                {
+                    "id": post_id-9,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-10)
+                }
+            ]
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_not_on_first_page_empty_second_page(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+3,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id+2,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+8)
+                }
+            ]
+        )
+        r.get(
+            "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+        r.get(
+            "{}/user/{}/scraps.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_message.assert_called_once()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_result_in_scraps(self, bot, r):
+        username = "fender"
+        image_id = 1560331512
+        post_id = 232347
+        update = MockTelegramUpdate.with_message(
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+        )
+        for page in [1, 2]:
+            r.get(
+                "{}/user/{}/gallery.json?page={}&full=1".format(searchBot.api_url, username, page),
+                json=[
+                    {
+                        "id": post_id+1 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56)
+                    },
+                    {
+                        "id": post_id + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56)
+                    },
+                    {
+                        "id": post_id-2 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56)
+                    },
+                    {
+                        "id": post_id-3 + (3-page)*5,
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56)
+                    }
+                ]
+            )
+        r.get(
+            "{}/user/{}/gallery.json?page=3&full=1".format(searchBot.api_url, username),
+            json=[]
+        )
+        r.get(
+            "{}/user/{}/scraps.json?page=1&full=1".format(searchBot.api_url, username),
+            json=[
+                {
+                    "id": post_id+1,
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                },
+                {
+                    "id": post_id,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                },
+                {
+                    "id": post_id-2,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                },
+                {
+                    "id": post_id-3,
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                }
+            ]
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "download": "dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
