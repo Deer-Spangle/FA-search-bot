@@ -176,5 +176,5 @@ class FASearchBot:
             page += 1
 
     def _get_image_id_from_submission(self, submission_data):
-            match = re.split("-|\.", submission_data['thumbnail'])[-2]
-            return int(match.group(2))
+            image_id = re.split("-|\.", submission_data['thumbnail'])[-2]
+            return int(image_id)
