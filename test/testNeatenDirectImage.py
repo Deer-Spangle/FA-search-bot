@@ -9,7 +9,7 @@ from telegram import Chat
 from bot import FASearchBot
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
-searchBot = FASearchBot("config.json")
+searchBot = FASearchBot("config-test.json")
 
 
 class NeatenImageTest(unittest.TestCase):
