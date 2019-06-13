@@ -18,7 +18,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_message(self, bot):
         update = MockTelegramUpdate.with_message(text="hello world")
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -27,7 +27,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_link(self, bot):
         update = MockTelegramUpdate.with_message(text="http://example.com")
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -36,7 +36,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_profile_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/user/fender/")
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -45,16 +45,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_journal_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/journal/9150534/")
 
-        searchBot.neaten_direct_image(bot, update)
-
-        bot.send_message.assert_not_called()
-        bot.send_photo.assert_not_called()
-
-    @patch.object(telegram, "Bot")
-    def test_ignore_submission_link(self, bot):
-        update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/23636984/")
-
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -89,7 +80,7 @@ class NeatenDirectImageTest(unittest.TestCase):
             }
         )
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -121,7 +112,7 @@ class NeatenDirectImageTest(unittest.TestCase):
                 ]
             )
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -155,7 +146,7 @@ class NeatenDirectImageTest(unittest.TestCase):
                 ]
             )
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_not_called()
@@ -204,7 +195,7 @@ class NeatenDirectImageTest(unittest.TestCase):
             }
         )
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
@@ -245,7 +236,7 @@ class NeatenDirectImageTest(unittest.TestCase):
             }
         )
 
-        searchBot.neaten_direct_image(bot, update)
+        searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -285,7 +276,6 @@ class NeatenDirectImageTest(unittest.TestCase):
             }
         )
 
-        searchBot.neaten_direct_image(bot, update)
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()

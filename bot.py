@@ -21,8 +21,9 @@ class FilterRegex(Filters.regex):
 
 
 class FASearchBot:
-    FA_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
+    FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
+    FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -45,11 +46,8 @@ class FASearchBot:
         start_handler = CommandHandler('start', self.welcome_message)
         dispatcher.add_handler(start_handler)
 
-        neaten_handler = MessageHandler(FilterRegex(self.FA_LINK), self.neaten_image)
+        neaten_handler = MessageHandler(FilterRegex(self.FA_LINKS), self.neaten_image)
         dispatcher.add_handler(neaten_handler)
-
-        neaten_direct_handler = MessageHandler(FilterRegex(self.FA_DIRECT_LINK), self.neaten_direct_image)
-        dispatcher.add_handler(neaten_direct_handler)
 
         updater.start_polling()
         self.alive = True
@@ -71,11 +69,29 @@ class FASearchBot:
 
     def neaten_image(self, bot, update):
         message = update.message.text_markdown_urled or update.message.caption_markdown_urled
-        submission_ids = [match.group(1) for match in self.FA_LINK.finditer(message)]
+        # Get any submissions from submission links
+        submission_ids = [int(match.group(1)) for match in self.FA_SUB_LINK.finditer(message)]
+        # Get any submissions from direct links
+        submission_ids += self._find_direct_link_submission_ids(bot, update, message)
         # Remove duplicates, preserving order
         submission_ids = list(dict.fromkeys(submission_ids))
         for submission_id in submission_ids:
             self._handle_fa_submission_link(bot, update, submission_id)
+
+    def _find_direct_link_submission_ids(self, bot, update, message):
+        submission_ids = []
+        for match in self.FA_DIRECT_LINK.finditer(message):
+            username = match.group(1)
+            image_id = int(match.group(2))
+            submission_id = self._find_submission(username, image_id)
+            if not submission_id:
+                self._return_error_in_privmsg(
+                    bot, update,
+                    "Could not locate the image by {} with image id {}.".format(username, image_id)
+                )
+            else:
+                submission_ids.append(submission_id)
+        return submission_ids
 
     def _handle_fa_submission_link(self, bot, update, submission_id):
         print("Found a link, ID:{}".format(submission_id))
@@ -127,20 +143,6 @@ class FASearchBot:
                 text=error_message,
                 reply_to_message_id=update.message.message_id
             )
-
-    def neaten_direct_image(self, bot, update):
-        message = update.message.text_markdown_urled or update.message.caption_markdown_urled
-        for match in self.FA_DIRECT_LINK.finditer(message):
-            self._handle_fa_direct_link(bot, update, match.group(1), int(match.group(2)))
-
-    def _handle_fa_direct_link(self, bot, update, username, image_id):
-        submission_id = self._find_submission(username, image_id)
-        if not submission_id:
-            return self._return_error_in_privmsg(
-                bot, update,
-                "Could not locate the image by {} with image id {}.".format(username, image_id)
-            )
-        self._handle_fa_submission_link(bot, update, submission_id)
 
     def _find_submission(self, username, image_id):
         folders = ["gallery", "scraps"]
