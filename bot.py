@@ -108,14 +108,35 @@ class FASearchBot:
 
     def _send_neat_fa_response(self, bot, update, submission_data):
         ext = submission_data['download'].split(".")[-1].lower()
-        document_extensions = ["gif", "doc", "docx", "rtf", "txt", "pdf", "odt", "mid", "wav", "mp3", "mpeg"]
+        document_extensions = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
+        auto_document_extensions = ["gif", "pdf"]
+        audio_extensions = ["mp3"]
         photo_extensions = ["jpg", "jpeg", "png"]
         error_extensions = ["swf"]
-        # Handle gifs, stories, music
+        # Handle files telegram can't handle
         if ext in document_extensions:
+            bot.send_photo(
+                chat_id=update.message.chat_id,
+                photo=submission_data['full'],
+                caption="{}\n[Direct download]({})".format(submission_data['link'], submission_data['download']),
+                reply_to_message_id=update.message.message_id,
+                parse_mode=telegram.ParseMode.MARKDOWN
+            )
+            return
+        # Handle gifs, and pdfs, which can be sent as documents
+        if ext in auto_document_extensions:
             bot.send_document(
                 chat_id=update.message.chat_id,
                 document=submission_data['download'],
+                caption=submission_data['link'],
+                reply_to_message_id=update.message.message_id
+            )
+            return
+        # Handle audio
+        if ext in audio_extensions:
+            bot.send_audio(
+                chat_id=update.message.message_id,
+                audio=submission_data['download'],
                 caption=submission_data['link'],
                 reply_to_message_id=update.message.message_id
             )
@@ -165,7 +186,7 @@ class FASearchBot:
         for submission_data in page_listing:
             test_image_id = self._get_image_id_from_submission(submission_data)
             if image_id == test_image_id:
-                return submission_data['id']
+                return int(submission_data['id'])
             if test_image_id < image_id:
                 return False
         return False
