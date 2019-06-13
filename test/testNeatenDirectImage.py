@@ -158,11 +158,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         searchBot.neaten_direct_image(bot, update)
 
         bot.send_photo.assert_not_called()
-        bot.send_message.assert_called_once()
-        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_message.call_args[1]['text'] == \
-            "Could not locate the image by {} with image id {}.".format(username, image_id)
-        assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+        bot.send_message.assert_not_called()
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
