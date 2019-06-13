@@ -22,7 +22,7 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
     FA_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
-    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/])+/([0-9]+)/", re.I)
+    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -71,8 +71,11 @@ class FASearchBot:
 
     def neaten_image(self, bot, update):
         message = update.message.text_markdown_urled or update.message.caption_markdown_urled
-        for match in self.FA_LINK.finditer(message):
-            self._handle_fa_submission_link(bot, update, match.group(1))
+        submission_ids = [match.group(1) for match in self.FA_LINK.finditer(message)]
+        # Remove duplicates, preserving order
+        submission_ids = list(dict.fromkeys(submission_ids))
+        for submission_id in submission_ids:
+            self._handle_fa_submission_link(bot, update, submission_id)
 
     def _handle_fa_submission_link(self, bot, update, submission_id):
         print("Found a link, ID:{}".format(submission_id))
@@ -146,21 +149,17 @@ class FASearchBot:
         return False
 
     def _find_submission_in_folder(self, username, image_id, folder):
-        page = self._find_correct_page(username, image_id, folder)
-        if not page:
+        page_listing = self._find_correct_page(username, image_id, folder)
+        if not page_listing:
             # No page is valid.
             return False
-        # Binary search page
-        return self._find_submission_on_page(username, image_id, folder, page)
+        return self._find_submission_on_page(image_id, page_listing)
 
-    def _find_submission_on_page(self, username, image_id, folder, page):
-        listing = requests.get(
-            "{}/user/{}/{}.json?page={}".format(self.api_url, username, folder, page)
-        ).json()
-        for submission_id in listing:
-            test_image_id = self._get_image_id_from_submission(submission_id)
+    def _find_submission_on_page(self, image_id, page_listing):
+        for submission_data in page_listing:
+            test_image_id = self._get_image_id_from_submission(submission_data)
             if image_id == test_image_id:
-                return submission_id
+                return submission_data['id']
             if test_image_id < image_id:
                 return False
         return False
@@ -169,18 +168,15 @@ class FASearchBot:
         page = 1
         while True:
             listing = requests.get(
-                "{}/user/{}/{}.json?page={}".format(self.api_url, username, folder, page)
+                "{}/user/{}/{}.json?page={}&full=1".format(self.api_url, username, folder, page)
             ).json()
             if len(listing) == 0:
                 return False
-            last_submission_id = listing[-1]
-            if self._get_image_id_from_submission(last_submission_id) < image_id:
-                return page
+            last_submission_data = listing[-1]
+            if self._get_image_id_from_submission(last_submission_data) < image_id:
+                return listing
             page += 1
 
-    def _get_image_id_from_submission(self, submission_id):
-            submission_data = requests.get(
-                "{}/submission/{}.json".format(self.api_url, last_submission)
-            ).json()
-            match = self.FA_DIRECT_LINK.search(submission_data['download'])
-            return int(match.group(2))
+    def _get_image_id_from_submission(self, submission_data):
+            image_id = re.split("-|\.", submission_data['thumbnail'])[-2]
+            return int(image_id)

@@ -12,7 +12,7 @@ class BeepTest(unittest.TestCase):
     @patch.object(telegram, "Bot")
     def test_beep(self, bot):
         update = MockTelegramUpdate.with_command()
-        searchBot = FASearchBot("config.json")
+        searchBot = FASearchBot("config-test.json")
 
         searchBot.beep(bot, update)
 
