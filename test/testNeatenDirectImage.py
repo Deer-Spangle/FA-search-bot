@@ -82,7 +82,7 @@ class NeatenImageTest(unittest.TestCase):
             ]
         )
         r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, sub_id),
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
                 "download": "dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
