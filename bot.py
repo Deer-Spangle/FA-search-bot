@@ -150,7 +150,7 @@ class FASearchBot:
 
     def _find_submission_in_folder(self, username, image_id, folder):
         page_listing = self._find_correct_page(username, image_id, folder)
-        if not page:
+        if not page_listing:
             # No page is valid.
             return False
         return self._find_submission_on_page(username, image_id, folder, page_listing)
