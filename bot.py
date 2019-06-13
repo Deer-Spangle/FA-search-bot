@@ -153,7 +153,7 @@ class FASearchBot:
         if not page_listing:
             # No page is valid.
             return False
-        return self._find_submission_on_page(username, image_id, folder, page_listing)
+        return self._find_submission_on_page(image_id, page_listing)
 
     def _find_submission_on_page(self, image_id, page_listing):
         for submission_data in page_listing:
