@@ -115,7 +115,9 @@ class FASearchBot:
         if ext in error_extensions:
             self._return_error_in_privmsg(bot, update, "I'm sorry, I can't neaten \".{}\" files.".format(ext))
             return
-        self._return_error_in_privmsg(bot, update, "I'm sorry, I don't understand that file extension ({}).".format(ext))
+        self._return_error_in_privmsg(
+            bot, update, "I'm sorry, I don't understand that file extension ({}).".format(ext)
+        )
 
     def _return_error_in_privmsg(self, bot, update, error_message):
         # Only send an error message in private message
@@ -178,5 +180,5 @@ class FASearchBot:
             page += 1
 
     def _get_image_id_from_submission(self, submission_data):
-            image_id = re.split("-|\.", submission_data['thumbnail'])[-2]
-            return int(image_id)
+        image_id = re.split(r"[-.]", submission_data['thumbnail'])[-2]
+        return int(image_id)

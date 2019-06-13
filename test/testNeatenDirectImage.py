@@ -126,7 +126,8 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
         assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_message.call_args[1]['text'] == "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
         assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -159,7 +160,8 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
         assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_message.call_args[1]['text'] == "Could not locate the image by {} with image id {}.".format(username, image_id)
+        assert bot.send_message.call_args[1]['text'] == \
+            "Could not locate the image by {} with image id {}.".format(username, image_id)
         assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -171,7 +173,8 @@ class NeatenDirectImageTest(unittest.TestCase):
         post_id1 = 232347
         post_id2 = 232346
         update = MockTelegramUpdate.with_message(
-            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png http://d.facdn.net/art/{0}/{2}/{2}.pic_of_you.png".format(username, image_id1, image_id2)
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png "
+                 "http://d.facdn.net/art/{0}/{2}/{2}.pic_of_you.png".format(username, image_id1, image_id2)
         )
         r.get(
             "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
@@ -261,7 +264,9 @@ class NeatenDirectImageTest(unittest.TestCase):
         image_id = 1560331512
         post_id = 232347
         update = MockTelegramUpdate.with_message(
-            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png https://furaffinity.net/view/{}/".format(username, image_id, post_id)
+            text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png https://furaffinity.net/view/{2}/".format(
+                username, image_id, post_id
+            )
         )
         r.get(
             "{}/user/{}/gallery.json?page=1&full=1".format(searchBot.api_url, username),
