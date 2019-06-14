@@ -75,8 +75,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": '512'
             }
         )
 
@@ -84,7 +90,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -180,27 +186,27 @@ class NeatenDirectImageTest(unittest.TestCase):
                 }
             ]
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id1),
-            json={
-                "download": "dl-{}.jpg".format(post_id1),
-                "link": "link-{}".format(post_id1)
-            }
-        )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id2),
-            json={
-                "download": "dl-{}.jpg".format(post_id2),
-                "link": "link-{}".format(post_id2)
-            }
-        )
+        for post_id in [post_id1, post_id2]:
+            r.get(
+                "{}/submission/{}.json".format(searchBot.api_url, post_id),
+                json={
+                    "download": "http://example.com/dl-{}.jpg".format(post_id),
+                    "link": "link-{}".format(post_id)
+                }
+            )
+            r.head(
+                "http://example.com/dl-{}.jpg".format(post_id),
+                headers={
+                    "content-length": "512"
+                }
+            )
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
             chat_id=update.message.chat_id,
-            photo="dl-{}.jpg".format(post_id),
+            photo="http://example.com/dl-{}.jpg".format(post_id),
             caption="link-{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id1, post_id2]]
@@ -231,8 +237,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -240,7 +252,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -271,8 +283,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -280,7 +298,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -317,8 +335,14 @@ class NeatenDirectImageTest(unittest.TestCase):
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
-                    "download": "dl-{}.jpg".format(post_id),
+                    "download": "http://example.com/dl-{}.jpg".format(post_id),
                     "link": "link-{}".format(post_id)
+                }
+            )
+            r.head(
+                "http://example.com/dl-{}.jpg".format(post_id),
+                headers={
+                    "content-length": "512"
                 }
             )
 
@@ -327,7 +351,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called()
         calls = [call(
             chat_id=update.message.chat_id,
-            photo="dl-{}.jpg".format(post_id),
+            photo="http://example.com/dl-{}.jpg".format(post_id),
             caption="link-{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id1, post_id2]]
@@ -366,8 +390,14 @@ class NeatenDirectImageTest(unittest.TestCase):
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
-                    "download": "dl-{}.jpg".format(post_id),
+                    "download": "http://example.com/dl-{}.jpg".format(post_id),
                     "link": "link-{}".format(post_id)
+                }
+            )
+            r.head(
+                "http://example.com/dl-{}.jpg".format(post_id),
+                headers={
+                    "content-length": "512"
                 }
             )
 
@@ -376,7 +406,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called()
         calls = [call(
             chat_id=update.message.chat_id,
-            photo="dl-{}.jpg".format(post_id),
+            photo="http://example.com/dl-{}.jpg".format(post_id),
             caption="link-{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id2, post_id1]]
@@ -415,8 +445,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -424,7 +460,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -462,8 +498,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -471,7 +513,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -646,8 +688,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -655,7 +703,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -705,8 +753,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -714,7 +768,7 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -817,8 +871,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -826,6 +886,6 @@ class NeatenDirectImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id

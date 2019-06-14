@@ -116,8 +116,26 @@ class FASearchBot:
         audio_extensions = ["mp3"]
         photo_extensions = ["jpg", "jpeg", "png"]
         error_extensions = ["swf"]
+        # Handle photos
+        if ext in photo_extensions:
+            if self._get_file_size(submission_data['download']) > self.SIZE_LIMIT_IMAGE:
+                bot.send_photo(
+                    chat_id=update.message.chat_id,
+                    photo=submission_data['thumbnail'],
+                    caption="{}\n[Direct download]({})".format(submission_data['link'], submission_data['download']),
+                    reply_to_message_id=update.message.message_id,
+                    parse_mode=telegram.ParseMode.MARKDOWN
+                )
+                return
+            bot.send_photo(
+                chat_id=update.message.chat_id,
+                photo=submission_data['download'],
+                caption=submission_data['link'],
+                reply_to_message_id=update.message.message_id
+            )
+            return
         # Handle files telegram can't handle
-        if ext in document_extensions:
+        if ext in document_extensions or self._get_file_size(submission_data['download']) > self.SIZE_LIMIT_DOCUMENT:
             bot.send_photo(
                 chat_id=update.message.chat_id,
                 photo=submission_data['full'],
@@ -144,15 +162,6 @@ class FASearchBot:
                 reply_to_message_id=update.message.message_id
             )
             return
-        # Handle photos
-        if ext in photo_extensions:
-            bot.send_photo(
-                chat_id=update.message.chat_id,
-                photo=submission_data['download'],
-                caption=submission_data['link'],
-                reply_to_message_id=update.message.message_id
-            )
-            return
         # Handle known error extensions
         if ext in error_extensions:
             self._return_error_in_privmsg(bot, update, "I'm sorry, I can't neaten \".{}\" files.".format(ext))
@@ -160,6 +169,10 @@ class FASearchBot:
         self._return_error_in_privmsg(
             bot, update, "I'm sorry, I don't understand that file extension ({}).".format(ext)
         )
+
+    def _get_file_size(self, url):
+        resp = requests.head(url)
+        return int(resp.headers['content-length'])
 
     def _return_error_in_privmsg(self, bot, update, error_message):
         # Only send an error message in private message

@@ -58,8 +58,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -67,7 +73,7 @@ class NeatenImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -82,8 +88,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -91,7 +103,7 @@ class NeatenImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -103,8 +115,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -112,7 +130,7 @@ class NeatenImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -128,8 +146,14 @@ class NeatenImageTest(unittest.TestCase):
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
-                    "download": "dl-{}.jpg".format(post_id),
+                    "download": "http://example.com/dl-{}.jpg".format(post_id),
                     "link": "link-{}".format(post_id)
+                }
+            )
+            r.head(
+                "http://example.com/dl-{}.jpg".format(post_id),
+                headers={
+                    "content-length": "512"
                 }
             )
 
@@ -138,7 +162,7 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_photo.assert_called()
         calls = [call(
             chat_id=update.message.chat_id,
-            photo="dl-{}.jpg".format(post_id),
+            photo="http://example.com/dl-{}.jpg".format(post_id),
             caption="link-{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [id1, id2]]
@@ -154,8 +178,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -163,7 +193,7 @@ class NeatenImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -217,8 +247,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.gif".format(post_id),
+                "download": "http://example.com/dl-{}.gif".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.gif".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -227,7 +263,7 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_document.call_args[1]['document'] == "dl-{}.gif".format(post_id)
+        assert bot.send_document.call_args[1]['document'] == "http://example.com/dl-{}.gif".format(post_id)
         assert bot.send_document.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -239,8 +275,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.pdf".format(post_id),
+                "download": "http://example.com/dl-{}.pdf".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.pdf".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -249,7 +291,7 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_document.call_args[1]['document'] == "dl-{}.pdf".format(post_id)
+        assert bot.send_document.call_args[1]['document'] == "http://example.com/dl-{}.pdf".format(post_id)
         assert bot.send_document.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -261,8 +303,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.mp3".format(post_id),
+                "download": "http://example.com/dl-{}.mp3".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.mp3".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -273,7 +321,7 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
         bot.send_audio.assert_called_once()
         assert bot.send_audio.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_audio.call_args[1]['audio'] == "dl-{}.mp3".format(post_id)
+        assert bot.send_audio.call_args[1]['audio'] == "http://example.com/dl-{}.mp3".format(post_id)
         assert bot.send_audio.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_audio.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -285,7 +333,7 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.txt".format(post_id),
+                "download": "http://example.com/dl-{}.txt".format(post_id),
                 "link": "link-{}".format(post_id),
                 "full": "thumb-{}.jpg".format(post_id)
             }
@@ -299,7 +347,8 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_audio.assert_not_called()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{0}\n[Direct download](dl-{0}.txt)".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == \
+            "link-{0}\n[Direct download](http://example.com/dl-{0}.txt)".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
@@ -314,8 +363,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.swf".format(post_id),
+                "download": "http://example.com/dl-{}.swf".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.swf".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -339,8 +394,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.swf".format(post_id),
+                "download": "http://example.com/dl-{}.swf".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.swf".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -361,8 +422,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.zzz".format(post_id),
+                "download": "http://example.com/dl-{}.zzz".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.zzz".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -386,8 +453,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.zzz".format(post_id),
+                "download": "http://example.com/dl-{}.zzz".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.zzz".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -408,8 +481,14 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "download": "dl-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": "512"
             }
         )
 
@@ -417,7 +496,7 @@ class NeatenImageTest(unittest.TestCase):
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "dl-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
         assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
@@ -432,7 +511,7 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "thumbnail": "thumb-{}.jpg",
+                "thumbnail": "thumb-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
             }
@@ -440,7 +519,7 @@ class NeatenImageTest(unittest.TestCase):
         r.head(
             "http://example.com/dl-{}.jpg".format(post_id),
             headers={
-                "content-length": FASearchBot.SIZE_LIMIT_IMAGE - 1
+                "content-length": str(FASearchBot.SIZE_LIMIT_IMAGE - 1)
             }
         )
 
@@ -463,7 +542,7 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "thumbnail": "thumb-{}.jpg",
+                "thumbnail": "thumb-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
                 "link": "link-{}".format(post_id)
             }
@@ -471,7 +550,40 @@ class NeatenImageTest(unittest.TestCase):
         r.head(
             "http://example.com/dl-{}.jpg".format(post_id),
             headers={
-                "content-length": FASearchBot.SIZE_LIMIT_IMAGE + 1
+                "content-length": str(FASearchBot.SIZE_LIMIT_IMAGE + 1)
+            }
+        )
+
+        searchBot.neaten_image(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == \
+            "link-{0}\n[Direct download](http://example.com/dl-{0}.jpg)".format(post_id)
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_image_over_document_size_limit(self, bot, r):
+        post_id = 23636984
+        update = MockTelegramUpdate.with_message(
+            text="Hello",
+            text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+        )
+        r.get(
+            "{}/submission/{}.json".format(searchBot.api_url, post_id),
+            json={
+                "thumbnail": "thumb-{}.jpg".format(post_id),
+                "download": "http://example.com/dl-{}.jpg".format(post_id),
+                "link": "link-{}".format(post_id)
+            }
+        )
+        r.head(
+            "http://example.com/dl-{}.jpg".format(post_id),
+            headers={
+                "content-length": str(FASearchBot.SIZE_LIMIT_DOCUMENT + 1)
             }
         )
 
@@ -496,7 +608,7 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "thumbnail": "thumb-{}.jpg",
+                "thumbnail": "thumb-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.gif".format(post_id),
                 "link": "link-{}".format(post_id)
             }
@@ -504,7 +616,7 @@ class NeatenImageTest(unittest.TestCase):
         r.head(
             "http://example.com/dl-{}.gif".format(post_id),
             headers={
-                "content-length": FASearchBot.SIZE_LIMIT_DOCUMENT - 1
+                "content-length": str(FASearchBot.SIZE_LIMIT_DOCUMENT - 1)
             }
         )
 
@@ -529,7 +641,7 @@ class NeatenImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
-                "thumbnail": "thumb-{}.jpg",
+                "full": "thumb-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.pdf".format(post_id),
                 "link": "link-{}".format(post_id)
             }
@@ -537,7 +649,7 @@ class NeatenImageTest(unittest.TestCase):
         r.head(
             "http://example.com/dl-{}.pdf".format(post_id),
             headers={
-                "content-length": FASearchBot.SIZE_LIMIT_DOCUMENT + 1
+                "content-length": str(FASearchBot.SIZE_LIMIT_DOCUMENT + 1)
             }
         )
 
