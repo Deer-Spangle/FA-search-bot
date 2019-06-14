@@ -25,6 +25,9 @@ class FASearchBot:
     FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
     FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
 
+    SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
+    SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
+
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
             self.config = json.load(f)
@@ -135,7 +138,7 @@ class FASearchBot:
         # Handle audio
         if ext in audio_extensions:
             bot.send_audio(
-                chat_id=update.message.message_id,
+                chat_id=update.message.chat_id,
                 audio=submission_data['download'],
                 caption=submission_data['link'],
                 reply_to_message_id=update.message.message_id
