@@ -1,9 +1,9 @@
 # FA search bot
 This is a telegram bot which can:
 - Neaten up FA links into photos/documents, with captions
+- Neaten up FA links by direct file link
 
 Future feature plans:
-- Neaten up FA links by direct file link
 - Inline FA searches
 - FA subscriptions
 - FA notifications
