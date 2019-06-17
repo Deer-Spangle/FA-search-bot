@@ -53,6 +53,7 @@ class FASearchBot:
         dispatcher.add_handler(neaten_handler)
 
         inline_handler = InlineQueryHandler(self.inline_query)
+        dispatcher.add_handler(inline_handler)
 
         updater.start_polling()
         self.alive = True
@@ -229,6 +230,7 @@ class FASearchBot:
     def inline_query(self, bot, update):
         results = []
         query_clean = update.inline_query.query.strip().lower()
+        print("Got an inline query: {}".format(query_clean))
         if query_clean != "":
             results = self._create_inline_results(query_clean)
         bot.answer_inline_query(update.inline_query.id, results)
