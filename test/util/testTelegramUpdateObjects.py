@@ -39,6 +39,14 @@ class MockTelegramUpdate:
             chat_id=chat_id
         )
 
+    @classmethod
+    def with_inline_query(cls, query_id=None, query=None, offset=None):
+        return _MockTelegramInlineQuery(
+            query_id=query_id,
+            query=query,
+            offset=offset
+        )
+
 
 class _MockTelegramMessage(MockTelegramUpdate):
 
@@ -81,6 +89,20 @@ class _MockTelegramCommand(MockTelegramUpdate):
             message_id=message_id,
             chat_id=chat_id
         )
+
+
+class _MockTelegramInlineQuery(MockTelegramUpdate):
+
+    def __init__(self, query_id=None, query=None, offset=None):
+        super().__init__()
+        self.query_id = query_id
+        self.query = query
+        self.offset = offset
+        # Set defaults
+        if query_id is None:
+            self.query_id = generate_key()
+        if offset is None:
+            self.offset = ""
 
 
 class _MockMessage:

@@ -5,7 +5,7 @@ import telegram
 import time
 
 from telegram import Chat
-from telegram.ext import Updater, Filters, MessageHandler, CommandHandler
+from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
 import logging
 from telegram.utils.request import Request
 import json
@@ -51,6 +51,8 @@ class FASearchBot:
 
         neaten_handler = MessageHandler(FilterRegex(self.FA_LINKS), self.neaten_image)
         dispatcher.add_handler(neaten_handler)
+
+        inline_handler = InlineQueryHandler(self.inline_query)
 
         updater.start_polling()
         self.alive = True
@@ -223,3 +225,7 @@ class FASearchBot:
     def _get_image_id_from_submission(self, submission_data):
         image_id = re.split(r"[-.]", submission_data['thumbnail'])[-2]
         return int(image_id)
+
+    def inline_query(self, bot, update):
+        results = []
+        bot.answer_inline_query(update.inline_query.id, results)
