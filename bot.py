@@ -4,7 +4,7 @@ import requests
 import telegram
 import time
 
-from telegram import Chat
+from telegram import Chat, InlineQueryResultPhoto
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
 import logging
 from telegram.utils.request import Request
@@ -228,4 +228,20 @@ class FASearchBot:
 
     def inline_query(self, bot, update):
         results = []
+        query_clean = update.inline_query.query.strip().lower()
+        if query_clean != "":
+            results = self._create_inline_results(query_clean)
         bot.answer_inline_query(update.inline_query.id, results)
+
+    def _create_inline_results(self, search_term):
+        url = "{}/search.json?full=1&perpage=48&q={}".format(self.api_url, search_term)
+        resp = requests.get(url)
+        results = []
+        for submission in resp.json():
+            results.append(InlineQueryResultPhoto(
+                id=submission['id'],
+                photo_url=submission['thumbnail'],
+                thumb_url=submission['thumbnail'],
+                caption=submission['link']
+            ))
+        return results

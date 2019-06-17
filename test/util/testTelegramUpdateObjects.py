@@ -93,14 +93,20 @@ class _MockTelegramCommand(MockTelegramUpdate):
 
 class _MockTelegramInlineQuery(MockTelegramUpdate):
 
-    def __init__(self, query_id=None, query=None, offset=None):
+    def __init__(self, *, query_id=None, query=None, offset=None):
         super().__init__()
-        self.query_id = query_id
+        self.inline_query = _MockInlineQuery(query_id=query_id, query=query, offset=offset)
+
+
+class _MockInlineQuery:
+
+    def __init__(self, *, query_id=None, query=None, offset=None):
+        self.id = query_id
         self.query = query
         self.offset = offset
         # Set defaults
         if query_id is None:
-            self.query_id = generate_key()
+            self.id = generate_key()
         if offset is None:
             self.offset = ""
 
