@@ -1,10 +1,12 @@
 import re
+import uuid
 
 import requests
 import telegram
 import time
 
-from telegram import Chat, InlineQueryResultPhoto
+from telegram import Chat, InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent, \
+    InputTextMessageContent
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
 import logging
 from telegram.utils.request import Request
@@ -229,10 +231,13 @@ class FASearchBot:
 
     def inline_query(self, bot, update):
         results = []
-        query_clean = update.inline_query.query.strip().lower()
+        query = update.inline_query.query
+        query_clean = query.strip().lower()
         print("Got an inline query: {}".format(query_clean))
         if query_clean != "":
             results = self._create_inline_results(query_clean)
+            if len(results) == 0:
+                results = self._inline_results_not_found(query)
         bot.answer_inline_query(update.inline_query.id, results)
 
     def _create_inline_results(self, search_term):
@@ -247,3 +252,14 @@ class FASearchBot:
                 caption=submission['link']
             ))
         return results
+
+    def _inline_results_not_found(self, search_term):
+        return [
+            InlineQueryResultArticle(
+                id=uuid.uuid4(),
+                title="No results found.",
+                input_message_content=InputTextMessageContent(
+                    message_text="No results for search \"{}\".".format(search_term)
+                )
+            )
+        ]
