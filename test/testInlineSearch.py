@@ -110,3 +110,23 @@ class NeatenImageTest(unittest.TestCase):
             assert result.photo_url == "thumb-{}.jpg".format(post_id)
             assert result.thumb_url == "thumb-{}.jpg".format(post_id)
             assert result.caption == "link-{}".format(post_id)
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_search_with_offset_no_more_results(self, bot, r):
+        search_term = "YCH"
+        offset = 2
+        update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
+        r.get(
+            "{}/search.json?full=1&perpage=48&page={}&q={}".format(searchBot.api_url, offset, search_term.lower()),
+            json=[]
+        )
+
+        searchBot.inline_query(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == ""
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 0
