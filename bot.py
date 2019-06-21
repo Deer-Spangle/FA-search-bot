@@ -232,16 +232,24 @@ class FASearchBot:
     def inline_query(self, bot, update):
         results = []
         query = update.inline_query.query
+        offset = update.inline_query.offset
+        if offset == "":
+            offset = 1
+        next_offset = int(offset) + 1
         query_clean = query.strip().lower()
         print("Got an inline query: {}".format(query_clean))
-        if query_clean != "":
-            results = self._create_inline_results(query_clean)
-            if len(results) == 0:
+        if query_clean == "":
+            bot.answer_inline_query(update.inline_query.id, results)
+            return
+        results = self._create_inline_results(query_clean, offset)
+        if len(results) == 0:
+            next_offset = ""
+            if offset == 1:
                 results = self._inline_results_not_found(query)
-        bot.answer_inline_query(update.inline_query.id, results)
+        bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
 
-    def _create_inline_results(self, search_term):
-        url = "{}/search.json?full=1&perpage=48&q={}".format(self.api_url, search_term)
+    def _create_inline_results(self, search_term, page):
+        url = "{}/search.json?full=1&perpage=48&q={}&page={}".format(self.api_url, search_term, page)
         resp = requests.get(url)
         results = []
         for submission in resp.json():
