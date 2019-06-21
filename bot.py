@@ -237,7 +237,7 @@ class FASearchBot:
             offset = 1
         next_offset = int(offset) + 1
         query_clean = query.strip().lower()
-        print("Got an inline query: {}".format(query_clean))
+        print("Got an inline query: {}, page={}".format(query_clean, offset))
         if query_clean == "":
             bot.answer_inline_query(update.inline_query.id, results)
             return
