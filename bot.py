@@ -292,8 +292,8 @@ class FASubmission:
     @classmethod
     def from_full_dict(cls, full_dict):
         new_submission = cls(full_dict['id'])
-        new_submission.thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
-        new_submission.full_url = short_dict['download']
+        new_submission.thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
+        new_submission.full_url = full_dict['download']
         return new_submission
     
     @staticmethod
