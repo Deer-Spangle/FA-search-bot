@@ -106,14 +106,13 @@ class FASearchBot:
         sub_resp = requests.get("{}/submission/{}.json".format(self.api_url, submission_id))
         # If API returns fine
         if sub_resp.status_code == 200:
-            sub_data = sub_resp.json()
-            self._send_neat_fa_response(bot, update, sub_data)
+            submission = FASubmission.from_full_dict(sub_resp.json())
+            self._send_neat_fa_response(bot, update, submission)
         else:
             self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: "
                                                        "https://www.furaffinity.net/view/{}/".format(submission_id))
 
-    def _send_neat_fa_response(self, bot, update, submission_data):
-        submission = FASubmission.from_full_dict(submission_data)
+    def _send_neat_fa_response(self, bot, update, submission: FASubmission):
         try:
             submission.send_message(bot, update.message.chat_id, update.message.message_id)
         except CantSendFileType as e:
