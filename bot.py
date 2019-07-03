@@ -276,6 +276,7 @@ class FASubmission:
     
     def __init__(submission_id):
         self.submission_id = submission_id
+        self.link = "https://furaffinity.net/view/{}/".format(submission_id)
         self.thumbnail_url = None
         self.full_url = None
         
@@ -299,3 +300,14 @@ class FASubmission:
     @staticmethod
     def make_thumbnail_bigger(thumbnail_url):
         return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
+   
+    def to_inline_query_result(self):
+        return InlineQueryResultPhoto(
+            id=self.submission_id,
+            photo_url=self.thumbnail_url,  # TODO: can use full URL if certain conditions are met
+            thumb_url=self.thumbnail_url,
+            caption=self.link
+        )
+    
+    def to_message(self):
+        pass
