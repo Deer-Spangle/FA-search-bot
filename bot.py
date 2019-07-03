@@ -5,12 +5,13 @@ import requests
 import telegram
 import time
 
-from telegram import Chat, InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent, \
-    InputTextMessageContent
+from telegram import Chat, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
 import logging
 from telegram.utils.request import Request
 import json
+
+from fa_submission import FASubmission
 
 
 class FilterRegex(Filters.regex):
@@ -252,13 +253,9 @@ class FASearchBot:
         url = "{}/search.json?full=1&perpage=48&q={}&page={}".format(self.api_url, search_term, page)
         resp = requests.get(url)
         results = []
-        for submission in resp.json():
-            results.append(InlineQueryResultPhoto(
-                id=submission['id'],
-                photo_url=submission['thumbnail'],
-                thumb_url=submission['thumbnail'],
-                caption=submission['link']
-            ))
+        for submission_data in resp.json():
+            submission = FASubmission.from_short_dict(submission_data)
+            results.append(submission.to_inline_query_result())
         return results
 
     def _inline_results_not_found(self, search_term):
@@ -273,51 +270,3 @@ class FASearchBot:
         ]
 
 
-class FASubmission:
-    
-    def __init__(self, submission_id):
-        self.submission_id = submission_id
-        self.link = "https://furaffinity.net/view/{}/".format(submission_id)
-        self._thumbnail_url = None
-        self._full_url = None
-        
-    @classmethod
-    def from_id(cls, submission_id):
-        return cls(submission_id)
-    
-    @classmethod
-    def from_short_dict(cls, short_dict):
-        new_submission = cls(short_dict['id'])
-        new_submission._thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
-        return new_submission
-    
-    @classmethod
-    def from_full_dict(cls, full_dict):
-        new_submission = cls(full_dict['id'])
-        new_submission._thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
-        new_submission._full_url = full_dict['download']
-        return new_submission
-    
-    @staticmethod
-    def make_thumbnail_bigger(thumbnail_url):
-        return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
-    
-    def load_full_data(self):
-        pass
-    
-    @property
-    def thumbnail_url(self):
-        if self._thumbnail_url is None:
-            self.load_full_data()
-        return self._thumbnail_url
-   
-    def to_inline_query_result(self):
-        return InlineQueryResultPhoto(
-            id=self.submission_id,
-            photo_url=self.thumbnail_url,  # TODO: can use full URL if certain conditions are met
-            thumb_url=self.thumbnail_url,
-            caption=self.link
-        )
-    
-    def send_message(self, bot, chat_id, reply_to=None):
-        pass
