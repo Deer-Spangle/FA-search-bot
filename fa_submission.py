@@ -17,7 +17,7 @@ class FASubmission:
 
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
-        self.link = "https://furaffinity.net/view/{}/".format(submission_id)
+        self.link = f"https://furaffinity.net/view/{submission_id}/"
         self._thumbnail_url = None
         self._download_url = None
         self._full_image_url = None
@@ -92,7 +92,7 @@ class FASubmission:
                 bot.send_photo(
                     chat_id=chat_id,
                     photo=self.thumbnail_url,
-                    caption="{}\n[Direct download]({})".format(self.link, self.download_url),
+                    caption=f"{self.link}\n[Direct download]({self.download_url})",
                     reply_to_message_id=reply_to,
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
@@ -109,7 +109,7 @@ class FASubmission:
             bot.send_photo(
                 chat_id=chat_id,
                 photo=self.full_image_url,
-                caption="{}\n[Direct download]({})".format(self.link, self.download_url),
+                caption=f"{self.link}\n[Direct download]({self.download_url})",
                 reply_to_message_id=reply_to,
                 parse_mode=telegram.ParseMode.MARKDOWN
             )
@@ -134,8 +134,8 @@ class FASubmission:
             return
         # Handle known error extensions
         if ext in error_extensions:
-            raise CantSendFileType("I'm sorry, I can't neaten \".{}\" files.".format(ext))
-        raise CantSendFileType("I'm sorry, I don't understand that file extension ({}).".format(ext))
+            raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
+        raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
 
 
 def _get_file_size(url):
