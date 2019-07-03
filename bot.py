@@ -67,7 +67,9 @@ class FASearchBot:
             chat_id=update.message.chat_id,
             text="Hello, I'm a new bot so I'm still learning. I can't do a whole lot yet. "
                  "If you have any suggestions, requests, or questions, direct them to @deerspangle.\n"
-                 "For now, all I can do is neaten up any FA links you send me."
+                 "Currently I can:\n"
+                 "- Neaten up any FA submission or direct links you give me\n"
+                 "- Respond to inline search queries"
         )
 
     def beep(self, bot, update):
