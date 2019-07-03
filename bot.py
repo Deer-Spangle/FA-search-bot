@@ -11,7 +11,7 @@ import logging
 from telegram.utils.request import Request
 import json
 
-from fa_submission import FASubmission
+from fa_submission import FASubmission, CantSendFileType
 
 
 class FilterRegex(Filters.regex):
@@ -27,9 +27,6 @@ class FASearchBot:
     FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
     FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
-
-    SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
-    SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -116,69 +113,11 @@ class FASearchBot:
                                                        "https://www.furaffinity.net/view/{}/".format(submission_id))
 
     def _send_neat_fa_response(self, bot, update, submission_data):
-        ext = submission_data['download'].split(".")[-1].lower()
-        document_extensions = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
-        auto_document_extensions = ["gif", "pdf"]
-        audio_extensions = ["mp3"]
-        photo_extensions = ["jpg", "jpeg", "png"]
-        error_extensions = ["swf"]
-        # Handle photos
-        if ext in photo_extensions:
-            if self._get_file_size(submission_data['download']) > self.SIZE_LIMIT_IMAGE:
-                bot.send_photo(
-                    chat_id=update.message.chat_id,
-                    photo=submission_data['thumbnail'],
-                    caption="{}\n[Direct download]({})".format(submission_data['link'], submission_data['download']),
-                    reply_to_message_id=update.message.message_id,
-                    parse_mode=telegram.ParseMode.MARKDOWN
-                )
-                return
-            bot.send_photo(
-                chat_id=update.message.chat_id,
-                photo=submission_data['download'],
-                caption=submission_data['link'],
-                reply_to_message_id=update.message.message_id
-            )
-            return
-        # Handle files telegram can't handle
-        if ext in document_extensions or self._get_file_size(submission_data['download']) > self.SIZE_LIMIT_DOCUMENT:
-            bot.send_photo(
-                chat_id=update.message.chat_id,
-                photo=submission_data['full'],
-                caption="{}\n[Direct download]({})".format(submission_data['link'], submission_data['download']),
-                reply_to_message_id=update.message.message_id,
-                parse_mode=telegram.ParseMode.MARKDOWN
-            )
-            return
-        # Handle gifs, and pdfs, which can be sent as documents
-        if ext in auto_document_extensions:
-            bot.send_document(
-                chat_id=update.message.chat_id,
-                document=submission_data['download'],
-                caption=submission_data['link'],
-                reply_to_message_id=update.message.message_id
-            )
-            return
-        # Handle audio
-        if ext in audio_extensions:
-            bot.send_audio(
-                chat_id=update.message.chat_id,
-                audio=submission_data['download'],
-                caption=submission_data['link'],
-                reply_to_message_id=update.message.message_id
-            )
-            return
-        # Handle known error extensions
-        if ext in error_extensions:
-            self._return_error_in_privmsg(bot, update, "I'm sorry, I can't neaten \".{}\" files.".format(ext))
-            return
-        self._return_error_in_privmsg(
-            bot, update, "I'm sorry, I don't understand that file extension ({}).".format(ext)
-        )
-
-    def _get_file_size(self, url):
-        resp = requests.head(url)
-        return int(resp.headers['content-length'])
+        submission = FASubmission.from_full_dict(submission_data)
+        try:
+            submission.send_message(bot, update.message.chat_id, update.message.message_id)
+        except CantSendFileType as e:
+            self._return_error_in_privmsg(bot, update, str(e))
 
     def _return_error_in_privmsg(self, bot, update, error_message):
         # Only send an error message in private message

@@ -75,8 +75,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -91,7 +93,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -186,12 +188,14 @@ class NeatenDirectImageTest(unittest.TestCase):
                 }
             ]
         )
-        for post_id in [post_id1, post_id2]:
+        for post_id, image_id in [(post_id1, image_id1), (post_id2, image_id2)]:
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
+                    "full": "http://example.com/dl-{}.jpg".format(post_id),
                     "download": "http://example.com/dl-{}.jpg".format(post_id),
-                    "link": "link-{}".format(post_id)
+                    "link": "link-view/{}".format(post_id),
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
                 }
             )
             r.head(
@@ -207,7 +211,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         calls = [call(
             chat_id=update.message.chat_id,
             photo="http://example.com/dl-{}.jpg".format(post_id),
-            caption="link-{}".format(post_id),
+            caption="link-view/{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id1, post_id2]]
         bot.send_photo.assert_has_calls(calls)
@@ -237,8 +241,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -253,7 +259,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -283,8 +289,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -299,19 +307,20 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
     def test_direct_link_and_different_submission_link(self, bot, r):
         username = "fender"
-        image_id = 1560331512
+        image_id1 = 1560331512
+        image_id2 = image_id1+300
         post_id1 = 232347
         post_id2 = 233447
         update = MockTelegramUpdate.with_message(
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png https://furaffinity.net/view/{2}/".format(
-                username, image_id, post_id2
+                username, image_id1, post_id2
             )
         )
         r.get(
@@ -319,24 +328,26 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+300)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2)
                 },
                 {
                     "id": post_id1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1)
                 },
                 {
                     "id": post_id1-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15)
                 }
             ]
         )
-        for post_id in [post_id1, post_id2]:
+        for post_id, image_id in [(post_id1, image_id1), (post_id2, image_id2)]:
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
+                    "full": "http://example.com/dl-{}.jpg".format(post_id),
                     "download": "http://example.com/dl-{}.jpg".format(post_id),
-                    "link": "link-{}".format(post_id)
+                    "link": "link-view/{}".format(post_id),
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
                 }
             )
             r.head(
@@ -352,7 +363,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         calls = [call(
             chat_id=update.message.chat_id,
             photo="http://example.com/dl-{}.jpg".format(post_id),
-            caption="link-{}".format(post_id),
+            caption="link-view/{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id1, post_id2]]
         bot.send_photo.assert_has_calls(calls)
@@ -361,12 +372,13 @@ class NeatenDirectImageTest(unittest.TestCase):
     @requests_mock.mock()
     def test_submission_link_and_different_direct_link(self, bot, r):
         username = "fender"
-        image_id = 1560331512
+        image_id1 = 1560331512
+        image_id2 = image_id1+300
         post_id1 = 232347
         post_id2 = 233447
         update = MockTelegramUpdate.with_message(
             text="https://furaffinity.net/view/{2}/ http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(
-                username, image_id, post_id2
+                username, image_id1, post_id2
             )
         )
         r.get(
@@ -374,24 +386,26 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+300)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2)
                 },
                 {
                     "id": post_id1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1)
                 },
                 {
                     "id": post_id1-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15)
                 }
             ]
         )
-        for post_id in [post_id1, post_id2]:
+        for post_id, image_id in [(post_id1, image_id1), (post_id2, image_id2)]:
             r.get(
                 "{}/submission/{}.json".format(searchBot.api_url, post_id),
                 json={
+                    "full": "http://example.com/dl-{}.jpg".format(post_id),
                     "download": "http://example.com/dl-{}.jpg".format(post_id),
-                    "link": "link-{}".format(post_id)
+                    "link": "link-view/{}".format(post_id),
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
                 }
             )
             r.head(
@@ -407,7 +421,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         calls = [call(
             chat_id=update.message.chat_id,
             photo="http://example.com/dl-{}.jpg".format(post_id),
-            caption="link-{}".format(post_id),
+            caption="link-view/{}".format(post_id),
             reply_to_message_id=update.message.message_id
         ) for post_id in [post_id2, post_id1]]
         bot.send_photo.assert_has_calls(calls)
@@ -445,8 +459,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -461,7 +477,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -498,8 +514,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -514,7 +532,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -688,8 +706,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -704,7 +724,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -753,8 +773,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -769,7 +791,7 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
@@ -871,8 +893,10 @@ class NeatenDirectImageTest(unittest.TestCase):
         r.get(
             "{}/submission/{}.json".format(searchBot.api_url, post_id),
             json={
+                "full": "http://example.com/dl-{}.jpg".format(post_id),
                 "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-{}".format(post_id)
+                "link": "link-view/{}".format(post_id),
+                "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
             }
         )
         r.head(
@@ -887,5 +911,5 @@ class NeatenDirectImageTest(unittest.TestCase):
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
         assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-{}".format(post_id)
+        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
