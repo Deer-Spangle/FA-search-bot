@@ -271,10 +271,11 @@ class FASearchBot:
                 )
             )
         ]
-    
+
+
 class FASubmission:
     
-    def __init__(submission_id):
+    def __init__(self, submission_id):
         self.submission_id = submission_id
         self.link = "https://furaffinity.net/view/{}/".format(submission_id)
         self._thumbnail_url = None
