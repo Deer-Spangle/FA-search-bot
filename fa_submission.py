@@ -1,10 +1,10 @@
 import re
-from typing import Dict, Generic, T
+from typing import Dict
 
 from telegram import InlineQueryResultPhoto
 
 
-class FASubmission(Generic[T]):
+class FASubmission:
 
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
