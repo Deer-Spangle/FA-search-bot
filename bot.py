@@ -271,3 +271,31 @@ class FASearchBot:
                 )
             )
         ]
+    
+class FASubmission:
+    
+    def __init__(submission_id):
+        self.submission_id = submission_id
+        self.thumbnail_url = None
+        self.full_url = None
+        
+    @classmethod
+    def from_id(cls, submission_id):
+        return cls(submission_id)
+    
+    @classmethod
+    def from_short_dict(cls, short_dict):
+        new_submission = cls(short_dict['id'])
+        new_submission.thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
+        return new_submission
+    
+    @classmethod
+    def from_full_dict(cls, full_dict):
+        new_submission = cls(full_dict['id'])
+        new_submission.thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
+        new_submission.full_url = short_dict['download']
+        return new_submission
+    
+    @staticmethod
+    def make_thumbnail_bigger(thumbnail_url):
+        return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
