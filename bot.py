@@ -309,5 +309,5 @@ class FASubmission:
             caption=self.link
         )
     
-    def to_message(self):
+    def send_message(self, bot, chat_id, reply_to=None):
         pass
