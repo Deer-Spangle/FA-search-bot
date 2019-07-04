@@ -226,5 +226,6 @@ class FAExportAPI:
         # If API returns fine
         if sub_resp.status_code == 200:
             submission = FASubmission.from_full_dict(sub_resp.json())
+            return submission
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
