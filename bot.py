@@ -89,7 +89,7 @@ class FASearchBot:
         for submission_id in submission_ids:
             self._handle_fa_submission_link(bot, update, submission_id)
 
-    def _get_submission_id_from_link(self, bot, update, link):
+    def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
             return int(sub_match.group(1))
@@ -100,7 +100,7 @@ class FASearchBot:
         if not submission_id:
             self._return_error_in_privmsg(
                 bot, update,
-                "Could not locate the image by {} with image id {}.".format(username, image_id)
+                f"Could not locate the image by {username} with image id {image_id}."
             )
         return submission_id
 
@@ -128,45 +128,43 @@ class FASearchBot:
                 reply_to_message_id=update.message.message_id
             )
 
-    def _find_submission(self, username, image_id):
+    def _find_submission(self, username: str, image_id: int) -> Optional[int]:
         folders = ["gallery", "scraps"]
         for folder in folders:
             submission_id = self._find_submission_in_folder(username, image_id, folder)
             if submission_id:
                 return submission_id
-        return False
+        return None
 
-    def _find_submission_in_folder(self, username, image_id, folder):
+    def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
         page_listing = self._find_correct_page(username, image_id, folder)
         if not page_listing:
             # No page is valid.
-            return False
+            return None
         return self._find_submission_on_page(image_id, page_listing)
 
-    def _find_submission_on_page(self, image_id, page_listing):
-        for submission_data in page_listing:
-            test_image_id = self._get_image_id_from_submission(submission_data)
+    def _find_submission_on_page(self, image_id: int, page_listing: List[FASubmission]) -> Optional[int]:
+        for submission in page_listing:
+            test_image_id = self._get_image_id_from_submission(submission)
             if image_id == test_image_id:
-                return int(submission_data['id'])
+                return int(submission.submission_id)
             if test_image_id < image_id:
-                return False
-        return False
+                return None
+        return None
 
-    def _find_correct_page(self, username, image_id, folder):
+    def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmission]]:
         page = 1
         while True:
-            listing = requests.get(
-                "{}/user/{}/{}.json?page={}&full=1".format(self.api_url, username, folder, page)
-            ).json()
+            listing = self.api.get_user_folder(username, folder, page)
             if len(listing) == 0:
-                return False
-            last_submission_data = listing[-1]
-            if self._get_image_id_from_submission(last_submission_data) <= image_id:
+                return None
+            last_submission = listing[-1]
+            if self._get_image_id_from_submission(last_submission) <= image_id:
                 return listing
             page += 1
 
-    def _get_image_id_from_submission(self, submission_data):
-        image_id = re.split(r"[-.]", submission_data['thumbnail'])[-2]
+    def _get_image_id_from_submission(self, submission: FASubmission) -> int:
+        image_id = re.split(r"[-.]", submission.thumbnail_url)[-2]
         return int(image_id)
 
     def inline_query(self, bot, update):
@@ -229,3 +227,11 @@ class FAExportAPI:
             return submission
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
+
+    def get_user_folder(self, user: str, folder: str, page=1: int) -> List[FASubmission]:
+        resp = self._api_request(f"user/{user}/{folder}.json?page={page}")
+        data = resp.json()
+        submissions = []
+        for submission_data in data:
+            submissions.append(FASubmission.from_short_dict(submission_data))
+        return submissions
