@@ -64,11 +64,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15),
+                    "link": "link-view/{}".format(post_id-1)
                 }
             ]
         )
@@ -111,11 +113,13 @@ class NeatenDirectImageTest(unittest.TestCase):
                 json=[
                     {
                         "id": post_id,
-                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+4)
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+4),
+                    "link": "link-view/{}".format(post_id)
                     },
                     {
                         "id": post_id-1,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15),
+                    "link": "link-view/{}".format(post_id-1)
                     }
                 ]
             )
@@ -145,11 +149,13 @@ class NeatenDirectImageTest(unittest.TestCase):
                 json=[
                     {
                         "id": post_id,
-                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+4)
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+4),
+                        "link": "link-view/{}".format(post_id)
                     },
                     {
                         "id": post_id-1,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15),
+                        "link": "link-view/{}".format(post_id-1)
                     }
                 ]
             )
@@ -176,15 +182,18 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1),
+                    "link": "link-view/{}".format(post_id1)
                 },
                 {
                     "id": post_id2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2),
+                    "link": "link-view/{}".format(post_id2)
                 },
                 {
                     "id": post_id2-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id2-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id2-15),
+                    "link": "link-view/{}".format(post_id2-1)
                 }
             ]
         )
@@ -230,11 +239,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15),
+                    "link": "link-view/{}".format(post_id-1)
                 }
             ]
         )
@@ -278,11 +289,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-15),
+                    "link": "link-view/{}".format(post_id-1)
                 }
             ]
         )
@@ -328,15 +341,18 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2),
+                    "link": "link-view/{}".format(post_id2)
                 },
                 {
                     "id": post_id1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1),
+                    "link": "link-view/{}".format(post_id1)
                 },
                 {
                     "id": post_id1-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15),
+                    "link": "link-view/{}".format(post_id1-1)
                 }
             ]
         )
@@ -386,15 +402,18 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id2),
+                    "link": "link-view/{}".format(post_id2)
                 },
                 {
                     "id": post_id1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id1),
+                    "link": "link-view/{}".format(post_id1)
                 },
                 {
                     "id": post_id1-1,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id1-15),
+                    "link": "link-view/{}".format(post_id1-1)
                 }
             ]
         )
@@ -440,19 +459,23 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+1)
                 },
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27),
+                    "link": "link-view/{}".format(post_id-2)
                 },
                 {
                     "id": post_id-3,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34),
+                    "link": "link-view/{}".format(post_id-3)
                 }
             ]
         )
@@ -495,19 +518,23 @@ class NeatenDirectImageTest(unittest.TestCase):
                 json=[
                     {
                         "id": post_id+1 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id+1 + (3-page)*5)
                     },
                     {
                         "id": post_id + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56),
+                        "link": "link-view/{}".format(post_id + (3-page)*5)
                     },
                     {
                         "id": post_id-2 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id-2 + (3-page)*5)
                     },
                     {
                         "id": post_id-3 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id-3 + (3-page)*5)
                     }
                 ]
             )
@@ -549,19 +576,23 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+1)
                 },
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27),
+                    "link": "link-view/{}".format(post_id-2)
                 },
                 {
                     "id": post_id-3,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34),
+                    "link": "link-view/{}".format(post_id-3)
                 }
             ]
         )
@@ -594,19 +625,23 @@ class NeatenDirectImageTest(unittest.TestCase):
                 json=[
                     {
                         "id": post_id+1 + (2-page)*6,
-                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (2-page)*56)
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (2-page)*56),
+                        "link": "link-view/{}".format(post_id+1 + (2-page)*6)
                     },
                     {
                         "id": post_id + (2-page)*6,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3 + (2-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3 + (2-page)*56),
+                        "link": "link-view/{}".format(post_id + (2-page)*6)
                     },
                     {
                         "id": post_id-2,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (2-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (2-page)*56),
+                        "link": "link-view/{}".format(post_id-2)
                     },
                     {
                         "id": post_id-3,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (2-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (2-page)*56),
+                        "link": "link-view/{}".format(post_id-3)
                     }
                 ]
             )
@@ -638,11 +673,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+1)
                 },
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+3),
+                    "link": "link-view/{}".format(post_id)
                 }
             ]
         )
@@ -651,11 +688,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id-2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27),
+                    "link": "link-view/{}".format(post_id-2)
                 },
                 {
                     "id": post_id-3,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34),
+                    "link": "link-view/{}".format(post_id-3)
                 }
             ]
         )
@@ -687,19 +726,23 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+4,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+4)
                 },
                 {
                     "id": post_id+3,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+2)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+2),
+                    "link": "link-view/{}".format(post_id+3)
                 },
                 {
                     "id": post_id+2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+1)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id+1),
+                    "link": "link-view/{}".format(post_id+2)
                 },
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 }
             ]
         )
@@ -741,11 +784,13 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+3,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+3)
                 },
                 {
                     "id": post_id+2,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+8)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+8),
+                    "link": "link-view/{}".format(post_id+2)
                 }
             ]
         )
@@ -754,19 +799,23 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-2)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-2),
+                    "link": "link-view/{}".format(post_id-2)
                 },
                 {
                     "id": post_id-7,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-4)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-4),
+                    "link": "link-view/{}".format(post_id-7)
                 },
                 {
                     "id": post_id-9,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-10)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-10),
+                    "link": "link-view/{}".format(post_id-9)
                 }
             ]
         )
@@ -849,19 +898,23 @@ class NeatenDirectImageTest(unittest.TestCase):
                 json=[
                     {
                         "id": post_id+1 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id+1 + (3-page)*5)
                     },
                     {
                         "id": post_id + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id + (3-page)*56),
+                        "link": "link-view/{}".format(post_id + (3-page)*5)
                     },
                     {
                         "id": post_id-2 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id-2 + (3-page)*5)
                     },
                     {
                         "id": post_id-3 + (3-page)*5,
-                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56)
+                        "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34 + (3-page)*56),
+                        "link": "link-view/{}".format(post_id-3 + (3-page)*5)
                     }
                 ]
             )
@@ -874,19 +927,23 @@ class NeatenDirectImageTest(unittest.TestCase):
             json=[
                 {
                     "id": post_id+1,
-                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16)
+                    "thumbnail": "http://url.com/thumb@400-{}.jpg".format(image_id+16),
+                    "link": "link-view/{}".format(post_id+1)
                 },
                 {
                     "id": post_id,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id),
+                    "link": "link-view/{}".format(post_id)
                 },
                 {
                     "id": post_id-2,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-27),
+                    "link": "link-view/{}".format(post_id-2)
                 },
                 {
                     "id": post_id-3,
-                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34)
+                    "thumbnail": "http://url.com/thumb@300-{}.jpg".format(image_id-34),
+                    "link": "link-view/{}".format(post_id-3)
                 }
             ]
         )
