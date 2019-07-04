@@ -19,6 +19,7 @@ class MockSubmission(FASubmission):
     def __init__(
             self,
             submission_id: Union[str, int],
+            *,
             username: str = None,
             image_id: int = None,
             file_size=14852,
@@ -53,9 +54,13 @@ class MockExportAPI(FAExportAPI):
         self.user_folders = {}
         self.search_results = {}
 
+    def with_submission(self, submission: FASubmission) -> 'MockExportAPI':
+        self.submissions[submission.submission_id] = submission
+        return self
+
     def with_submissions(self, list_submissions: List[FASubmission]) -> 'MockExportAPI':
         for submission in list_submissions:
-            self.submissions[submission.submission_id] = submission
+            self.with_submission(submission)
         return self
 
     def with_gallery_pages(

@@ -106,10 +106,10 @@ class FASearchBot:
             )
         return submission_id
 
-    def _handle_fa_submission_link(self, bot, update, submission_id):
+    def _handle_fa_submission_link(self, bot, update, submission_id: int):
         print("Found a link, ID:{}".format(submission_id))
         try:
-            submission = self.api.get_full_submission(submission_id)
+            submission = self.api.get_full_submission(str(submission_id))
             self._send_neat_fa_response(bot, update, submission)
         except PageNotFound as e:
             self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: "
@@ -121,7 +121,7 @@ class FASearchBot:
         except CantSendFileType as e:
             self._return_error_in_privmsg(bot, update, str(e))
 
-    def _return_error_in_privmsg(self, bot, update, error_message):
+    def _return_error_in_privmsg(self, bot, update, error_message: str):
         # Only send an error message in private message
         if update.message.chat.type == Chat.PRIVATE:
             bot.send_message(

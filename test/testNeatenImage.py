@@ -8,9 +8,11 @@ from telegram import Chat
 
 from bot import FASearchBot
 from fa_submission import FASubmission
+from test.util.mock_export_api import MockExportAPI, MockSubmission
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
 searchBot = FASearchBot("config-test.json")
+searchBot.api = MockExportAPI()
 
 
 class NeatenImageTest(unittest.TestCase):
@@ -52,32 +54,18 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_submission_link(self, bot, r):
+    def test_submission_link(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/dl-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
