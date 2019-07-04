@@ -63,7 +63,7 @@ class MockExportAPI(FAExportAPI):
             self.with_submission(submission)
         return self
 
-    def with_gallery_pages(
+    def with_user_folder(
             self,
             username: str,
             folder: str,
@@ -87,4 +87,8 @@ class MockExportAPI(FAExportAPI):
         return self.submissions[submission_id]
 
     def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
+        if user not in self.user_folders:
+            return []
+        if f"{folder}:{page}" not in self.user_folders[user]:
+            return []
         return self.user_folders[user][f"{folder}:{page}"]
