@@ -86,7 +86,7 @@ class FASubmission:
     def to_inline_query_result(self) -> InlineQueryResultPhoto:
         return InlineQueryResultPhoto(
             id=self.submission_id,
-            photo_url=self.thumbnail_url,  # TODO: can use full URL if certain conditions are met
+            photo_url=self.thumbnail_url,
             thumb_url=self.thumbnail_url,
             caption=self.link
         )

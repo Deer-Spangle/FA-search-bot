@@ -7,12 +7,16 @@ import telegram
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
 
 from bot import FASearchBot
+from test.util.mock_export_api import MockSubmission, MockExportAPI
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
 searchBot = FASearchBot("config-test.json")
 
 
 class NeatenImageTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        searchBot.api = MockExportAPI()
 
     @patch.object(telegram, "Bot")
     def test_empty_query_no_results(self, bot):
@@ -30,16 +34,8 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 234563
         search_term = "YCH"
         update = MockTelegramUpdate.with_inline_query(query=search_term)
-        r.get(
-            "{}/search.json?full=1&perpage=48&q={}".format(searchBot.api_url, search_term.lower()),
-            json=[
-                {
-                    "id": str(post_id),
-                    "thumbnail": "thumb-{}.jpg".format(post_id),
-                    "link": "link-{}".format(post_id)
-                }
-            ]
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_search_results(search_term, [submission])
 
         searchBot.inline_query(bot, update)
 
@@ -52,19 +48,16 @@ class NeatenImageTest(unittest.TestCase):
         for result in args[1]:
             assert isinstance(result, InlineQueryResultPhoto)
             assert result.id == str(post_id)
-            assert result.photo_url == "thumb-{}.jpg".format(post_id)
-            assert result.thumb_url == "thumb-{}.jpg".format(post_id)
-            assert result.caption == "link-{}".format(post_id)
+            assert result.photo_url == submission.thumbnail_url
+            assert result.thumb_url == submission.thumbnail_url
+            assert result.caption == submission.link
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
     def test_no_search_results(self, bot, r):
         search_term = "RareKeyword"
         update = MockTelegramUpdate.with_inline_query(query=search_term)
-        r.get(
-            "{}/search.json?full=1&perpage=48&q={}".format(searchBot.api_url, search_term.lower()),
-            json=[]
-        )
+        searchBot.api.with_search_results(search_term, [])
 
         searchBot.inline_query(bot, update)
 
@@ -86,16 +79,8 @@ class NeatenImageTest(unittest.TestCase):
         search_term = "YCH"
         offset = 2
         update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
-        r.get(
-            "{}/search.json?full=1&perpage=48&page={}&q={}".format(searchBot.api_url, offset, search_term.lower()),
-            json=[
-                {
-                    "id": str(post_id),
-                    "thumbnail": "thumb-{}.jpg".format(post_id),
-                    "link": "link-{}".format(post_id)
-                }
-            ]
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_search_results(search_term, [submission], page=offset)
 
         searchBot.inline_query(bot, update)
 
@@ -107,9 +92,9 @@ class NeatenImageTest(unittest.TestCase):
         for result in args[1]:
             assert isinstance(result, InlineQueryResultPhoto)
             assert result.id == str(post_id)
-            assert result.photo_url == "thumb-{}.jpg".format(post_id)
-            assert result.thumb_url == "thumb-{}.jpg".format(post_id)
-            assert result.caption == "link-{}".format(post_id)
+            assert result.photo_url == submission.thumbnail_url
+            assert result.thumb_url == submission.thumbnail_url
+            assert result.caption == submission.link
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
@@ -117,10 +102,7 @@ class NeatenImageTest(unittest.TestCase):
         search_term = "YCH"
         offset = 2
         update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
-        r.get(
-            "{}/search.json?full=1&perpage=48&page={}&q={}".format(searchBot.api_url, offset, search_term.lower()),
-            json=[]
-        )
+        searchBot.api.with_search_results(search_term, [], page=offset)
 
         searchBot.inline_query(bot, update)
 

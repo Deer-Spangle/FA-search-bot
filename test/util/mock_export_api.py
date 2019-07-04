@@ -77,7 +77,7 @@ class MockExportAPI(FAExportAPI):
         return self
 
     def with_search_results(self, query: str, list_submissions: List[FASubmission], page: int = 1):
-        self.search_results[f"{query}:{page}"] = list_submissions
+        self.search_results[f"{query.lower()}:{page}"] = list_submissions
         self.with_submissions(list_submissions)
         return self
 
@@ -92,3 +92,8 @@ class MockExportAPI(FAExportAPI):
         if f"{folder}:{page}" not in self.user_folders[user]:
             return []
         return self.user_folders[user][f"{folder}:{page}"]
+
+    def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
+        if f"{query.lower()}:{page}" not in self.search_results:
+            return []
+        return self.search_results[f"{query.lower()}:{page}"]
