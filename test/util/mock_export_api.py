@@ -1,7 +1,8 @@
 import random
 import string
-from typing import Union
+from typing import Union, List
 
+from fa_export_api import FAExportAPI
 from fa_submission import FASubmission
 
 
@@ -42,3 +43,41 @@ class MockSubmission(FASubmission):
         else:
             self._full_image_url = self._download_url + ".jpg"
         self._download_file_size = file_size
+
+
+class MockExportAPI(FAExportAPI):
+
+    def __init__(self):
+        super().__init__("--")
+        self.submissions = {}
+        self.user_folders = {}
+        self.search_results = {}
+
+    def with_submissions(self, list_submissions: List[FASubmission]) -> 'MockExportAPI':
+        for submission in list_submissions:
+            self.submissions[submission.submission_id] = submission
+        return self
+
+    def with_gallery_pages(
+            self,
+            username: str,
+            folder: str,
+            list_submissions: List[FASubmission],
+            page: int = 1
+    ) -> 'MockExportAPI':
+        if username not in self.user_folders:
+            self.user_folders[username] = {}
+        self.user_folders[username][f"{folder}:{page}"] = list_submissions
+        self.with_submissions(list_submissions)
+        return self
+
+    def with_search_results(self, query: str, list_submissions: List[FASubmission], page: int = 1):
+        self.search_results[f"{query}:{page}"] = list_submissions
+        self.with_submissions(list_submissions)
+        return self
+
+    def get_full_submission(self, submission_id: str) -> FASubmission:
+        return self.submissions[submission_id]
+
+    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
+        return self.user_folders[user][f"{folder}:{page}"]
