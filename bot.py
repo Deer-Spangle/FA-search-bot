@@ -1,5 +1,6 @@
 import re
 import uuid
+from typing import Optional, List
 
 import requests
 import telegram
