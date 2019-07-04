@@ -218,7 +218,7 @@ class FAExportAPI:
     def __init__(self, base_url: str):
         self.base_url = base_url
     
-    def get_full_submission(submission_id: str) -> FASubmission:
+    def get_full_submission(self, submission_id: str) -> FASubmission:
         sub_resp = requests.get("{}/submission/{}.json".format(self.base_url, submission_id))
         # If API returns fine
         if sub_resp.status_code == 200:
