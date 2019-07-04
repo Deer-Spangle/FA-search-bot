@@ -33,6 +33,7 @@ class FASearchBot:
             self.config = json.load(f)
         self.bot_key = self.config["bot_key"]
         self.api_url = self.config['api_url']
+        self.api = FAExportAPI(self.config['api_url'])
         self.bot = None
         self.alive = False
 
@@ -105,12 +106,10 @@ class FASearchBot:
 
     def _handle_fa_submission_link(self, bot, update, submission_id):
         print("Found a link, ID:{}".format(submission_id))
-        sub_resp = requests.get("{}/submission/{}.json".format(self.api_url, submission_id))
-        # If API returns fine
-        if sub_resp.status_code == 200:
-            submission = FASubmission.from_full_dict(sub_resp.json())
+        try:
+            submission = self.api.get_full_submission(submission_id)
             self._send_neat_fa_response(bot, update, submission)
-        else:
+        except PageNotFound as e:
             self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: "
                                                        "https://www.furaffinity.net/view/{}/".format(submission_id))
 
@@ -210,3 +209,19 @@ class FASearchBot:
         ]
 
 
+class PageNotFound(Exception):
+    pass
+
+
+class FAExportAPI:
+    
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+    
+    def get_full_submission(submission_id: str) -> FASubmission:
+        sub_resp = requests.get("{}/submission/{}.json".format(self.base_url, submission_id))
+        # If API returns fine
+        if sub_resp.status_code == 200:
+            submission = FASubmission.from_full_dict(sub_resp.json())
+        else:
+            raise PageNotFound(f"Submission not found with ID: {submission_id}")
