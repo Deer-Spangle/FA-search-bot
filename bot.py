@@ -189,11 +189,9 @@ class FASearchBot:
         bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
 
     def _create_inline_results(self, search_term, page):
-        url = "{}/search.json?full=1&perpage=48&q={}&page={}".format(self.api_url, search_term, page)
-        resp = requests.get(url)
+        submissions = self.api.get_search_results(search_term, page)
         results = []
-        for submission_data in resp.json():
-            submission = FASubmission.from_short_dict(submission_data)
+        for submission in submissions:
             results.append(submission.to_inline_query_result())
         return results
 
