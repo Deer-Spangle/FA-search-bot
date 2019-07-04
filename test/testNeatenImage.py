@@ -2,7 +2,6 @@ import unittest
 
 from unittest.mock import patch, call
 
-import requests_mock
 import telegram
 from telegram import Chat
 
@@ -12,10 +11,12 @@ from test.util.mock_export_api import MockExportAPI, MockSubmission
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 
 searchBot = FASearchBot("config-test.json")
-searchBot.api = MockExportAPI()
 
 
 class NeatenImageTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        searchBot.api = MockExportAPI()
 
     @patch.object(telegram, "Bot")
     def test_ignore_message(self, bot):
@@ -69,146 +70,81 @@ class NeatenImageTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_submission_group_chat(self, bot, r):
+    def test_submission_group_chat(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="https://www.furaffinity.net/view/{}/".format(post_id),
             chat_type=Chat.GROUP
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/dl-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_submission_link_no_http(self, bot, r):
+    def test_submission_link_no_http(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/dl-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_two_submission_links(self, bot, r):
-        id1 = 23636984
-        id2 = 23636996
+    def test_two_submission_links(self, bot):
+        post_id1 = 23636984
+        post_id2 = 23636996
         update = MockTelegramUpdate.with_message(
-            text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(id1, id2)
+            text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(post_id1, post_id2)
         )
-        for post_id in [id1, id2]:
-            r.get(
-                "{}/submission/{}.json".format(searchBot.api_url, post_id),
-                json={
-                    "full": "http://example.com/dl-{}.jpg".format(post_id),
-                    "download": "http://example.com/dl-{}.jpg".format(post_id),
-                    "link": "link-view/{}".format(post_id),
-                    "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-                }
-            )
-            r.head(
-                "http://example.com/dl-{}.jpg".format(post_id),
-                headers={
-                    "content-length": "512"
-                }
-            )
+        submission1 = MockSubmission(post_id1)
+        submission2 = MockSubmission(post_id2)
+        searchBot.api.with_submissions([submission1, submission2])
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
             chat_id=update.message.chat_id,
-            photo="http://example.com/dl-{}.jpg".format(post_id),
-            caption="link-view/{}".format(post_id),
+            photo=submission.download_url,
+            caption=submission.link,
             reply_to_message_id=update.message.message_id
-        ) for post_id in [id1, id2]]
+        ) for submission in [submission1, submission2]]
         bot.send_photo.assert_has_calls(calls)
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_duplicate_submission_links(self, bot, r):
+    def test_duplicate_submission_links(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/dl-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_deleted_submission(self, bot, r):
+    def test_deleted_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            status_code=404,
-            json={
-                "error": "error",
-                "url": "link-view/{}".format(post_id)
-            }
-        )
 
         searchBot.neaten_image(bot, update)
 
@@ -220,18 +156,9 @@ class NeatenImageTest(unittest.TestCase):
         assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_deleted_submission_group_chat(self, bot, r):
+    def test_deleted_submission_group_chat(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            status_code=404,
-            json={
-                "error": "error",
-                "url": "link-view/{}".format(post_id)
-            }
-        )
 
         searchBot.neaten_image(bot, update)
 
@@ -239,85 +166,43 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_message.assert_not_called()
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_gif_submission(self, bot, r):
+    def test_gif_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/dl-{}.gif".format(post_id),
-                "download": "http://example.com/dl-{}.gif".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.gif".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="gif")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_document.call_args[1]['document'] == "http://example.com/dl-{}.gif".format(post_id)
-        assert bot.send_document.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_document.call_args[1]['document'] == submission.download_url
+        assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_pdf_submission(self, bot, r):
+    def test_pdf_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "http://example.com/full-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.pdf".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.pdf".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="pdf")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_document.call_args[1]['document'] == "http://example.com/dl-{}.pdf".format(post_id)
-        assert bot.send_document.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_document.call_args[1]['document'] == submission.download_url
+        assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_mp3_submission(self, bot, r):
+    def test_mp3_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.mp3".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.mp3".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="mp3")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -326,24 +211,16 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
         bot.send_audio.assert_called_once()
         assert bot.send_audio.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_audio.call_args[1]['audio'] == "http://example.com/dl-{}.mp3".format(post_id)
-        assert bot.send_audio.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_audio.call_args[1]['audio'] == submission.download_url
+        assert bot.send_audio.call_args[1]['caption'] == submission.link
         assert bot.send_audio.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_txt_submission(self, bot, r):
+    def test_txt_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.txt".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="txt")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -352,35 +229,21 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
         bot.send_audio.assert_not_called()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            "link-view/{0}\n[Direct download](http://example.com/dl-{0}.txt)".format(post_id)
+            f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_swf_submission(self, bot, r):
+    def test_swf_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="https://www.furaffinity.net/view/{}/".format(post_id),
             chat_type=Chat.PRIVATE
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.swf".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.swf".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="swf")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -392,28 +255,14 @@ class NeatenImageTest(unittest.TestCase):
         assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_swf_submission_groupchat(self, bot, r):
+    def test_swf_submission_groupchat(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="https://www.furaffinity.net/view/{}/".format(post_id),
             chat_type=Chat.GROUP
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.swf".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.swf".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="swf")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -422,28 +271,14 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_unknown_type_submission(self, bot, r):
+    def test_unknown_type_submission(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="https://www.furaffinity.net/view/{}/".format(post_id),
             chat_type=Chat.PRIVATE
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.zzz".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.zzz".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="zzz")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -455,28 +290,14 @@ class NeatenImageTest(unittest.TestCase):
         assert bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_unknown_type_submission_groupchat(self, bot, r):
+    def test_unknown_type_submission_groupchat(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="https://www.furaffinity.net/view/{}/".format(post_id),
             chat_type=Chat.GROUP
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.zzz".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.zzz".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="zzz")
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -485,160 +306,90 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_link_in_markdown(self, bot, r):
+    def test_link_in_markdown(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "http://url.com/thumb@400-1223432.jpg"
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": "512"
-            }
-        )
+        submission = MockSubmission(post_id)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_image_just_under_size_limit(self, bot, r):
+    def test_image_just_under_size_limit(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "thumb-{}.jpg".format(post_id)
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": str(FASubmission.SIZE_LIMIT_IMAGE - 1)
-            }
-        )
+        submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "http://example.com/dl-{}.jpg".format(post_id)
-        assert bot.send_photo.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_image_just_over_size_limit(self, bot, r):
+    def test_image_just_over_size_limit(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "thumb-{}.jpg".format(post_id)
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": str(FASubmission.SIZE_LIMIT_IMAGE + 1)
-            }
-        )
+        submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            "link-view/{0}\n[Direct download](http://example.com/dl-{0}.jpg)".format(post_id)
+            f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_image_over_document_size_limit(self, bot, r):
+    def test_image_over_document_size_limit(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.jpg".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "thumb-{}.jpg".format(post_id)
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.jpg".format(post_id),
-            headers={
-                "content-length": str(FASubmission.SIZE_LIMIT_DOCUMENT + 1)
-            }
-        )
+        submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            "link-view/{0}\n[Direct download](http://example.com/dl-{0}.jpg)".format(post_id)
+            f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_auto_doc_just_under_size_limit(self, bot, r):
+    def test_auto_doc_just_under_size_limit(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.gif".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "thumb-{}.jpg".format(post_id)
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.gif".format(post_id),
-            headers={
-                "content-length": str(FASubmission.SIZE_LIMIT_DOCUMENT - 1)
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="gif", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -646,33 +397,19 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_photo.assert_not_called()
         bot.send_message.assert_not_called()
         assert bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_document.call_args[1]['document'] == "http://example.com/dl-{}.gif".format(post_id)
-        assert bot.send_document.call_args[1]['caption'] == "link-view/{}".format(post_id)
+        assert bot.send_document.call_args[1]['document'] == submission.download_url
+        assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 
     @patch.object(telegram, "Bot")
-    @requests_mock.mock()
-    def test_auto_doc_just_over_size_limit(self, bot, r):
+    def test_auto_doc_just_over_size_limit(self, bot):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(
             text="Hello",
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
-        r.get(
-            "{}/submission/{}.json".format(searchBot.api_url, post_id),
-            json={
-                "full": "thumb-{}.jpg".format(post_id),
-                "download": "http://example.com/dl-{}.pdf".format(post_id),
-                "link": "link-view/{}".format(post_id),
-                "thumbnail": "thumb-{}.jpg".format(post_id)
-            }
-        )
-        r.head(
-            "http://example.com/dl-{}.pdf".format(post_id),
-            headers={
-                "content-length": str(FASubmission.SIZE_LIMIT_DOCUMENT + 1)
-            }
-        )
+        submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
+        searchBot.api.with_submission(submission)
 
         searchBot.neaten_image(bot, update)
 
@@ -680,8 +417,8 @@ class NeatenImageTest(unittest.TestCase):
         bot.send_document.assert_not_called()
         bot.send_message.assert_not_called()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-        assert bot.send_photo.call_args[1]['photo'] == "thumb-{}.jpg".format(post_id)
+        assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            "link-view/{0}\n[Direct download](http://example.com/dl-{0}.pdf)".format(post_id)
+            f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN

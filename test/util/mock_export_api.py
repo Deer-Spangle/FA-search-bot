@@ -2,7 +2,7 @@ import random
 import string
 from typing import Union, List
 
-from fa_export_api import FAExportAPI
+from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmission
 
 
@@ -39,7 +39,7 @@ class MockSubmission(FASubmission):
         self._thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
         self._download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
-        if file_ext in FASubmission.EXTENSIONS_PHOTO:
+        if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
             self._full_image_url = self._download_url
         else:
             self._full_image_url = self._download_url + ".jpg"
@@ -82,6 +82,8 @@ class MockExportAPI(FAExportAPI):
         return self
 
     def get_full_submission(self, submission_id: str) -> FASubmission:
+        if submission_id not in self.submissions:
+            raise PageNotFound(f"Submission not found with ID: {submission_id}")
         return self.submissions[submission_id]
 
     def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:

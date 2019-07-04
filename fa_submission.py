@@ -91,7 +91,7 @@ class FASubmission:
             caption=self.link
         )
 
-    def send_message(self, bot, chat_id, reply_to=None):
+    def send_message(self, bot, chat_id: int, reply_to: int = None) -> None:
         ext = self.download_url.split(".")[-1].lower()
         # Handle photos
         if ext in FASubmission.EXTENSIONS_PHOTO:
@@ -145,6 +145,6 @@ class FASubmission:
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
 
 
-def _get_file_size(url):
+def _get_file_size(url: str) -> int:
     resp = requests.head(url)
     return int(resp.headers['content-length'])
