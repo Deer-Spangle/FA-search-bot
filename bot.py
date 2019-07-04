@@ -228,7 +228,7 @@ class FAExportAPI:
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
-    def get_user_folder(self, user: str, folder: str, page=1: int) -> List[FASubmission]:
+    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
         resp = self._api_request(f"user/{user}/{folder}.json?page={page}")
         data = resp.json()
         submissions = []
