@@ -217,9 +217,12 @@ class FAExportAPI:
     
     def __init__(self, base_url: str):
         self.base_url = base_url
+        
+    def _api_request(self, path: str) -> requests.Response:
+        return requests.get(f"{self.base_url}/{path}")
     
     def get_full_submission(self, submission_id: str) -> FASubmission:
-        sub_resp = requests.get("{}/submission/{}.json".format(self.base_url, submission_id))
+        sub_resp = self._api_request(f"submission/{submission_id}.json")
         # If API returns fine
         if sub_resp.status_code == 200:
             submission = FASubmission.from_full_dict(sub_resp.json())
