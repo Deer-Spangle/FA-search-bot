@@ -2,7 +2,6 @@ import unittest
 
 from unittest.mock import patch
 
-import requests_mock
 import telegram
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
 
