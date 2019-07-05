@@ -6,8 +6,6 @@ import requests
 import telegram
 from telegram import InlineQueryResultPhoto
 
-from fa_export_api import FAExportAPI
-
 
 class CantSendFileType(Exception):
     pass
@@ -55,9 +53,6 @@ class FASubmission(ABC):
     def _get_file_size(url: str) -> int:
         resp = requests.head(url)
         return int(resp.headers['content-length'])
-
-    def to_full_submission(self, api: FAExportAPI) -> 'FASubmissionFull':
-        return api.get_full_submission(self.submission_id)
 
 
 class FASubmissionShort(FASubmission):
