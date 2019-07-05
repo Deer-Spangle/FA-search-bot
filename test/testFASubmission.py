@@ -211,6 +211,7 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.gif"
         submission = FASubmissionFull(post_id, thumb_link, download_link, download_link)
+        submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
 
@@ -231,6 +232,7 @@ class FASubmissionFullTest(unittest.TestCase):
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.pdf"
         full_link = f"{download_link}.jpg"
         submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
 
@@ -251,6 +253,7 @@ class FASubmissionFullTest(unittest.TestCase):
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.mp3"
         full_link = f"{download_link}.jpg"
         submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
 
@@ -297,6 +300,7 @@ class FASubmissionFullTest(unittest.TestCase):
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.swf"
         full_link = f"{download_link}.jpg"
         submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
 
@@ -314,6 +318,7 @@ class FASubmissionFullTest(unittest.TestCase):
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.zzz"
         full_link = f"{download_link}.jpg"
         submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
 
