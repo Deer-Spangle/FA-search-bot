@@ -13,7 +13,7 @@ from test.util.testTelegramUpdateObjects import MockTelegramUpdate
 searchBot = FASearchBot("config-test.json")
 
 
-class NeatenImageTest(unittest.TestCase):
+class InlineSearchTest(unittest.TestCase):
 
     def setUp(self) -> None:
         searchBot.api = MockExportAPI()
