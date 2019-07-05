@@ -2,7 +2,6 @@ import re
 import uuid
 from typing import Optional, List
 
-import requests
 import telegram
 import time
 
@@ -13,7 +12,7 @@ from telegram.utils.request import Request
 import json
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmission, CantSendFileType
+from fa_submission import CantSendFileType, FASubmissionFull, FASubmissionShort
 
 
 class FilterRegex(Filters.regex):
@@ -111,11 +110,11 @@ class FASearchBot:
         try:
             submission = self.api.get_full_submission(str(submission_id))
             self._send_neat_fa_response(bot, update, submission)
-        except PageNotFound as e:
+        except PageNotFound:
             self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: "
                                                        "https://www.furaffinity.net/view/{}/".format(submission_id))
 
-    def _send_neat_fa_response(self, bot, update, submission: FASubmission):
+    def _send_neat_fa_response(self, bot, update, submission: FASubmissionFull):
         try:
             submission.send_message(bot, update.message.chat_id, update.message.message_id)
         except CantSendFileType as e:
@@ -145,7 +144,7 @@ class FASearchBot:
             return None
         return self._find_submission_on_page(image_id, page_listing)
 
-    def _find_submission_on_page(self, image_id: int, page_listing: List[FASubmission]) -> Optional[int]:
+    def _find_submission_on_page(self, image_id: int, page_listing: List[FASubmissionShort]) -> Optional[int]:
         for submission in page_listing:
             test_image_id = self._get_image_id_from_submission(submission)
             if image_id == test_image_id:
@@ -154,7 +153,7 @@ class FASearchBot:
                 return None
         return None
 
-    def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmission]]:
+    def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
         page = 1
         while True:
             listing = self.api.get_user_folder(username, folder, page)
@@ -165,7 +164,7 @@ class FASearchBot:
                 return listing
             page += 1
 
-    def _get_image_id_from_submission(self, submission: FASubmission) -> int:
+    def _get_image_id_from_submission(self, submission: FASubmissionShort) -> int:
         image_id = re.split(r"[-.]", submission.thumbnail_url)[-2]
         return int(image_id)
 
