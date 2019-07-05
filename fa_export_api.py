@@ -12,9 +12,10 @@ class PageNotFound(Exception):
 class FAExportAPI:
 
     def __init__(self, base_url: str):
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
 
     def _api_request(self, path: str) -> requests.Response:
+        path = path.lstrip("/")
         return requests.get(f"{self.base_url}/{path}")
 
     def get_full_submission(self, submission_id: str) -> FASubmissionFull:
