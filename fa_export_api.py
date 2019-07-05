@@ -2,7 +2,7 @@ from typing import List
 
 import requests
 
-from fa_submission import FASubmission
+from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
 
 
 class PageNotFound(Exception):
@@ -17,7 +17,7 @@ class FAExportAPI:
     def _api_request(self, path: str) -> requests.Response:
         return requests.get(f"{self.base_url}/{path}")
 
-    def get_full_submission(self, submission_id: str) -> FASubmission:
+    def get_full_submission(self, submission_id: str) -> FASubmissionFull:
         sub_resp = self._api_request(f"submission/{submission_id}.json")
         # If API returns fine
         if sub_resp.status_code == 200:
@@ -26,7 +26,7 @@ class FAExportAPI:
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
-    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
+    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
         resp = self._api_request(f"user/{user}/{folder}.json?page={page}&full=1")
         data = resp.json()
         submissions = []
@@ -34,7 +34,7 @@ class FAExportAPI:
             submissions.append(FASubmission.from_short_dict(submission_data))
         return submissions
 
-    def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
+    def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
         resp = self._api_request(f"search.json?full=1&perpage=48&q={query}&page={page}")
         data = resp.json()
         submissions = []

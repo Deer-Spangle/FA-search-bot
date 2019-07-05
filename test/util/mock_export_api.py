@@ -3,7 +3,7 @@ import string
 from typing import Union, List
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmission
+from fa_submission import FASubmission, FASubmissionFull
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -14,7 +14,7 @@ def _random_string() -> str:
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20)))
 
 
-class MockSubmission(FASubmission):
+class MockSubmission(FASubmissionFull):
 
     def __init__(
             self,
@@ -24,7 +24,7 @@ class MockSubmission(FASubmission):
             image_id: int = None,
             file_size=14852,
             file_ext="jpg"):
-        super().__init__(str(submission_id))
+        # Internal variables
         if image_id is None:
             image_id = _random_image_id(int(submission_id))
         if username is None:
@@ -34,15 +34,16 @@ class MockSubmission(FASubmission):
             folder = "music/"
         if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
             folder = "stories/"
-        # Setup variables
-        self.link = f"https://www.furaffinity.net/view/{submission_id}/"
-        self._thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
-        self._download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
+        # Variables for superclass
+        thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
+        download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
         if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
-            self._full_image_url = self._download_url
+            full_image_url = download_url
         else:
-            self._full_image_url = self._download_url + ".jpg"
+            full_image_url = download_url + ".jpg"
+        # Super
+        super().__init__(str(submission_id), thumbnail_url, download_url, full_image_url)
         self._download_file_size = file_size
 
 
@@ -54,11 +55,11 @@ class MockExportAPI(FAExportAPI):
         self.user_folders = {}
         self.search_results = {}
 
-    def with_submission(self, submission: FASubmission) -> 'MockExportAPI':
+    def with_submission(self, submission: MockSubmission) -> 'MockExportAPI':
         self.submissions[submission.submission_id] = submission
         return self
 
-    def with_submissions(self, list_submissions: List[FASubmission]) -> 'MockExportAPI':
+    def with_submissions(self, list_submissions: List[MockSubmission]) -> 'MockExportAPI':
         for submission in list_submissions:
             self.with_submission(submission)
         return self
@@ -67,7 +68,7 @@ class MockExportAPI(FAExportAPI):
             self,
             username: str,
             folder: str,
-            list_submissions: List[FASubmission],
+            list_submissions: List[MockSubmission],
             page: int = 1
     ) -> 'MockExportAPI':
         if username not in self.user_folders:
@@ -76,7 +77,7 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
-    def with_search_results(self, query: str, list_submissions: List[FASubmission], page: int = 1):
+    def with_search_results(self, query: str, list_submissions: List[MockSubmission], page: int = 1):
         self.search_results[f"{query.lower()}:{page}"] = list_submissions
         self.with_submissions(list_submissions)
         return self

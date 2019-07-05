@@ -1,4 +1,5 @@
 import re
+from abc import ABC
 from typing import Dict
 
 import requests
@@ -10,7 +11,7 @@ class CantSendFileType(Exception):
     pass
 
 
-class FASubmission:
+class FASubmission(ABC):
     EXTENSIONS_DOCUMENT = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
     EXTENSIONS_AUTO_DOCUMENT = ["gif", "pdf"]
     EXTENSIONS_AUDIO = ["mp3"]
@@ -23,29 +24,21 @@ class FASubmission:
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
         self.link = f"https://furaffinity.net/view/{submission_id}/"
-        self._thumbnail_url = None
-        self._download_url = None
-        self._full_image_url = None
-        self._download_file_size = None
 
-    @classmethod
-    def from_id(cls, submission_id: str) -> 'FASubmission':
-        return cls(submission_id)
-
-    @classmethod
-    def from_short_dict(cls, short_dict: Dict[str, str]) -> 'FASubmission':
-        new_submission = cls(short_dict['id'])
-        new_submission.link = short_dict['link']
-        new_submission._thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
+    @staticmethod
+    def from_short_dict(short_dict: Dict[str, str]) -> 'FASubmissionShort':
+        submission_id = short_dict['id']
+        thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
+        new_submission = FASubmissionShort(submission_id, thumbnail_url)
         return new_submission
 
-    @classmethod
-    def from_full_dict(cls, full_dict: Dict[str, str]) -> 'FASubmission':
-        new_submission = cls(FASubmission.id_from_link(full_dict['link']))
-        new_submission.link = full_dict['link']
-        new_submission._thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
-        new_submission._download_url = full_dict['download']
-        new_submission._full_image_url = full_dict['full']
+    @staticmethod
+    def from_full_dict(full_dict: Dict[str, str]) -> 'FASubmissionFull':
+        submission_id = FASubmission.id_from_link(full_dict['link'])
+        thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
+        download_url = full_dict['download']
+        full_image_url = full_dict['full']
+        new_submission = FASubmissionFull(submission_id, thumbnail_url, download_url, full_image_url)
         return new_submission
 
     @staticmethod
@@ -56,32 +49,17 @@ class FASubmission:
     def id_from_link(link: str) -> str:
         return re.search('view/([0-9]+)', link).group(1)
 
-    def load_full_data(self):
-        pass  # TODO
+    @staticmethod
+    def _get_file_size(url: str) -> int:
+        resp = requests.head(url)
+        return int(resp.headers['content-length'])
 
-    @property
-    def thumbnail_url(self) -> str:
-        if self._thumbnail_url is None:
-            self.load_full_data()
-        return self._thumbnail_url
 
-    @property
-    def download_url(self) -> str:
-        if self._download_url is None:
-            self.load_full_data()
-        return self._download_url
+class FASubmissionShort(FASubmission):
 
-    @property
-    def full_image_url(self) -> str:
-        if self._full_image_url is None:
-            self.load_full_data()
-        return self._full_image_url
-
-    @property
-    def download_file_size(self) -> int:
-        if self._download_file_size is None:
-            self._download_file_size = _get_file_size(self.download_url)
-        return self._download_file_size
+    def __init__(self, submission_id: str, thumbnail_url: str) -> None:
+        super().__init__(submission_id)
+        self.thumbnail_url = thumbnail_url
 
     def to_inline_query_result(self) -> InlineQueryResultPhoto:
         return InlineQueryResultPhoto(
@@ -90,6 +68,21 @@ class FASubmission:
             thumb_url=self.thumbnail_url,
             caption=self.link
         )
+
+
+class FASubmissionFull(FASubmissionShort):
+
+    def __init__(self, submission_id: str, thumbnail_url: str, download_url: str, full_image_url: str) -> None:
+        super().__init__(submission_id, thumbnail_url)
+        self.download_url = download_url
+        self.full_image_url = full_image_url
+        self._download_file_size = None
+
+    @property
+    def download_file_size(self) -> int:
+        if self._download_file_size is None:
+            self._download_file_size = FASubmission._get_file_size(self.download_url)
+        return self._download_file_size
 
     def send_message(self, bot, chat_id: int, reply_to: int = None) -> None:
         ext = self.download_url.split(".")[-1].lower()
@@ -143,8 +136,3 @@ class FASubmission:
         if ext in FASubmission.EXTENSIONS_ERROR:
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
-
-
-def _get_file_size(url: str) -> int:
-    resp = requests.head(url)
-    return int(resp.headers['content-length'])
