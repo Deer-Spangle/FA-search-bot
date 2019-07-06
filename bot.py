@@ -223,7 +223,7 @@ class InlineFunctionality(BotFunctionality):
     def call(self, bot, update):
         query = update.inline_query.query
         query_clean = query.strip().lower()
-        offset = self._get_offset(update)
+        offset = update.inline_query.offset
         print(f"Got an inline query: {query}, page={offset}")
         if query_clean == "":
             bot.answer_inline_query(update.inline_query.id, [])
@@ -231,38 +231,58 @@ class InlineFunctionality(BotFunctionality):
         # Get results and next offset
         gallery_query = self._parse_folder_and_username(query_clean)
         if gallery_query:
-            results, next_offset = self._gallery_query_results(gallery_query[0], gallery_query[1], offset)
+            folder, username = gallery_query
+            results, next_offset = self._gallery_query_results(folder, username, offset)
         else:
             results, next_offset = self._search_query_results(query, offset)
         # Send results
         bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
 
-    def _gallery_query_results(self, folder: str, username: str, offset: int) \
+    def _gallery_query_results(self, folder: str, username: str, offset: str) \
             -> Tuple[List[InlineQueryResult], Union[int, str]]:
-        next_offset = offset + 1
+        # Parse offset to page and skip
+        if offset == "":
+            page, skip = 1, None
+        elif ":" in offset:
+            page, skip = (int(x) for x in offset.split(":", 1))
+        else:
+            page, skip = int(offset), None
+        # Default next offset
+        next_offset = page + 1
+        # Try and get results
         try:
-            results = self._create_user_folder_results(username, folder, offset)
+            results = self._create_user_folder_results(username, folder, page)
         except PageNotFound:
-            next_offset = ""
-            results = self._user_not_found(username)
+            return self._user_not_found(username), ""
+        # If no results, send error
         if len(results) == 0:
             next_offset = ""
-            if offset == 1:
-                results = self._empty_user_folder(username, folder)
+            if page == 1:
+                return self._empty_user_folder(username, folder), ""
+        # Handle paging of big result lists
+        if skip:
+            results = results[skip:]
+        if len(results) > 48:
+            results = results[:48]
+            if skip:
+                skip += 48
+            else:
+                skip = 48
+            next_offset = f"{page}:{skip}"
         return results, next_offset
 
-    def _search_query_results(self, query: str, offset: int) -> Tuple[List[InlineQueryResult], Union[int, str]]:
+    def _search_query_results(self, query: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
+        page = self._page_from_offset(offset)
         query_clean = query.strip().lower()
-        next_offset = offset + 1
-        results = self._create_inline_search_results(query_clean, offset)
+        next_offset = page + 1
+        results = self._create_inline_search_results(query_clean, page)
         if len(results) == 0:
             next_offset = ""
-            if offset == 1:
+            if page == 1:
                 results = self._no_search_results_found(query)
         return results, next_offset
 
-    def _get_offset(self, update) -> int:
-        offset = update.inline_query.offset
+    def _page_from_offset(self, offset: str) -> int:
         if offset == "":
             offset = 1
         return int(offset)
