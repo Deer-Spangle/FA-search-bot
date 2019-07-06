@@ -6,8 +6,8 @@ import telegram
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
 
 from bot import InlineFunctionality
-from test.util.mock_export_api import MockSubmission, MockExportAPI
-from test.util.testTelegramUpdateObjects import MockTelegramUpdate
+from tests.util.mock_export_api import MockSubmission, MockExportAPI
+from tests.util.mock_telegram_update import MockTelegramUpdate
 
 
 class InlineSearchTest(unittest.TestCase):
