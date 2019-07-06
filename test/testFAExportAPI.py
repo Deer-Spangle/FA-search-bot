@@ -3,7 +3,7 @@ import unittest
 import requests_mock
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmissionFull
+from fa_submission import FASubmissionFull, FASubmissionShort
 
 
 class FAExportAPITest(unittest.TestCase):
@@ -71,17 +71,130 @@ class FAExportAPITest(unittest.TestCase):
         except PageNotFound as e:
             assert str(e) == f"Submission not found with ID: {post_id}"
 
+    @requests_mock.mock()
+    def test_get_user_folder(self, r):
+        post_id1 = "32342"
+        post_id2 = "32337"
+        thumb1 = f"https://t.facdn.net/{post_id1}@1600-1562366051.jpg"
+        thumb2 = f"https://t.facdn.net/{post_id2}@1600-1562366073.jpg"
+        username = "fender"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+            json=[
+                {
+                    "id": post_id1,
+                    "thumbnail": thumb1
+                },
+                {
+                    "id": post_id2,
+                    "thumbnail": thumb2
+                }
+            ]
+        )
 
+        results = api.get_user_folder(username, "gallery")
+
+        assert len(results) == 2
+        for result in results:
+            assert isinstance(result, FASubmissionShort)
+        assert results[0].submission_id == post_id1
+        assert results[1].submission_id == post_id2
+        assert results[0].link == f"https://furaffinity.net/view/{post_id1}/"
+        assert results[1].link == f"https://furaffinity.net/view/{post_id2}/"
+        assert results[0].thumbnail_url == thumb1
+        assert results[1].thumbnail_url == thumb2
+
+    @requests_mock.mock()
+    def test_get_user_folder_scraps(self, r):
+        post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        username = "citrinelle"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/scraps.json?page=1&full=1",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_user_folder(username, "scraps")
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
+        assert results[0].thumbnail_url == thumb
+
+    @requests_mock.mock()
+    def test_get_user_folder_awkward_characters(self, r):
+        post_id = "89452"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        username = "l[i]s"
+        safe_username = "l%5Bi%5Ds"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{safe_username}/gallery.json?page=1&full=1",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_user_folder(username, "gallery")
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
+        assert results[0].thumbnail_url == thumb
+
+    @requests_mock.mock()
+    def test_get_user_folder_specified_page(self, r):
+        post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        username = "citrinelle"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json?page=2&full=1",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_user_folder(username, "gallery", 2)
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
+        assert results[0].thumbnail_url == thumb
+
+    @requests_mock.mock()
+    def test_get_user_folder_empty(self, r):
+        username = "fender"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+            json=[]
+        )
+
+        results = api.get_user_folder(username, "gallery")
+
+        assert len(results) == 0
 
 
 
 
 """
-- Get user folder returns list of short submission objects
-- Get user folder works with scraps
-- Get user folder works with awkward usernames (l[i]s)
-- Get user folder works with specified page
-- Get user folder handles empty folder
 - Get search results works
 - Get search results handles combination query modifiers &|!-
 - Get search results pages correctly
