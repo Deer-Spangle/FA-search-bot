@@ -396,3 +396,100 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert isinstance(args[1][0].input_message_content, InputMessageContent)
         assert args[1][0].input_message_content.message_text == \
             f"FurAffinity user does not exist by the name: \"{username}\"."
+
+    @patch.object(telegram, "Bot")
+    def test_over_48_submissions(self, bot):
+        username = "citrinelle"
+        post_ids = list(range(123456, 123456+72))
+        submissions = [MockSubmission(x) for x in post_ids]
+        self.inline.api.with_user_folder(username, "gallery", submissions)
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == "1:48"
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 48
+        assert isinstance(args[1][0], InlineQueryResultPhoto)
+        assert isinstance(args[1][1], InlineQueryResultPhoto)
+        for x in range(48):
+            assert args[1][x].id == str(post_ids[x])
+            assert args[1][x].photo_url == submissions[x].thumbnail_url
+            assert args[1][x].thumb_url == submissions[x].thumbnail_url
+            assert args[1][x].caption == submissions[x].link
+
+    @patch.object(telegram, "Bot")
+    def test_over_48_submissions_continue(self, bot):
+        username = "citrinelle"
+        post_ids = list(range(123456, 123456+72))
+        submissions = [MockSubmission(x) for x in post_ids]
+        self.inline.api.with_user_folder(username, "gallery", submissions)
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset="1:48")
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == "2"
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 72-48
+        assert isinstance(args[1][0], InlineQueryResultPhoto)
+        assert isinstance(args[1][1], InlineQueryResultPhoto)
+        for x in range(72-48):
+            assert args[1][x].id == str(post_ids[x+48])
+            assert args[1][x].photo_url == submissions[x+48].thumbnail_url
+            assert args[1][x].thumb_url == submissions[x+48].thumbnail_url
+            assert args[1][x].caption == submissions[x+48].link
+
+    @patch.object(telegram, "Bot")
+    def test_over_48_submissions_continue_weird(self, bot):
+        username = "citrinelle"
+        post_ids = list(range(123456, 123456+72))
+        skip = 37
+        submissions = [MockSubmission(x) for x in post_ids]
+        self.inline.api.with_user_folder(username, "gallery", submissions)
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == "2"
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 72-skip
+        assert isinstance(args[1][0], InlineQueryResultPhoto)
+        assert isinstance(args[1][1], InlineQueryResultPhoto)
+        for x in range(72-skip):
+            assert args[1][x].id == str(post_ids[x+skip])
+            assert args[1][x].photo_url == submissions[x+skip].thumbnail_url
+            assert args[1][x].thumb_url == submissions[x+skip].thumbnail_url
+            assert args[1][x].caption == submissions[x+skip].link
+
+    @patch.object(telegram, "Bot")
+    def test_double_48_submissions_continue(self, bot):
+        username = "citrinelle"
+        post_ids = list(range(123456, 123456+150))
+        submissions = [MockSubmission(x) for x in post_ids]
+        self.inline.api.with_user_folder(username, "gallery", submissions)
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset="1:48")
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == "1:96"
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 72-48
+        assert isinstance(args[1][0], InlineQueryResultPhoto)
+        assert isinstance(args[1][1], InlineQueryResultPhoto)
+        for x in range(48):
+            assert args[1][x].id == str(post_ids[x+48])
+            assert args[1][x].photo_url == submissions[x+48].thumbnail_url
+            assert args[1][x].thumb_url == submissions[x+48].thumbnail_url
+            assert args[1][x].caption == submissions[x+48].link
