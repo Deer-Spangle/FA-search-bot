@@ -109,7 +109,8 @@ class WelcomeFunctionality(BotFunctionality):
 class NeatenFunctionality(BotFunctionality):
     FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
-    FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
+    FA_THUMB_LINK = re.compile(r"t\.facdn\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
+    FA_LINKS = re.compile(f"{FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern}")
 
     def __init__(self, api):
         super().__init__(MessageHandler, filters=FilterRegex(self.FA_LINKS))
@@ -129,9 +130,15 @@ class NeatenFunctionality(BotFunctionality):
             self._handle_fa_submission_link(bot, update, submission_id)
 
     def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
+        # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
             return int(sub_match.group(1))
+        # Handle thumbnail link matches
+        thumb_match = self.FA_THUMB_LINK.match(link)
+        if thumb_match:
+            return int(thumb_match.group(1))
+        # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
         username = direct_match.group(1)
         image_id = int(direct_match.group(2))
