@@ -191,12 +191,118 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 0
 
+    @requests_mock.mock()
+    def test_get_search_results(self, r):
+        post_id1 = "32342"
+        post_id2 = "32337"
+        thumb1 = f"https://t.facdn.net/{post_id1}@1600-1562366051.jpg"
+        thumb2 = f"https://t.facdn.net/{post_id2}@1600-1562366073.jpg"
+        search = "deer"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
+            json=[
+                {
+                    "id": post_id1,
+                    "thumbnail": thumb1
+                },
+                {
+                    "id": post_id2,
+                    "thumbnail": thumb2
+                }
+            ]
+        )
 
+        results = api.get_search_results(search)
 
+        assert len(results) == 2
+        assert isinstance(results[0], FASubmissionShort)
+        assert isinstance(results[1], FASubmissionShort)
+        assert results[0].submission_id == post_id1
+        assert results[1].submission_id == post_id2
+        assert results[0].link == f"https://furaffinity.net/view/{post_id1}/"
+        assert results[1].link == f"https://furaffinity.net/view/{post_id2}/"
+        assert results[0].thumbnail_url == thumb1
+        assert results[1].thumbnail_url == thumb2
 
-"""
-- Get search results works
-- Get search results handles combination query modifiers &|!-
-- Get search results pages correctly
-- Get search results handles empty folder
-"""
+    @requests_mock.mock()
+    def test_get_search_results_with_space(self, r):
+        post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        search = "deer lion"
+        search_safe = "deer%20lion"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_search_results(search)
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+
+    @requests_mock.mock()
+    def test_get_search_results_with_extended_modifiers(self, r):
+        post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        search = "(deer & !lion) | (goat & !tiger)"
+        search_safe = "(deer%20&%20!lion)%20%7C%20(goat%20&%20!tiger)"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_search_results(search)
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+
+    @requests_mock.mock()
+    def test_get_search_results_specified_page(self, r):
+        post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        search = "deer"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/search.json?full=1&perpage=48&q={search}&page=2",
+            json=[
+                {
+                    "id": post_id,
+                    "thumbnail": thumb
+                }
+            ]
+        )
+
+        results = api.get_search_results(search, 2)
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+
+    @requests_mock.mock()
+    def test_get_search_results_no_results(self, r):
+        search = "chital_deer"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
+            json=[
+            ]
+        )
+
+        results = api.get_search_results(search)
+
+        assert len(results) == 0
