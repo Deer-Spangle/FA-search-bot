@@ -263,8 +263,8 @@ class InlineUserGalleryTest(unittest.TestCase):
     @patch.object(telegram, "Bot")
     def test_empty_gallery(self, bot):
         username = "fender"
-        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset="2")
-        self.inline.api.with_user_folder(username, "gallery", [], page=2)
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+        self.inline.api.with_user_folder(username, "gallery", [])
 
         self.inline.call(bot, update)
 
@@ -283,8 +283,8 @@ class InlineUserGalleryTest(unittest.TestCase):
     @patch.object(telegram, "Bot")
     def test_empty_scraps(self, bot):
         username = "fender"
-        update = MockTelegramUpdate.with_inline_query(query=f"scraps:{username}", offset="2")
-        self.inline.api.with_user_folder(username, "scraps", [], page=2)
+        update = MockTelegramUpdate.with_inline_query(query=f"scraps:{username}")
+        self.inline.api.with_user_folder(username, "scraps", [])
 
         self.inline.call(bot, update)
 
@@ -312,7 +312,7 @@ class InlineUserGalleryTest(unittest.TestCase):
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
-        assert bot.answer_inline_query.call_args[1]['next_offset'] == 3
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == 2
         assert args[0] == update.inline_query.id
         assert isinstance(args[1], list)
         assert len(args[1]) == 1
@@ -334,7 +334,7 @@ class InlineUserGalleryTest(unittest.TestCase):
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
-        assert args[1]['next_offset'] == 3
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == 2
         assert args[0] == update.inline_query.id
         assert isinstance(args[1], list)
         assert len(args[1]) == 1
@@ -348,6 +348,33 @@ class InlineUserGalleryTest(unittest.TestCase):
     @requests_mock.mock()
     def test_no_user_exists(self, bot, r):
         username = "fakelad"
+        update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+        # mock export api doesn't do non-existent users, so mocking with requests
+        self.inline.api = FAExportAPI("http://example.com")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json",
+            status_code=404
+        )
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == ""
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 1
+        assert isinstance(args[1][0], InlineQueryResultArticle)
+        assert args[1][0].title == "User does not exist."
+        assert isinstance(args[1][0].input_message_content, InputMessageContent)
+        assert args[1][0].input_message_content.message_text == \
+            f"Furaffinity user does not exist by the name: \"{username}\"."
+
+    @patch.object(telegram, "Bot")
+    @requests_mock.mock()
+    def test_username_with_colon(self, bot, r):
+        # FA doesn't allow usernames to have : in them
+        username = "fake:lad"
         update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
         # mock export api doesn't do non-existent users, so mocking with requests
         self.inline.api = FAExportAPI("http://example.com")
