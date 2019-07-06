@@ -5,24 +5,22 @@ from unittest.mock import patch, call
 import telegram
 from telegram import Chat
 
-from bot import FASearchBot
+from bot import NeatenFunctionality
 from fa_submission import FASubmission
 from test.util.mock_export_api import MockExportAPI, MockSubmission
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
-
-searchBot = FASearchBot("config-test.json")
 
 
 class NeatenImageTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        searchBot.api = MockExportAPI()
+        self.neaten = NeatenFunctionality(MockExportAPI())
 
     @patch.object(telegram, "Bot")
     def test_ignore_message(self, bot):
         update = MockTelegramUpdate.with_message(text="hello world")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -31,7 +29,7 @@ class NeatenImageTest(unittest.TestCase):
     def test_ignore_link(self, bot):
         update = MockTelegramUpdate.with_message(text="http://example.com")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -40,7 +38,7 @@ class NeatenImageTest(unittest.TestCase):
     def test_ignore_profile_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/user/fender/")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -49,7 +47,7 @@ class NeatenImageTest(unittest.TestCase):
     def test_ignore_journal_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/journal/9150534/")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -59,9 +57,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         submission = MockSubmission(post_id)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -77,9 +75,9 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         submission = MockSubmission(post_id)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -92,9 +90,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
         submission = MockSubmission(post_id)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -111,9 +109,9 @@ class NeatenImageTest(unittest.TestCase):
         )
         submission1 = MockSubmission(post_id1)
         submission2 = MockSubmission(post_id2)
-        searchBot.api.with_submissions([submission1, submission2])
+        self.neaten.api.with_submissions([submission1, submission2])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
@@ -131,9 +129,9 @@ class NeatenImageTest(unittest.TestCase):
             text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id)
         )
         submission = MockSubmission(post_id)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -146,7 +144,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -160,7 +158,7 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_not_called()
@@ -170,9 +168,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         submission = MockSubmission(post_id, file_ext="gif")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
@@ -186,9 +184,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         submission = MockSubmission(post_id, file_ext="pdf")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
@@ -202,9 +200,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         submission = MockSubmission(post_id, file_ext="mp3")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -220,9 +218,9 @@ class NeatenImageTest(unittest.TestCase):
         post_id = 23636984
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
         submission = MockSubmission(post_id, file_ext="txt")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_called_once()
@@ -243,9 +241,9 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.PRIVATE
         )
         submission = MockSubmission(post_id, file_ext="swf")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_called_once()
         bot.send_photo.assert_not_called()
@@ -262,9 +260,9 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         submission = MockSubmission(post_id, file_ext="swf")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -278,9 +276,9 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.PRIVATE
         )
         submission = MockSubmission(post_id, file_ext="zzz")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_called_once()
         bot.send_photo.assert_not_called()
@@ -297,9 +295,9 @@ class NeatenImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         submission = MockSubmission(post_id, file_ext="zzz")
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -313,9 +311,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
         )
         submission = MockSubmission(post_id)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -331,9 +329,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
         submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -349,9 +347,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
         submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -369,9 +367,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
         submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -389,9 +387,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
         submission = MockSubmission(post_id, file_ext="gif", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_document.assert_called_once()
         bot.send_photo.assert_not_called()
@@ -409,9 +407,9 @@ class NeatenImageTest(unittest.TestCase):
             text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
         )
         submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
-        searchBot.api.with_submission(submission)
+        self.neaten.api.with_submission(submission)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         bot.send_document.assert_not_called()

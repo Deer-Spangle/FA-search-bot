@@ -1,5 +1,6 @@
 import re
 import uuid
+from abc import ABC, abstractmethod
 from typing import Optional, List
 
 import telegram
@@ -25,9 +26,6 @@ class FilterRegex(Filters.regex):
 
 
 class FASearchBot:
-    FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
-    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
-    FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -37,6 +35,7 @@ class FASearchBot:
         self.api = FAExportAPI(self.config['api_url'])
         self.bot = None
         self.alive = False
+        self.functionalities = []
 
     def start(self):
         request = Request(con_pool_size=8)
@@ -45,17 +44,9 @@ class FASearchBot:
         dispatcher = updater.dispatcher
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-        beep_handler = CommandHandler('beep', self.beep)
-        dispatcher.add_handler(beep_handler)
-
-        start_handler = CommandHandler('start', self.welcome_message)
-        dispatcher.add_handler(start_handler)
-
-        neaten_handler = MessageHandler(FilterRegex(self.FA_LINKS), self.neaten_image)
-        dispatcher.add_handler(neaten_handler)
-
-        inline_handler = InlineQueryHandler(self.inline_query)
-        dispatcher.add_handler(inline_handler)
+        self.functionalities = self.initialise_functionalities()
+        for func in self.functionalities:
+            func.register(dispatcher)
 
         updater.start_polling()
         self.alive = True
@@ -64,7 +55,48 @@ class FASearchBot:
             print("Main thread alive")
             time.sleep(30)
 
-    def welcome_message(self, bot, update):
+    def initialise_functionalities(self):
+        return [
+            BeepFunctionality(),
+            WelcomeFunctionality(),
+            NeatenFunctionality(self.api),
+            InlineFunctionality(self.api)
+        ]
+
+
+class BotFunctionality(ABC):
+
+    def __init__(self, filters, handler_cls):
+        self.filters = filters
+        self.handler_cls = handler_cls
+
+    def register(self, dispatcher):
+        args_dict = {"callback": self.call}
+        if self.filters is not None:
+            args_dict['filters'] = self.filters
+        handler = self.handler_cls(**args_dict)
+        dispatcher.add_handler(handler)
+
+    @abstractmethod
+    def call(self, bot, update):
+        pass
+
+
+class BeepFunctionality(BotFunctionality):
+
+    def __init__(self):
+        super().__init__('beep', CommandHandler)
+
+    def call(self, bot, update):
+        bot.send_message(chat_id=update.message.chat_id, text="boop")
+
+
+class WelcomeFunctionality(BotFunctionality):
+
+    def __init__(self):
+        super().__init__('start', CommandHandler)
+
+    def call(self, bot, update):
         bot.send_message(
             chat_id=update.message.chat_id,
             text="Hello, I'm a new bot so I'm still learning. I can't do a whole lot yet. "
@@ -74,10 +106,17 @@ class FASearchBot:
                  "- Respond to inline search queries"
         )
 
-    def beep(self, bot, update):
-        bot.send_message(chat_id=update.message.chat_id, text="boop")
 
-    def neaten_image(self, bot, update):
+class NeatenFunctionality(BotFunctionality):
+    FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
+    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
+    FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
+
+    def __init__(self, api):
+        super().__init__(FilterRegex(self.FA_LINKS), MessageHandler)
+        self.api = api
+
+    def call(self, bot, update):
         message = update.message.text_markdown_urled or update.message.caption_markdown_urled
         submission_ids = []
         for match in self.FA_LINKS.finditer(message):
@@ -168,7 +207,14 @@ class FASearchBot:
         image_id = re.split(r"[-.]", submission.thumbnail_url)[-2]
         return int(image_id)
 
-    def inline_query(self, bot, update):
+
+class InlineFunctionality(BotFunctionality):
+
+    def __init__(self, api):
+        super().__init__(None, InlineQueryHandler)
+        self.api = api
+
+    def call(self, bot, update):
         results = []
         query = update.inline_query.query
         offset = update.inline_query.offset

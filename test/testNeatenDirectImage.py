@@ -5,23 +5,21 @@ from unittest.mock import patch, call
 import telegram
 from telegram import Chat
 
-from bot import FASearchBot
+from bot import NeatenFunctionality
 from test.util.mock_export_api import MockSubmission, MockExportAPI
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
-
-searchBot = FASearchBot("config-test.json")
 
 
 class NeatenDirectImageTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        searchBot.api = MockExportAPI()
+        self.neaten = NeatenFunctionality(MockExportAPI())
 
     @patch.object(telegram, "Bot")
     def test_ignore_message(self, bot):
         update = MockTelegramUpdate.with_message(text="hello world")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -30,7 +28,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_link(self, bot):
         update = MockTelegramUpdate.with_message(text="http://example.com")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -39,7 +37,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_profile_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/user/fender/")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -48,7 +46,7 @@ class NeatenDirectImageTest(unittest.TestCase):
     def test_ignore_journal_link(self, bot):
         update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/journal/9150534/")
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -62,12 +60,12 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         goal_submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             goal_submission,
             MockSubmission(post_id-1, image_id=image_id-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -84,12 +82,12 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         for folder in ['gallery', 'scraps']:
-            searchBot.api.with_user_folder(username, folder, [
+            self.neaten.api.with_user_folder(username, folder, [
                 MockSubmission(post_id, image_id=image_id+4),
                 MockSubmission(post_id-1, image_id=image_id-15)
             ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -108,12 +106,12 @@ class NeatenDirectImageTest(unittest.TestCase):
             chat_type=Chat.GROUP
         )
         for folder in ['gallery', 'scraps']:
-            searchBot.api.with_user_folder(username, folder, [
+            self.neaten.api.with_user_folder(username, folder, [
                 MockSubmission(post_id, image_id=image_id+4),
                 MockSubmission(post_id-1, image_id=image_id-15)
             ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_not_called()
@@ -131,13 +129,13 @@ class NeatenDirectImageTest(unittest.TestCase):
         )
         submission1 = MockSubmission(post_id1, image_id=image_id1)
         submission2 = MockSubmission(post_id2, image_id=image_id2)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission1,
             submission2,
             MockSubmission(post_id2-1, image_id=image_id2-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
@@ -157,12 +155,12 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png ".format(username, image_id)*2
         )
         submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission,
             MockSubmission(post_id-1, image_id=image_id-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -181,12 +179,12 @@ class NeatenDirectImageTest(unittest.TestCase):
             )
         )
         submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission,
             MockSubmission(post_id-1, image_id=image_id-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -208,13 +206,13 @@ class NeatenDirectImageTest(unittest.TestCase):
         )
         submission1 = MockSubmission(post_id1, image_id=image_id1)
         submission2 = MockSubmission(post_id2, image_id=image_id2)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission2,
             submission1,
             MockSubmission(post_id1-1, image_id=image_id1-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
@@ -239,13 +237,13 @@ class NeatenDirectImageTest(unittest.TestCase):
         )
         submission1 = MockSubmission(post_id1, image_id=image_id1)
         submission2 = MockSubmission(post_id2, image_id=image_id2)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission2,
             submission1,
             MockSubmission(post_id1-1, image_id=image_id1-15)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called()
         calls = [call(
@@ -265,14 +263,14 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+1, image_id=image_id+16),
             submission,
             MockSubmission(post_id-2, image_id=image_id-27),
             MockSubmission(post_id-3, image_id=image_id-34)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -289,15 +287,15 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         for page in [1, 2, 3]:
-            searchBot.api.with_user_folder(username, "gallery", [
+            self.neaten.api.with_user_folder(username, "gallery", [
                 MockSubmission(post_id+1 + (3-page)*5, image_id=image_id+16 + (3-page)*56),
                 MockSubmission(post_id + (3-page)*5, image_id=image_id + (3-page)*56),
                 MockSubmission(post_id-2 + (3-page)*5, image_id=image_id-27 + (3-page)*56),
                 MockSubmission(post_id-3 + (3-page)*5, image_id=image_id-34 + (3-page)*56)
             ], page=page)
-        submission = searchBot.api.get_full_submission(str(post_id))
+        submission = self.neaten.api.get_full_submission(str(post_id))
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -313,14 +311,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         update = MockTelegramUpdate.with_message(
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+1, image_id=image_id+16),
             MockSubmission(post_id, image_id=image_id+3),
             MockSubmission(post_id-2, image_id=image_id-27),
             MockSubmission(post_id-3, image_id=image_id-34)
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -338,14 +336,14 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         for page in [1, 2]:
-            searchBot.api.with_user_folder(username, "gallery", [
+            self.neaten.api.with_user_folder(username, "gallery", [
                 MockSubmission(post_id+1 + (2-page)*6, image_id=image_id+16 + (2-page)*56),
                 MockSubmission(post_id+0 + (2-page)*6, image_id=image_id+3 + (2-page)*56),
                 MockSubmission(post_id-2 + (2-page)*6, image_id=image_id-27 + (2-page)*56),
                 MockSubmission(post_id-3 + (2-page)*6, image_id=image_id-34 + (2-page)*56)
             ], page=page)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -362,16 +360,16 @@ class NeatenDirectImageTest(unittest.TestCase):
         update = MockTelegramUpdate.with_message(
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+1, image_id=image_id+16),
             MockSubmission(post_id, image_id=image_id+3)
         ], page=1)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id-2, image_id=image_id-27),
             MockSubmission(post_id-3, image_id=image_id-34)
         ], page=2)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -389,14 +387,14 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+4, image_id=image_id+16),
             MockSubmission(post_id+3, image_id=image_id+2),
             MockSubmission(post_id+2, image_id=image_id+1),
             submission
         ])
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -413,18 +411,18 @@ class NeatenDirectImageTest(unittest.TestCase):
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
         submission = MockSubmission(post_id, image_id=image_id)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+3, image_id=image_id+16),
             MockSubmission(post_id+2, image_id=image_id+8)
         ], page=1)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             submission,
             MockSubmission(post_id-2, image_id=image_id-2),
             MockSubmission(post_id-7, image_id=image_id-4),
             MockSubmission(post_id-9, image_id=image_id-10)
         ], page=2)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
@@ -440,14 +438,14 @@ class NeatenDirectImageTest(unittest.TestCase):
         update = MockTelegramUpdate.with_message(
             text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
         )
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
             MockSubmission(post_id+3, image_id=image_id+16),
             MockSubmission(post_id+2, image_id=image_id+8)
         ], page=1)
-        searchBot.api.with_user_folder(username, "gallery", [
+        self.neaten.api.with_user_folder(username, "gallery", [
         ], page=2)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_not_called()
         bot.send_message.assert_called_once()
@@ -466,21 +464,21 @@ class NeatenDirectImageTest(unittest.TestCase):
         )
         submission = MockSubmission(post_id, image_id=image_id)
         for page in [1, 2]:
-            searchBot.api.with_user_folder(username, "gallery", [
+            self.neaten.api.with_user_folder(username, "gallery", [
                 MockSubmission(post_id+1 + (3-page)*5, image_id=image_id+16 + (3-page)*56),
                 MockSubmission(post_id + (3-page)*5, image_id=image_id + (3-page)*56),
                 MockSubmission(post_id-2 + (3-page)*5, image_id=image_id-27 + (3-page)*56),
                 MockSubmission(post_id-3 + (3-page)*5, image_id=image_id-34 + (3-page)*56)
             ], page=page)
-        searchBot.api.with_user_folder(username, "gallery", [], page=3)
-        searchBot.api.with_user_folder(username, "scraps", [
+        self.neaten.api.with_user_folder(username, "gallery", [], page=3)
+        self.neaten.api.with_user_folder(username, "scraps", [
             MockSubmission(post_id+1, image_id=image_id+16),
             submission,
             MockSubmission(post_id-2, image_id=image_id-27),
             MockSubmission(post_id-3, image_id=image_id-34)
         ], page=1)
 
-        searchBot.neaten_image(bot, update)
+        self.neaten.call(bot, update)
 
         bot.send_photo.assert_called_once()
         assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id

@@ -5,23 +5,21 @@ from unittest.mock import patch
 import telegram
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
 
-from bot import FASearchBot
+from bot import InlineFunctionality
 from test.util.mock_export_api import MockSubmission, MockExportAPI
 from test.util.testTelegramUpdateObjects import MockTelegramUpdate
-
-searchBot = FASearchBot("config-test.json")
 
 
 class InlineSearchTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        searchBot.api = MockExportAPI()
+        self.inline = InlineFunctionality(MockExportAPI())
 
     @patch.object(telegram, "Bot")
     def test_empty_query_no_results(self, bot):
         update = MockTelegramUpdate.with_inline_query(query="")
 
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_not_called()
@@ -33,9 +31,9 @@ class InlineSearchTest(unittest.TestCase):
         search_term = "YCH"
         update = MockTelegramUpdate.with_inline_query(query=search_term)
         submission = MockSubmission(post_id)
-        searchBot.api.with_search_results(search_term, [submission])
+        self.inline.api.with_search_results(search_term, [submission])
 
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -54,9 +52,9 @@ class InlineSearchTest(unittest.TestCase):
     def test_no_search_results(self, bot):
         search_term = "RareKeyword"
         update = MockTelegramUpdate.with_inline_query(query=search_term)
-        searchBot.api.with_search_results(search_term, [])
+        self.inline.api.with_search_results(search_term, [])
 
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -76,9 +74,9 @@ class InlineSearchTest(unittest.TestCase):
         offset = 2
         update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
         submission = MockSubmission(post_id)
-        searchBot.api.with_search_results(search_term, [submission], page=offset)
+        self.inline.api.with_search_results(search_term, [submission], page=offset)
 
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -97,9 +95,9 @@ class InlineSearchTest(unittest.TestCase):
         search_term = "YCH"
         offset = 2
         update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
-        searchBot.api.with_search_results(search_term, [], page=offset)
+        self.inline.api.with_search_results(search_term, [], page=offset)
 
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -116,9 +114,9 @@ class InlineSearchTest(unittest.TestCase):
         post_id2 = 84331
         submission1 = MockSubmission(post_id1)
         submission2 = MockSubmission(post_id2)
-        searchBot.api.with_search_results(search_term, [submission1, submission2])
+        self.inline.api.with_search_results(search_term, [submission1, submission2])
         
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
         
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -143,9 +141,9 @@ class InlineSearchTest(unittest.TestCase):
         update = MockTelegramUpdate.with_inline_query(query=search_term)
         post_id = 213231
         submission = MockSubmission(post_id)
-        searchBot.api.with_search_results(search_term, [submission])
+        self.inline.api.with_search_results(search_term, [submission])
         
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
         
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
@@ -165,9 +163,9 @@ class InlineSearchTest(unittest.TestCase):
         update = MockTelegramUpdate.with_inline_query(query=search_term)
         post_id = 213231
         submission = MockSubmission(post_id)
-        searchBot.api.with_search_results(search_term, [submission])
+        self.inline.api.with_search_results(search_term, [submission])
         
-        searchBot.inline_query(bot, update)
+        self.inline.call(bot, update)
         
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]

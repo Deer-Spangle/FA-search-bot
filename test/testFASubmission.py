@@ -4,7 +4,7 @@ from unittest.mock import patch
 import requests_mock
 import telegram
 
-from bot import FASearchBot
+from bot import NeatenFunctionality
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType
 
 
@@ -16,7 +16,7 @@ class FASubmissionTest(unittest.TestCase):
         submission = FASubmission(post_id)
 
         assert submission.submission_id == post_id
-        assert FASearchBot.FA_SUB_LINK.search(submission.link) is not None
+        assert NeatenFunctionality.FA_SUB_LINK.search(submission.link) is not None
         assert f"view/{post_id}" in submission.link
 
     def test_create_from_short_dict(self):
