@@ -368,7 +368,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert args[1][0].title == "User does not exist."
         assert isinstance(args[1][0].input_message_content, InputMessageContent)
         assert args[1][0].input_message_content.message_text == \
-            f"Furaffinity user does not exist by the name: \"{username}\"."
+            f"FurAffinity user does not exist by the name: \"{username}\"."
 
     @patch.object(telegram, "Bot")
     @requests_mock.mock()
@@ -395,4 +395,4 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert args[1][0].title == "User does not exist."
         assert isinstance(args[1][0].input_message_content, InputMessageContent)
         assert args[1][0].input_message_content.message_text == \
-            f"Furaffinity user does not exist by the name: \"{username}\"."
+            f"FurAffinity user does not exist by the name: \"{username}\"."

@@ -1,12 +1,12 @@
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import Optional, List, Tuple, Union
 
 import telegram
 import time
 
-from telegram import Chat, InlineQueryResultArticle, InputTextMessageContent
+from telegram import Chat, InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultPhoto, InlineQueryResult
 from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
 import logging
 from telegram.utils.request import Request
@@ -224,17 +224,42 @@ class InlineFunctionality(BotFunctionality):
         query = update.inline_query.query
         query_clean = query.strip().lower()
         offset = self._get_offset(update)
-        next_offset = offset + 1
-        print(f"Got an inline query: {query_clean}, page={offset}")
+        print(f"Got an inline query: {query}, page={offset}")
         if query_clean == "":
             bot.answer_inline_query(update.inline_query.id, [])
             return
-        results = self._create_inline_results(query_clean, offset)
+        # Get results and next offset
+        gallery_query = self._parse_folder_and_username(query_clean)
+        if gallery_query:
+            results, next_offset = self._gallery_query_results(gallery_query[0], gallery_query[1], offset)
+        else:
+            results, next_offset = self._search_query_results(query, offset)
+        # Send results
+        bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
+
+    def _gallery_query_results(self, folder: str, username: str, offset: int) \
+            -> Tuple[List[InlineQueryResult], Union[int, str]]:
+        next_offset = offset + 1
+        try:
+            results = self._create_user_folder_results(username, folder, offset)
+        except PageNotFound:
+            next_offset = ""
+            results = self._user_not_found(username)
         if len(results) == 0:
             next_offset = ""
             if offset == 1:
-                results = self._inline_results_not_found(query)
-        bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
+                results = self._empty_user_folder(username, folder)
+        return results, next_offset
+
+    def _search_query_results(self, query: str, offset: int) -> Tuple[List[InlineQueryResult], Union[int, str]]:
+        query_clean = query.strip().lower()
+        next_offset = offset + 1
+        results = self._create_inline_search_results(query_clean, offset)
+        if len(results) == 0:
+            next_offset = ""
+            if offset == 1:
+                results = self._no_search_results_found(query)
+        return results, next_offset
 
     def _get_offset(self, update) -> int:
         offset = update.inline_query.offset
@@ -242,24 +267,56 @@ class InlineFunctionality(BotFunctionality):
             offset = 1
         return int(offset)
 
-    def _create_inline_results(self, query_clean: str, page: int):
+    def _create_user_folder_results(self, username: str, folder: str, page: int) -> List[InlineQueryResultPhoto]:
+        return [
+            x.to_inline_query_result()
+            for x
+            in self.api.get_user_folder(username, folder, page)
+        ]
+
+    def _create_inline_search_results(self, query_clean: str, page: int) -> List[InlineQueryResultPhoto]:
+        return [
+            x.to_inline_query_result()
+            for x
+            in self.api.get_search_results(query_clean, page)
+        ]
+
+    def _parse_folder_and_username(self, query_clean: str) -> Optional[Tuple[str, str]]:
         if query_clean.startswith("gallery:") or query_clean.startswith("scraps:"):
             folder, username = query_clean.split(":", 1)
-            submissions = self.api.get_user_folder(username, folder, page)
+            return folder, username
         else:
-            submissions = self.api.get_search_results(query_clean, page)
-        results = []
-        for submission in submissions:
-            results.append(submission.to_inline_query_result())
-        return results
+            return None
 
-    def _inline_results_not_found(self, search_term):
+    def _empty_user_folder(self, username: str, folder: str) -> List[InlineQueryResultArticle]:
+        return [
+            InlineQueryResultArticle(
+                id=uuid.uuid4(),
+                title=f"Nothing in {folder}.",
+                input_message_content=InputTextMessageContent(
+                    message_text=f"There are no submissions in {folder} for user \"{username}\"."
+                )
+            )
+        ]
+
+    def _no_search_results_found(self, query: str) -> List[InlineQueryResultArticle]:
         return [
             InlineQueryResultArticle(
                 id=uuid.uuid4(),
                 title="No results found.",
                 input_message_content=InputTextMessageContent(
-                    message_text="No results for search \"{}\".".format(search_term)
+                    message_text=f"No results for search \"{query}\"."
+                )
+            )
+        ]
+
+    def _user_not_found(self, username: str) -> List[InlineQueryResultArticle]:
+        return [
+            InlineQueryResultArticle(
+                id=uuid.uuid4(),
+                title="User does not exist.",
+                input_message_content=InputTextMessageContent(
+                    message_text=f"FurAffinity user does not exist by the name: \"{username}\"."
                 )
             )
         ]
