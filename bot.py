@@ -216,21 +216,18 @@ class NeatenFunctionality(BotFunctionality):
 
 class InlineFunctionality(BotFunctionality):
 
-    def __init__(self, api):
+    def __init__(self, api: FAExportAPI):
         super().__init__(InlineQueryHandler)
         self.api = api
 
     def call(self, bot, update):
-        results = []
         query = update.inline_query.query
-        offset = update.inline_query.offset
-        if offset == "":
-            offset = 1
-        next_offset = int(offset) + 1
         query_clean = query.strip().lower()
-        print("Got an inline query: {}, page={}".format(query_clean, offset))
+        offset = self._get_offset(update)
+        next_offset = offset + 1
+        print(f"Got an inline query: {query_clean}, page={offset}")
         if query_clean == "":
-            bot.answer_inline_query(update.inline_query.id, results)
+            bot.answer_inline_query(update.inline_query.id, [])
             return
         results = self._create_inline_results(query_clean, offset)
         if len(results) == 0:
@@ -239,8 +236,18 @@ class InlineFunctionality(BotFunctionality):
                 results = self._inline_results_not_found(query)
         bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
 
-    def _create_inline_results(self, search_term, page):
-        submissions = self.api.get_search_results(search_term, page)
+    def _get_offset(self, update) -> int:
+        offset = update.inline_query.offset
+        if offset == "":
+            offset = 1
+        return int(offset)
+
+    def _create_inline_results(self, query_clean: str, page: int):
+        if query_clean.startswith("gallery:") or query_clean.startswith("scraps:"):
+            folder, username = query_clean.split(":", 1)
+            submissions = self.api.get_user_folder(username, folder, page)
+        else:
+            submissions = self.api.get_search_results(query_clean, page)
         results = []
         for submission in submissions:
             results.append(submission.to_inline_query_result())
