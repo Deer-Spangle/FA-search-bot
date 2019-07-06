@@ -66,14 +66,13 @@ class FASearchBot:
 
 class BotFunctionality(ABC):
 
-    def __init__(self, filters, handler_cls):
-        self.filters = filters
+    def __init__(self, handler_cls, **kwargs):
+        self.kwargs = kwargs
         self.handler_cls = handler_cls
 
     def register(self, dispatcher):
-        args_dict = {"callback": self.call}
-        if self.filters is not None:
-            args_dict['filters'] = self.filters
+        args_dict = self.kwargs
+        args_dict["callback"] = self.call
         handler = self.handler_cls(**args_dict)
         dispatcher.add_handler(handler)
 
@@ -85,7 +84,7 @@ class BotFunctionality(ABC):
 class BeepFunctionality(BotFunctionality):
 
     def __init__(self):
-        super().__init__('beep', CommandHandler)
+        super().__init__(CommandHandler, command='beep')
 
     def call(self, bot, update):
         bot.send_message(chat_id=update.message.chat_id, text="boop")
@@ -94,7 +93,7 @@ class BeepFunctionality(BotFunctionality):
 class WelcomeFunctionality(BotFunctionality):
 
     def __init__(self):
-        super().__init__('start', CommandHandler)
+        super().__init__(CommandHandler, command='start')
 
     def call(self, bot, update):
         bot.send_message(
@@ -113,7 +112,7 @@ class NeatenFunctionality(BotFunctionality):
     FA_LINKS = re.compile("{}|{}".format(FA_SUB_LINK.pattern, FA_DIRECT_LINK.pattern))
 
     def __init__(self, api):
-        super().__init__(FilterRegex(self.FA_LINKS), MessageHandler)
+        super().__init__(MessageHandler, filters=FilterRegex(self.FA_LINKS))
         self.api = api
 
     def call(self, bot, update):
@@ -211,7 +210,7 @@ class NeatenFunctionality(BotFunctionality):
 class InlineFunctionality(BotFunctionality):
 
     def __init__(self, api):
-        super().__init__(None, InlineQueryHandler)
+        super().__init__(InlineQueryHandler)
         self.api = api
 
     def call(self, bot, update):
