@@ -420,3 +420,112 @@ class NeatenImageTest(unittest.TestCase):
             f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+
+
+class NeatenImageThumbnailTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.neaten = NeatenFunctionality(MockExportAPI())
+
+    @patch.object(telegram, "Bot")
+    def test_thumbnail_link(self, bot):
+        post_id = 382632
+        update = MockTelegramUpdate.with_message(
+            text=f"https://t.facdn.net/{post_id}@400-1562445328.jpg"
+        )
+        submission = MockSubmission(post_id)
+        self.neaten.api.with_submission(submission)
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    def test_thumbnail_link_not_round(self, bot):
+        post_id = 382632
+        update = MockTelegramUpdate.with_message(
+            text=f"https://t.facdn.net/{post_id}@75-1562445328.jpg"
+        )
+        submission = MockSubmission(post_id)
+        self.neaten.api.with_submission(submission)
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    def test_thumbnail_link_big(self, bot):
+        post_id = 382632
+        update = MockTelegramUpdate.with_message(
+            text=f"https://t.facdn.net/{post_id}@1600-1562445328.jpg"
+        )
+        submission = MockSubmission(post_id)
+        self.neaten.api.with_submission(submission)
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    def test_doesnt_fire_on_avatar(self, bot):
+        update = MockTelegramUpdate.with_message(
+            text="https://a.facdn.net/1538326752/geordie79.gif"
+        )
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_not_called()
+        bot.send_message.assert_not_called()
+        bot.send_audio.assert_not_called()
+
+    @patch.object(telegram, "Bot")
+    def test_thumb_and_submission_link(self, bot):
+        post_id = 382632
+        update = MockTelegramUpdate.with_message(
+            text=f"https://t.facdn.net/{post_id}@1600-1562445328.jpg\nhttps://furaffinity.net/view/{post_id}"
+        )
+        submission = MockSubmission(post_id)
+        self.neaten.api.with_submission(submission)
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+
+    @patch.object(telegram, "Bot")
+    def test_thumb_and_different_submission_link(self, bot):
+        post_id1 = 382632
+        post_id2 = 382672
+        update = MockTelegramUpdate.with_message(
+            text=f"https://t.facdn.net/{post_id1}@1600-1562445328.jpg\nhttps://furaffinity.net/view/{post_id2}"
+        )
+        submission1 = MockSubmission(post_id1)
+        submission2 = MockSubmission(post_id2)
+        self.neaten.api.with_submissions([submission1, submission2])
+
+        self.neaten.call(bot, update)
+
+        bot.send_photo.assert_called()
+        calls = [call(
+            chat_id=update.message.chat_id,
+            photo=submission.download_url,
+            caption=submission.link,
+            reply_to_message_id=update.message.message_id
+        ) for submission in [submission1, submission2]]
+        bot.send_photo.assert_has_calls(calls)
