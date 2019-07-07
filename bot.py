@@ -229,14 +229,35 @@ class InlineFunctionality(BotFunctionality):
             bot.answer_inline_query(update.inline_query.id, [])
             return
         # Get results and next offset
-        gallery_query = self._parse_folder_and_username(query_clean)
-        if gallery_query:
-            folder, username = gallery_query
-            results, next_offset = self._gallery_query_results(folder, username, offset)
+        if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
+            _, username = query_clean.split(":", 1)
+            results, next_offset = self._favs_query_results(username, offset)
         else:
-            results, next_offset = self._search_query_results(query, offset)
+            gallery_query = self._parse_folder_and_username(query_clean)
+            if gallery_query:
+                folder, username = gallery_query
+                results, next_offset = self._gallery_query_results(folder, username, offset)
+            else:
+                results, next_offset = self._search_query_results(query, offset)
         # Send results
         bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
+
+    def _favs_query_results(self, username: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
+        if offset == "":
+            offset = None
+        try:
+            submissions = self.api.get_user_favs(username, offset)[:48]
+        except PageNotFound:
+            return self._user_not_found(username), ""
+        # If no results, send error
+        if len(submissions) == 0:
+            next_offset = ""
+            if offset is None:
+                return self._empty_user_favs(username), ""
+        else:
+            next_offset = submissions[-1].fav_id
+        results = [x.to_inline_query_result() for x in submissions]
+        return results, next_offset
 
     def _gallery_query_results(self, folder: str, username: str, offset: str) \
             -> Tuple[List[InlineQueryResult], Union[int, str]]:
@@ -315,6 +336,17 @@ class InlineFunctionality(BotFunctionality):
                 title=f"Nothing in {folder}.",
                 input_message_content=InputTextMessageContent(
                     message_text=f"There are no submissions in {folder} for user \"{username}\"."
+                )
+            )
+        ]
+
+    def _empty_user_favs(self, username: str) -> List[InlineQueryResultArticle]:
+        return [
+            InlineQueryResultArticle(
+                id=uuid.uuid4(),
+                title=f"Nothing in favourites.",
+                input_message_content=InputTextMessageContent(
+                    message_text=f"There are no favourites for user \"{username}\"."
                 )
             )
         ]

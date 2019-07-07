@@ -2,7 +2,7 @@ from typing import List
 
 import requests
 
-from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
+from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav
 
 
 class PageNotFound(Exception):
@@ -30,7 +30,23 @@ class FAExportAPI:
     def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
-        resp = self._api_request(f"user/{user}/{folder}.json?page={page}&full=1&perpage=48")
+        resp = self._api_request(f"user/{user}/{folder}.json?page={page}&full=1")
+        if resp.status_code == 200:
+            data = resp.json()
+            submissions = []
+            for submission_data in data:
+                submissions.append(FASubmission.from_short_dict(submission_data))
+            return submissions
+        else:
+            raise PageNotFound(f"User not found by name: {user}")
+
+    def get_user_favs(self, user: str, next_id: str = None) -> List[FASubmissionShortFav]:
+        if user.strip() == "":
+            raise PageNotFound(f"User not found by name: {user}")
+        next_str = ""
+        if next_id is not None:
+            next_str = f"next={next_id}&"
+        resp = self._api_request(f"user/{user}/favorites.json?{next_str}full=1")
         if resp.status_code == 200:
             data = resp.json()
             submissions = []

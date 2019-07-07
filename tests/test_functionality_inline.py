@@ -610,7 +610,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         username = "citrinelle"
         update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}", offset=fav_id)
         submission = MockSubmission(post_id)
-        self.inline.api.with_user_favs(username, [submission], page=fav_id)
+        self.inline.api.with_user_favs(username, [submission], next_id=fav_id)
 
         self.inline.call(bot, update)
 

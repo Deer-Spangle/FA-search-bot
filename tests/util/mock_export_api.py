@@ -82,10 +82,12 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
-    def with_user_favs(self, username: str, list_submissions: List[MockSubmission], after_fav_id: str = None) -> 'MockExportAPI':
+    def with_user_favs(
+            self, username: str, list_submissions: List[MockSubmission], next_id: str = None
+    ) -> 'MockExportAPI':
         if username not in self.user_folders:
             self.user_folders[username] = {}
-        self.user_folders[username][f"favs:{after_fav_id}"] = list_submissions
+        self.user_folders[username][f"favs:{next_id}"] = list_submissions
         self.with_submissions(list_submissions)
         return self
 
@@ -105,6 +107,13 @@ class MockExportAPI(FAExportAPI):
         if f"{folder}:{page}" not in self.user_folders[user]:
             return []
         return self.user_folders[user][f"{folder}:{page}"]
+
+    def get_user_favs(self, user: str, next_id: int = 1) -> List[FASubmission]:
+        if user not in self.user_folders:
+            return []
+        if f"favs:{next_id}" not in self.user_folders[user]:
+            return []
+        return self.user_folders[user][f"favs:{next_id}"]
 
     def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
         if f"{query.lower()}:{page}" not in self.search_results:
