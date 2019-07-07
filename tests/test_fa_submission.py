@@ -152,7 +152,7 @@ class FASubmissionShortTest(unittest.TestCase):
 
         assert query_result.id == post_id
         assert query_result.photo_url == thumb_url
-        assert query_result.thumb_url == thumb_url
+        assert query_result.thumb_url == FASubmission.make_thumbnail_smaller(thumb_url)
         assert query_result.caption == link
 
 

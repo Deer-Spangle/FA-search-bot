@@ -8,6 +8,7 @@ from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMess
 
 from bot import InlineFunctionality
 from fa_export_api import FAExportAPI
+from fa_submission import FASubmission
 from tests.util.mock_export_api import MockSubmission, MockExportAPI
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
@@ -47,7 +48,7 @@ class InlineSearchTest(unittest.TestCase):
             assert isinstance(result, InlineQueryResultPhoto)
             assert result.id == str(post_id)
             assert result.photo_url == submission.thumbnail_url
-            assert result.thumb_url == submission.thumbnail_url
+            assert result.thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
             assert result.caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -89,7 +90,7 @@ class InlineSearchTest(unittest.TestCase):
             assert isinstance(result, InlineQueryResultPhoto)
             assert result.id == str(post_id)
             assert result.photo_url == submission.thumbnail_url
-            assert result.thumb_url == submission.thumbnail_url
+            assert result.thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
             assert result.caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -132,8 +133,8 @@ class InlineSearchTest(unittest.TestCase):
         assert args[1][1].id == str(post_id2)
         assert args[1][0].photo_url == submission1.thumbnail_url
         assert args[1][1].photo_url == submission2.thumbnail_url
-        assert args[1][0].thumb_url == submission1.thumbnail_url
-        assert args[1][1].thumb_url == submission2.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission1.thumbnail_url)
+        assert args[1][1].thumb_url == FASubmission.make_thumbnail_smaller(submission2.thumbnail_url)
         assert args[1][0].caption == submission1.link
         assert args[1][1].caption == submission2.link
 
@@ -156,7 +157,7 @@ class InlineSearchTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -178,7 +179,7 @@ class InlineSearchTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
 
@@ -211,8 +212,8 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert args[1][1].id == str(post_id2)
         assert args[1][0].photo_url == submission1.thumbnail_url
         assert args[1][1].photo_url == submission2.thumbnail_url
-        assert args[1][0].thumb_url == submission1.thumbnail_url
-        assert args[1][1].thumb_url == submission2.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission1.thumbnail_url)
+        assert args[1][1].thumb_url == FASubmission.make_thumbnail_smaller(submission2.thumbnail_url)
         assert args[1][0].caption == submission1.link
         assert args[1][1].caption == submission2.link
 
@@ -235,7 +236,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -257,7 +258,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -319,7 +320,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -341,7 +342,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -418,7 +419,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         for x in range(48):
             assert args[1][x].id == str(post_ids[x])
             assert args[1][x].photo_url == submissions[x].thumbnail_url
-            assert args[1][x].thumb_url == submissions[x].thumbnail_url
+            assert args[1][x].thumb_url == FASubmission.make_thumbnail_smaller(submissions[x].thumbnail_url)
             assert args[1][x].caption == submissions[x].link
 
     @patch.object(telegram, "Bot")
@@ -442,7 +443,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         for x in range(72-48):
             assert args[1][x].id == str(post_ids[x+48])
             assert args[1][x].photo_url == submissions[x+48].thumbnail_url
-            assert args[1][x].thumb_url == submissions[x+48].thumbnail_url
+            assert args[1][x].thumb_url == FASubmission.make_thumbnail_smaller(submissions[x+48].thumbnail_url)
             assert args[1][x].caption == submissions[x+48].link
 
     @patch.object(telegram, "Bot")
@@ -467,7 +468,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         for x in range(72-skip):
             assert args[1][x].id == str(post_ids[x+skip])
             assert args[1][x].photo_url == submissions[x+skip].thumbnail_url
-            assert args[1][x].thumb_url == submissions[x+skip].thumbnail_url
+            assert args[1][x].thumb_url == FASubmission.make_thumbnail_smaller(submissions[x+skip].thumbnail_url)
             assert args[1][x].caption == submissions[x+skip].link
 
     @patch.object(telegram, "Bot")
@@ -491,7 +492,7 @@ class InlineUserGalleryTest(unittest.TestCase):
         for x in range(48):
             assert args[1][x].id == str(post_ids[x+48])
             assert args[1][x].photo_url == submissions[x+48].thumbnail_url
-            assert args[1][x].thumb_url == submissions[x+48].thumbnail_url
+            assert args[1][x].thumb_url == FASubmission.make_thumbnail_smaller(submissions[x+48].thumbnail_url)
             assert args[1][x].caption == submissions[x+48].link
 
     @patch.object(telegram, "Bot")
@@ -554,8 +555,8 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert args[1][1].id == str(post_id2)
         assert args[1][0].photo_url == submission1.thumbnail_url
         assert args[1][1].photo_url == submission2.thumbnail_url
-        assert args[1][0].thumb_url == submission1.thumbnail_url
-        assert args[1][1].thumb_url == submission2.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission1.thumbnail_url)
+        assert args[1][1].thumb_url == FASubmission.make_thumbnail_smaller(submission2.thumbnail_url)
         assert args[1][0].caption == submission1.link
         assert args[1][1].caption == submission2.link
 
@@ -578,7 +579,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -600,7 +601,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -623,7 +624,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -665,7 +666,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -687,7 +688,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0], InlineQueryResultPhoto)
         assert args[1][0].id == str(post_id)
         assert args[1][0].photo_url == submission.thumbnail_url
-        assert args[1][0].thumb_url == submission.thumbnail_url
+        assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
         assert args[1][0].caption == submission.link
 
     @patch.object(telegram, "Bot")
@@ -764,7 +765,7 @@ class InlineUserFavouritesTest(unittest.TestCase):
         for x in range(48):
             assert args[1][x].id == str(post_ids[x])
             assert args[1][x].photo_url == submissions[x].thumbnail_url
-            assert args[1][x].thumb_url == submissions[x].thumbnail_url
+            assert args[1][x].thumb_url == FASubmission.make_thumbnail_smaller(submissions[x].thumbnail_url)
             assert args[1][x].caption == submissions[x].link
 
     @patch.object(telegram, "Bot")
@@ -802,10 +803,10 @@ class InlineUserFavouritesTest(unittest.TestCase):
         # On the last page of favourites, if you specify "next", it repeats the same page, this simulates that.
         post_id1 = 234563
         post_id2 = 393282
-        username = "fender"
-        update = MockTelegramUpdate.with_inline_query(query=f"favourites:{username}")
         submission1 = MockSubmission(post_id1)
         submission2 = MockSubmission(post_id2)
+        username = "fender"
+        update = MockTelegramUpdate.with_inline_query(query=f"favourites:{username}", offset=submission2.fav_id)
         self.inline.api.with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
 
         self.inline.call(bot, update)

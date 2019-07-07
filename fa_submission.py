@@ -49,6 +49,10 @@ class FASubmission(ABC):
         return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
 
     @staticmethod
+    def make_thumbnail_smaller(thumbnail_url: str) -> str:
+        return re.sub('@[0-9]+-', '@300-', thumbnail_url)
+
+    @staticmethod
     def id_from_link(link: str) -> str:
         return re.search('view/([0-9]+)', link).group(1)
 
@@ -68,7 +72,7 @@ class FASubmissionShort(FASubmission):
         return InlineQueryResultPhoto(
             id=self.submission_id,
             photo_url=self.thumbnail_url,
-            thumb_url=self.thumbnail_url,
+            thumb_url=FASubmission.make_thumbnail_smaller(self.thumbnail_url),
             caption=self.link
         )
 
