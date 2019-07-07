@@ -796,3 +796,23 @@ class InlineUserFavouritesTest(unittest.TestCase):
         assert isinstance(args[1][0].input_message_content, InputMessageContent)
         assert args[1][0].input_message_content.message_text == \
             f"FurAffinity user does not exist by the name: \"{username}\"."
+
+    @patch.object(telegram, "Bot")
+    def test_user_favourites_last_page(self, bot):
+        # On the last page of favourites, if you specify "next", it repeats the same page, this simulates that.
+        post_id1 = 234563
+        post_id2 = 393282
+        username = "fender"
+        update = MockTelegramUpdate.with_inline_query(query=f"favourites:{username}")
+        submission1 = MockSubmission(post_id1)
+        submission2 = MockSubmission(post_id2)
+        self.inline.api.with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
+
+        self.inline.call(bot, update)
+
+        bot.answer_inline_query.assert_called_once()
+        args = bot.answer_inline_query.call_args[0]
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == ""
+        assert args[0] == update.inline_query.id
+        assert isinstance(args[1], list)
+        assert len(args[1]) == 0

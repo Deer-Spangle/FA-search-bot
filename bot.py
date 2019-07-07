@@ -250,12 +250,15 @@ class InlineFunctionality(BotFunctionality):
         except PageNotFound:
             return self._user_not_found(username), ""
         # If no results, send error
-        if len(submissions) == 0:
+        if len(submissions) > 0:
+            next_offset = submissions[-1].fav_id
+            if next_offset == offset:
+                submissions = []
+                next_offset = ""
+        else:
             next_offset = ""
             if offset is None:
                 return self._empty_user_favs(username), ""
-        else:
-            next_offset = submissions[-1].fav_id
         results = [x.to_inline_query_result() for x in submissions]
         return results, next_offset
 
