@@ -433,7 +433,7 @@ class InlineUserGalleryTest(unittest.TestCase):
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
-        assert bot.answer_inline_query.call_args[1]['next_offset'] == "2"
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == 2
         assert args[0] == update.inline_query.id
         assert isinstance(args[1], list)
         assert len(args[1]) == 72-48
@@ -458,7 +458,7 @@ class InlineUserGalleryTest(unittest.TestCase):
 
         bot.answer_inline_query.assert_called_once()
         args = bot.answer_inline_query.call_args[0]
-        assert bot.answer_inline_query.call_args[1]['next_offset'] == "2"
+        assert bot.answer_inline_query.call_args[1]['next_offset'] == 2
         assert args[0] == update.inline_query.id
         assert isinstance(args[1], list)
         assert len(args[1]) == 72-skip

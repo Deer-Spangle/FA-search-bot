@@ -269,7 +269,7 @@ class InlineFunctionality(BotFunctionality):
             else:
                 skip = 48
             next_offset = f"{page}:{skip}"
-        return results, str(next_offset)
+        return results, next_offset
 
     def _search_query_results(self, query: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
         page = self._page_from_offset(offset)
