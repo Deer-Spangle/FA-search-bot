@@ -192,6 +192,40 @@ class FAExportAPITest(unittest.TestCase):
         assert len(results) == 0
 
     @requests_mock.mock()
+    def test_get_user_folder_does_not_exist(self, r):
+        username = "dont-real"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+            status_code=404
+        )
+
+        try:
+            api.get_user_folder(username, "gallery")
+            assert False, "Should have thrown exception"
+        except PageNotFound as e:
+            assert str(e) == f"User not found by name: {username}"
+
+    @requests_mock.mock()
+    def test_get_user_folder_blank_username(self, r):
+        username = ""
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+            json={
+                "id": None,
+                "name": "gallery",
+                "profile": "https://www.furaffinity.net/user/gallery/"
+            }
+        )
+
+        try:
+            api.get_user_folder(username, "gallery")
+            assert False, "Should have thrown exception"
+        except PageNotFound as e:
+            assert str(e) == f"User not found by name: {username}"
+
+    @requests_mock.mock()
     def test_get_search_results(self, r):
         post_id1 = "32342"
         post_id2 = "32337"
