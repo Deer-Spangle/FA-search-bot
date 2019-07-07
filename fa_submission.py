@@ -29,7 +29,10 @@ class FASubmission(ABC):
     def from_short_dict(short_dict: Dict[str, str]) -> 'FASubmissionShort':
         submission_id = short_dict['id']
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
-        new_submission = FASubmissionShort(submission_id, thumbnail_url)
+        if "fav_id" in short_dict:
+            new_submission = FASubmissionShortFav(submission_id, thumbnail_url, short_dict['fav_id'])
+        else:
+            new_submission = FASubmissionShort(submission_id, thumbnail_url)
         return new_submission
 
     @staticmethod
@@ -68,6 +71,13 @@ class FASubmissionShort(FASubmission):
             thumb_url=self.thumbnail_url,
             caption=self.link
         )
+
+
+class FASubmissionShortFav(FASubmissionShort):
+
+    def __init__(self, submission_id: str, thumbnail_url: str, fav_id: str) -> None:
+        super().__init__(submission_id, thumbnail_url)
+        self.fav_id = fav_id
 
 
 class FASubmissionFull(FASubmissionShort):

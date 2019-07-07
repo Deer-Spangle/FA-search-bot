@@ -22,13 +22,17 @@ class MockSubmission(FASubmissionFull):
             *,
             username: str = None,
             image_id: int = None,
-            file_size=14852,
-            file_ext="jpg"):
+            file_size: int = 14852,
+            file_ext: str = "jpg",
+            fav_id: str = None
+    ):
         # Internal variables
         if image_id is None:
             image_id = _random_image_id(int(submission_id))
         if username is None:
             username = _random_string()
+        if fav_id is None:
+            fav_id = str(_random_image_id(int(submission_id)))
         folder = ""
         if file_ext in FASubmission.EXTENSIONS_AUDIO:
             folder = "music/"
@@ -44,6 +48,7 @@ class MockSubmission(FASubmissionFull):
             full_image_url = download_url + ".jpg"
         # Super
         super().__init__(str(submission_id), thumbnail_url, download_url, full_image_url)
+        self.fav_id = fav_id
         self._download_file_size = file_size
 
 
@@ -74,6 +79,13 @@ class MockExportAPI(FAExportAPI):
         if username not in self.user_folders:
             self.user_folders[username] = {}
         self.user_folders[username][f"{folder}:{page}"] = list_submissions
+        self.with_submissions(list_submissions)
+        return self
+
+    def with_user_favs(self, username: str, list_submissions: List[MockSubmission], after_fav_id: str = None) -> 'MockExportAPI':
+        if username not in self.user_folders:
+            self.user_folders[username] = {}
+        self.user_folders[username][f"favs:{after_fav_id}"] = list_submissions
         self.with_submissions(list_submissions)
         return self
 
