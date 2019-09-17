@@ -43,7 +43,7 @@ class SubscriptionWatcher:
         browse_results = []  # type: List[FASubmissionShort]
         new_results = []  # type: List[FASubmissionShort]
         caught_up = False
-        while page < self.PAGE_CAP and not caught_up:
+        while page <= self.PAGE_CAP and not caught_up:
             page_results = self.api.get_browse_page(page)
             browse_results += page_results
             # Get new results
@@ -52,8 +52,10 @@ class SubscriptionWatcher:
                     caught_up = True
                     break
                 new_results.append(result)
+            page += 1
         self._update_latest_ids(browse_results)
-        return new_results
+        # Return oldest result first
+        return new_results[::-1]
 
     def _update_latest_ids(self, browse_results: List[FASubmissionShort]):
         for result in browse_results[::-1]:

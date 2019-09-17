@@ -1,3 +1,4 @@
+import collections
 import datetime
 import time
 import unittest
@@ -23,6 +24,7 @@ class MockSubscription(Subscription):
         pass
 
 
+# noinspection DuplicatedCode
 class SubscriptionWatcherTest(unittest.TestCase):
 
     def test_init(self):
@@ -76,7 +78,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         submission = MockSubmission("12322")
         api = MockExportAPI().with_submission(submission)
         watcher = SubscriptionWatcher(api)
-        method_called = MockMethod([MockSubmission])
+        method_called = MockMethod([submission])
         watcher._get_new_results = method_called.call
         watcher.BACK_OFF = 1
         sub1 = MockSubscription("deer", 0)
@@ -98,7 +100,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         submission2 = MockSubmission("12324")
         api = MockExportAPI().with_submissions([submission1, submission2])
         watcher = SubscriptionWatcher(api)
-        method_called = MockMethod([MockSubmission])
+        method_called = MockMethod([submission1, submission2])
         watcher._get_new_results = method_called.call
         watcher.BACK_OFF = 1
         sub = MockSubscription("deer", 0)
@@ -116,16 +118,16 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
     def test_run_sleeps_backoff_time(self):
         api = MockExportAPI()
-        s = SubscriptionWatcher(api)
+        watcher = SubscriptionWatcher(api)
         # Shorten the wait
-        s.BACK_OFF = 3
+        watcher.BACK_OFF = 3
 
-        thread = Thread(target=lambda: self.watcher_killer(s))
+        thread = Thread(target=lambda: self.watcher_killer(watcher))
         thread.start()
 
         # Run watcher
         start_time = datetime.datetime.now()
-        s.run()
+        watcher.run()
         end_time = datetime.datetime.now()
         thread.join()
 
@@ -133,28 +135,95 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert 3 <= time_waited.seconds <= 5
 
     def test_get_new_results_handles_empty_latest_ids(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
+        watcher = SubscriptionWatcher(api)
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 0
+        assert len(watcher.latest_ids) == 3
+        assert watcher.latest_ids[0] == "1220"
+        assert watcher.latest_ids[1] == "1222"
+        assert watcher.latest_ids[2] == "1223"
 
     def test_get_new_results_updates_latest_ids(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
+        watcher = SubscriptionWatcher(api)
+        watcher.latest_ids = collections.deque(maxlen=2)
+        watcher.latest_ids.append("1220")
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 2
+        assert len(watcher.latest_ids) == 2
+        assert watcher.latest_ids[0] == "1222"
+        assert watcher.latest_ids[1] == "1223"
 
     def test_get_new_results_updates_latest_ids_after_checking_two_pages(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1227"), MockSubmission("1225"), MockSubmission("1224")], page=1)
+        api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")], page=2)
+        watcher = SubscriptionWatcher(api)
+        watcher.latest_ids = collections.deque(maxlen=4)
+        watcher.latest_ids.append("1220")
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 5
+        assert len(watcher.latest_ids) == 4
+        assert watcher.latest_ids[0] == "1223"
+        assert watcher.latest_ids[1] == "1224"
+        assert watcher.latest_ids[2] == "1225"
+        assert watcher.latest_ids[3] == "1227"
 
     def test_get_new_results_returns_new_results(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
+        watcher = SubscriptionWatcher(api)
+        watcher.latest_ids.append("1220")
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 2
+        assert results[0].submission_id == "1222"
+        assert results[1].submission_id == "1223"
 
     def test_get_new_results_goes_to_another_page(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1227"), MockSubmission("1225"), MockSubmission("1224")], page=1)
+        api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")], page=2)
+        watcher = SubscriptionWatcher(api)
+        watcher.latest_ids = collections.deque(maxlen=4)
+        watcher.latest_ids.append("1220")
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 5
+        assert results[0].submission_id == "1222"
+        assert results[1].submission_id == "1223"
+        assert results[2].submission_id == "1224"
+        assert results[3].submission_id == "1225"
+        assert results[4].submission_id == "1227"
 
     def test_get_new_results_respects_page_cap(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        api.with_browse_results([MockSubmission("1300")], page=1)
+        api.with_browse_results([MockSubmission("1298")], page=2)
+        api.with_browse_results([MockSubmission("1297")], page=3)
+        api.with_browse_results([MockSubmission("1295")], page=4)
+        api.with_browse_results([MockSubmission("1280")], page=5)
+        api.with_browse_results([MockSubmission("1272")], page=6)
+        api.with_browse_results([MockSubmission("1250")], page=7)
+        watcher = SubscriptionWatcher(api)
+        watcher.PAGE_CAP = 5
+        watcher.latest_ids.append("1250")
+
+        results = watcher._get_new_results()
+
+        assert len(results) == 5
+        assert "1272" not in [x.submission_id for x in results]
 
     def test_update_latest_ids(self):
         assert False
