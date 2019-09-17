@@ -1,6 +1,6 @@
 import re
 from abc import ABC
-from typing import Dict
+from typing import Dict, Union
 
 import requests
 import telegram
@@ -26,7 +26,7 @@ class FASubmission(ABC):
         self.link = f"https://furaffinity.net/view/{submission_id}/"
 
     @staticmethod
-    def from_short_dict(short_dict: Dict[str, str]) -> 'FASubmissionShort':
+    def from_short_dict(short_dict: Dict[str, str]) -> Union['FASubmissionShortFav', 'FASubmissionShort']:
         submission_id = short_dict['id']
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
         if "fav_id" in short_dict:
