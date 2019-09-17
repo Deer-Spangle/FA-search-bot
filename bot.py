@@ -1,6 +1,7 @@
 import re
 import uuid
 from abc import ABC, abstractmethod
+from threading import Thread
 from typing import Optional, List, Tuple, Union
 
 import telegram
@@ -14,6 +15,7 @@ import json
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import CantSendFileType, FASubmissionFull, FASubmissionShort
+from subscription_watcher import SubscriptionWatcher, Subscription
 
 
 class FilterRegex(Filters.regex):
@@ -36,6 +38,8 @@ class FASearchBot:
         self.bot = None
         self.alive = False
         self.functionalities = []
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api)
+        self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
 
     def start(self):
         request = Request(con_pool_size=8)
@@ -51,16 +55,27 @@ class FASearchBot:
         updater.start_polling()
         self.alive = True
 
+        # Start the sub watcher
+        self.subscription_watcher_thread.start()
+
         while self.alive:
             print("Main thread alive")
-            time.sleep(30)
+            try:
+                time.sleep(30)
+            except KeyboardInterrupt:
+                self.alive = False
+
+        # Kill the sub watcher
+        self.subscription_watcher.running = False
+        self.subscription_watcher_thread.join()
 
     def initialise_functionalities(self):
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
             NeatenFunctionality(self.api),
-            InlineFunctionality(self.api)
+            InlineFunctionality(self.api),
+            SubscriptionFunctionality(self.subscription_watcher)
         ]
 
 
@@ -77,7 +92,7 @@ class BotFunctionality(ABC):
         dispatcher.add_handler(handler)
 
     @abstractmethod
-    def call(self, bot, update):
+    def call(self, bot, update: telegram.Update):
         pass
 
 
@@ -377,3 +392,38 @@ class InlineFunctionality(BotFunctionality):
                 )
             )
         ]
+
+
+class SubscriptionFunctionality(BotFunctionality):
+
+    def __init__(self, watcher: SubscriptionWatcher):
+        super().__init__(CommandHandler, command=['add_subscription', 'remove_subscription', 'list_subscriptions'])
+        self.watcher = watcher
+
+    def call(self, bot, update):
+        message_text = update.message.text
+        command = message_text.split()[0]
+        args = message_text[len(command):].strip()
+        destination = update.message.chat.id
+        if command == "/add_subscription":
+            self._add_sub(destination, args)
+        elif command == "/remove_subscription":
+            self._remove_sub(destination, args)
+        elif command == "/list_subscriptions":
+            self._list_subs(destination)
+        else:
+            print("I do not understand.")
+
+    def _add_sub(self, destination: int, query: str):
+        new_sub = Subscription(query, destination)
+        self.watcher.subscriptions.add(new_sub)
+        print("Added subscription")
+
+    def _remove_sub(self, destination: int, query: str):
+        old_sub = Subscription(query, destination)
+        self.watcher.subscriptions.remove(old_sub)
+        print("Removed subscription")
+
+    def _list_subs(self, destination: int):
+        subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
+        print(f"List subscriptions: {subs}")
