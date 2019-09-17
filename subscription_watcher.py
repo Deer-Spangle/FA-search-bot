@@ -2,6 +2,7 @@ import collections
 import datetime
 import time
 from typing import List, Optional, Deque
+import dateutil.parser
 
 from fa_export_api import FAExportAPI
 from fa_submission import FASubmissionFull, FASubmissionShort
@@ -70,7 +71,7 @@ class SubscriptionWatcher:
 
 class Subscription:
 
-    def __init__(self, query, destination):
+    def __init__(self, query: str, destination: int):
         self.query = query
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
@@ -78,11 +79,22 @@ class Subscription:
     def matches_result(self, result: FASubmissionFull) -> bool:
         pass  # TODO
 
-    def send(self, result: FASubmissionFull):
-        pass  # TODO
-
     def to_json(self):
-        pass  # TODO
+        latest_update_str = None
+        if self.latest_update is not None:
+            latest_update_str = self.latest_update.isoformat()
+        return {
+            "query": self.query,
+            "destination": self.destination,
+            "latest_update": latest_update_str
+        }
 
-    def from_json(self):
-        pass  # TODO
+    @staticmethod
+    def from_json(saved_sub) -> 'Subscription':
+        query = saved_sub["query"]
+        destination = saved_sub["destination"]
+        new_sub = Subscription(query, destination)
+        new_sub.latest_update = saved_sub["latest_update"]
+        if new_sub.latest_update is not None:
+            new_sub.latest_update = dateutil.parser.parse(new_sub.latest_update)
+        return new_sub
