@@ -28,7 +28,13 @@ class SubscriptionWatcher:
             new_results = self._get_new_results()
             # Check for subscription updates
             for result in new_results[::-1]:
-                full_result = self.api.get_full_submission(result.submission_id)
+                # Try and get the full data
+                try:
+                    full_result = self.api.get_full_submission(result.submission_id)
+                except Exception as e:
+                    print(f"Submission {result.submission_id} disappeared before I could check it.")
+                    continue
+                # Check which subscriptions match
                 for subscription in self.subscriptions:
                     if subscription.matches_result(full_result):
                         subscription.send(full_result)
