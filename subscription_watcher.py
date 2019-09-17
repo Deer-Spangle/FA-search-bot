@@ -59,11 +59,11 @@ class SubscriptionWatcher:
         for result in browse_results[::-1]:
             self.latest_ids.append(result.submission_id)
 
-    def save(self):
-        pass
+    def to_json(self):
+        pass  # TODO
 
-    def load(self):
-        pass
+    def from_json(self):
+        pass  # TODO
 
 
 class Subscription:
