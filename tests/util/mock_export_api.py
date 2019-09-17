@@ -59,6 +59,7 @@ class MockExportAPI(FAExportAPI):
         self.submissions = {}
         self.user_folders = {}
         self.search_results = {}
+        self.browse_results = {}
 
     def with_submission(self, submission: MockSubmission) -> 'MockExportAPI':
         self.submissions[submission.submission_id] = submission
@@ -96,6 +97,11 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
+    def with_browse_results(self, list_submissions: List[MockSubmission], page: int = 1):
+        self.browse_results[page] = list_submissions
+        self.with_submissions(list_submissions)
+        return self
+
     def get_full_submission(self, submission_id: str) -> FASubmission:
         if submission_id not in self.submissions:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
@@ -119,3 +125,8 @@ class MockExportAPI(FAExportAPI):
         if f"{query.lower()}:{page}" not in self.search_results:
             return []
         return self.search_results[f"{query.lower()}:{page}"]
+
+    def get_browse_page(self, page: int = 1) -> List[FASubmission]:
+        if page not in self.browse_results:
+            return []
+        return self.browse_results[page]
