@@ -340,3 +340,55 @@ class FAExportAPITest(unittest.TestCase):
         results = api.get_search_results(search)
 
         assert len(results) == 0
+
+    @requests_mock.mock()
+    def test_get_browse_page_default_1(self, r):
+        post_id = "32342"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/browse.json?page=1",
+            json=[
+                {
+                    "id": post_id
+                }
+            ]
+        )
+
+        results = api.get_browse_page()
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+
+    @requests_mock.mock()
+    def test_get_browse_page_specify_page(self, r):
+        post_id = "32342"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/browse.json?page=5",
+            json=[
+                {
+                    "id": post_id
+                }
+            ]
+        )
+
+        results = api.get_browse_page(5)
+
+        assert len(results) == 1
+        assert isinstance(results[0], FASubmissionShort)
+        assert results[0].submission_id == post_id
+
+    @requests_mock.mock()
+    def test_get_browse_page_no_results(self, r):
+        post_id = "32342"
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            f"http://example.com/browse.json?page=5",
+            json=[
+            ]
+        )
+
+        results = api.get_browse_page(5)
+
+        assert len(results) == 0
