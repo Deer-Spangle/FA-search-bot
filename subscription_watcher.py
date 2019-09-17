@@ -1,5 +1,6 @@
 import collections
 import datetime
+import json
 import time
 from typing import List, Optional, Deque, Set
 import dateutil.parser
@@ -11,6 +12,7 @@ from fa_submission import FASubmissionFull, FASubmissionShort
 class SubscriptionWatcher:
     PAGE_CAP = 10
     BACK_OFF = 20
+    FILENAME = "subscriptions.json"
 
     def __init__(self, api: FAExportAPI):
         self.api = api
@@ -38,6 +40,8 @@ class SubscriptionWatcher:
                 for subscription in self.subscriptions:
                     if subscription.matches_result(full_result):
                         subscription.send(full_result)
+            # Save config
+            self.save_to_json()
             # Wait
             time.sleep(self.BACK_OFF)
 
@@ -68,11 +72,26 @@ class SubscriptionWatcher:
         for result in browse_results[::-1]:
             self.latest_ids.append(result.submission_id)
 
-    def to_json(self):
-        pass  # TODO
+    def save_to_json(self):
+        data = {
+            "latest_ids": list(self.latest_ids),
+            "subscriptions": [x.to_json() for x in self.subscriptions]
+        }
+        with open(self.FILENAME, "w") as f:
+            json.dump(data, f)
 
-    def from_json(self):
-        pass  # TODO
+    @staticmethod
+    def load_from_json(api: FAExportAPI) -> 'SubscriptionWatcher':
+        try:
+            with open(SubscriptionWatcher.FILENAME, "r") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            return SubscriptionWatcher(api)
+        new_watcher = SubscriptionWatcher(api)
+        for old_id in data["latest_ids"]:
+            new_watcher.latest_ids.append(old_id)
+        new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
+        return new_watcher
 
 
 class Subscription:
