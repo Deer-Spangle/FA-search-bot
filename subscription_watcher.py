@@ -1,7 +1,7 @@
 import collections
 import datetime
 import time
-from typing import List, Optional, Deque
+from typing import List, Optional, Deque, Set
 import dateutil.parser
 
 from fa_export_api import FAExportAPI
@@ -16,7 +16,7 @@ class SubscriptionWatcher:
         self.api = api
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
-        self.subscriptions = []  # type: List[Subscription]
+        self.subscriptions = set()  # type: Set[Subscription]
 
     """
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
@@ -98,3 +98,14 @@ class Subscription:
         if new_sub.latest_update is not None:
             new_sub.latest_update = dateutil.parser.parse(new_sub.latest_update)
         return new_sub
+
+    def __eq__(self, other):
+        if not isinstance(other, Subscription):
+            return False
+        return self.query == other.query and self.destination == other.destination
+
+    def __hash__(self):
+        return hash((self.query, self.destination))
+
+    def __str__(self):
+        return f"Subscription(destination={self.destination}, query=\"{self.query}\")"
