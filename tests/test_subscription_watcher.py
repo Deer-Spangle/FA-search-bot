@@ -226,8 +226,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert "1272" not in [x.submission_id for x in results]
 
     def test_update_latest_ids(self):
-        assert False
-        pass  # TODO
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api)
+        id_list = ["1234", "1233", "1230", "1229"]
+        submissions = [MockSubmission(x) for x in id_list]
+
+        watcher._update_latest_ids(submissions)
+
+        assert list(watcher.latest_ids) == id_list[::-1]
 
     def test_to_json(self):
         assert False
