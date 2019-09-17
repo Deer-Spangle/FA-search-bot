@@ -344,12 +344,14 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_browse_page_default_1(self, r):
         post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/browse.json?page=1",
             json=[
                 {
-                    "id": post_id
+                    "id": post_id,
+                    "thumbnail": thumb
                 }
             ]
         )
@@ -363,12 +365,14 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_browse_page_specify_page(self, r):
         post_id = "32342"
+        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/browse.json?page=5",
             json=[
                 {
-                    "id": post_id
+                    "id": post_id,
+                    "thumbnail": thumb
                 }
             ]
         )
