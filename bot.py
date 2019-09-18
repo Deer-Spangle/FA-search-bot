@@ -38,12 +38,14 @@ class FASearchBot:
         self.bot = None
         self.alive = False
         self.functionalities = []
-        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api)
-        self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
+        self.subscription_watcher = None
+        self.subscription_watcher_thread = None
 
     def start(self):
         request = Request(con_pool_size=8)
         self.bot = telegram.Bot(token=self.bot_key, request=request)
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
+        self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
         updater = Updater(bot=self.bot)
         dispatcher = updater.dispatcher
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)

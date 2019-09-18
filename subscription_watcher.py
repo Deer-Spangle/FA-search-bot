@@ -4,6 +4,7 @@ import json
 import time
 from typing import List, Optional, Deque, Set
 import dateutil.parser
+import telegram
 
 from fa_export_api import FAExportAPI
 from fa_submission import FASubmissionFull, FASubmissionShort
@@ -14,8 +15,9 @@ class SubscriptionWatcher:
     BACK_OFF = 20
     FILENAME = "subscriptions.json"
 
-    def __init__(self, api: FAExportAPI):
+    def __init__(self, api: FAExportAPI, bot: telegram.Bot):
         self.api = api
+        self.bot = bot
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
@@ -33,13 +35,13 @@ class SubscriptionWatcher:
                 # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
-                except Exception as e:
+                except Exception:
                     print(f"Submission {result.submission_id} disappeared before I could check it.")
                     continue
                 # Check which subscriptions match
                 for subscription in self.subscriptions:
                     if subscription.matches_result(full_result):
-                        subscription.send(full_result)
+                        self._send_update(subscription, full_result)
             # Save config
             self.save_to_json()
             # Wait
@@ -72,6 +74,13 @@ class SubscriptionWatcher:
         for result in browse_results[::-1]:
             self.latest_ids.append(result.submission_id)
 
+    def _send_update(self, subscription: 'Subscription', result: FASubmissionFull):
+        self.bot.send_message(
+            chat_id=subscription.destination,
+            text=f"Update on \"{subscription.query}\" subscription:"
+        )
+        result.send_message(self.bot, subscription.destination)
+
     def save_to_json(self):
         data = {
             "latest_ids": list(self.latest_ids),
@@ -81,13 +90,13 @@ class SubscriptionWatcher:
             json.dump(data, f)
 
     @staticmethod
-    def load_from_json(api: FAExportAPI) -> 'SubscriptionWatcher':
+    def load_from_json(api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
         try:
             with open(SubscriptionWatcher.FILENAME, "r") as f:
                 data = json.load(f)
         except FileNotFoundError:
-            return SubscriptionWatcher(api)
-        new_watcher = SubscriptionWatcher(api)
+            return SubscriptionWatcher(api, bot)
+        new_watcher = SubscriptionWatcher(api, bot)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
