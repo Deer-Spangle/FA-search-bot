@@ -84,10 +84,12 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id1,
+                    "title": "Example title",
                     "thumbnail": thumb1
                 },
                 {
                     "id": post_id2,
+                    "title": "Example title",
                     "thumbnail": thumb2
                 }
             ]
@@ -116,6 +118,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -141,6 +144,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -165,6 +169,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -238,10 +243,12 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id1,
+                    "title": "Example title",
                     "thumbnail": thumb1
                 },
                 {
                     "id": post_id2,
+                    "title": "Example title2",
                     "thumbnail": thumb2
                 }
             ]
@@ -271,6 +278,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -294,6 +302,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -316,6 +325,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]
@@ -351,7 +361,9 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
-                    "thumbnail": thumb
+                    "title": "Example title",
+                    "thumbnail": thumb,
+                    "link": f"https://www.furaffinity.net/view/{post_id}"
                 }
             ]
         )
@@ -372,6 +384,7 @@ class FAExportAPITest(unittest.TestCase):
             json=[
                 {
                     "id": post_id,
+                    "title": "Example title",
                     "thumbnail": thumb
                 }
             ]

@@ -5,7 +5,63 @@ import requests_mock
 import telegram
 
 from bot import NeatenFunctionality
-from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType
+from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort
+
+
+class FAUserTest(unittest.TestCase):
+
+    def test_constructor(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser(name, profile_name)
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+    def test_from_short_dict(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser.from_short_dict(
+            {
+                "name": name,
+                "profile_name": profile_name
+            }
+        )
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+    def test_from_submission_dict(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser.from_submission_dict(
+            {
+                "name": name,
+                "profile_name": profile_name
+            }
+        )
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+
+class FAUserShortTest(unittest.TestCase):
+
+    def test_constructor(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUserShort(name, profile_name)
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
 
 
 class FASubmissionTest(unittest.TestCase):
@@ -126,6 +182,7 @@ class FASubmissionTest(unittest.TestCase):
         assert file_size == size
 
 
+# noinspection DuplicatedCode
 class FASubmissionShortTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -133,8 +190,10 @@ class FASubmissionShortTest(unittest.TestCase):
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
 
-        submission = FASubmissionShort(post_id, thumb_link)
+        submission = FASubmissionShort(post_id, thumb_link, title, author)
 
         assert isinstance(submission, FASubmissionShort)
         assert submission.submission_id == post_id
@@ -146,7 +205,9 @@ class FASubmissionShortTest(unittest.TestCase):
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_url = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
-        submission = FASubmissionShort(post_id, thumb_url)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        submission = FASubmissionShort(post_id, thumb_url, title, author)
 
         query_result = submission.to_inline_query_result()
 
@@ -156,6 +217,7 @@ class FASubmissionShortTest(unittest.TestCase):
         assert query_result.caption == link
 
 
+# noinspection DuplicatedCode
 class FASubmissionFullTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -164,8 +226,12 @@ class FASubmissionFullTest(unittest.TestCase):
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
 
-        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link)
+        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link, title, author, description, keywords)
 
         assert isinstance(submission, FASubmissionFull)
         assert submission.submission_id == post_id
@@ -180,7 +246,11 @@ class FASubmissionFullTest(unittest.TestCase):
         image_id = "5324543"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link, title, author, description, keywords)
         size = 23124
         r.head(
             full_link,
@@ -210,7 +280,13 @@ class FASubmissionFullTest(unittest.TestCase):
         image_id = "5324543"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.gif"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, download_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, download_link, title, author, description, keywords
+        )
         submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
@@ -231,7 +307,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.pdf"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
@@ -252,7 +334,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.mp3"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
@@ -275,7 +363,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.txt"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         chat_id = -9327622
         message_id = 2873292
 
@@ -299,7 +393,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.swf"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
@@ -317,7 +417,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.zzz"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = 47453
         chat_id = -9327622
         message_id = 2873292
@@ -335,7 +441,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
         full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = FASubmission.SIZE_LIMIT_IMAGE - 1
         chat_id = -9327622
         message_id = 2873292
@@ -355,7 +467,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
         full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = FASubmission.SIZE_LIMIT_IMAGE + 1
         chat_id = -9327622
         message_id = 2873292
@@ -377,7 +495,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
         full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT + 1
         chat_id = -9327622
         message_id = 2873292
@@ -399,7 +523,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.gif"
         full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT - 1
         chat_id = -9327622
         message_id = 2873292
@@ -421,7 +551,13 @@ class FASubmissionFullTest(unittest.TestCase):
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.pdf"
         full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
+        submission = FASubmissionFull(
+            post_id, thumb_link, download_link, full_link, title, author, description, keywords
+        )
         submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT + 1
         chat_id = -9327622
         message_id = 2873292

@@ -3,7 +3,7 @@ import string
 from typing import Union, List
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmission, FASubmissionFull
+from fa_submission import FASubmission, FASubmissionFull, FAUser
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -24,7 +24,11 @@ class MockSubmission(FASubmissionFull):
             image_id: int = None,
             file_size: int = 14852,
             file_ext: str = "jpg",
-            fav_id: str = None
+            fav_id: str = None,
+            title: str = None,
+            author: FAUser = None,
+            description: str = None,
+            keywords: List[str] = None
     ):
         # Internal variables
         if image_id is None:
@@ -46,8 +50,19 @@ class MockSubmission(FASubmissionFull):
             full_image_url = download_url
         else:
             full_image_url = download_url + ".jpg"
+        if title is None:
+            title = _random_string()
+        if author is None:
+            profile_name = _random_string()
+            author = FAUser.from_submission_dict({"name": profile_name.title(), "profile_name": profile_name})
+        if description is None:
+            description = _random_string() * 5
+        if keywords is None:
+            keywords = [_random_string() for _ in range(3)]
         # Super
-        super().__init__(str(submission_id), thumbnail_url, download_url, full_image_url)
+        super().__init__(
+            str(submission_id), thumbnail_url, download_url, full_image_url, title, author, description, keywords
+        )
         self.fav_id = fav_id
         self._download_file_size = file_size
 

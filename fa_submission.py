@@ -1,6 +1,6 @@
 import re
 from abc import ABC
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 import requests
 import telegram
@@ -9,6 +9,31 @@ from telegram import InlineQueryResultPhoto
 
 class CantSendFileType(Exception):
     pass
+
+
+class FAUser(ABC):
+
+    def __init__(self, name: str, profile_name: str):
+        self.name = name
+        self.profile_name = profile_name
+        self.link = f"https://furaffinity.net/user/{profile_name}/"
+
+    @staticmethod
+    def from_short_dict(short_dict: Dict[str, str]) -> Union['FAUserShort']:
+        return FAUser.from_submission_dict(short_dict)
+
+    @staticmethod
+    def from_submission_dict(short_dict: Dict[str, str]) -> Union['FAUserShort']:
+        name = short_dict['name']
+        profile_name = short_dict['profile_name']
+        new_user = FAUserShort(name, profile_name)
+        return new_user
+
+
+class FAUserShort(FAUser):
+
+    def __init__(self, name: str, profile_name: str):
+        super().__init__(name, profile_name)
 
 
 class FASubmission(ABC):
@@ -29,19 +54,27 @@ class FASubmission(ABC):
     def from_short_dict(short_dict: Dict[str, str]) -> Union['FASubmissionShortFav', 'FASubmissionShort']:
         submission_id = short_dict['id']
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict['thumbnail'])
+        title = short_dict['title']
+        author = FAUser.from_short_dict(short_dict)
         if "fav_id" in short_dict:
-            new_submission = FASubmissionShortFav(submission_id, thumbnail_url, short_dict['fav_id'])
+            new_submission = FASubmissionShortFav(submission_id, thumbnail_url, title, author, short_dict['fav_id'])
         else:
-            new_submission = FASubmissionShort(submission_id, thumbnail_url)
+            new_submission = FASubmissionShort(submission_id, thumbnail_url, title, author)
         return new_submission
 
     @staticmethod
-    def from_full_dict(full_dict: Dict[str, str]) -> 'FASubmissionFull':
+    def from_full_dict(full_dict: Dict[str, Union[str, List[str]]]) -> 'FASubmissionFull':
         submission_id = FASubmission.id_from_link(full_dict['link'])
         thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
         download_url = full_dict['download']
         full_image_url = full_dict['full']
-        new_submission = FASubmissionFull(submission_id, thumbnail_url, download_url, full_image_url)
+        title = full_dict['title']
+        description = full_dict['description_body']
+        author = FAUser.from_submission_dict(full_dict)
+        keywords: List[str] = full_dict['keywords']
+        new_submission = FASubmissionFull(
+            submission_id, thumbnail_url, download_url, full_image_url, title, author, description, keywords
+        )
         return new_submission
 
     @staticmethod
@@ -64,9 +97,11 @@ class FASubmission(ABC):
 
 class FASubmissionShort(FASubmission):
 
-    def __init__(self, submission_id: str, thumbnail_url: str) -> None:
+    def __init__(self, submission_id: str, thumbnail_url: str, title: str, author: FAUser) -> None:
         super().__init__(submission_id)
         self.thumbnail_url = thumbnail_url
+        self.title = title
+        self.author = author
 
     def to_inline_query_result(self) -> InlineQueryResultPhoto:
         return InlineQueryResultPhoto(
@@ -79,17 +114,29 @@ class FASubmissionShort(FASubmission):
 
 class FASubmissionShortFav(FASubmissionShort):
 
-    def __init__(self, submission_id: str, thumbnail_url: str, fav_id: str) -> None:
-        super().__init__(submission_id, thumbnail_url)
+    def __init__(self, submission_id: str, thumbnail_url: str, title: str, author: FAUser, fav_id: str) -> None:
+        super().__init__(submission_id, thumbnail_url, title, author)
         self.fav_id = fav_id
 
 
 class FASubmissionFull(FASubmissionShort):
 
-    def __init__(self, submission_id: str, thumbnail_url: str, download_url: str, full_image_url: str) -> None:
-        super().__init__(submission_id, thumbnail_url)
+    def __init__(
+            self,
+            submission_id: str,
+            thumbnail_url: str,
+            download_url: str,
+            full_image_url: str,
+            title: str,
+            author: FAUser,
+            description: str,
+            keywords: List[str]
+    ) -> None:
+        super().__init__(submission_id, thumbnail_url, title, author)
         self.download_url = download_url
         self.full_image_url = full_image_url
+        self.description = description
+        self.keywords = keywords
         self._download_file_size = None
 
     @property
