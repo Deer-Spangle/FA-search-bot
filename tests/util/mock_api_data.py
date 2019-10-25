@@ -1,15 +1,12 @@
 import random
 from abc import ABC
+from typing import Union, List
 
-from fa_submission import FAUser, FAUserShort, FASubmission
+from fa_submission import FAUser, FAUserShort, FASubmission, FASubmissionFull
 from tests.util.mock_export_api import _random_string, _random_image_id
 
 
 class MockAPIData(ABC):
-
-    @staticmethod
-    def submission():
-        return MockAPIDataSubmission()
 
     @staticmethod
     def browse():
@@ -32,12 +29,12 @@ class MockAPIData(ABC):
         return MockAPIDataListing(author=author, favs=True)
 
 
-class MockAPIDataSubmission:
+class SubmissionBuilder:
 
     def __init__(
             self,
-            submission_id: Union[str, int],
             *,
+            submission_id: Union[str, int] = None,
             username: str = None,
             image_id: int = None,
             file_size: int = 14852,
@@ -48,6 +45,9 @@ class MockAPIDataSubmission:
             description: str = None,
             keywords: List[str] = None
     ):
+        if submission_id is None:
+            submission_id = random.randint(10_000, 100_000)
+        submission_id = str(submission_id)
         # Internal variables
         if image_id is None:
             image_id = _random_image_id(int(submission_id))
@@ -91,8 +91,17 @@ class MockAPIDataSubmission:
         self.fav_id = fav_id
         self._download_file_size = file_size
 
-    def build_submission(self):
-        pass  # TODO
+    def build_full_submission(self):
+        return FASubmissionFull(
+            self.submission_id,
+            self.thumbnail_url,
+            self.download_url,
+            self.full_image_url,
+            self.title,
+            self.author,
+            self.description,
+            self.keywords
+        )
 
     def build_mock_submission(self):
         pass  # TODO
