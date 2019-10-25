@@ -3,7 +3,7 @@ from abc import ABC
 from typing import Union, List
 
 from fa_submission import FAUser, FAUserShort, FASubmission, FASubmissionFull
-from tests.util.mock_export_api import _random_string, _random_image_id
+from tests.util.mock_export_api import _random_string, _random_image_id, MockSubmission
 
 
 class MockAPIData(ABC):
@@ -52,7 +52,10 @@ class SubmissionBuilder:
         if image_id is None:
             image_id = _random_image_id(int(submission_id))
         if username is None:
-            username = _random_string()
+            if author is None:
+                username = _random_string()
+            else:
+                username = author.profile_name
         folder = ""
         if file_ext in FASubmission.EXTENSIONS_AUDIO:
             folder = "music/"
@@ -69,13 +72,12 @@ class SubmissionBuilder:
         if title is None:
             title = _random_string()
         if author is None:
-            profile_name = _random_string()
-            author = FAUser.from_submission_dict({"name": profile_name.title(), "profile_name": profile_name})
+            author = FAUser.from_submission_dict({"name": username.title(), "profile_name": username})
         if description is None:
             description = _random_string() * 5
         if keywords is None:
             keywords = [_random_string() for _ in range(3)]
-        # Super
+        # Set all the variables
         self.submission_id = submission_id
         self.link = f"https://furaffinity.net/view/{submission_id}/"
         self.thumbnail_url = thumbnail_url
@@ -86,10 +88,12 @@ class SubmissionBuilder:
         self.description = description
         self.keywords = keywords
         self.fav_id = fav_id
+        self._image_id = image_id
+        self._file_ext = file_ext
         self._download_file_size = file_size
 
     def build_full_submission(self):
-        return FASubmissionFull(
+        sub = FASubmissionFull(
             self.submission_id,
             self.thumbnail_url,
             self.download_url,
@@ -99,9 +103,26 @@ class SubmissionBuilder:
             self.description,
             self.keywords
         )
+        sub._download_file_size = self._download_file_size
+        return sub
 
     def build_mock_submission(self):
-        pass  # TODO
+        sub = MockSubmission(
+            self.submission_id,
+            username=self.author.profile_name,
+            image_id=self._image_id,
+            file_size=14852 if self._download_file_size is None else self._download_file_size,
+            file_ext=self._file_ext,
+            fav_id=self.fav_id,
+            title=self.title,
+            author=self.author,
+            description=self.description,
+            keywords=self.keywords,
+            thumbnail_url=self.thumbnail_url,
+            download_url=self.download_url,
+            full_image_url=self.full_image_url,
+        )
+        return sub
 
     def build_submission_json(self):
         return {

@@ -28,7 +28,10 @@ class MockSubmission(FASubmissionFull):
             title: str = None,
             author: FAUser = None,
             description: str = None,
-            keywords: List[str] = None
+            keywords: List[str] = None,
+            thumbnail_url: str = None,
+            download_url: str = None,
+            full_image_url: str = None
     ):
         # Internal variables
         if image_id is None:
@@ -43,13 +46,16 @@ class MockSubmission(FASubmissionFull):
         if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
             folder = "stories/"
         # Variables for superclass
-        thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
-        download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
-            f"{image_id}.{username}_{_random_string()}.{file_ext}"
-        if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
-            full_image_url = download_url
-        else:
-            full_image_url = download_url + ".jpg"
+        if thumbnail_url is None:
+            thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
+        if download_url is None:
+            download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
+                f"{image_id}.{username}_{_random_string()}.{file_ext}"
+        if full_image_url is None:
+            if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
+                full_image_url = download_url
+            else:
+                full_image_url = download_url + ".jpg"
         if title is None:
             title = _random_string()
         if author is None:
