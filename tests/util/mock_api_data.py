@@ -1,32 +1,8 @@
 import random
-from abc import ABC
 from typing import Union, List
 
-from fa_submission import FAUser, FAUserShort, FASubmission, FASubmissionFull
+from fa_submission import FAUser, FASubmission, FASubmissionFull
 from tests.util.mock_export_api import _random_string, _random_image_id, MockSubmission
-
-
-class MockAPIData(ABC):
-
-    @staticmethod
-    def browse():
-        return MockAPIDataListing()
-
-    @staticmethod
-    def search():
-        return MockAPIDataListing()
-
-    @staticmethod
-    def gallery():
-        profile_name = _random_string()
-        author = FAUserShort(profile_name.title(), profile_name)
-        return MockAPIDataListing(author=author)
-
-    @staticmethod
-    def favs():
-        profile_name = _random_string()
-        author = FAUserShort(profile_name.title(), profile_name)
-        return MockAPIDataListing(author=author, favs=True)
 
 
 class SubmissionBuilder:
