@@ -4,7 +4,7 @@ import requests_mock
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmissionFull, FASubmissionShort
-from tests.util.mock_api_data import SubmissionBuilder
+from tests.util.submission_builder import SubmissionBuilder
 
 
 class FAExportAPITest(unittest.TestCase):

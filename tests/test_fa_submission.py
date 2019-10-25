@@ -6,7 +6,7 @@ import telegram
 
 from bot import NeatenFunctionality
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort
-from tests.util.mock_api_data import SubmissionBuilder
+from tests.util.submission_builder import SubmissionBuilder
 
 
 class FAUserTest(unittest.TestCase):
