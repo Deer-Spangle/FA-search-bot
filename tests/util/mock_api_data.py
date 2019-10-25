@@ -53,8 +53,6 @@ class SubmissionBuilder:
             image_id = _random_image_id(int(submission_id))
         if username is None:
             username = _random_string()
-        if fav_id is None:
-            fav_id = str(_random_image_id(int(submission_id)))
         folder = ""
         if file_ext in FASubmission.EXTENSIONS_AUDIO:
             folder = "music/"
@@ -87,7 +85,6 @@ class SubmissionBuilder:
         self.full_image_url = full_image_url
         self.description = description
         self.keywords = keywords
-        self._download_file_size = None
         self.fav_id = fav_id
         self._download_file_size = file_size
 
