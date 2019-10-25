@@ -37,7 +37,7 @@ class SubmissionBuilder:
             submission_id: Union[str, int] = None,
             username: str = None,
             image_id: int = None,
-            file_size: int = 14852,
+            file_size: int = None,
             file_ext: str = "jpg",
             fav_id: str = None,
             title: str = None,
