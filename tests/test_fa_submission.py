@@ -77,62 +77,50 @@ class FASubmissionTest(unittest.TestCase):
         assert f"view/{post_id}" in submission.link
 
     def test_create_from_short_dict(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        builder = SubmissionBuilder()
 
         submission = FASubmission.from_short_dict(
-            {
-                "id": post_id,
-                "link": link,
-                "thumbnail": thumb_link
-            }
+            builder.build_search_json()
         )
 
         assert isinstance(submission, FASubmissionShort)
-        assert submission.submission_id == post_id
-        assert submission.link == link
-        assert submission.thumbnail_url == big_thumb_link
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+
+        assert submission.thumbnail_url == builder.thumbnail_url
+        assert submission.title == builder.title
+        assert submission.author.profile_name == builder.author.profile_name
+        assert submission.author.name == builder.author.name
+        assert submission.author.link == builder.author.link
 
     def test_create_from_full_dict(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
-        full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
+        builder = SubmissionBuilder()
 
         submission = FASubmission.from_full_dict(
-            {
-                "link": link,
-                "thumbnail": thumb_link,
-                "download": full_link,
-                "full": full_link
-            }
+            builder.build_submission_json()
         )
 
         assert isinstance(submission, FASubmissionFull)
-        assert submission.submission_id == post_id
-        assert submission.link == link
-        assert submission.thumbnail_url == big_thumb_link
-        assert submission.full_image_url == full_link
-        assert submission.download_url == full_link
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+
+        assert submission.thumbnail_url == builder.thumbnail_url
+        assert submission.title == builder.title
+        assert submission.author.profile_name == builder.author.profile_name
+        assert submission.author.name == builder.author.name
+        assert submission.author.link == builder.author.link
+
+        assert submission.download_url == builder.download_url
+        assert submission.full_image_url == builder.full_image_url
+        assert submission.description == builder.description
+        assert submission.keywords == builder.keywords
 
     def test_create_short_dict_makes_thumb_bigger_75(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@75-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        builder = SubmissionBuilder(thumb_size=75)
+        big_thumb_link = builder.thumbnail_url.replace("@75-", "@1600-")
 
         submission = FASubmission.from_short_dict(
-            {
-                "id": post_id,
-                "link": link,
-                "thumbnail": thumb_link
-            }
+            builder.build_search_json()
         )
 
         assert submission.thumbnail_url == big_thumb_link

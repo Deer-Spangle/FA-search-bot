@@ -38,6 +38,7 @@ class SubmissionBuilder:
             username: str = None,
             image_id: int = None,
             file_size: int = None,
+            thumb_size: int = None,
             file_ext: str = "jpg",
             fav_id: str = None,
             title: str = None,
@@ -61,8 +62,10 @@ class SubmissionBuilder:
             folder = "music/"
         if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
             folder = "stories/"
+        if thumb_size is None:
+            thumb_size = 1600
         # Variables for superclass
-        thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
+        thumbnail_url = f"https://t.facdn.net/{submission_id}@{thumb_size}-{image_id}.jpg"
         download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
         if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
@@ -140,4 +143,12 @@ class SubmissionBuilder:
         }
 
     def build_search_json(self):
-        pass  # TODO
+        return {
+            "id": self.submission_id,
+            "title": self.title,
+            "thumbnail": self.thumbnail_url,
+            "link": f"https://www.furaffinity.net/view/{self.submission_id}/",
+            "name": self.author.name,
+            "profile": self.author.link,
+            "profile_name": self.author.profile_name
+        }
