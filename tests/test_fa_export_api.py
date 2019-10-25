@@ -4,6 +4,7 @@ import requests_mock
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmissionFull, FASubmissionShort
+from tests.util.mock_api_data import SubmissionBuilder
 
 
 class FAExportAPITest(unittest.TestCase):
@@ -32,29 +33,21 @@ class FAExportAPITest(unittest.TestCase):
 
     @requests_mock.mock()
     def test_get_full_submission(self, r):
-        post_id = "45282"
+        builder = SubmissionBuilder(thumb_size=300)
         api = FAExportAPI("http://example.com/")
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb = f"https://t.facdn.net/{post_id}@300-1562366073.jpg"
-        download = f"https://d.facdn.net/art/fender/{post_id}/{post_id}.fender_02edf64e.png"
         r.get(
-            f"http://example.com/submission/{post_id}.json",
-            json={
-                "link": link,
-                "thumbnail": thumb,
-                "download": download,
-                "full": download
-            }
+            f"http://example.com/submission/{builder.submission_id}.json",
+            json=builder.build_submission_json()
         )
 
-        submission = api.get_full_submission(post_id)
+        submission = api.get_full_submission(builder.submission_id)
 
         assert isinstance(submission, FASubmissionFull)
-        assert submission.submission_id == post_id
-        assert submission.link == link
-        assert submission.thumbnail_url == thumb.replace(f"{post_id}@300-", f"{post_id}@1600-")
-        assert submission.download_url == download
-        assert submission.full_image_url == download
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+        assert submission.thumbnail_url == builder.thumbnail_url.replace("@300-", "@1600-")
+        assert submission.download_url == builder.download_url
+        assert submission.full_image_url == builder.download_url
 
     @requests_mock.mock()
     def test_get_full_submission_fails(self, r):
@@ -75,23 +68,15 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_user_folder(self, r):
         post_id1 = "32342"
         post_id2 = "32337"
-        thumb1 = f"https://t.facdn.net/{post_id1}@1600-1562366051.jpg"
-        thumb2 = f"https://t.facdn.net/{post_id2}@1600-1562366073.jpg"
+        builder1 = SubmissionBuilder(submission_id=post_id1)
+        builder2 = SubmissionBuilder(submission_id=post_id2)
         username = "fender"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=1&full=1",
             json=[
-                {
-                    "id": post_id1,
-                    "title": "Example title",
-                    "thumbnail": thumb1
-                },
-                {
-                    "id": post_id2,
-                    "title": "Example title",
-                    "thumbnail": thumb2
-                }
+                builder1.build_search_json(),
+                builder2.build_search_json()
             ]
         )
 
@@ -104,23 +89,18 @@ class FAExportAPITest(unittest.TestCase):
         assert results[1].submission_id == post_id2
         assert results[0].link == f"https://furaffinity.net/view/{post_id1}/"
         assert results[1].link == f"https://furaffinity.net/view/{post_id2}/"
-        assert results[0].thumbnail_url == thumb1
-        assert results[1].thumbnail_url == thumb2
+        assert results[0].thumbnail_url == builder1.thumbnail_url
+        assert results[1].thumbnail_url == builder2.thumbnail_url
 
     @requests_mock.mock()
     def test_get_user_folder_scraps(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         username = "citrinelle"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/user/{username}/scraps.json?page=1&full=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -128,25 +108,20 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
-        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
-        assert results[0].thumbnail_url == thumb
+        assert results[0].submission_id == builder.submission_id
+        assert results[0].link == builder.link
+        assert results[0].thumbnail_url == builder.thumbnail_url
 
     @requests_mock.mock()
     def test_get_user_folder_awkward_characters(self, r):
-        post_id = "89452"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         username = "l[i]s"
         safe_username = "l%5Bi%5Ds"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/user/{safe_username}/gallery.json?page=1&full=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -154,24 +129,19 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
-        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
-        assert results[0].thumbnail_url == thumb
+        assert results[0].submission_id == builder.submission_id
+        assert results[0].link == builder.link
+        assert results[0].thumbnail_url == builder.thumbnail_url
 
     @requests_mock.mock()
     def test_get_user_folder_specified_page(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         username = "citrinelle"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=2&full=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -179,9 +149,9 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
-        assert results[0].link == f"https://furaffinity.net/view/{post_id}/"
-        assert results[0].thumbnail_url == thumb
+        assert results[0].submission_id == builder.submission_id
+        assert results[0].link == builder.link
+        assert results[0].thumbnail_url == builder.thumbnail_url
 
     @requests_mock.mock()
     def test_get_user_folder_empty(self, r):
@@ -234,23 +204,15 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_search_results(self, r):
         post_id1 = "32342"
         post_id2 = "32337"
-        thumb1 = f"https://t.facdn.net/{post_id1}@1600-1562366051.jpg"
-        thumb2 = f"https://t.facdn.net/{post_id2}@1600-1562366073.jpg"
+        builder1 = SubmissionBuilder(submission_id=post_id1)
+        builder2 = SubmissionBuilder(submission_id=post_id2)
         search = "deer"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
             json=[
-                {
-                    "id": post_id1,
-                    "title": "Example title",
-                    "thumbnail": thumb1
-                },
-                {
-                    "id": post_id2,
-                    "title": "Example title2",
-                    "thumbnail": thumb2
-                }
+                builder1.build_search_json(),
+                builder2.build_search_json()
             ]
         )
 
@@ -263,24 +225,19 @@ class FAExportAPITest(unittest.TestCase):
         assert results[1].submission_id == post_id2
         assert results[0].link == f"https://furaffinity.net/view/{post_id1}/"
         assert results[1].link == f"https://furaffinity.net/view/{post_id2}/"
-        assert results[0].thumbnail_url == thumb1
-        assert results[1].thumbnail_url == thumb2
+        assert results[0].thumbnail_url == builder1.thumbnail_url
+        assert results[1].thumbnail_url == builder2.thumbnail_url
 
     @requests_mock.mock()
     def test_get_search_results_with_space(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         search = "deer lion"
         search_safe = "deer%20lion"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -288,23 +245,18 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
+        assert results[0].submission_id == builder.submission_id
 
     @requests_mock.mock()
     def test_get_search_results_with_extended_modifiers(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         search = "(deer & !lion) | (goat & !tiger)"
         search_safe = "(deer%20&%20!lion)%20%7C%20(goat%20&%20!tiger)"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -312,22 +264,17 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
+        assert results[0].submission_id == builder.submission_id
 
     @requests_mock.mock()
     def test_get_search_results_specified_page(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         search = "deer"
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search}&page=2",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -335,7 +282,7 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
+        assert results[0].submission_id == builder.submission_id
 
     @requests_mock.mock()
     def test_get_search_results_no_results(self, r):
@@ -353,18 +300,12 @@ class FAExportAPITest(unittest.TestCase):
 
     @requests_mock.mock()
     def test_get_browse_page_default_1(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/browse.json?page=1",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb,
-                    "link": f"https://www.furaffinity.net/view/{post_id}"
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -372,21 +313,16 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
+        assert results[0].submission_id == builder.submission_id
 
     @requests_mock.mock()
     def test_get_browse_page_specify_page(self, r):
-        post_id = "32342"
-        thumb = f"https://t.facdn.net/{post_id}@1600-1562366051.jpg"
+        builder = SubmissionBuilder()
         api = FAExportAPI("http://example.com/")
         r.get(
             f"http://example.com/browse.json?page=5",
             json=[
-                {
-                    "id": post_id,
-                    "title": "Example title",
-                    "thumbnail": thumb
-                }
+                builder.build_search_json()
             ]
         )
 
@@ -394,7 +330,7 @@ class FAExportAPITest(unittest.TestCase):
 
         assert len(results) == 1
         assert isinstance(results[0], FASubmissionShort)
-        assert results[0].submission_id == post_id
+        assert results[0].submission_id == builder.submission_id
 
     @requests_mock.mock()
     def test_get_browse_page_no_results(self, r):
