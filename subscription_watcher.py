@@ -111,7 +111,13 @@ class Subscription:
         self.latest_update = None  # type: Optional[datetime.datetime]
 
     def matches_result(self, result: FASubmissionFull) -> bool:
-        pass  # TODO
+        query_words = self.query.lower().split()
+        return all([
+            word in result.title.lower() or
+            word in result.description.lower() or
+            word in [keyword.lower() for keyword in result.keywords]
+            for word in query_words
+        ])
 
     def to_json(self):
         latest_update_str = None
