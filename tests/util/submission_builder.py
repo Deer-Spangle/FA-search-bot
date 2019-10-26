@@ -1,7 +1,7 @@
 import random
 from typing import Union, List
 
-from fa_submission import FAUser, FASubmission, FASubmissionFull
+from fa_submission import FAUser, FASubmission, FASubmissionFull, FASubmissionShort
 from tests.util.mock_export_api import _random_string, _random_image_id, MockSubmission
 
 
@@ -83,6 +83,15 @@ class SubmissionBuilder:
             self.keywords
         )
         sub._download_file_size = self._download_file_size
+        return sub
+
+    def build_short_submission(self):
+        sub = FASubmissionShort(
+            self.submission_id,
+            self.thumbnail_url,
+            self.title,
+            self.author
+        )
         return sub
 
     def build_mock_submission(self):
