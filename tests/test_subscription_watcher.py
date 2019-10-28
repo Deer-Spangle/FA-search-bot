@@ -147,6 +147,29 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert 3 <= time_waited.seconds <= 5
 
     @patch.object(telegram, "Bot")
+    def test_run__failed_to_send_doesnt_kill_watcher(self, bot):
+        submission = MockSubmission("12322")
+        api = MockExportAPI().with_submission(submission)
+        watcher = SubscriptionWatcher(api, bot)
+        method_called = MockMethod([submission])
+        watcher._get_new_results = method_called.call
+        watcher._send_update = lambda: (_ for _ in ()).throw(Exception)
+        watcher.BACK_OFF = 3
+        sub1 = MockSubscription("deer", 0)
+        watcher.subscriptions = [sub1]
+
+        thread = Thread(target=lambda: self.watcher_killer(watcher))
+        thread.start()
+        # Run watcher
+        start_time = datetime.datetime.now()
+        watcher.run()
+        end_time = datetime.datetime.now()
+        thread.join()
+
+        time_waited = end_time - start_time
+        assert 3 <= time_waited.seconds <= 5
+
+    @patch.object(telegram, "Bot")
     def test_get_new_results__handles_empty_latest_ids(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])

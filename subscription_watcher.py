@@ -31,7 +31,7 @@ class SubscriptionWatcher:
         while self.running:
             new_results = self._get_new_results()
             # Check for subscription updates
-            for result in new_results[::-1]:
+            for result in new_results:
                 # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
@@ -41,7 +41,11 @@ class SubscriptionWatcher:
                 # Check which subscriptions match
                 for subscription in self.subscriptions:
                     if subscription.matches_result(full_result):
-                        self._send_update(subscription, full_result)
+                        try:
+                            self._send_update(subscription, full_result)
+                        except Exception as e:
+                            print(f"Failed to send submission: {full_result.submission_id} "
+                                  f"to {subscription.destination} because {e}.")
             # Save config
             self.save_to_json()
             # Wait
