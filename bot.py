@@ -120,8 +120,9 @@ class WelcomeFunctionality(BotFunctionality):
                  "Currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
                  "- Respond to inline search queries\n"
-                 "- Browse user galleries, scraps and favs inline "
-                 "(use the format 'gallery:username', 'scraps:username', or 'favs:username')"
+                 "- Browse user galleries, scraps and favourites inline "
+                 "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
+                 "- Create subscriptions. "
         )
 
 
@@ -406,26 +407,44 @@ class SubscriptionFunctionality(BotFunctionality):
         message_text = update.message.text
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
-        destination = update.message.chat.id
+        destination = update.message.chat_id
         if command == "/add_subscription":
-            self._add_sub(destination, args)
+            bot.send_message(
+                chat_id=destination,
+                text=self._add_sub(destination, args)
+            )
         elif command == "/remove_subscription":
-            self._remove_sub(destination, args)
+            bot.send_message(
+                chat_id=destination,
+                text=self._remove_sub(destination, args)
+            )
         elif command == "/list_subscriptions":
-            self._list_subs(destination)
+            bot.send_message(
+                chat_id=destination,
+                text=self._list_subs(destination)
+            )
         else:
-            print("I do not understand.")
+            bot.send_message(
+                chat_id=destination,
+                text="I do not understand."
+            )
 
     def _add_sub(self, destination: int, query: str):
+        if query == "":
+            return f"Please specify the subscription query you wish to add."
         new_sub = Subscription(query, destination)
         self.watcher.subscriptions.add(new_sub)
-        print("Added subscription")
+        return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
 
     def _remove_sub(self, destination: int, query: str):
         old_sub = Subscription(query, destination)
-        self.watcher.subscriptions.remove(old_sub)
-        print("Removed subscription")
+        try:
+            self.watcher.subscriptions.remove(old_sub)
+            return f"Removed subscription: \"{query}\".\n{self._list_subs(destination)}"
+        except KeyError:
+            return f"There is not a subscription for \"{query}\" in this chat."
 
     def _list_subs(self, destination: int):
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
-        print(f"List subscriptions: {subs}")
+        subs_list = "\n".join([f"- {sub.query}" for sub in subs])
+        return f"Current active subscriptions in this chat:\n{subs_list}"
