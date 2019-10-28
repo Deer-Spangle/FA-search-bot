@@ -51,7 +51,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher.running = False
 
     @patch.object(telegram, "Bot")
-    def test_run_is_stopped_by_running_false(self, bot):
+    def test_run__is_stopped_by_running_false(self, bot):
         api = MockExportAPI()
         s = SubscriptionWatcher(api, bot)
         # Shorten the wait
@@ -67,7 +67,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         thread.join()
 
     @patch.object(telegram, "Bot")
-    def test_run_calls_get_new_results(self, bot):
+    def test_run__calls_get_new_results(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         method_called = MockMethod([])
@@ -84,7 +84,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert method_called.called
 
     @patch.object(telegram, "Bot")
-    def test_run_checks_all_subscriptions(self, bot):
+    def test_run__checks_all_subscriptions(self, bot):
         submission = MockSubmission("12322")
         api = MockExportAPI().with_submission(submission)
         watcher = SubscriptionWatcher(api, bot)
@@ -106,7 +106,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert method_called.called
 
     @patch.object(telegram, "Bot")
-    def test_run_checks_all_new_results(self, bot):
+    def test_run__checks_all_new_results(self, bot):
         submission1 = MockSubmission("12322")
         submission2 = MockSubmission("12324")
         api = MockExportAPI().with_submissions([submission1, submission2])
@@ -128,7 +128,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert method_called.called
 
     @patch.object(telegram, "Bot")
-    def test_run_sleeps_backoff_time(self, bot):
+    def test_run__sleeps_backoff_time(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         # Shorten the wait
@@ -147,7 +147,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert 3 <= time_waited.seconds <= 5
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_handles_empty_latest_ids(self, bot):
+    def test_get_new_results__handles_empty_latest_ids(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
         watcher = SubscriptionWatcher(api, bot)
@@ -161,7 +161,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert watcher.latest_ids[2] == "1223"
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_updates_latest_ids(self, bot):
+    def test_get_new_results__updates_latest_ids(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
         watcher = SubscriptionWatcher(api, bot)
@@ -176,7 +176,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert watcher.latest_ids[1] == "1223"
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_updates_latest_ids_after_checking_two_pages(self, bot):
+    def test_get_new_results__updates_latest_ids_after_checking_two_pages(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1227"), MockSubmission("1225"), MockSubmission("1224")], page=1)
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")], page=2)
@@ -194,7 +194,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert watcher.latest_ids[3] == "1227"
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_returns_new_results(self, bot):
+    def test_get_new_results__returns_new_results(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
         watcher = SubscriptionWatcher(api, bot)
@@ -207,7 +207,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert results[1].submission_id == "1223"
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_goes_to_another_page(self, bot):
+    def test_get_new_results__goes_to_another_page(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1227"), MockSubmission("1225"), MockSubmission("1224")], page=1)
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")], page=2)
@@ -225,7 +225,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert results[4].submission_id == "1227"
 
     @patch.object(telegram, "Bot")
-    def test_get_new_results_respects_page_cap(self, bot):
+    def test_get_new_results__respects_page_cap(self, bot):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1300")], page=1)
         api.with_browse_results([MockSubmission("1298")], page=2)
