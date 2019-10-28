@@ -48,6 +48,9 @@ class SubscriptionWatcher:
             time.sleep(self.BACK_OFF)
 
     def _get_new_results(self) -> List[FASubmissionShort]:
+        """
+        Gets new results since last scan, returning them in order from oldest to newest.
+        """
         if len(self.latest_ids) == 0:
             first_page = self.api.get_browse_page()
             self._update_latest_ids(first_page)
@@ -79,6 +82,7 @@ class SubscriptionWatcher:
             chat_id=subscription.destination,
             text=f"Update on \"{subscription.query}\" subscription:"
         )
+        subscription.latest_update = datetime.datetime.now()
         result.send_message(self.bot, subscription.destination)
 
     def save_to_json(self):

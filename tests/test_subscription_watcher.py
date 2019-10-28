@@ -255,6 +255,37 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert list(watcher.latest_ids) == id_list[::-1]
 
     @patch.object(telegram, "Bot")
+    def test_send_update__sends_messages(self, bot):
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        subscription = Subscription("test", 12345)
+        submission = SubmissionBuilder().build_mock_submission()
+
+        watcher._send_update(subscription, submission)
+
+        bot.send_message.assert_called_once()
+        kwargs = bot.send_message.call_args[1]
+        assert kwargs['chat_id'] == 12345
+        assert "update" in kwargs['text'].lower()
+        assert "\"test\"" in kwargs['text'].lower()
+        assert "subscription" in kwargs['text'].lower()
+        bot.send_photo.assert_called_once()
+        kwargs_photo = bot.send_photo.call_args[1]
+        assert kwargs_photo['chat_id'] == 12345
+        assert kwargs_photo['photo'] == submission.download_url
+
+    @patch.object(telegram, "Bot")
+    def test_send_update__updates_latest(self, bot):
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        subscription = Subscription("test", 12345)
+        submission = SubmissionBuilder().build_mock_submission()
+
+        watcher._send_update(subscription, submission)
+
+        assert subscription.latest_update is not None
+
+    @patch.object(telegram, "Bot")
     def test_save_to_json(self, bot):
         test_watcher_file = "./test_subscription_watcher.json"
         if os.path.exists(test_watcher_file):
