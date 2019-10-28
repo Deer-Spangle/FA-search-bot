@@ -122,7 +122,8 @@ class WelcomeFunctionality(BotFunctionality):
                  "- Respond to inline search queries\n"
                  "- Browse user galleries, scraps and favourites inline "
                  "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
-                 "- Create subscriptions. "
+                 "- Create subscriptions "
+                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`)"
         )
 
 
