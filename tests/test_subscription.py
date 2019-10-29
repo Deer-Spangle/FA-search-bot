@@ -56,7 +56,7 @@ class SubscriptionTest(unittest.TestCase):
 
         assert match
 
-    def test_matches_result__substring_in_title_matches(self):
+    def test_matches_result__substring_in_title_no_match(self):
         query = "test"
         subscription = Subscription(query, 12432)
         submission = SubmissionBuilder(
@@ -67,9 +67,9 @@ class SubscriptionTest(unittest.TestCase):
 
         match = subscription.matches_result(submission)
 
-        assert match
+        assert not match
 
-    def test_matches_result__substring_in_description_matches(self):
+    def test_matches_result__substring_in_description_no_match(self):
         query = "his"
         subscription = Subscription(query, 12432)
         submission = SubmissionBuilder(
@@ -80,7 +80,7 @@ class SubscriptionTest(unittest.TestCase):
 
         match = subscription.matches_result(submission)
 
-        assert match
+        assert not match
 
     def test_matches_result__substring_in_keywords_no_match(self):
         query = "keyword"
@@ -231,6 +231,123 @@ class SubscriptionTest(unittest.TestCase):
         submission = SubmissionBuilder(
             title="test submission",
             description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert match
+
+    def test_matches_result__does_not_match_negated_query(self):
+        query = "-test"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert not match
+
+    def test_matches_result__does_not_match_negated_query_case_insensitive(self):
+        query = "-test"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert not match
+
+    def test_matches_result__matches_non_applicable_negated_query(self):
+        query = "-deer"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert match
+
+    def test_matches_result__matches_query_with_non_applicable_negated_query(self):
+        query = "test -deer"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert match
+
+    def test_matches_result__does_not_match_query_with_applicable_negated_query(self):
+        query = "test -example"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert not match
+
+    def test_matches_result__does_not_match_query_with_applicable_negated_query_in_same_text(self):
+        query = "this -example"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert not match
+
+    def test_matches_result__matches_query_with_hyphen(self):
+        query = "an-example"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an-example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert match
+
+    def test_matches_word_in_quotes(self):
+        query = "deer"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is=\"deer\"",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission)
+
+        assert match
+
+    def test_matches_word_in_tag(self):
+        query = "deer"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is <b>deer</b>",
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 

@@ -1,6 +1,8 @@
 import collections
 import datetime
 import json
+import re
+import string
 import time
 from typing import List, Optional, Deque, Set
 import dateutil.parser
@@ -120,12 +122,30 @@ class Subscription:
 
     def matches_result(self, result: FASubmissionFull) -> bool:
         query_words = self.query.lower().split()
-        return all([
-            word in result.title.lower() or
-            word in result.description.lower() or
-            word in [keyword.lower() for keyword in result.keywords]
-            for word in query_words
-        ])
+        all_text = \
+            self._split_text_to_words(result.title) + \
+            self._split_text_to_words(result.description) + \
+            result.keywords
+        positive_words = [x for x in query_words if x[0] != "-"]
+        negative_words = [x[1:] for x in query_words if x[0] == "-"]
+        return all(
+            [
+                self._query_word_matches_text(word, all_text)
+                for word in positive_words
+            ]
+        ) and not any(
+            [
+                self._query_word_matches_text(word, all_text)
+                for word in negative_words
+            ]
+        )
+    
+    def _split_text_to_words(self, text: str) -> List[str]:
+        return re.split(r"[\s\"<>]+", text)
+
+    def _query_word_matches_text(self, query_word: str, text: List[str]) -> bool:
+        clean_list = [x.lower().strip(string.punctuation) for x in text]
+        return query_word in clean_list
 
     def to_json(self):
         latest_update_str = None
