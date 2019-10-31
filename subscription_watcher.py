@@ -4,7 +4,7 @@ import json
 import re
 import string
 import time
-from typing import List, Optional, Deque, Set
+from typing import List, Optional, Deque, Set, Dict
 import dateutil.parser
 import telegram
 
@@ -23,6 +23,7 @@ class SubscriptionWatcher:
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
+        self.blacklists = dict()  # type: Dict[int, List[str]]
 
     """
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
@@ -94,7 +95,8 @@ class SubscriptionWatcher:
     def save_to_json(self):
         data = {
             "latest_ids": list(self.latest_ids),
-            "subscriptions": [x.to_json() for x in self.subscriptions]
+            "subscriptions": [x.to_json() for x in self.subscriptions],
+            "blacklists": {str(k): v for k, v in self.blacklists.items()}
         }
         with open(self.FILENAME, "w") as f:
             json.dump(data, f)
@@ -110,6 +112,7 @@ class SubscriptionWatcher:
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
+        new_watcher.blacklists = {int(k): v for k, v in data["blacklists"].items()}
         return new_watcher
 
 
