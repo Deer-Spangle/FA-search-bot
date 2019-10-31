@@ -325,6 +325,8 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher._update_latest_ids(latest_submissions)
         watcher.subscriptions.add(subscription1)
         watcher.subscriptions.add(subscription2)
+        watcher.blacklists[3452] = ["test", "example"]
+        watcher.blacklists[1453] = ["ych"]
         watcher.FILENAME = test_watcher_file
 
         try:
@@ -348,6 +350,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
                 assert data['subscriptions'][0]['destination'] == 5678
                 assert data['subscriptions'][1]['query'] == "query"
                 assert data['subscriptions'][1]['destination'] == 1234
+            assert len(data["blacklists"]) == 2
+            assert "3452" in data["blacklists"]
+            assert len(data["blacklists"]["3452"]) == 2
+            assert "test" in data["blacklists"]["3452"]
+            assert "example" in data["blacklists"]["3452"]
+            assert "1453" in data["blacklists"]
+            assert len(data["blacklists"]["1453"]) == 1
+            assert "ych" in data["blacklists"]["1453"]
         finally:
             os.remove(test_watcher_file)
 
@@ -372,7 +382,11 @@ class SubscriptionWatcherTest(unittest.TestCase):
                         "destination": -87023,
                         "latest_update": "2019-10-25T17:34:08"
                     }
-                ]
+                ],
+                "blacklists": {
+                    "8732": ["example", "ych"],
+                    "-123": ["fred"]
+                }
             }
             with open(test_watcher_file, "w+") as f:
                 json.dump(data, f)
@@ -399,6 +413,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
                 assert list_subs[1].query == "test"
                 assert list_subs[1].destination == 87238
                 assert list_subs[1].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
+            assert len(watcher.blacklists) == 2
+            assert 8732 in watcher.blacklists
+            assert len(watcher.blacklists[8732]) == 2
+            assert "example" in watcher.blacklists[8732]
+            assert "ych" in watcher.blacklists[8732]
+            assert -123 in watcher.blacklists
+            assert len(watcher.blacklists[-123]) == 1
+            assert "fred" in watcher.blacklists[-123]
         finally:
             SubscriptionWatcher.FILENAME = old_filename
             os.remove(test_watcher_file)
@@ -422,6 +444,8 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher._update_latest_ids(latest_submissions)
         watcher.subscriptions.add(subscription1)
         watcher.subscriptions.add(subscription2)
+        watcher.blacklists[3452] = ["test", "example"]
+        watcher.blacklists[1453] = ["ych"]
 
         try:
             watcher.save_to_json()
@@ -443,6 +467,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
                 assert list_subs[0].destination == 5678
                 assert list_subs[1].query == "query"
                 assert list_subs[1].destination == 1234
+            assert len(new_watcher.blacklists) == 2
+            assert 3452 in new_watcher.blacklists
+            assert len(new_watcher.blacklists[3452]) == 2
+            assert "test" in new_watcher.blacklists[3452]
+            assert "example" in new_watcher.blacklists[3452]
+            assert 1453 in new_watcher.blacklists
+            assert len(new_watcher.blacklists[1453]) == 1
+            assert "ych" in new_watcher.blacklists[1453]
         finally:
             SubscriptionWatcher.FILENAME = old_filename
             os.remove(test_watcher_file)
