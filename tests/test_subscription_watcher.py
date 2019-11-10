@@ -5,6 +5,7 @@ import os
 import time
 import unittest
 from threading import Thread
+from typing import List
 
 from unittest.mock import patch
 import telegram
@@ -21,9 +22,11 @@ class MockSubscription(Subscription):
     def __init__(self, query, destination):
         super().__init__(query, destination)
         self.submissions_checked = []
+        self.blacklists = []
 
-    def matches_result(self, result: FASubmissionFull) -> bool:
+    def matches_result(self, result: FASubmissionFull, blacklist: List[str]) -> bool:
         self.submissions_checked.append(result)
+        self.blacklists.append(blacklist)
         return True
 
     def send(self, result: FASubmissionFull):
@@ -168,6 +171,38 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         time_waited = end_time - start_time
         assert 3 <= time_waited.seconds <= 5
+
+    @patch.object(telegram, "Bot")
+    def test_run__passes_correct_blacklists_to_subscriptions(self, bot):
+        submission = MockSubmission("12322")
+        api = MockExportAPI().with_submission(submission)
+        watcher = SubscriptionWatcher(api, bot)
+        method_called = MockMethod([submission])
+        watcher._get_new_results = method_called.call
+        watcher.BACK_OFF = 1
+        watcher.blacklists = {
+            156: ["test", "ych"],
+            -200: ["example"]
+        }
+        sub1 = MockSubscription("deer", 156)
+        sub2 = MockSubscription("dog", -232)
+        watcher.subscriptions = [sub1, sub2]
+
+        thread = Thread(target=lambda: self.watcher_killer(watcher))
+        thread.start()
+        # Run watcher
+        watcher.run()
+        thread.join()
+
+        assert submission in sub1.submissions_checked
+        assert len(sub1.blacklists) == 1
+        assert len(sub1.blacklists[0]) == 2
+        assert "test" in sub1.blacklists[0]
+        assert "ych" in sub1.blacklists[0]
+        assert submission in sub2.submissions_checked
+        assert len(sub2.blacklists) == 1
+        assert len(sub2.blacklists[0]) == 0
+        assert method_called.called
 
     @patch.object(telegram, "Bot")
     def test_get_new_results__handles_empty_latest_ids(self, bot):

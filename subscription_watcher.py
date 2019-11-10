@@ -43,7 +43,8 @@ class SubscriptionWatcher:
                     continue
                 # Check which subscriptions match
                 for subscription in self.subscriptions:
-                    if subscription.matches_result(full_result):
+                    blacklist = self.blacklists.get(subscription.destination, [])
+                    if subscription.matches_result(full_result, blacklist):
                         try:
                             self._send_update(subscription, full_result)
                         except Exception as e:
@@ -123,7 +124,7 @@ class Subscription:
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
 
-    def matches_result(self, result: FASubmissionFull) -> bool:
+    def matches_result(self, result: FASubmissionFull, blacklist: List[str]) -> bool:
         query_words = self.query.lower().split()
         all_text = \
             self._split_text_to_words(result.title) + \
@@ -131,6 +132,7 @@ class Subscription:
             result.keywords
         positive_words = [x for x in query_words if x[0] != "-"]
         negative_words = [x[1:] for x in query_words if x[0] == "-"]
+        negative_words += blacklist
         return all(
             [
                 self._query_word_matches_text(word, all_text)
