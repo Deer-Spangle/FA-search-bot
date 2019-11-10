@@ -23,7 +23,7 @@ class SubscriptionWatcher:
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
-        self.blacklists = dict()  # type: Dict[int, List[str]]
+        self.blacklists = dict()  # type: Dict[int, Set[str]]
 
     """
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
@@ -43,7 +43,7 @@ class SubscriptionWatcher:
                     continue
                 # Check which subscriptions match
                 for subscription in self.subscriptions:
-                    blacklist = self.blacklists.get(subscription.destination, [])
+                    blacklist = self.blacklists.get(subscription.destination, set())
                     if subscription.matches_result(full_result, blacklist):
                         try:
                             self._send_update(subscription, full_result)
@@ -93,11 +93,17 @@ class SubscriptionWatcher:
         subscription.latest_update = datetime.datetime.now()
         result.send_message(self.bot, subscription.destination)
 
+    def add_to_blacklist(self, destination: int, tag: str):
+        if destination in self.blacklists:
+            self.blacklists[destination].add(tag)
+        else:
+            self.blacklists[destination] = {tag}
+
     def save_to_json(self):
         data = {
             "latest_ids": list(self.latest_ids),
             "subscriptions": [x.to_json() for x in self.subscriptions],
-            "blacklists": {str(k): v for k, v in self.blacklists.items()}
+            "blacklists": {str(k): list(v) for k, v in self.blacklists.items()}
         }
         with open(self.FILENAME, "w") as f:
             json.dump(data, f)
@@ -113,7 +119,7 @@ class SubscriptionWatcher:
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
-        new_watcher.blacklists = {int(k): v for k, v in data["blacklists"].items()}
+        new_watcher.blacklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
 
@@ -124,7 +130,7 @@ class Subscription:
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
 
-    def matches_result(self, result: FASubmissionFull, blacklist: List[str]) -> bool:
+    def matches_result(self, result: FASubmissionFull, blacklist: Set[str]) -> bool:
         query_words = self.query.lower().split()
         all_text = \
             self._split_text_to_words(result.title) + \
@@ -132,7 +138,7 @@ class Subscription:
             result.keywords
         positive_words = [x for x in query_words if x[0] != "-"]
         negative_words = [x[1:] for x in query_words if x[0] == "-"]
-        negative_words += blacklist
+        negative_words += list(blacklist)
         return all(
             [
                 self._query_word_matches_text(word, all_text)
