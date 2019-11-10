@@ -26,7 +26,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -39,7 +39,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -52,7 +52,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -65,7 +65,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -78,7 +78,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -91,7 +91,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -104,7 +104,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -117,7 +117,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -130,7 +130,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -143,7 +143,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -156,7 +156,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -169,7 +169,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -182,7 +182,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -195,7 +195,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -208,7 +208,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -221,7 +221,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "KEYWORDS"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -234,7 +234,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -247,7 +247,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -260,7 +260,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -273,7 +273,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -286,7 +286,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -299,7 +299,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -312,7 +312,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert not match
 
@@ -325,9 +325,22 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
+
+    def test_matches_result__doesnt_match_blacklisted_tag(self):
+        query = "an-example"
+        subscription = Subscription(query, 12432)
+        submission = SubmissionBuilder(
+            title="Test submission",
+            description="this submission is just an-example",
+            keywords=["example", "submission", "keywords"]
+        ).build_full_submission()
+
+        match = subscription.matches_result(submission, ["test"])
+
+        assert not match
 
     def test_matches_word_in_quotes(self):
         query = "deer"
@@ -338,7 +351,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
@@ -351,7 +364,7 @@ class SubscriptionTest(unittest.TestCase):
             keywords=["example", "submission", "keywords"]
         ).build_full_submission()
 
-        match = subscription.matches_result(submission)
+        match = subscription.matches_result(submission, [])
 
         assert match
 
