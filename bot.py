@@ -123,7 +123,9 @@ class WelcomeFunctionality(BotFunctionality):
                  "- Browse user galleries, scraps and favourites inline "
                  "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
                  "- Create subscriptions "
-                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`)"
+                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`)\n"
+                 "- Store blacklists for those subscriptions "
+                 "(use `/add_blacklisted_tag tag`, `/list_blacklisted_tags` and `/remove_blacklisted_tag tag`)"
         )
 
 
@@ -449,3 +451,56 @@ class SubscriptionFunctionality(BotFunctionality):
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs_list = "\n".join([f"- {sub.query}" for sub in subs])
         return f"Current active subscriptions in this chat:\n{subs_list}"
+
+
+class BlacklistFunctionality(BotFunctionality):
+
+    def __init__(self, watcher: SubscriptionWatcher):
+        super().__init__(
+            CommandHandler, command=['add_blacklisted_tag', 'remove_blacklisted_tag', 'list_blacklisted_tags']
+        )
+        self.watcher = watcher
+
+    def call(self, bot, update):
+        message_text = update.message.text
+        command = message_text.split()[0]
+        args = message_text[len(command):].strip()
+        destination = update.message.chat_id
+        if command == "/add_blacklisted_tag":
+            bot.send_message(
+                chat_id=destination,
+                text=self._add_to_blacklist(destination, args)
+            )
+        elif command == "/remove_blacklisted_tag":
+            bot.send_message(
+                chat_id=destination,
+                text=self._remove_from_blacklist(destination, args)
+            )
+        elif command == "/list_blacklisted_tags":
+            bot.send_message(
+                chat_id=destination,
+                text=self._list_blacklisted_tags(destination)
+            )
+        else:
+            bot.send_message(
+                chat_id=destination,
+                text="I do not understand."
+            )
+
+    def _add_to_blacklist(self, destination: int, query: str):
+        if query == "":
+            return f"Please specify the tag you wish to add to blacklist."
+        self.watcher.add_to_blacklist(destination, query)
+        return f"Added tag to blacklist: \"{query}\".\n{self._list_blacklisted_tags(destination)}"
+
+    def _remove_from_blacklist(self, destination: int, query: str):
+        try:
+            self.watcher.blacklists[destination].remove(query)
+            return f"Removed tag from blacklist: \"{query}\".\n{self._list_blacklisted_tags(destination)}"
+        except KeyError:
+            return f"The tag \"{query}\" is not on the blacklist for this chat."
+
+    def _list_blacklisted_tags(self, destination: int):
+        blacklist = self.watcher.blacklists[destination]
+        tags_list = "\n".join([f"- {tag}" for tag in blacklist])
+        return f"Current blacklist for this chat:\n{tags_list}"
