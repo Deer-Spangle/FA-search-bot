@@ -1,11 +1,11 @@
 # FA search bot
 This is a telegram bot which can:
-- Neaten up FA links into photos/documents, with captions
-- Neaten up FA links by direct file link
-- Inline FA searches. Also gallery, scraps and favs browsing.
+- Neaten up FA links into photos/documents, with captions.
+- Neaten up FA links by direct file link.
+- Inline FA searches. Also gallery, scraps and favourites browsing.
+- Subscribe to queries on FA, and receive notifications when new matching results are posted.
 
 Future feature plans:
-- FA subscriptions
 - FA notifications
 
 ## Setup
