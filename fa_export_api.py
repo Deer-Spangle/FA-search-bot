@@ -63,3 +63,11 @@ class FAExportAPI:
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
         return submissions
+
+    def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
+        resp = self._api_request(f"browse.json?page={page}")
+        data = resp.json()
+        submissions = []
+        for submission_data in data:
+            submissions.append(FASubmission.from_short_dict(submission_data))
+        return submissions

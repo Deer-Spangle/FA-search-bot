@@ -3,7 +3,7 @@ import string
 from typing import Union, List
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmission, FASubmissionFull
+from fa_submission import FASubmission, FASubmissionFull, FAUser
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -24,7 +24,14 @@ class MockSubmission(FASubmissionFull):
             image_id: int = None,
             file_size: int = 14852,
             file_ext: str = "jpg",
-            fav_id: str = None
+            fav_id: str = None,
+            title: str = None,
+            author: FAUser = None,
+            description: str = None,
+            keywords: List[str] = None,
+            thumbnail_url: str = None,
+            download_url: str = None,
+            full_image_url: str = None
     ):
         # Internal variables
         if image_id is None:
@@ -39,15 +46,29 @@ class MockSubmission(FASubmissionFull):
         if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
             folder = "stories/"
         # Variables for superclass
-        thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
-        download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
-            f"{image_id}.{username}_{_random_string()}.{file_ext}"
-        if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
-            full_image_url = download_url
-        else:
-            full_image_url = download_url + ".jpg"
+        if thumbnail_url is None:
+            thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
+        if download_url is None:
+            download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
+                f"{image_id}.{username}_{_random_string()}.{file_ext}"
+        if full_image_url is None:
+            if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
+                full_image_url = download_url
+            else:
+                full_image_url = download_url + ".jpg"
+        if title is None:
+            title = _random_string()
+        if author is None:
+            profile_name = _random_string()
+            author = FAUser.from_submission_dict({"name": profile_name.title(), "profile_name": profile_name})
+        if description is None:
+            description = _random_string() * 5
+        if keywords is None:
+            keywords = [_random_string() for _ in range(3)]
         # Super
-        super().__init__(str(submission_id), thumbnail_url, download_url, full_image_url)
+        super().__init__(
+            str(submission_id), thumbnail_url, download_url, full_image_url, title, author, description, keywords
+        )
         self.fav_id = fav_id
         self._download_file_size = file_size
 
@@ -59,6 +80,7 @@ class MockExportAPI(FAExportAPI):
         self.submissions = {}
         self.user_folders = {}
         self.search_results = {}
+        self.browse_results = {}
 
     def with_submission(self, submission: MockSubmission) -> 'MockExportAPI':
         self.submissions[submission.submission_id] = submission
@@ -96,6 +118,11 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
+    def with_browse_results(self, list_submissions: List[MockSubmission], page: int = 1):
+        self.browse_results[page] = list_submissions
+        self.with_submissions(list_submissions)
+        return self
+
     def get_full_submission(self, submission_id: str) -> FASubmission:
         if submission_id not in self.submissions:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
@@ -119,3 +146,8 @@ class MockExportAPI(FAExportAPI):
         if f"{query.lower()}:{page}" not in self.search_results:
             return []
         return self.search_results[f"{query.lower()}:{page}"]
+
+    def get_browse_page(self, page: int = 1) -> List[FASubmission]:
+        if page not in self.browse_results:
+            return []
+        return self.browse_results[page]

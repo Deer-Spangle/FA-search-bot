@@ -5,7 +5,64 @@ import requests_mock
 import telegram
 
 from bot import NeatenFunctionality
-from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType
+from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort
+from tests.util.submission_builder import SubmissionBuilder
+
+
+class FAUserTest(unittest.TestCase):
+
+    def test_constructor(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser(name, profile_name)
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+    def test_from_short_dict(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser.from_short_dict(
+            {
+                "name": name,
+                "profile_name": profile_name
+            }
+        )
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+    def test_from_submission_dict(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUser.from_submission_dict(
+            {
+                "name": name,
+                "profile_name": profile_name
+            }
+        )
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
+
+
+class FAUserShortTest(unittest.TestCase):
+
+    def test_constructor(self):
+        name = "John"
+        profile_name = "john"
+
+        author = FAUserShort(name, profile_name)
+
+        assert author.name == name
+        assert author.profile_name == profile_name
+        assert f"/user/{profile_name}" in author.link
 
 
 class FASubmissionTest(unittest.TestCase):
@@ -20,62 +77,50 @@ class FASubmissionTest(unittest.TestCase):
         assert f"view/{post_id}" in submission.link
 
     def test_create_from_short_dict(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        builder = SubmissionBuilder()
 
         submission = FASubmission.from_short_dict(
-            {
-                "id": post_id,
-                "link": link,
-                "thumbnail": thumb_link
-            }
+            builder.build_search_json()
         )
 
         assert isinstance(submission, FASubmissionShort)
-        assert submission.submission_id == post_id
-        assert submission.link == link
-        assert submission.thumbnail_url == big_thumb_link
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+
+        assert submission.thumbnail_url == builder.thumbnail_url
+        assert submission.title == builder.title
+        assert submission.author.profile_name == builder.author.profile_name
+        assert submission.author.name == builder.author.name
+        assert submission.author.link == builder.author.link
 
     def test_create_from_full_dict(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
-        full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
+        builder = SubmissionBuilder()
 
         submission = FASubmission.from_full_dict(
-            {
-                "link": link,
-                "thumbnail": thumb_link,
-                "download": full_link,
-                "full": full_link
-            }
+            builder.build_submission_json()
         )
 
         assert isinstance(submission, FASubmissionFull)
-        assert submission.submission_id == post_id
-        assert submission.link == link
-        assert submission.thumbnail_url == big_thumb_link
-        assert submission.full_image_url == full_link
-        assert submission.download_url == full_link
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+
+        assert submission.thumbnail_url == builder.thumbnail_url
+        assert submission.title == builder.title
+        assert submission.author.profile_name == builder.author.profile_name
+        assert submission.author.name == builder.author.name
+        assert submission.author.link == builder.author.link
+
+        assert submission.download_url == builder.download_url
+        assert submission.full_image_url == builder.full_image_url
+        assert submission.description == builder.description
+        assert submission.keywords == builder.keywords
 
     def test_create_short_dict_makes_thumb_bigger_75(self):
-        post_id = "1234"
-        image_id = "5324543"
-        link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@75-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        builder = SubmissionBuilder(thumb_size=75)
+        big_thumb_link = builder.thumbnail_url.replace("@75-", "@1600-")
 
         submission = FASubmission.from_short_dict(
-            {
-                "id": post_id,
-                "link": link,
-                "thumbnail": thumb_link
-            }
+            builder.build_search_json()
         )
 
         assert submission.thumbnail_url == big_thumb_link
@@ -126,6 +171,7 @@ class FASubmissionTest(unittest.TestCase):
         assert file_size == size
 
 
+# noinspection DuplicatedCode
 class FASubmissionShortTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -133,20 +179,26 @@ class FASubmissionShortTest(unittest.TestCase):
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
 
-        submission = FASubmissionShort(post_id, thumb_link)
+        submission = FASubmissionShort(post_id, thumb_link, title, author)
 
         assert isinstance(submission, FASubmissionShort)
         assert submission.submission_id == post_id
         assert submission.link == link
         assert submission.thumbnail_url == thumb_link
+        assert submission.title == title
+        assert submission.author == author
 
     def test_to_inline_query_result(self):
         post_id = "1234"
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_url = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
-        submission = FASubmissionShort(post_id, thumb_url)
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        submission = FASubmissionShort(post_id, thumb_url, title, author)
 
         query_result = submission.to_inline_query_result()
 
@@ -156,6 +208,7 @@ class FASubmissionShortTest(unittest.TestCase):
         assert query_result.caption == link
 
 
+# noinspection DuplicatedCode
 class FASubmissionFullTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -164,8 +217,12 @@ class FASubmissionFullTest(unittest.TestCase):
         link = f"https://furaffinity.net/view/{post_id}/"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
         full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
+        title = "Example post"
+        author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
+        description = "This is an example post for testing"
+        keywords = ["example", "test"]
 
-        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link)
+        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link, title, author, description, keywords)
 
         assert isinstance(submission, FASubmissionFull)
         assert submission.submission_id == post_id
@@ -173,17 +230,17 @@ class FASubmissionFullTest(unittest.TestCase):
         assert submission.thumbnail_url == thumb_link
         assert submission.full_image_url == full_link
         assert submission.download_url == full_link
+        assert submission.title == title
+        assert submission.author == author
+        assert submission.description == description
+        assert submission.keywords == keywords
 
     @requests_mock.mock()
     def test_download_file_size(self, r):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link)
+        submission = SubmissionBuilder().build_full_submission()
         size = 23124
         r.head(
-            full_link,
+            submission.full_image_url,
             headers={
                 "content-length": str(size)
             }
@@ -195,7 +252,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert file_size == size
 
         r.head(
-            full_link,
+            submission.full_image_url,
             status_code=404
         )
 
@@ -206,12 +263,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_gif_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.gif"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, download_link)
-        submission._download_file_size = 47453
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -226,13 +278,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_pdf_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.pdf"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = 47453
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -247,13 +293,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_mp3_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.mp3"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = 47453
+        submission = SubmissionBuilder(file_ext="mp3", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -270,12 +310,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_txt_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.txt"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
+        submission = SubmissionBuilder(file_ext="txt").build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -294,13 +329,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_swf_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.swf"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = 47453
+        submission = SubmissionBuilder(file_ext="swf", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -312,13 +341,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_unknown_type_submission(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.zzz"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = 47453
+        submission = SubmissionBuilder(file_ext="zzz", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -330,13 +353,8 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_image_just_under_size_limit(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
-        full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = FASubmission.SIZE_LIMIT_IMAGE - 1
+        submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
+            .build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -350,13 +368,8 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_image_just_over_size_limit(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
-        full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = FASubmission.SIZE_LIMIT_IMAGE + 1
+        submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)\
+            .build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -372,13 +385,8 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_image_over_document_size_limit(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
-        full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT + 1
+        submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)\
+            .build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -394,13 +402,8 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_auto_doc_just_under_size_limit(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.gif"
-        full_link = download_link
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT - 1
+        submission = SubmissionBuilder(file_ext="gif", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)\
+            .build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -416,13 +419,8 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_auto_doc_just_over_size_limit(self, bot):
-        post_id = "1234"
-        image_id = "5324543"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        download_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.pdf"
-        full_link = f"{download_link}.jpg"
-        submission = FASubmissionFull(post_id, thumb_link, download_link, full_link)
-        submission._download_file_size = FASubmission.SIZE_LIMIT_DOCUMENT + 1
+        submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)\
+            .build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 

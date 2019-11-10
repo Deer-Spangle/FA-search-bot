@@ -1,6 +1,7 @@
 import re
 import uuid
 from abc import ABC, abstractmethod
+from threading import Thread
 from typing import Optional, List, Tuple, Union
 
 import telegram
@@ -14,6 +15,7 @@ import json
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import CantSendFileType, FASubmissionFull, FASubmissionShort
+from subscription_watcher import SubscriptionWatcher, Subscription
 
 
 class FilterRegex(Filters.regex):
@@ -36,10 +38,14 @@ class FASearchBot:
         self.bot = None
         self.alive = False
         self.functionalities = []
+        self.subscription_watcher = None
+        self.subscription_watcher_thread = None
 
     def start(self):
         request = Request(con_pool_size=8)
         self.bot = telegram.Bot(token=self.bot_key, request=request)
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
+        self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
         updater = Updater(bot=self.bot)
         dispatcher = updater.dispatcher
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -51,16 +57,28 @@ class FASearchBot:
         updater.start_polling()
         self.alive = True
 
+        # Start the sub watcher
+        self.subscription_watcher_thread.start()
+
         while self.alive:
             print("Main thread alive")
-            time.sleep(30)
+            try:
+                time.sleep(30)
+            except KeyboardInterrupt:
+                self.alive = False
+
+        # Kill the sub watcher
+        self.subscription_watcher.running = False
+        self.subscription_watcher_thread.join()
 
     def initialise_functionalities(self):
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
             NeatenFunctionality(self.api),
-            InlineFunctionality(self.api)
+            InlineFunctionality(self.api),
+            SubscriptionFunctionality(self.subscription_watcher),
+            BlacklistFunctionality(self.subscription_watcher)
         ]
 
 
@@ -77,7 +95,7 @@ class BotFunctionality(ABC):
         dispatcher.add_handler(handler)
 
     @abstractmethod
-    def call(self, bot, update):
+    def call(self, bot, update: telegram.Update):
         pass
 
 
@@ -103,8 +121,12 @@ class WelcomeFunctionality(BotFunctionality):
                  "Currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
                  "- Respond to inline search queries\n"
-                 "- Browse user galleries, scraps and favs inline "
-                 "(use the format 'gallery:username', 'scraps:username', or 'favs:username')"
+                 "- Browse user galleries, scraps and favourites inline "
+                 "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
+                 "- Create subscriptions "
+                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`)\n"
+                 "- Store blacklists for those subscriptions "
+                 "(use `/add_blacklisted_tag tag`, `/list_blacklisted_tags` and `/remove_blacklisted_tag tag`)"
         )
 
 
@@ -377,3 +399,109 @@ class InlineFunctionality(BotFunctionality):
                 )
             )
         ]
+
+
+class SubscriptionFunctionality(BotFunctionality):
+
+    def __init__(self, watcher: SubscriptionWatcher):
+        super().__init__(CommandHandler, command=['add_subscription', 'remove_subscription', 'list_subscriptions'])
+        self.watcher = watcher
+
+    def call(self, bot, update):
+        message_text = update.message.text
+        command = message_text.split()[0]
+        args = message_text[len(command):].strip()
+        destination = update.message.chat_id
+        if command == "/add_subscription":
+            bot.send_message(
+                chat_id=destination,
+                text=self._add_sub(destination, args)
+            )
+        elif command == "/remove_subscription":
+            bot.send_message(
+                chat_id=destination,
+                text=self._remove_sub(destination, args)
+            )
+        elif command == "/list_subscriptions":
+            bot.send_message(
+                chat_id=destination,
+                text=self._list_subs(destination)
+            )
+        else:
+            bot.send_message(
+                chat_id=destination,
+                text="I do not understand."
+            )
+
+    def _add_sub(self, destination: int, query: str):
+        if query == "":
+            return f"Please specify the subscription query you wish to add."
+        new_sub = Subscription(query, destination)
+        self.watcher.subscriptions.add(new_sub)
+        return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
+
+    def _remove_sub(self, destination: int, query: str):
+        old_sub = Subscription(query, destination)
+        try:
+            self.watcher.subscriptions.remove(old_sub)
+            return f"Removed subscription: \"{query}\".\n{self._list_subs(destination)}"
+        except KeyError:
+            return f"There is not a subscription for \"{query}\" in this chat."
+
+    def _list_subs(self, destination: int):
+        subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
+        subs_list = "\n".join([f"- {sub.query}" for sub in subs])
+        return f"Current active subscriptions in this chat:\n{subs_list}"
+
+
+class BlacklistFunctionality(BotFunctionality):
+
+    def __init__(self, watcher: SubscriptionWatcher):
+        super().__init__(
+            CommandHandler, command=['add_blacklisted_tag', 'remove_blacklisted_tag', 'list_blacklisted_tags']
+        )
+        self.watcher = watcher
+
+    def call(self, bot, update):
+        message_text = update.message.text
+        command = message_text.split()[0]
+        args = message_text[len(command):].strip()
+        destination = update.message.chat_id
+        if command == "/add_blacklisted_tag":
+            bot.send_message(
+                chat_id=destination,
+                text=self._add_to_blacklist(destination, args)
+            )
+        elif command == "/remove_blacklisted_tag":
+            bot.send_message(
+                chat_id=destination,
+                text=self._remove_from_blacklist(destination, args)
+            )
+        elif command == "/list_blacklisted_tags":
+            bot.send_message(
+                chat_id=destination,
+                text=self._list_blacklisted_tags(destination)
+            )
+        else:
+            bot.send_message(
+                chat_id=destination,
+                text="I do not understand."
+            )
+
+    def _add_to_blacklist(self, destination: int, query: str):
+        if query == "":
+            return f"Please specify the tag you wish to add to blacklist."
+        self.watcher.add_to_blacklist(destination, query)
+        return f"Added tag to blacklist: \"{query}\".\n{self._list_blacklisted_tags(destination)}"
+
+    def _remove_from_blacklist(self, destination: int, query: str):
+        try:
+            self.watcher.blacklists[destination].remove(query)
+            return f"Removed tag from blacklist: \"{query}\".\n{self._list_blacklisted_tags(destination)}"
+        except KeyError:
+            return f"The tag \"{query}\" is not on the blacklist for this chat."
+
+    def _list_blacklisted_tags(self, destination: int):
+        blacklist = self.watcher.blacklists[destination]
+        tags_list = "\n".join([f"- {tag}" for tag in blacklist])
+        return f"Current blacklist for this chat:\n{tags_list}"
