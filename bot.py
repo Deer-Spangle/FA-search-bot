@@ -29,6 +29,8 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
 
+    VERSION = "1.2.0"
+
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
             self.config = json.load(f)
@@ -116,9 +118,10 @@ class WelcomeFunctionality(BotFunctionality):
     def call(self, bot, update):
         bot.send_message(
             chat_id=update.message.chat_id,
-            text="Hello, I'm a new bot so I'm still learning. I can't do a whole lot yet. "
+            text="Hello, I'm a bot to interface with furaffinity through telegram. I can do a few things, "
+                 "but there's still more for me to learn.\n"
                  "If you have any suggestions, requests, or questions, direct them to @deerspangle.\n"
-                 "Currently I can:\n"
+                 f"I am version {FASearchBot.VERSION} and currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
                  "- Respond to inline search queries\n"
                  "- Browse user galleries, scraps and favourites inline "

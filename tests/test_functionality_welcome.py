@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 import telegram
 
-from bot import WelcomeFunctionality
+from bot import WelcomeFunctionality, FASearchBot
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
 
@@ -18,4 +18,6 @@ class WelcomeTest(unittest.TestCase):
 
         bot.send_message.assert_called()
         assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-        assert "@deerspangle" in bot.send_message.call_args[1]['text']
+        message_text = bot.send_message.call_args[1]['text']
+        assert "@deerspangle" in message_text
+        assert FASearchBot.VERSION in message_text
