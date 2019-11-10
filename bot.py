@@ -77,7 +77,8 @@ class FASearchBot:
             WelcomeFunctionality(),
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
-            SubscriptionFunctionality(self.subscription_watcher)
+            SubscriptionFunctionality(self.subscription_watcher),
+            BlacklistFunctionality(self.subscription_watcher)
         ]
 
 
