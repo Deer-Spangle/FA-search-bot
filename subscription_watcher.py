@@ -57,7 +57,7 @@ class SubscriptionWatcher:
 
     def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         try:
-            return self.api.get_browse_page()
+            return self.api.get_browse_page(page)
         except ValueError as e:
             return []
 
