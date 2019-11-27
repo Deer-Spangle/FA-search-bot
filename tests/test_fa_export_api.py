@@ -1,6 +1,8 @@
+import datetime
 import unittest
 
 import requests_mock
+from requests import HTTPError
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmissionFull, FASubmissionShort
@@ -29,6 +31,75 @@ class FAExportAPITest(unittest.TestCase):
 
         resp = api._api_request(path)
 
+        assert resp.json() == test_obj
+
+    @requests_mock.mock()
+    def test_api_request_with_retry__does_not_retry_200(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/200"
+        api = FAExportAPI(api_url)
+        test_obj = {"key": "value"}
+        r.get(
+            "http://example.com/resources/200",
+            [
+                {"json": test_obj, "status_code": 200},
+                {"text": "500 Error. Something broke.", "status_code": 500},
+            ]
+        )
+
+        start_time = datetime.datetime.now()
+        resp = api._api_request_with_retry(path)
+        end_time = datetime.datetime.now()
+
+        time_waited = end_time - start_time
+        assert time_waited.seconds <= 1
+        assert resp.status_code == 200
+        assert resp.json() == test_obj
+
+    @requests_mock.mock()
+    def test_api_request_with_retry__does_not_retry_400_error(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/400"
+        api = FAExportAPI(api_url)
+        r.get(
+            "http://example.com/resources/400",
+            [
+                {"text": "400 error, you messed up.", "status_code": 400},
+                {"text": "500 Error. Something broke.", "status_code": 500},
+            ]
+        )
+
+        start_time = datetime.datetime.now()
+        resp = api._api_request_with_retry(path)
+        end_time = datetime.datetime.now()
+
+        time_waited = end_time - start_time
+        assert time_waited.seconds <= 1
+        assert resp.status_code == 400
+        assert resp.text == "400 error, you messed up."
+
+    @requests_mock.mock()
+    def test_api_request_with_retry__retries_500_error(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/500"
+        api = FAExportAPI(api_url)
+        test_obj = {"key": "value"}
+        r.get(
+            "http://example.com/resources/500",
+            [
+                {"text": "500 Error. Something broke.", "status_code": 500},
+                {"text": "500 Error. Something broke.", "status_code": 500},
+                {"json": test_obj, "status_code": 200}
+            ]
+        )
+
+        start_time = datetime.datetime.now()
+        resp = api._api_request_with_retry(path)
+        end_time = datetime.datetime.now()
+
+        time_waited = end_time - start_time
+        assert 0.5 <= time_waited.seconds <= 5
+        assert resp.status_code == 200
         assert resp.json() == test_obj
 
     @requests_mock.mock()
