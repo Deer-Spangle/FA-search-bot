@@ -55,12 +55,18 @@ class SubscriptionWatcher:
             # Wait
             time.sleep(self.BACK_OFF)
 
+    def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
+        try:
+            return self.api.get_browse_page()
+        except ValueError as e:
+            return []
+
     def _get_new_results(self) -> List[FASubmissionShort]:
         """
         Gets new results since last scan, returning them in order from oldest to newest.
         """
         if len(self.latest_ids) == 0:
-            first_page = self.api.get_browse_page()
+            first_page = self._get_browse_page()
             self._update_latest_ids(first_page)
             return []
         page = 1
@@ -68,7 +74,7 @@ class SubscriptionWatcher:
         new_results = []  # type: List[FASubmissionShort]
         caught_up = False
         while page <= self.PAGE_CAP and not caught_up:
-            page_results = self.api.get_browse_page(page)
+            page_results = self._get_browse_page(page)
             browse_results += page_results
             # Get new results
             for result in page_results:
