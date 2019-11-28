@@ -92,12 +92,8 @@ class SubscriptionWatcher:
             self.latest_ids.append(result.submission_id)
 
     def _send_update(self, subscription: 'Subscription', result: FASubmissionFull):
-        self.bot.send_message(
-            chat_id=subscription.destination,
-            text=f"Update on \"{subscription.query}\" subscription:"
-        )
         subscription.latest_update = datetime.datetime.now()
-        result.send_message(self.bot, subscription.destination)
+        result.send_message(self.bot, subscription.destination, prefix=f"Update on \"{subscription.query}\" subscription:")
 
     def add_to_blacklist(self, destination: int, tag: str):
         if destination in self.blacklists:

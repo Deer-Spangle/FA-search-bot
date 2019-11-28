@@ -313,7 +313,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert list(watcher.latest_ids) == id_list[::-1]
 
     @patch.object(telegram, "Bot")
-    def test_send_update__sends_messages(self, bot):
+    def test_send_update__sends_message(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         subscription = Subscription("test", 12345)
@@ -321,16 +321,15 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         watcher._send_update(subscription, submission)
 
-        bot.send_message.assert_called_once()
-        kwargs = bot.send_message.call_args[1]
-        assert kwargs['chat_id'] == 12345
-        assert "update" in kwargs['text'].lower()
-        assert "\"test\"" in kwargs['text'].lower()
-        assert "subscription" in kwargs['text'].lower()
+        bot.send_message.assert_not_called()
         bot.send_photo.assert_called_once()
         kwargs_photo = bot.send_photo.call_args[1]
         assert kwargs_photo['chat_id'] == 12345
         assert kwargs_photo['photo'] == submission.download_url
+        assert "update" in kwargs_photo['caption']
+        assert "\"test\"" in kwargs_photo['caption']
+        assert "subscription" in kwargs_photo['caption']
+        assert submission.link in kwargs_photo['caption']
 
     @patch.object(telegram, "Bot")
     def test_send_update__updates_latest(self, bot):
