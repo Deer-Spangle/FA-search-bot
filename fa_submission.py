@@ -145,7 +145,11 @@ class FASubmissionFull(FASubmissionShort):
             self._download_file_size = FASubmission._get_file_size(self.download_url)
         return self._download_file_size
 
-    def send_message(self, bot, chat_id: int, reply_to: int = None) -> None:
+    def send_message(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
+        if prefix is None:
+            prefix = ""
+        else:
+            prefix += "\n"
         ext = self.download_url.split(".")[-1].lower()
         # Handle photos
         if ext in FASubmission.EXTENSIONS_PHOTO:
@@ -153,7 +157,7 @@ class FASubmissionFull(FASubmissionShort):
                 bot.send_photo(
                     chat_id=chat_id,
                     photo=self.thumbnail_url,
-                    caption=f"{self.link}\n[Direct download]({self.download_url})",
+                    caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
                     reply_to_message_id=reply_to,
                     parse_mode=telegram.ParseMode.MARKDOWN
                 )
@@ -161,7 +165,7 @@ class FASubmissionFull(FASubmissionShort):
             bot.send_photo(
                 chat_id=chat_id,
                 photo=self.download_url,
-                caption=self.link,
+                caption=f"{prefix}{self.link}",
                 reply_to_message_id=reply_to
             )
             return
@@ -170,7 +174,7 @@ class FASubmissionFull(FASubmissionShort):
             bot.send_photo(
                 chat_id=chat_id,
                 photo=self.full_image_url,
-                caption=f"{self.link}\n[Direct download]({self.download_url})",
+                caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
                 reply_to_message_id=reply_to,
                 parse_mode=telegram.ParseMode.MARKDOWN
             )
@@ -180,7 +184,7 @@ class FASubmissionFull(FASubmissionShort):
             bot.send_document(
                 chat_id=chat_id,
                 document=self.download_url,
-                caption=self.link,
+                caption=f"{prefix}{self.link}",
                 reply_to_message_id=reply_to
             )
             return
@@ -189,7 +193,7 @@ class FASubmissionFull(FASubmissionShort):
             bot.send_audio(
                 chat_id=chat_id,
                 audio=self.download_url,
-                caption=self.link,
+                caption=f"{prefix}{self.link}",
                 reply_to_message_id=reply_to
             )
             return

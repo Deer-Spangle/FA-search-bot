@@ -435,3 +435,33 @@ class FASubmissionFullTest(unittest.TestCase):
             f"{submission.link}\n[Direct download]({submission.download_url})"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+
+    @patch.object(telegram, "Bot")
+    def test_send_message__with_prefix(self, bot):
+        submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
+            .build_full_submission()
+        chat_id = -9327622
+        message_id = 2873292
+
+        submission.send_message(bot, chat_id, message_id, prefix="Update on a search")
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert submission.link in bot.send_photo.call_args[1]['caption']
+        assert "Update on a search\n" in bot.send_photo.call_args[1]['caption']
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
+
+    def test_send_message__without_prefix(self, bot):
+        submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
+            .build_full_submission()
+        chat_id = -9327622
+        message_id = 2873292
+
+        submission.send_message(bot, chat_id, message_id)
+
+        bot.send_photo.assert_called_once()
+        assert bot.send_photo.call_args[1]['chat_id'] == chat_id
+        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
+        assert bot.send_photo.call_args[1]['caption'] == submission.link
+        assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
