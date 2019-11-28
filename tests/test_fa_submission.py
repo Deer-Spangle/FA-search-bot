@@ -452,6 +452,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert "Update on a search\n" in bot.send_photo.call_args[1]['caption']
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
 
+    @patch.object(telegram, "Bot")
     def test_send_message__without_prefix(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
             .build_full_submission()
