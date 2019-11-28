@@ -29,7 +29,7 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
 
-    VERSION = "1.2.0"
+    VERSION = "1.2.1"
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
