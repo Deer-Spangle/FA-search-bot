@@ -326,9 +326,9 @@ class SubscriptionWatcherTest(unittest.TestCase):
         kwargs_photo = bot.send_photo.call_args[1]
         assert kwargs_photo['chat_id'] == 12345
         assert kwargs_photo['photo'] == submission.download_url
-        assert "update" in kwargs_photo['caption']
+        assert "update" in kwargs_photo['caption'].lower()
         assert "\"test\"" in kwargs_photo['caption']
-        assert "subscription" in kwargs_photo['caption']
+        assert "subscription" in kwargs_photo['caption'].lower()
         assert submission.link in kwargs_photo['caption']
 
     @patch.object(telegram, "Bot")
