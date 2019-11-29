@@ -29,7 +29,7 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
 
-    VERSION = "1.2.3"
+    VERSION = "1.2.4"
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -415,17 +415,17 @@ class SubscriptionFunctionality(BotFunctionality):
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         destination = update.message.chat_id
-        if command == "/add_subscription":
+        if command.startswith("/add_subscription"):
             bot.send_message(
                 chat_id=destination,
                 text=self._add_sub(destination, args)
             )
-        elif command == "/remove_subscription":
+        elif command.startswith("/remove_subscription"):
             bot.send_message(
                 chat_id=destination,
                 text=self._remove_sub(destination, args)
             )
-        elif command == "/list_subscriptions":
+        elif command.startswith("/list_subscriptions"):
             bot.send_message(
                 chat_id=destination,
                 text=self._list_subs(destination)

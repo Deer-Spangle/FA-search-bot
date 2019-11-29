@@ -33,6 +33,25 @@ class SubscriptionFunctionalityTest(unittest.TestCase):
         assert bot.send_message.call_args[1]['text'] == "Added subscription test"
 
     @patch.object(telegram, "Bot")
+    def test_call__route_add_subscription_with_username(self, bot):
+        update = MockTelegramUpdate.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        func = SubscriptionFunctionality(watcher)
+        add_sub = MockMethod("Added subscription test")
+        func._add_sub = add_sub.call
+
+        func.call(bot, update)
+
+        assert add_sub.called
+        assert add_sub.args is not None
+        assert add_sub.args[0] == 14358
+        assert add_sub.args[1] == "test"
+        bot.send_message.assert_called()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "Added subscription test"
+
+    @patch.object(telegram, "Bot")
     def test_call__route_remove_subscription(self, bot):
         update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_subscription example")
         api = MockExportAPI()
@@ -52,8 +71,45 @@ class SubscriptionFunctionalityTest(unittest.TestCase):
         assert bot.send_message.call_args[1]['text'] == "Removed subscription test"
 
     @patch.object(telegram, "Bot")
+    def test_call__route_remove_subscription(self, bot):
+        update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        func = SubscriptionFunctionality(watcher)
+        delete_sub = MockMethod("Removed subscription test")
+        func._remove_sub = delete_sub.call
+
+        func.call(bot, update)
+
+        assert delete_sub.called
+        assert delete_sub.args is not None
+        assert delete_sub.args[0] == 14358
+        assert delete_sub.args[1] == "example"
+        bot.send_message.assert_called()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "Removed subscription test"
+
+    @patch.object(telegram, "Bot")
     def test_call__route_list_subscriptions(self, bot):
         update = MockTelegramUpdate.with_message(chat_id=14358, text="/list_subscriptions")
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        func = SubscriptionFunctionality(watcher)
+        list_subs = MockMethod("Listing subscriptions")
+        func._list_subs = list_subs.call
+
+        func.call(bot, update)
+
+        assert list_subs.called
+        assert list_subs.args is not None
+        assert list_subs.args[0] == 14358
+        bot.send_message.assert_called()
+        assert bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+        assert bot.send_message.call_args[1]['text'] == "Listing subscriptions"
+
+    @patch.object(telegram, "Bot")
+    def test_call__route_list_subscriptions_with_username(self, bot):
+        update = MockTelegramUpdate.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         func = SubscriptionFunctionality(watcher)
