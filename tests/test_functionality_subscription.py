@@ -160,3 +160,17 @@ class SubscriptionFunctionalityTest(unittest.TestCase):
         assert "- deer" in resp
         assert "- example" in resp
         assert "- test" not in resp
+
+    @patch.object(telegram, "Bot")
+    def test_list_subs__alphabetical(self, bot):
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        watcher.subscriptions.add(Subscription("example", 18749))
+        watcher.subscriptions.add(Subscription("test", 18749))
+        watcher.subscriptions.add(Subscription("deer", 18749))
+        func = SubscriptionFunctionality(watcher)
+
+        resp = func._list_subs(18749)
+
+        assert "Current active subscriptions in this chat:" in resp
+        assert "- deer\n- example\n- test" in resp

@@ -29,7 +29,7 @@ class FilterRegex(Filters.regex):
 
 class FASearchBot:
 
-    VERSION = "1.2.2"
+    VERSION = "1.2.3"
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -453,6 +453,7 @@ class SubscriptionFunctionality(BotFunctionality):
 
     def _list_subs(self, destination: int):
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
+        subs.sort(key=lambda sub: sub.query)
         subs_list = "\n".join([f"- {sub.query}" for sub in subs])
         return f"Current active subscriptions in this chat:\n{subs_list}"
 
