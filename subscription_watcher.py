@@ -33,18 +33,22 @@ class SubscriptionWatcher:
         self.running = True
         while self.running:
             new_results = self._get_new_results()
-            # Check for subscription updates
+            # Try and get full data for new results
+            full_results = []
             for result in new_results:
-                # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
+                    full_results.append(full_result)
                 except Exception:
                     print(f"Submission {result.submission_id} disappeared before I could check it.")
                     continue
-                # Check which subscriptions match
-                for subscription in self.subscriptions:
-                    blacklist = self.blacklists.get(subscription.destination, set())
+            # Check for which results match each subscription
+            for subscription in self.subscriptions:
+                blacklist = self.blacklists.get(subscription.destination, set())
+                matching_results = []
+                for full_result in full_results:
                     if subscription.matches_result(full_result, blacklist):
+                        matching_results.append(full_result)
                         try:
                             self._send_update(subscription, full_result)
                         except Exception as e:
