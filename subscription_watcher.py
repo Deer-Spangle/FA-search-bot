@@ -42,8 +42,10 @@ class SubscriptionWatcher:
                 except Exception:
                     print(f"Submission {result.submission_id} disappeared before I could check it.")
                     continue
+            # Copy subscriptions, to avoid "changed size during iteration" issues
+            subscriptions = self.subscriptions.copy()
             # Check for which results match each subscription
-            for subscription in self.subscriptions:
+            for subscription in subscriptions:
                 blacklist = self.blacklists.get(subscription.destination, set())
                 matching_results = []
                 for full_result in full_results:
@@ -106,9 +108,10 @@ class SubscriptionWatcher:
             self.blacklists[destination] = {tag}
 
     def save_to_json(self):
+        subscriptions = self.subscriptions.copy()
         data = {
             "latest_ids": list(self.latest_ids),
-            "subscriptions": [x.to_json() for x in self.subscriptions],
+            "subscriptions": [x.to_json() for x in subscriptions],
             "blacklists": {str(k): list(v) for k, v in self.blacklists.items()}
         }
         with open(self.FILENAME, "w") as f:
