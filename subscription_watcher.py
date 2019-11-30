@@ -13,7 +13,7 @@ from fa_submission import FASubmissionFull, FASubmissionShort
 
 
 class SubscriptionWatcher:
-    PAGE_CAP = 10
+    PAGE_CAP = 900
     BACK_OFF = 20
     FILENAME = "subscriptions.json"
 
@@ -33,24 +33,20 @@ class SubscriptionWatcher:
         self.running = True
         while self.running:
             new_results = self._get_new_results()
-            # Try and get full data for new results
-            full_results = []
+            # Check for subscription updates
             for result in new_results:
+                # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
-                    full_results.append(full_result)
                 except Exception:
                     print(f"Submission {result.submission_id} disappeared before I could check it.")
                     continue
-            # Copy subscriptions, to avoid "changed size during iteration" issues
-            subscriptions = self.subscriptions.copy()
-            # Check for which results match each subscription
-            for subscription in subscriptions:
-                blacklist = self.blacklists.get(subscription.destination, set())
-                matching_results = []
-                for full_result in full_results:
+                # Copy subscriptions, to avoid "changed size during iteration" issues
+                subscriptions = self.subscriptions.copy()
+                # Check which subscriptions match
+                for subscription in subscriptions:
+                    blacklist = self.blacklists.get(subscription.destination, set())
                     if subscription.matches_result(full_result, blacklist):
-                        matching_results.append(full_result)
                         try:
                             self._send_update(subscription, full_result)
                         except Exception as e:
