@@ -8,7 +8,8 @@ import telegram
 import time
 
 from telegram import Chat, InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultPhoto, InlineQueryResult
-from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler
+from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler, MessageQueue
+from telegram.ext import messagequeue as mq
 import logging
 from telegram.utils.request import Request
 import json
@@ -25,6 +26,43 @@ class FilterRegex(Filters.regex):
         if text:
             return bool(self.pattern.search(text))
         return False
+
+
+class MQBot(telegram.bot.Bot):
+    """A subclass of Bot which delegates send method handling to MQ"""
+    def __init__(self, *args, is_queued_def=True, mqueue=None, **kwargs):
+        super(MQBot, self).__init__(*args, **kwargs)
+        # below 2 attributes should be provided for decorator usage
+        self._is_messages_queued_default = is_queued_def
+        self._msg_queue = mqueue or MessageQueue()
+
+    @mq.queuedmessage
+    def _send_message(self, *args, **kwargs):
+        return super(MQBot, self).send_message(*args, **kwargs)
+
+    def send_message(self, chat_id, *args, **kwargs):
+        return self._send_message(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+
+    @mq.queuedmessage
+    def _send_photo(self, *args, **kwargs):
+        return super(MQBot, self).send_photo(*args, **kwargs)
+
+    def send_photo(self, chat_id, *args, **kwargs):
+        return self._send_photo(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+
+    @mq.queuedmessage
+    def _send_document(self, *args, **kwargs):
+        return super(MQBot, self).send_document(*args, **kwargs)
+
+    def send_document(self, chat_id, *args, **kwargs):
+        return self._send_document(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+
+    @mq.queuedmessage
+    def _send_audio(self, *args, **kwargs):
+        return super(MQBot, self).send_audio(*args, **kwargs)
+
+    def send_audio(self, chat_id, *args, **kwargs):
+        return self._send_audio(chat_id, *args, **kwargs, isgroup=chat_id < 0)
 
 
 class FASearchBot:
@@ -45,7 +83,7 @@ class FASearchBot:
 
     def start(self):
         request = Request(con_pool_size=8)
-        self.bot = telegram.Bot(token=self.bot_key, request=request)
+        self.bot = MQBot(token=self.bot_key, request=request)
         self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
         self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
         updater = Updater(bot=self.bot)
