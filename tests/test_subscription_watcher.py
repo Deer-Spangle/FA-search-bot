@@ -310,7 +310,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         watcher._update_latest_ids(submissions)
 
-        assert list(watcher.latest_ids) == id_list[::-1]
+        assert list(watcher.latest_ids) == id_list
 
     @patch.object(telegram, "Bot")
     def test_send_update__sends_message(self, bot):
