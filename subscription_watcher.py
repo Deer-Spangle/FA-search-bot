@@ -52,8 +52,8 @@ class SubscriptionWatcher:
                         except Exception as e:
                             print(f"Failed to send submission: {full_result.submission_id} "
                                   f"to {subscription.destination} because {e}.")
-            # Save config
-            self.save_to_json()
+                # Update latest ids with the submission we just checked, and save config
+                self._update_latest_ids([result])
             # Wait
             time.sleep(self.BACK_OFF)
 
@@ -69,7 +69,7 @@ class SubscriptionWatcher:
         """
         if len(self.latest_ids) == 0:
             first_page = self._get_browse_page()
-            self._update_latest_ids(first_page)
+            self._update_latest_ids(first_page[::-1])
             return []
         page = 1
         browse_results = []  # type: List[FASubmissionShort]
@@ -85,13 +85,13 @@ class SubscriptionWatcher:
                     break
                 new_results.append(result)
             page += 1
-        self._update_latest_ids(browse_results)
         # Return oldest result first
         return new_results[::-1]
 
     def _update_latest_ids(self, browse_results: List[FASubmissionShort]):
-        for result in browse_results[::-1]:
+        for result in browse_results:
             self.latest_ids.append(result.submission_id)
+        self.save_to_json()
 
     def _send_update(self, subscription: 'Subscription', result: FASubmissionFull):
         subscription.latest_update = datetime.datetime.now()
@@ -111,7 +111,7 @@ class SubscriptionWatcher:
             "blacklists": {str(k): list(v) for k, v in self.blacklists.items()}
         }
         with open(self.FILENAME, "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=2)
 
     @staticmethod
     def load_from_json(api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
