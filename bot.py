@@ -8,7 +8,7 @@ import telegram
 import time
 
 from telegram import Chat, InlineQueryResultArticle, InputTextMessageContent, InlineQueryResultPhoto, InlineQueryResult
-from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler, MessageQueue
+from telegram.ext import Updater, Filters, MessageHandler, CommandHandler, InlineQueryHandler, MessageQueue, BaseFilter
 from telegram.ext import messagequeue as mq
 import logging
 from telegram.utils.request import Request
@@ -27,11 +27,12 @@ class FilterRegex(Filters.regex):
             return bool(self.pattern.search(text))
         return False
 
-class FilterImageNoCaption(Filters.photo):
+
+class FilterImageNoCaption(BaseFilter):
 
     def filter(self, message):
         text = message.text_markdown_urled or message.caption_markdown_urled
-        return not text and super().filter(message)
+        return not text and bool(message.photo)
 
 
 class MQBot(telegram.bot.Bot):
@@ -73,7 +74,7 @@ class MQBot(telegram.bot.Bot):
 
 class FASearchBot:
 
-    VERSION = "1.3.0"
+    VERSION = "1.3.1"
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
