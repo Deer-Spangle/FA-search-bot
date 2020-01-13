@@ -27,6 +27,12 @@ class FilterRegex(Filters.regex):
             return bool(self.pattern.search(text))
         return False
 
+class FilterImageNoCaption(Filters.photo):
+
+    def filter(self, message):
+        text = message.text_markdown_urled or message.caption_markdown_urled
+        return not text and super().filter(message)
+
 
 class MQBot(telegram.bot.Bot):
     """A subclass of Bot which delegates send method handling to MQ"""
@@ -67,7 +73,7 @@ class MQBot(telegram.bot.Bot):
 
 class FASearchBot:
 
-    VERSION = "1.2.8"
+    VERSION = "1.3.0"
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
@@ -115,6 +121,7 @@ class FASearchBot:
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
+            ImageHashRecommendFunctionality(),
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
             SubscriptionFunctionality(self.subscription_watcher),
@@ -169,6 +176,20 @@ class WelcomeFunctionality(BotFunctionality):
                  "- Store blacklists for those subscriptions "
                  "(use `/add_blacklisted_tag tag`, `/list_blacklisted_tags` and `/remove_blacklisted_tag tag`)"
         )
+
+
+class ImageHashRecommendFunctionality(BotFunctionality):
+
+    def __init__(self):
+        super().__init__(MessageHandler, filters=FilterImageNoCaption())
+
+    def call(self, bot, update: telegram.Update):
+        if update.message.chat.type == Chat.PRIVATE:
+            bot.send_message(
+                chat_id=update.message.chat_id,
+                text="I can't find an image without a link, try using @FindFurryPicBot",
+                reply_to_message_id=update.message.message_id
+            )
 
 
 class NeatenFunctionality(BotFunctionality):
