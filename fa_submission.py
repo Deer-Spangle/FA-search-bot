@@ -159,7 +159,7 @@ class FASubmissionFull(FASubmissionShort):
                     photo=self.thumbnail_url,
                     caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
                     reply_to_message_id=reply_to,
-                    parse_mode=telegram.ParseMode.MARKDOWN
+                    parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
                 )
                 return
             bot.send_photo(
@@ -176,7 +176,7 @@ class FASubmissionFull(FASubmissionShort):
                 photo=self.full_image_url,
                 caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
                 reply_to_message_id=reply_to,
-                parse_mode=telegram.ParseMode.MARKDOWN
+                parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
             )
             return
         # Handle gifs, and pdfs, which can be sent as documents
