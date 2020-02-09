@@ -3,7 +3,8 @@ import unittest
 from unittest.mock import patch
 import telegram
 
-from bot import WelcomeFunctionality, FASearchBot
+from bot import FASearchBot
+from functionalities.welcome import WelcomeFunctionality
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
 

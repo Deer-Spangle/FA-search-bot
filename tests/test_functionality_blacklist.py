@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 import telegram
 
-from bot import BlacklistFunctionality
+from functionalities.subscriptions import BlacklistFunctionality
 from subscription_watcher import SubscriptionWatcher
 from tests.util.mock_export_api import MockExportAPI
 from tests.util.mock_method import MockMethod

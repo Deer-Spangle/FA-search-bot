@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 import telegram
 
-from bot import SubscriptionFunctionality
+from functionalities.subscriptions import SubscriptionFunctionality
 from subscription_watcher import SubscriptionWatcher, Subscription
 from tests.util.mock_export_api import MockExportAPI
 from tests.util.mock_method import MockMethod
