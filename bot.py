@@ -3,7 +3,7 @@ from threading import Thread
 import telegram
 import time
 
-from telegram.ext import Updater, MessageQueue
+from telegram.ext import Updater, MessageQueue, BaseFilter
 from telegram.ext import messagequeue as mq
 import logging
 from telegram.utils.request import Request
@@ -17,6 +17,13 @@ from functionalities.neaten import NeatenFunctionality
 from functionalities.subscriptions import SubscriptionFunctionality, BlacklistFunctionality
 from functionalities.welcome import WelcomeFunctionality
 from subscription_watcher import SubscriptionWatcher
+
+
+class FilterImageNoCaption(BaseFilter):
+
+    def filter(self, message):
+        text = message.text_markdown_urled or message.caption_markdown_urled
+        return not text and bool(message.photo)
 
 
 class MQBot(telegram.bot.Bot):
@@ -106,6 +113,7 @@ class FASearchBot:
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
+            ImageHashRecommendFunctionality(),
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
             SubscriptionFunctionality(self.subscription_watcher),
