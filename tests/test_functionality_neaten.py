@@ -5,7 +5,7 @@ from unittest.mock import patch, call
 import telegram
 from telegram import Chat
 
-from bot import NeatenFunctionality
+from functionalities.neaten import NeatenFunctionality
 from fa_submission import FASubmission
 from tests.util.mock_export_api import MockExportAPI, MockSubmission
 from tests.util.mock_telegram_update import MockTelegramUpdate

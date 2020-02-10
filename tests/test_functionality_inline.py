@@ -6,7 +6,7 @@ import requests_mock
 import telegram
 from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
 
-from bot import InlineFunctionality
+from functionalities.inline import InlineFunctionality
 from fa_export_api import FAExportAPI
 from fa_submission import FASubmission
 from tests.util.mock_export_api import MockSubmission, MockExportAPI

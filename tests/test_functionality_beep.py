@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 import telegram
 
-from bot import BeepFunctionality
+from functionalities.beep import BeepFunctionality
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
 

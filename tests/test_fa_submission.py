@@ -4,7 +4,7 @@ from unittest.mock import patch
 import requests_mock
 import telegram
 
-from bot import NeatenFunctionality
+from functionalities.neaten import NeatenFunctionality
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort
 from tests.util.submission_builder import SubmissionBuilder
 
