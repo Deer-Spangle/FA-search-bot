@@ -7,9 +7,13 @@ import time
 from typing import List, Optional, Deque, Set, Dict
 import dateutil.parser
 import telegram
+import heartbeat
 
 from fa_export_api import FAExportAPI
 from fa_submission import FASubmissionFull, FASubmissionShort
+
+heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
+heartbeat_app_name = "FASearchBot_sub_thread"
 
 
 class SubscriptionWatcher:
@@ -33,8 +37,11 @@ class SubscriptionWatcher:
         self.running = True
         while self.running:
             new_results = self._get_new_results()
+            count = 0
+            heartbeat.update_heartbeat(heartbeat_app_name)
             # Check for subscription updates
             for result in new_results:
+                count += 1
                 # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
@@ -54,6 +61,9 @@ class SubscriptionWatcher:
                                   f"to {subscription.destination} because {e}.")
                 # Update latest ids with the submission we just checked, and save config
                 self._update_latest_ids([result])
+                # If we've done ten, update heartbeat
+                if count % 10 == 0:
+                    heartbeat.update_heartbeat(heartbeat_app_name)
             # Wait
             time.sleep(self.BACK_OFF)
 

@@ -2,3 +2,4 @@ python-telegram-bot
 requests
 requests-mock
 python-dateutil
+simple-heartbeat
