@@ -72,7 +72,11 @@ class SubscriptionWatcher:
                 if count % self.UPDATE_PER_HEARTBEAT == 0:
                     heartbeat.update_heartbeat(heartbeat_app_name)
             # Wait
-            time.sleep(self.BACK_OFF)
+            sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=self.BACK_OFF)
+            while datetime.datetime.now() < sleep_end:
+                if not self.running:
+                    break
+                time.sleep(0.1)
 
     def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         try:
