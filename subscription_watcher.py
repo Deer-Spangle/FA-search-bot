@@ -1,6 +1,7 @@
 import collections
 import datetime
 import json
+import os
 import re
 import string
 import time
@@ -16,6 +17,7 @@ class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
     FILENAME = "subscriptions.json"
+    FILENAME_TEMP = "subscriptions.temp.json"
 
     def __init__(self, api: FAExportAPI, bot: telegram.Bot):
         self.api = api
@@ -110,8 +112,9 @@ class SubscriptionWatcher:
             "subscriptions": [x.to_json() for x in subscriptions],
             "blacklists": {str(k): list(v) for k, v in self.blacklists.items()}
         }
-        with open(self.FILENAME, "w") as f:
+        with open(self.FILENAME_TEMP, "w") as f:
             json.dump(data, f, indent=2)
+        os.replace(self.FILENAME_TEMP, self.FILENAME)
 
     @staticmethod
     def load_from_json(api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
