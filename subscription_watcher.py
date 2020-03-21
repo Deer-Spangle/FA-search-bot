@@ -20,6 +20,7 @@ heartbeat_app_name = "FASearchBot_sub_thread"
 class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
+    UPDATE_PER_HEARTBEAT = 10
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
 
@@ -64,7 +65,7 @@ class SubscriptionWatcher:
                 # Update latest ids with the submission we just checked, and save config
                 self._update_latest_ids([result])
                 # If we've done ten, update heartbeat
-                if count % 10 == 0:
+                if count % self.UPDATE_PER_HEARTBEAT == 0:
                     heartbeat.update_heartbeat(heartbeat_app_name)
             # Wait
             time.sleep(self.BACK_OFF)
