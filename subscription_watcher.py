@@ -39,7 +39,11 @@ class SubscriptionWatcher:
     def run(self):
         self.running = True
         while self.running:
-            new_results = self._get_new_results()
+            try:
+                new_results = self._get_new_results()
+            except Exception as e:
+                print(f"Failed to get new results because {e}")
+                continue
             count = 0
             heartbeat.update_heartbeat(heartbeat_app_name)
             # Check for subscription updates
