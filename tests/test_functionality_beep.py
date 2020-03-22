@@ -1,19 +1,5 @@
-import unittest
-
-from unittest.mock import patch, MagicMock
-
-import pytest
-import telegram
-
 from functionalities.beep import BeepFunctionality
 from tests.util.mock_telegram_update import MockTelegramUpdate
-
-
-@pytest.fixture
-def context():
-    context = MagicMock()
-    context.bot = MagicMock()
-    return context
 
 
 def test_beep(context):
