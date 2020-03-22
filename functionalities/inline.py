@@ -1,8 +1,9 @@
 import uuid
 from typing import Tuple, List, Union, Optional
 
-from telegram import InlineQueryResult, InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import InlineQueryHandler
+from telegram import InlineQueryResult, InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent, \
+    Update
+from telegram.ext import InlineQueryHandler, CallbackContext
 
 from fa_export_api import FAExportAPI, PageNotFound
 from functionalities.functionalities import BotFunctionality
@@ -14,13 +15,13 @@ class InlineFunctionality(BotFunctionality):
         super().__init__(InlineQueryHandler)
         self.api = api
 
-    def call(self, bot, update):
+    def call(self, update: Update, context: CallbackContext):
         query = update.inline_query.query
         query_clean = query.strip().lower()
         offset = update.inline_query.offset
         print(f"Got an inline query: {query}, page={offset}")
         if query_clean == "":
-            bot.answer_inline_query(update.inline_query.id, [])
+            context.bot.answer_inline_query(update.inline_query.id, [])
             return
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
@@ -34,7 +35,7 @@ class InlineFunctionality(BotFunctionality):
             else:
                 results, next_offset = self._search_query_results(query, offset)
         # Send results
-        bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
+        context.bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
 
     def _favs_query_results(self, username: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
         if offset == "":

@@ -78,7 +78,7 @@ class FASearchBot:
         self.bot = MQBot(token=self.bot_key, request=request)
         self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
         self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
-        updater = Updater(bot=self.bot)
+        updater = Updater(bot=self.bot, use_context=True)
         dispatcher = updater.dispatcher
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 

@@ -1,8 +1,8 @@
 import re
 from typing import Optional, List
 
-from telegram import Chat
-from telegram.ext import MessageHandler
+from telegram import Chat, Update
+from telegram.ext import MessageHandler, CallbackContext
 
 from filters import FilterRegex
 from fa_export_api import PageNotFound
@@ -20,18 +20,18 @@ class NeatenFunctionality(BotFunctionality):
         super().__init__(MessageHandler, filters=FilterRegex(self.FA_LINKS))
         self.api = api
 
-    def call(self, bot, update):
+    def call(self, update: Update, context: CallbackContext):
         message = update.message.text_markdown_urled or update.message.caption_markdown_urled
         submission_ids = []
         for match in self.FA_LINKS.finditer(message):
-            submission_id = self._get_submission_id_from_link(bot, update, match.group(0))
+            submission_id = self._get_submission_id_from_link(context.bot, update, match.group(0))
             if submission_id:
                 submission_ids.append(submission_id)
         # Remove duplicates, preserving order
         submission_ids = list(dict.fromkeys(submission_ids))
         # Handle each submission
         for submission_id in submission_ids:
-            self._handle_fa_submission_link(bot, update, submission_id)
+            self._handle_fa_submission_link(context.bot, update, submission_id)
 
     def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
         # Handle submission page link matches

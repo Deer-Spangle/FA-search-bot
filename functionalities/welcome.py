@@ -1,4 +1,5 @@
-from telegram.ext import CommandHandler
+from telegram import Update
+from telegram.ext import CommandHandler, CallbackContext
 
 from _version import __VERSION__
 from functionalities.functionalities import BotFunctionality
@@ -9,8 +10,8 @@ class WelcomeFunctionality(BotFunctionality):
     def __init__(self):
         super().__init__(CommandHandler, command='start')
 
-    def call(self, bot, update):
-        bot.send_message(
+    def call(self, update: Update, context: CallbackContext):
+        context.bot.send_message(
             chat_id=update.message.chat_id,
             text="Hello, I'm a bot to interface with furaffinity through telegram. I can do a few things, "
                  "but there's still more for me to learn.\n"

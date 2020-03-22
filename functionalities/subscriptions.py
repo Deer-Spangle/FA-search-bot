@@ -1,4 +1,5 @@
-from telegram.ext import CommandHandler
+from telegram import Update
+from telegram.ext import CommandHandler, CallbackContext
 
 from functionalities.functionalities import BotFunctionality
 from subscription_watcher import SubscriptionWatcher, Subscription
@@ -10,28 +11,28 @@ class SubscriptionFunctionality(BotFunctionality):
         super().__init__(CommandHandler, command=['add_subscription', 'remove_subscription', 'list_subscriptions'])
         self.watcher = watcher
 
-    def call(self, bot, update):
+    def call(self, update: Update, context: CallbackContext):
         message_text = update.message.text
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         destination = update.message.chat_id
         if command.startswith("/add_subscription"):
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._add_sub(destination, args)
             )
         elif command.startswith("/remove_subscription"):
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._remove_sub(destination, args)
             )
         elif command.startswith("/list_subscriptions"):
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._list_subs(destination)
             )
         else:
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text="I do not understand."
             )
@@ -66,28 +67,28 @@ class BlacklistFunctionality(BotFunctionality):
         )
         self.watcher = watcher
 
-    def call(self, bot, update):
+    def call(self, update: Update, context: CallbackContext):
         message_text = update.message.text
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         destination = update.message.chat_id
         if command == "/add_blacklisted_tag":
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._add_to_blacklist(destination, args)
             )
         elif command == "/remove_blacklisted_tag":
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._remove_from_blacklist(destination, args)
             )
         elif command == "/list_blacklisted_tags":
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text=self._list_blacklisted_tags(destination)
             )
         else:
-            bot.send_message(
+            context.bot.send_message(
                 chat_id=destination,
                 text="I do not understand."
             )

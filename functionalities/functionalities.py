@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import telegram
+from telegram.ext import CallbackContext
 
 
 class BotFunctionality(ABC):
@@ -16,5 +17,5 @@ class BotFunctionality(ABC):
         dispatcher.add_handler(handler)
 
     @abstractmethod
-    def call(self, bot, update: telegram.Update):
+    def call(self, update: telegram.Update, context: CallbackContext):
         pass
