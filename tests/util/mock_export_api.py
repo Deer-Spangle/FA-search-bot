@@ -76,6 +76,8 @@ class MockSubmission(FASubmissionFull):
 class MockExportAPI(FAExportAPI):
 
     def __init__(self):
+        self.browse_count = 0
+        self.call_after_x_browse = (lambda: None, -1)
         super().__init__("--")
         self.submissions = {}
         self.user_folders = {}
@@ -148,6 +150,9 @@ class MockExportAPI(FAExportAPI):
         return self.search_results[f"{query.lower()}:{page}"]
 
     def get_browse_page(self, page: int = 1) -> List[FASubmission]:
+        self.browse_count += 1
+        if self.browse_count >= self.call_after_x_browse[1]:
+            self.call_after_x_browse[0]()
         if page not in self.browse_results:
             return []
         return self.browse_results[page]

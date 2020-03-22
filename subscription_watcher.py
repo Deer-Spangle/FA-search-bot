@@ -78,6 +78,9 @@ class SubscriptionWatcher:
                     break
                 time.sleep(0.1)
 
+    def stop(self):
+        self.running = False
+
     def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         try:
             return self.api.get_browse_page(page)

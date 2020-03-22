@@ -183,6 +183,23 @@ class SubscriptionWatcherTest(unittest.TestCase):
         # Shorten the wait
         watcher.BACK_OFF = 3
 
+        api.call_after_x_browse = (lambda: watcher.stop(), 2)
+
+        # Run watcher
+        start_time = datetime.datetime.now()
+        watcher.run()
+        end_time = datetime.datetime.now()
+
+        time_waited = end_time - start_time
+        assert 3 <= time_waited.seconds <= 5
+
+    @patch.object(telegram, "Bot")
+    def test_run__can_exit_fast(self, bot):
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        # Shorten the wait
+        watcher.BACK_OFF = 3
+
         thread = Thread(target=lambda: self.watcher_killer(watcher))
         thread.start()
 
@@ -193,27 +210,23 @@ class SubscriptionWatcherTest(unittest.TestCase):
         thread.join()
 
         time_waited = end_time - start_time
-        assert 3 <= time_waited.seconds <= 5
+        assert time_waited.seconds <= 1
 
     @patch.object(telegram, "Bot")
     def test_run__failed_to_send_doesnt_kill_watcher(self, bot):
         submission = MockSubmission("12322")
-        api = MockExportAPI().with_submission(submission)
+        api = MockExportAPI().with_browse_results([submission], 1)
         watcher = SubscriptionWatcher(api, bot)
-        method_called = MockMethod([submission])
-        watcher._get_new_results = method_called.call
-        watcher._send_update = lambda: (_ for _ in ()).throw(Exception)
+        watcher._send_update = lambda *args: (_ for _ in ()).throw(Exception)
         watcher.BACK_OFF = 3
         sub1 = MockSubscription("deer", 0)
         watcher.subscriptions = [sub1]
 
-        thread = Thread(target=lambda: self.watcher_killer(watcher))
-        thread.start()
+        api.call_after_x_browse = (lambda: watcher.stop(), 2)
         # Run watcher
         start_time = datetime.datetime.now()
         watcher.run()
         end_time = datetime.datetime.now()
-        thread.join()
 
         time_waited = end_time - start_time
         assert 3 <= time_waited.seconds <= 5
