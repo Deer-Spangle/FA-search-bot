@@ -20,6 +20,7 @@ heartbeat_app_name = "FASearchBot_sub_thread"
 class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
+    BROWSE_RETRY_BACKOFF = 20
     UPDATE_PER_HEARTBEAT = 10
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
@@ -72,20 +73,24 @@ class SubscriptionWatcher:
                 if count % self.UPDATE_PER_HEARTBEAT == 0:
                     heartbeat.update_heartbeat(heartbeat_app_name)
             # Wait
-            sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=self.BACK_OFF)
-            while datetime.datetime.now() < sleep_end:
-                if not self.running:
-                    break
-                time.sleep(0.1)
+            self._wait_while_running(self.BACK_OFF)
 
     def stop(self):
         self.running = False
 
+    def _wait_while_running(self, seconds):
+        sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+        while datetime.datetime.now() < sleep_end:
+            if not self.running:
+                break
+            time.sleep(0.1)
+
     def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
-        try:
-            return self.api.get_browse_page(page)
-        except ValueError as e:
-            return []
+        while self.running:
+            try:
+                return self.api.get_browse_page(page)
+            except ValueError as e:
+                self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
 
     def _get_new_results(self) -> List[FASubmissionShort]:
         """
