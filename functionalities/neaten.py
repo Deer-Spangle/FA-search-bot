@@ -21,7 +21,7 @@ class NeatenFunctionality(BotFunctionality):
         self.api = api
 
     def call(self, update: Update, context: CallbackContext):
-        with in_progress_msg(update.message, context, "Neatening image link"):
+        with in_progress_msg(update, context, "Neatening image link"):
             message = update.message.text_markdown_urled or update.message.caption_markdown_urled
             submission_ids = []
             for match in self.FA_LINKS.finditer(message):
