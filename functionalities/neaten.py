@@ -14,18 +14,21 @@ class NeatenFunctionality(BotFunctionality):
     FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
     FA_THUMB_LINK = re.compile(r"t\.facdn\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
-    FA_LINKS = re.compile(f"{FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern}")
+    FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})")
 
     def __init__(self, api):
         super().__init__(MessageHandler, filters=FilterRegex(self.FA_LINKS))
         self.api = api
 
     def call(self, update: Update, context: CallbackContext):
+        message = update.message.text_markdown_urled or update.message.caption_markdown_urled
+        submission_ids = []
+        matches = self.FA_LINKS.findall(message)
+        if not matches:
+            return
         with in_progress_msg(update, context, "Neatening image link"):
-            message = update.message.text_markdown_urled or update.message.caption_markdown_urled
-            submission_ids = []
-            for match in self.FA_LINKS.finditer(message):
-                submission_id = self._get_submission_id_from_link(context.bot, update, match.group(0))
+            for match in matches:
+                submission_id = self._get_submission_id_from_link(context.bot, update, match[0])
                 if submission_id:
                     submission_ids.append(submission_id)
             # Remove duplicates, preserving order
