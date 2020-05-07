@@ -87,11 +87,12 @@ def test_direct_no_match(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_direct_no_match_groupchat(context):
