@@ -1,10 +1,13 @@
-from unittest.mock import MagicMock
+from unittest.mock import Mock
 
 import pytest
+from telegram import Bot
+from telegram.ext import CallbackContext
 
 
 @pytest.fixture
 def context():
-    context = MagicMock()
-    context.bot = MagicMock()
+    context = Mock(CallbackContext)
+    context.attach_mock(Mock(Bot), "bot")
+    context.bot = Mock(Bot)
     return context
