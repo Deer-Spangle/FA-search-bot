@@ -268,6 +268,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         api = MockExportAPI()
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
         watcher = SubscriptionWatcher(api, bot)
+        watcher.running = True
 
         results = watcher._get_new_results()
 
@@ -283,6 +284,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
         watcher = SubscriptionWatcher(api, bot)
         watcher.latest_ids.append("1220")
+        watcher.running = True
 
         results = watcher._get_new_results()
 
@@ -298,6 +300,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher = SubscriptionWatcher(api, bot)
         watcher.latest_ids = collections.deque(maxlen=4)
         watcher.latest_ids.append("1220")
+        watcher.running = True
 
         results = watcher._get_new_results()
 
@@ -321,6 +324,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher = SubscriptionWatcher(api, bot)
         watcher.PAGE_CAP = 5
         watcher.latest_ids.append("1250")
+        watcher.running = True
 
         results = watcher._get_new_results()
 
