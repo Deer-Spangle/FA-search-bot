@@ -527,6 +527,7 @@ def test_not_on_first_page_empty_second_page(context):
         reply_to_message_id=update.message.message_id
     )
 
+
 def test_result_in_scraps(context):
     username = "fender"
     image_id = 1560331512
