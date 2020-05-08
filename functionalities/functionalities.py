@@ -11,11 +11,12 @@ def in_progress_msg(update: telegram.Update, context: CallbackContext, text: Opt
     if text is None:
         text = f"In progress"
     text = f"⏳ {text}"
-    msg = context.bot.send_message(
+    msg_promise = context.bot.send_message(
         chat_id=update.message.chat_id,
         text=text,
         reply_to_message_id=update.message.message_id
     )
+    msg = msg_promise.result()
     try:
         yield
     except Exception as e:
