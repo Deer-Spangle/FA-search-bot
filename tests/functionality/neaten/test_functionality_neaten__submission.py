@@ -149,11 +149,11 @@ def test_deleted_submission(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert "This doesn't seem to be a valid FA submission" in context.bot.send_message.call_args[1]['text']
-    assert str(post_id) in context.bot.send_message.call_args[1]['text']
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        reply_to_message_id=update.message.message_id,
+        text=f"This doesn't seem to be a valid FA submission: https://www.furaffinity.net/view/{post_id}/"
+    )
 
 
 def test_deleted_submission_group_chat(context):
@@ -210,14 +210,12 @@ def test_mp3_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_audio.assert_called_once()
-    assert context.bot.send_audio.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_audio.call_args[1]['audio'] == submission.download_url
-    assert context.bot.send_audio.call_args[1]['caption'] == submission.link
-    assert context.bot.send_audio.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_audio.assert_called_with(
+        chat_id=update.message.chat_id,
+        audio=submission.download_url,
+        caption=submission.link,
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_txt_submission(context):
@@ -229,16 +227,13 @@ def test_txt_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_called_once()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_audio.assert_not_called()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.full_image_url
-    assert context.bot.send_photo.call_args[1]['caption'] == \
-           f"{submission.link}\n[Direct download]({submission.download_url})"
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
-    assert context.bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+    context.bot.send_photo.assert_called_with(
+        chat_id=update.message.chat_id,
+        photo=submission.full_image_url,
+        caption=f"{submission.link}\n[Direct download]({submission.download_url})",
+        reply_to_message_id=update.message.message_id,
+        parse_mode=telegram.ParseMode.MARKDOWN
+    )
 
 
 def test_swf_submission(context):
@@ -253,12 +248,13 @@ def test_swf_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_called_once()
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_not_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "I'm sorry, I can't neaten \".swf\" files."
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="I'm sorry, I can't neaten \".swf\" files.",
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_swf_submission_groupchat(context):
@@ -290,13 +286,13 @@ def test_unknown_type_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_called_once()
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_not_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1][
-               'text'] == "I'm sorry, I don't understand that file extension (zzz)."
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="I'm sorry, I don't understand that file extension (zzz).",
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_unknown_type_submission_groupchat(context):
@@ -408,13 +404,12 @@ def test_auto_doc_just_under_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_document.assert_called_once()
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_not_called()
-    assert context.bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_document.call_args[1]['document'] == submission.download_url
-    assert context.bot.send_document.call_args[1]['caption'] == submission.link
-    assert context.bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_document.assert_called_with(
+        chat_id=update.message.chat_id,
+        document=submission.download_url,
+        caption=submission.link,
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_auto_doc_just_over_size_limit(context):
@@ -429,12 +424,11 @@ def test_auto_doc_just_over_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
     context.bot.send_document.assert_not_called()
-    context.bot.send_message.assert_not_called()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.full_image_url
-    assert context.bot.send_photo.call_args[1]['caption'] == \
-           f"{submission.link}\n[Direct download]({submission.download_url})"
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
-    assert context.bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+    context.bot.send_photo.assert_called_with(
+        chat_id=update.message.chat_id,
+        photo=submission.full_image_url,
+        caption=f"{submission.link}\n[Direct download]({submission.download_url})",
+        reply_to_message_id=update.message.message_id,
+        parse_mode=telegram.ParseMode.MARKDOWN
+    )
