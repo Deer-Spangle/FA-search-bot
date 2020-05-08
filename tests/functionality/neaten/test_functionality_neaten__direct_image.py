@@ -63,11 +63,66 @@ def test_direct_link(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == goal_submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == goal_submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_photo.assert_called_with(
+        chat_id=update.message.chat_id,
+        photo=goal_submission.download_url,
+        caption=goal_submission.link,
+        reply_to_message_id=update.message.message_id
+    )
+
+
+def test_direct_in_progress_message(context):
+    username = "fender"
+    image_id = 1560331512
+    post_id = 232347
+    update = MockTelegramUpdate.with_message(
+        text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+    )
+    goal_submission = MockSubmission(post_id, image_id=image_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_user_folder(username, "gallery", [
+        goal_submission,
+        MockSubmission(post_id - 1, image_id=image_id - 15)
+    ])
+
+    neaten.call(update, context)
+
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
+
+
+def test_direct_in_progress_message_groupchat(context):
+    username = "fender"
+    image_id = 1560331512
+    post_id = 232347
+    update = MockTelegramUpdate.with_message(
+        text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+    )
+    goal_submission = MockSubmission(post_id, image_id=image_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_user_folder(username, "gallery", [
+        goal_submission,
+        MockSubmission(post_id - 1, image_id=image_id - 15)
+    ])
+
+    neaten.call(update, context)
+
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_direct_no_match(context):
@@ -87,11 +142,12 @@ def test_direct_no_match(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_direct_no_match_groupchat(context):
@@ -112,7 +168,15 @@ def test_direct_no_match_groupchat(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_two_direct_links(context):
@@ -327,11 +391,11 @@ def test_result_missing_from_first_page(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_result_missing_from_second_page(context):
@@ -353,11 +417,11 @@ def test_result_missing_from_second_page(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_result_missing_between_pages(context):
@@ -380,11 +444,11 @@ def test_result_missing_between_pages(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_result_last_on_page(context):
@@ -459,11 +523,11 @@ def test_not_on_first_page_empty_second_page(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_once()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == \
-           "Could not locate the image by {} with image id {}.".format(username, image_id)
-    assert context.bot.send_message.call_args[1]['reply_to_message_id'] == update.message.message_id
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="Could not locate the image by {} with image id {}.".format(username, image_id),
+        reply_to_message_id=update.message.message_id
+    )
 
 
 def test_result_in_scraps(context):
