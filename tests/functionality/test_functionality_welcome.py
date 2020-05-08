@@ -18,4 +18,5 @@ def test_welcome_message(context):
     assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
     message_text = context.bot.send_message.call_args[1]['text']
     assert "@deerspangle" in message_text
+    assert "https://github.com/Deer-Spangle/faexport" in message_text
     assert FASearchBot.VERSION in message_text

@@ -9,7 +9,6 @@ from typing import List
 
 from unittest.mock import patch
 import telegram
-from unittest import skip
 
 from fa_submission import FASubmissionFull
 from subscription_watcher import SubscriptionWatcher, Subscription
