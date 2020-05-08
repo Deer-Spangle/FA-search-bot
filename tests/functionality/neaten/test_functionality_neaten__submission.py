@@ -164,7 +164,15 @@ def test_deleted_submission_group_chat(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_gif_submission(context):
@@ -269,9 +277,17 @@ def test_swf_submission_groupchat(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_not_called()
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_unknown_type_submission(context):
@@ -307,9 +323,17 @@ def test_unknown_type_submission_groupchat(context):
 
     neaten.call(update, context)
 
-    context.bot.send_message.assert_not_called()
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_link_in_markdown(context):

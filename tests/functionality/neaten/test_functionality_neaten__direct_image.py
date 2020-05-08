@@ -1,4 +1,4 @@
-from unittest.mock import call, Mock
+from unittest.mock import call
 
 from telegram import Chat
 
@@ -75,8 +75,6 @@ def test_direct_in_progress_message(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    in_progress_msg_mock = Mock()
-    in_progress_msg_mock.message_id = 34243234
     update = MockTelegramUpdate.with_message(
         text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
@@ -86,7 +84,6 @@ def test_direct_in_progress_message(context):
         goal_submission,
         MockSubmission(post_id - 1, image_id=image_id - 15)
     ])
-    context.bot.send_message.return_value = in_progress_msg_mock
 
     neaten.call(update, context)
 
@@ -97,7 +94,7 @@ def test_direct_in_progress_message(context):
     )
     context.bot.delete_message.assert_called_with(
         update.message.chat_id,
-        in_progress_msg_mock.message_id
+        context._sent_message_ids[0]
     )
 
 
@@ -105,8 +102,6 @@ def test_direct_in_progress_message_groupchat(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    in_progress_msg_mock = Mock()
-    in_progress_msg_mock.message_id = 34243234
     update = MockTelegramUpdate.with_message(
         text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
@@ -116,7 +111,6 @@ def test_direct_in_progress_message_groupchat(context):
         goal_submission,
         MockSubmission(post_id - 1, image_id=image_id - 15)
     ])
-    context.bot.send_message.return_value = in_progress_msg_mock
 
     neaten.call(update, context)
 
@@ -127,7 +121,7 @@ def test_direct_in_progress_message_groupchat(context):
     )
     context.bot.delete_message.assert_called_with(
         update.message.chat_id,
-        in_progress_msg_mock.message_id
+        context._sent_message_ids[0]
     )
 
 
@@ -174,7 +168,15 @@ def test_direct_no_match_groupchat(context):
     neaten.call(update, context)
 
     context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        text="⏳ Neatening image link",
+        reply_to_message_id=update.message.message_id
+    )
+    context.bot.delete_message.assert_called_with(
+        update.message.chat_id,
+        context._sent_message_ids[0]
+    )
 
 
 def test_two_direct_links(context):
