@@ -1,3 +1,5 @@
+from telegram import Chat
+
 from functionalities.unhandled import UnhandledMessageFunctionality
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
