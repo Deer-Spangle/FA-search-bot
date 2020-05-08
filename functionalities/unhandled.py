@@ -1,5 +1,5 @@
 import telegram
-from telegram.ext import MessageHandler, CallbackContext
+from telegram.ext import MessageHandler, CallbackContext, Filters
 
 from functionalities.functionalities import BotFunctionality
 
@@ -7,7 +7,7 @@ from functionalities.functionalities import BotFunctionality
 class UnhandledMessageFunctionality(BotFunctionality):
     
     def __init__(self):
-        super().__init__(MessageHandler)
+        super().__init__(MessageHandler, filters=Filters.all)
 
     def call(self, update: telegram.Update, context: CallbackContext):
         context.bot.send_message(
