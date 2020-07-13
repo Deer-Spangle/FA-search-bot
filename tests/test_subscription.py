@@ -1,5 +1,6 @@
 import datetime
 
+from fa_submission import Rating
 from subscription_watcher import Subscription
 from tests.util.submission_builder import SubmissionBuilder
 
@@ -391,6 +392,109 @@ def test_matches_word_in_tag():
     match = subscription.matches_result(submission, set())
 
     assert match
+
+
+def test_matches_with_rating():
+    query = "deer rating:general"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Deer plays in woods",
+        rating=Rating.GENERAL
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, set())
+
+    assert match
+
+
+def test_matches_not_rating():
+    query = "deer rating:general"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Deer 'plays' in woods",
+        rating=Rating.ADULT
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, set())
+
+    assert not match
+
+
+def test_matches_negative_rating():
+    query = "deer -rating:general"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Deer 'plays' in woods",
+        rating=Rating.MATURE
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, set())
+
+    assert match
+
+
+def test_matches_not_negative_rating():
+    query = "deer -rating:general"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Deer plays in woods",
+        rating=Rating.GENERAL
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, set())
+
+    assert not match
+
+
+def test_matches_general_rating():
+    query1 = "deer rating:general"
+    query2 = "deer rating:safe"
+    subscription1 = Subscription(query1, 12432)
+    subscription2 = Subscription(query2, 12432)
+    submission = SubmissionBuilder(
+        title="Deer plays in woods",
+        rating=Rating.GENERAL
+    ).build_full_submission()
+
+    match1 = subscription1.matches_result(submission, set())
+    match2 = subscription2.matches_result(submission, set())
+
+    assert match1
+    assert match2
+
+
+def test_matches_mature_rating():
+    query1 = "deer rating:mature"
+    query2 = "deer rating:questionable"
+    subscription1 = Subscription(query1, 12432)
+    subscription2 = Subscription(query2, 12432)
+    submission = SubmissionBuilder(
+        title="Deer plays in woods",
+        rating=Rating.MATURE
+    ).build_full_submission()
+
+    match1 = subscription1.matches_result(submission, set())
+    match2 = subscription2.matches_result(submission, set())
+
+    assert match1
+    assert match2
+
+
+def test_matches_explicit_rating():
+    query1 = "deer rating:adult"
+    query2 = "deer rating:explicit"
+    subscription1 = Subscription(query1, 12432)
+    subscription2 = Subscription(query2, 12432)
+    submission = SubmissionBuilder(
+        title="Deer plays in woods",
+        rating=Rating.ADULT
+    ).build_full_submission()
+
+    match1 = subscription1.matches_result(submission, set())
+    match2 = subscription2.matches_result(submission, set())
+
+    assert match1
+    assert match2
 
 
 def test_to_json_no_updates():

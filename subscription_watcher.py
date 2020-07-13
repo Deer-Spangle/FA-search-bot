@@ -11,10 +11,19 @@ import telegram
 import heartbeat
 
 from fa_export_api import FAExportAPI
-from fa_submission import FASubmissionFull, FASubmissionShort
+from fa_submission import FASubmissionFull, FASubmissionShort, Rating
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
+
+rating_dict = {
+    "general": Rating.GENERAL,
+    "safe": Rating.GENERAL,
+    "mature": Rating.MATURE,
+    "questionable": Rating.MATURE,
+    "adult": Rating.ADULT,
+    "explicit": Rating.ADULT
+}
 
 
 class SubscriptionWatcher:
@@ -174,6 +183,20 @@ class Subscription:
         positive_words = [x for x in query_words if x[0] != "-"]
         negative_words = [x[1:] for x in query_words if x[0] == "-"]
         negative_words += list(blacklist)
+        # Check if rating is specified
+        allowed_ratings = [Rating.GENERAL, Rating.MATURE, Rating.ADULT]
+        for word in positive_words[:]:
+            if word.startswith("rating:"):
+                positive_words.remove(word)
+                rating = rating_dict.get(word.split(":")[1])
+                if rating is not None:
+                    allowed_ratings = [rating]
+        for word in negative_words[:]:
+            if word.startswith("rating:"):
+                negative_words.remove(word)
+                rating = rating_dict.get(word.split(":")[1])
+                if rating is not None:
+                    allowed_ratings.remove(rating)
         return all(
             [
                 self._query_word_matches_text(word, all_text)
@@ -184,7 +207,7 @@ class Subscription:
                 self._query_word_matches_text(word, all_text)
                 for word in negative_words
             ]
-        )
+        ) and result.rating in allowed_ratings
     
     def _split_text_to_words(self, text: str) -> List[str]:
         return re.split(r"[\s\"<>]+", text)
@@ -208,9 +231,9 @@ class Subscription:
         query = saved_sub["query"]
         destination = saved_sub["destination"]
         new_sub = Subscription(query, destination)
-        new_sub.latest_update = saved_sub["latest_update"]
-        if new_sub.latest_update is not None:
-            new_sub.latest_update = dateutil.parser.parse(new_sub.latest_update)
+        new_sub.latest_update = None
+        if saved_sub["latest_update"] is not None:
+            new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])
         return new_sub
 
     def __eq__(self, other):
