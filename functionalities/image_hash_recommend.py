@@ -15,6 +15,6 @@ class ImageHashRecommendFunctionality(BotFunctionality):
         if update.message.chat.type == Chat.PRIVATE:
             context.bot.send_message(
                 chat_id=update.message.chat_id,
-                text="I can't find an image without a link, try using @FindFurryPicBot",
+                text="I can't find an image without a link, try using @FindFurryPicBot or @FoxBot",
                 reply_to_message_id=update.message.message_id
             )

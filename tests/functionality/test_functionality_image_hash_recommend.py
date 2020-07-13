@@ -14,6 +14,7 @@ def test_sends_recommendation(context):
     assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
     message_text = context.bot.send_message.call_args[1]['text']
     assert "@FindFurryPicBot" in message_text
+    assert "@FoxBot" in message_text
 
 
 def test_no_reply_in_group(context):
