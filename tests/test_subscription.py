@@ -268,6 +268,20 @@ def test_matches_result__does_not_match_negated_query():
     assert not match
 
 
+def test_matches_result__does_not_match_negated_query_exclamation_mark():
+    query = "!test"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="test submission",
+        description="this submission is just an example",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, set())
+
+    assert not match
+
+
 def test_matches_result__does_not_match_negated_query_case_insensitive():
     query = "-test"
     subscription = Subscription(query, 12432)

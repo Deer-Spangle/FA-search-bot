@@ -180,8 +180,8 @@ class Subscription:
             self._split_text_to_words(result.title) + \
             self._split_text_to_words(result.description) + \
             result.keywords
-        positive_words = [x for x in query_words if x[0] != "-"]
-        negative_words = [x[1:] for x in query_words if x[0] == "-"]
+        positive_words = [x for x in query_words if x[0] != "-" and x[0] != "!"]
+        negative_words = [x[1:] for x in query_words if x[0] == "-" and x[0] != "!"]
         negative_words += list(blocklist)
         # Check if rating is specified
         allowed_ratings = [Rating.GENERAL, Rating.MATURE, Rating.ADULT]
