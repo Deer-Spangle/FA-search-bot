@@ -13,6 +13,7 @@ class MockTelegramUpdate:
         if self.__class__ == MockTelegramUpdate:
             raise NotImplementedError()
         self.message = None
+        self.channel_post = None
         self.callback_query = None
 
     @staticmethod
