@@ -22,11 +22,11 @@ class MockSubscription(Subscription):
     def __init__(self, query, destination):
         super().__init__(query, destination)
         self.submissions_checked = []
-        self.blacklists = []
+        self.blocklists = []
 
-    def matches_result(self, result: FASubmissionFull, blacklist: List[str]) -> bool:
+    def matches_result(self, result: FASubmissionFull, blocklist: List[str]) -> bool:
         self.submissions_checked.append(result)
-        self.blacklists.append(blacklist)
+        self.blocklists.append(blocklist)
         return True
 
     def send(self, result: FASubmissionFull):
@@ -231,14 +231,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert 3 <= time_waited.seconds <= 5
 
     @patch.object(telegram, "Bot")
-    def test_run__passes_correct_blacklists_to_subscriptions(self, bot):
+    def test_run__passes_correct_blocklists_to_subscriptions(self, bot):
         submission = MockSubmission("12322")
         api = MockExportAPI().with_submission(submission)
         watcher = SubscriptionWatcher(api, bot)
         method_called = MockMethod([submission])
         watcher._get_new_results = method_called.call
         watcher.BACK_OFF = 1
-        watcher.blacklists = {
+        watcher.blocklists = {
             156: {"test", "ych"},
             -200: {"example"}
         }
@@ -253,13 +253,13 @@ class SubscriptionWatcherTest(unittest.TestCase):
         thread.join()
 
         assert submission in sub1.submissions_checked
-        assert len(sub1.blacklists) == 1
-        assert len(sub1.blacklists[0]) == 2
-        assert "test" in sub1.blacklists[0]
-        assert "ych" in sub1.blacklists[0]
+        assert len(sub1.blocklists) == 1
+        assert len(sub1.blocklists[0]) == 2
+        assert "test" in sub1.blocklists[0]
+        assert "ych" in sub1.blocklists[0]
         assert submission in sub2.submissions_checked
-        assert len(sub2.blacklists) == 1
-        assert len(sub2.blacklists[0]) == 0
+        assert len(sub2.blocklists) == 1
+        assert len(sub2.blocklists[0]) == 0
         assert method_called.called
 
     @patch.object(telegram, "Bot")
@@ -375,27 +375,27 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert subscription.latest_update is not None
 
     @patch.object(telegram, "Bot")
-    def test_add_to_blacklist__new_blacklist(self, bot):
+    def test_add_to_blocklist__new_blocklist(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
 
-        watcher.add_to_blacklist(18749, "test")
+        watcher.add_to_blocklist(18749, "test")
 
-        assert len(watcher.blacklists[18749]) == 1
-        assert isinstance(watcher.blacklists[18749], set)
-        assert watcher.blacklists[18749] == {"test"}
+        assert len(watcher.blocklists[18749]) == 1
+        assert isinstance(watcher.blocklists[18749], set)
+        assert watcher.blocklists[18749] == {"test"}
 
     @patch.object(telegram, "Bot")
-    def test_add_to_blacklist__append_blacklist(self, bot):
+    def test_add_to_blocklist__append_blocklist(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
-        watcher.blacklists[18749] = {"example"}
+        watcher.blocklists[18749] = {"example"}
 
-        watcher.add_to_blacklist(18749, "test")
+        watcher.add_to_blocklist(18749, "test")
 
-        assert len(watcher.blacklists[18749]) == 2
-        assert isinstance(watcher.blacklists[18749], set)
-        assert watcher.blacklists[18749] == {"test", "example"}
+        assert len(watcher.blocklists[18749]) == 2
+        assert isinstance(watcher.blocklists[18749], set)
+        assert watcher.blocklists[18749] == {"test", "example"}
 
     @patch.object(telegram, "Bot")
     def test_save_to_json(self, bot):
@@ -414,8 +414,8 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher._update_latest_ids(latest_submissions)
         watcher.subscriptions.add(subscription1)
         watcher.subscriptions.add(subscription2)
-        watcher.blacklists[3452] = {"test", "example"}
-        watcher.blacklists[1453] = {"ych"}
+        watcher.blocklists[3452] = {"test", "example"}
+        watcher.blocklists[1453] = {"ych"}
         watcher.FILENAME = test_watcher_file
 
         try:
@@ -504,16 +504,16 @@ class SubscriptionWatcherTest(unittest.TestCase):
                 assert list_subs[1].query == "test"
                 assert list_subs[1].destination == 87238
                 assert list_subs[1].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
-            assert len(watcher.blacklists) == 2
-            assert 8732 in watcher.blacklists
-            assert len(watcher.blacklists[8732]) == 2
-            assert isinstance(watcher.blacklists[8732], set)
-            assert "example" in watcher.blacklists[8732]
-            assert "ych" in watcher.blacklists[8732]
-            assert -123 in watcher.blacklists
-            assert len(watcher.blacklists[-123]) == 1
-            assert isinstance(watcher.blacklists[-123], set)
-            assert "fred" in watcher.blacklists[-123]
+            assert len(watcher.blocklists) == 2
+            assert 8732 in watcher.blocklists
+            assert len(watcher.blocklists[8732]) == 2
+            assert isinstance(watcher.blocklists[8732], set)
+            assert "example" in watcher.blocklists[8732]
+            assert "ych" in watcher.blocklists[8732]
+            assert -123 in watcher.blocklists
+            assert len(watcher.blocklists[-123]) == 1
+            assert isinstance(watcher.blocklists[-123], set)
+            assert "fred" in watcher.blocklists[-123]
         finally:
             SubscriptionWatcher.FILENAME = old_filename
             os.remove(test_watcher_file)
@@ -537,8 +537,8 @@ class SubscriptionWatcherTest(unittest.TestCase):
         watcher._update_latest_ids(latest_submissions)
         watcher.subscriptions.add(subscription1)
         watcher.subscriptions.add(subscription2)
-        watcher.blacklists[3452] = {"test", "example"}
-        watcher.blacklists[1453] = {"ych"}
+        watcher.blocklists[3452] = {"test", "example"}
+        watcher.blocklists[1453] = {"ych"}
 
         try:
             watcher.save_to_json()
@@ -560,16 +560,16 @@ class SubscriptionWatcherTest(unittest.TestCase):
                 assert list_subs[0].destination == 5678
                 assert list_subs[1].query == "query"
                 assert list_subs[1].destination == 1234
-            assert len(new_watcher.blacklists) == 2
-            assert 3452 in new_watcher.blacklists
-            assert len(new_watcher.blacklists[3452]) == 2
-            assert isinstance(new_watcher.blacklists[3452], set)
-            assert "test" in new_watcher.blacklists[3452]
-            assert "example" in new_watcher.blacklists[3452]
-            assert 1453 in new_watcher.blacklists
-            assert len(new_watcher.blacklists[1453]) == 1
-            assert isinstance(new_watcher.blacklists[1453], set)
-            assert "ych" in new_watcher.blacklists[1453]
+            assert len(new_watcher.blocklists) == 2
+            assert 3452 in new_watcher.blocklists
+            assert len(new_watcher.blocklists[3452]) == 2
+            assert isinstance(new_watcher.blocklists[3452], set)
+            assert "test" in new_watcher.blocklists[3452]
+            assert "example" in new_watcher.blocklists[3452]
+            assert 1453 in new_watcher.blocklists
+            assert len(new_watcher.blocklists[1453]) == 1
+            assert isinstance(new_watcher.blocklists[1453], set)
+            assert "ych" in new_watcher.blocklists[1453]
         finally:
             SubscriptionWatcher.FILENAME = old_filename
             os.remove(test_watcher_file)

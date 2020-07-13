@@ -26,7 +26,7 @@ class WelcomeFunctionality(BotFunctionality):
                  "- Create subscriptions "
                  "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`. "
                  "Queries can specify rating with `rating:general` or exclude ratings with `-rating:adult`)\n"
-                 "- Store blacklists for those subscriptions "
-                 "(use `/add_blacklisted_tag tag`, `/list_blacklisted_tags` and `/remove_blacklisted_tag tag`)",
+                 "- Store blocklists for those subscriptions "
+                 "(use `/add_blocklisted_tag tag`, `/list_blocklisted_tags` and `/remove_blocklisted_tag tag`)",
             parse_mode=telegram.ParseMode.MARKDOWN
         )

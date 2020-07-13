@@ -15,7 +15,7 @@ from functionalities.beep import BeepFunctionality
 from functionalities.image_hash_recommend import ImageHashRecommendFunctionality
 from functionalities.inline import InlineFunctionality
 from functionalities.neaten import NeatenFunctionality
-from functionalities.subscriptions import SubscriptionFunctionality, BlacklistFunctionality
+from functionalities.subscriptions import SubscriptionFunctionality, BlocklistFunctionality
 from functionalities.unhandled import UnhandledMessageFunctionality
 from functionalities.welcome import WelcomeFunctionality
 from subscription_watcher import SubscriptionWatcher
@@ -112,6 +112,6 @@ class FASearchBot:
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
             SubscriptionFunctionality(self.subscription_watcher),
-            BlacklistFunctionality(self.subscription_watcher),
+            BlocklistFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality()
         ]

@@ -352,7 +352,7 @@ def test_matches_result__matches_query_with_hyphen():
     assert match
 
 
-def test_matches_result__doesnt_match_blacklisted_tag():
+def test_matches_result__doesnt_match_blocklisted_tag():
     query = "an-example"
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(

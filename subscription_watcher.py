@@ -40,7 +40,7 @@ class SubscriptionWatcher:
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
-        self.blacklists = dict()  # type: Dict[int, Set[str]]
+        self.blocklists = dict()  # type: Dict[int, Set[str]]
 
     """
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
@@ -69,8 +69,8 @@ class SubscriptionWatcher:
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
                 for subscription in subscriptions:
-                    blacklist = self.blacklists.get(subscription.destination, set())
-                    if subscription.matches_result(full_result, blacklist):
+                    blocklist = self.blocklists.get(subscription.destination, set())
+                    if subscription.matches_result(full_result, blocklist):
                         try:
                             self._send_update(subscription, full_result)
                         except Exception as e:
@@ -135,18 +135,18 @@ class SubscriptionWatcher:
         subscription.latest_update = datetime.datetime.now()
         result.send_message(self.bot, subscription.destination, prefix=f"Update on \"{subscription.query}\" subscription:")
 
-    def add_to_blacklist(self, destination: int, tag: str):
-        if destination in self.blacklists:
-            self.blacklists[destination].add(tag)
+    def add_to_blocklist(self, destination: int, tag: str):
+        if destination in self.blocklists:
+            self.blocklists[destination].add(tag)
         else:
-            self.blacklists[destination] = {tag}
+            self.blocklists[destination] = {tag}
 
     def save_to_json(self):
         subscriptions = self.subscriptions.copy()
         data = {
             "latest_ids": list(self.latest_ids),
             "subscriptions": [x.to_json() for x in subscriptions],
-            "blacklists": {str(k): list(v) for k, v in self.blacklists.items()}
+            "blacklists": {str(k): list(v) for k, v in self.blocklists.items()}
         }
         with open(self.FILENAME_TEMP, "w") as f:
             json.dump(data, f, indent=2)
@@ -163,7 +163,7 @@ class SubscriptionWatcher:
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
-        new_watcher.blacklists = {int(k): set(v) for k, v in data["blacklists"].items()}
+        new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
 
@@ -174,7 +174,7 @@ class Subscription:
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
 
-    def matches_result(self, result: FASubmissionFull, blacklist: Set[str]) -> bool:
+    def matches_result(self, result: FASubmissionFull, blocklist: Set[str]) -> bool:
         query_words = self.query.lower().split()
         all_text = \
             self._split_text_to_words(result.title) + \
@@ -182,7 +182,7 @@ class Subscription:
             result.keywords
         positive_words = [x for x in query_words if x[0] != "-"]
         negative_words = [x[1:] for x in query_words if x[0] == "-"]
-        negative_words += list(blacklist)
+        negative_words += list(blocklist)
         # Check if rating is specified
         allowed_ratings = [Rating.GENERAL, Rating.MATURE, Rating.ADULT]
         for word in positive_words[:]:
