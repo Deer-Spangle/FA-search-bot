@@ -11,7 +11,7 @@ class UnhandledMessageFunctionality(BotFunctionality):
         super().__init__(MessageHandler, filters=Filters.all)
 
     def call(self, update: telegram.Update, context: CallbackContext):
-        if update.message.chat.type == Chat.PRIVATE:
+        if update.message is not None and update.message.chat.type == Chat.PRIVATE:
             context.bot.send_message(
                 chat_id=update.message.chat_id,
                 text="Sorry, I'm not sure how to handle that message"
