@@ -17,7 +17,7 @@ class WelcomeFunctionality(BotFunctionality):
             text="Hello, I'm a bot to interface with furaffinity through telegram. I can do a few things, "
                  "but there's still more for me to learn.\n"
                  "If you have any suggestions, requests, or questions, direct them to @deerspangle, "
-                 "or you can file an issue on my [github](https://github.com/Deer-Spangle/faexport).\n"
+                 "or you can file an issue on my [github](https://github.com/Deer-Spangle/FA-search-bot).\n"
                  f"I am version {__VERSION__} and currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
                  "- Respond to inline search queries\n"
