@@ -18,7 +18,7 @@ Private message it a link to a Fur Affinity submission page, thumbnail url or im
 
 ### Inline Responses
 
-In any chat, mention the bot and pass it an FA query
+In any chat, mention the bot and pass it a Fur Affinity search query
 `@FASearchBot [query]` and pick from the inline results which image you'd like to share.
 
 You can also use these qualifiers inline:
@@ -26,17 +26,7 @@ You can also use these qualifiers inline:
 `@FASearchBot scraps:username`
 `@FASearchBot favs:username`
 
-### Subscriptions
-
-`/add_subscription [query]`
-`/list_subscriptions`
-`/remove subscription [query]`
-
-`/add_blocklisted_tag [tag]`
-`/list_blocklisted_tag [tag]`
-`/remove_blocklisted_tag [tag]`
-
-### Search Queries
+#### Inline Search Queries
 
 The bot will support all Fur Affinity queries, and some extra filter options:
 
@@ -59,13 +49,23 @@ Taken from FurAffinity's search documentation:
 > Available Fields: `@title` `@message` `@filename` `@lower` (artist name as it appears in their userpage URL) `@keywords`
 > Example: `fender @title fender -dragoneer -ferrox @message -rednef -dragoneer`
 
-### Extra filters provided by the bot
+### Subscriptions
+
+`/add_subscription [query]`
+`/list_subscriptions`
+`/remove subscription [query]`
+
+`/add_blocklisted_tag [tag]`
+`/list_blocklisted_tags`
+`/remove_blocklisted_tag [tag]`
+
+#### Subscription filters
 
 `rating:general` (or `rating:safe`)
 `rating:mature` (or `rating:questionable`)
 `rating:adult` (or `rating:explicit`)
 
-You can also use `-` or `!` to exclude from the results, e.g. `-rating:explicit`, `!rating:safe`
+You can also use `-` or `!` to exclude from the results, e.g. `taur -ych -rating:adult`
 
 ### Miscellaneous
 
@@ -86,9 +86,9 @@ To set this up, you'll need to:
 ```json
 {
   "bot_key": "---",
-  "api_url": "https://faexport.boothale.net/"
+  "api_url": "https://faexport.spangle.org.uk"
 }
 ```
 
-with `bot_key` set to your telegram bot API key, and `api_url` set to the URL of a valid deployment of [the FA API](https://github.com/boothale/faexport).
+with `bot_key` set to your telegram bot API key, and `api_url` set to the URL of a valid deployment of [the FA API](https://github.com/Deer-Spangle/faexport).
  - Run `python3 run.py`
