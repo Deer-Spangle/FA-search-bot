@@ -1,7 +1,7 @@
 import random
 from typing import Union, List
 
-from fa_submission import FAUser, FASubmission, FASubmissionFull, FASubmissionShort
+from fa_submission import FAUser, FASubmission, FASubmissionFull, FASubmissionShort, Rating
 from tests.util.mock_export_api import _random_string, _random_image_id, MockSubmission
 
 
@@ -20,7 +20,8 @@ class SubmissionBuilder:
             title: str = None,
             author: FAUser = None,
             description: str = None,
-            keywords: List[str] = None
+            keywords: List[str] = None,
+            rating: Rating = None
     ):
         if submission_id is None:
             submission_id = random.randint(10_000, 100_000)
@@ -56,6 +57,8 @@ class SubmissionBuilder:
             description = _random_string() * 5
         if keywords is None:
             keywords = [_random_string() for _ in range(3)]
+        if rating is None:
+            rating = Rating.GENERAL
         # Set all the variables
         self.submission_id = submission_id
         self.link = f"https://furaffinity.net/view/{submission_id}/"
@@ -65,6 +68,7 @@ class SubmissionBuilder:
         self.download_url = download_url
         self.full_image_url = full_image_url
         self.description = description
+        self.rating = rating
         self.keywords = keywords
         self.fav_id = fav_id
         self._image_id = image_id
@@ -80,7 +84,8 @@ class SubmissionBuilder:
             self.title,
             self.author,
             self.description,
-            self.keywords
+            self.keywords,
+            self.rating
         )
         sub._download_file_size = self._download_file_size
         return sub
@@ -124,6 +129,11 @@ class SubmissionBuilder:
             "download": self.download_url,
             "full": self.full_image_url,
             "thumbnail": self.thumbnail_url,
+            "rating": {
+                Rating.GENERAL: "General",
+                Rating.MATURE: "Mature",
+                Rating.ADULT: "Adult"
+            }[self.rating],
             "keywords": self.keywords
         }
 

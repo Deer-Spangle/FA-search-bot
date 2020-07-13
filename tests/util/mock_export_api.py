@@ -3,7 +3,7 @@ import string
 from typing import Union, List
 
 from fa_export_api import FAExportAPI, PageNotFound
-from fa_submission import FASubmission, FASubmissionFull, FAUser
+from fa_submission import FASubmission, FASubmissionFull, FAUser, Rating
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -12,6 +12,10 @@ def _random_image_id(submission_id: int) -> int:
 
 def _random_string() -> str:
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20)))
+
+
+def _random_rating() -> Rating:
+    return random.choice([Rating.GENERAL, Rating.MATURE, Rating.ADULT])
 
 
 class MockSubmission(FASubmissionFull):
@@ -31,7 +35,8 @@ class MockSubmission(FASubmissionFull):
             keywords: List[str] = None,
             thumbnail_url: str = None,
             download_url: str = None,
-            full_image_url: str = None
+            full_image_url: str = None,
+            rating: Rating = None
     ):
         # Internal variables
         if image_id is None:
@@ -65,9 +70,12 @@ class MockSubmission(FASubmissionFull):
             description = _random_string() * 5
         if keywords is None:
             keywords = [_random_string() for _ in range(3)]
+        if rating is None:
+            rating = _random_rating()
         # Super
         super().__init__(
-            str(submission_id), thumbnail_url, download_url, full_image_url, title, author, description, keywords
+            str(submission_id), thumbnail_url, download_url,
+            full_image_url, title, author, description, keywords, rating
         )
         self.fav_id = fav_id
         self._download_file_size = file_size

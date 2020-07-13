@@ -5,7 +5,8 @@ import requests_mock
 import telegram
 
 from functionalities.neaten import NeatenFunctionality
-from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort
+from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort, \
+    Rating
 from tests.util.submission_builder import SubmissionBuilder
 
 
@@ -221,8 +222,11 @@ class FASubmissionFullTest(unittest.TestCase):
         author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
         description = "This is an example post for testing"
         keywords = ["example", "test"]
+        rating = Rating.GENERAL
 
-        submission = FASubmissionFull(post_id, thumb_link, full_link, full_link, title, author, description, keywords)
+        submission = FASubmissionFull(
+            post_id, thumb_link, full_link, full_link, title, author, description, keywords, rating
+        )
 
         assert isinstance(submission, FASubmissionFull)
         assert submission.submission_id == post_id
@@ -234,6 +238,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert submission.author == author
         assert submission.description == description
         assert submission.keywords == keywords
+        assert submission.rating == rating
 
     @requests_mock.mock()
     def test_download_file_size(self, r):

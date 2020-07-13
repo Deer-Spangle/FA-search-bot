@@ -2,7 +2,6 @@ import datetime
 import unittest
 
 import requests_mock
-from requests import HTTPError
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmissionFull, FASubmissionShort

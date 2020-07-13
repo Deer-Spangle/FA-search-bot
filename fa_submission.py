@@ -1,5 +1,6 @@
 import re
 from abc import ABC
+from enum import Enum
 from typing import Dict, Union, List
 
 import requests
@@ -9,6 +10,12 @@ from telegram import InlineQueryResultPhoto
 
 class CantSendFileType(Exception):
     pass
+
+
+class Rating(Enum):
+    GENERAL = 1
+    MATURE = 2
+    ADULT = 3
 
 
 class FAUser(ABC):
@@ -72,8 +79,13 @@ class FASubmission(ABC):
         description = full_dict['description_body']
         author = FAUser.from_submission_dict(full_dict)
         keywords: List[str] = full_dict['keywords']
+        rating = {
+            "Adult": Rating.ADULT,
+            "Mature": Rating.MATURE,
+            "General": Rating.GENERAL
+        }[full_dict["rating"]]
         new_submission = FASubmissionFull(
-            submission_id, thumbnail_url, download_url, full_image_url, title, author, description, keywords
+            submission_id, thumbnail_url, download_url, full_image_url, title, author, description, keywords, rating
         )
         return new_submission
 
@@ -130,13 +142,15 @@ class FASubmissionFull(FASubmissionShort):
             title: str,
             author: FAUser,
             description: str,
-            keywords: List[str]
+            keywords: List[str],
+            rating: Rating
     ) -> None:
         super().__init__(submission_id, thumbnail_url, title, author)
         self.download_url = download_url
         self.full_image_url = full_image_url
         self.description = description
         self.keywords = keywords
+        self.rating = rating
         self._download_file_size = None
 
     @property
