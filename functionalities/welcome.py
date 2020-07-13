@@ -24,7 +24,8 @@ class WelcomeFunctionality(BotFunctionality):
                  "- Browse user galleries, scraps and favourites inline "
                  "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
                  "- Create subscriptions "
-                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`)\n"
+                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`. "
+                 "Queries can specify rating with `rating:general` or exclude ratings with `-rating:adult`)\n"
                  "- Store blacklists for those subscriptions "
                  "(use `/add_blacklisted_tag tag`, `/list_blacklisted_tags` and `/remove_blacklisted_tag tag`)",
             parse_mode=telegram.ParseMode.MARKDOWN
