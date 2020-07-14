@@ -68,14 +68,13 @@ class SubscriptionWatcher:
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
+                matching_subscriptions = []
                 for subscription in subscriptions:
                     blocklist = self.blocklists.get(subscription.destination, set())
                     if subscription.matches_result(full_result, blocklist):
-                        try:
-                            self._send_update(subscription, full_result)
-                        except Exception as e:
-                            print(f"Failed to send submission: {full_result.submission_id} "
-                                  f"to {subscription.destination} because {e}.")
+                        matching_subscriptions.append(subscription)
+                if matching_subscriptions:
+                    self._send_updates(matching_subscriptions, full_result)
                 # Update latest ids with the submission we just checked, and save config
                 self._update_latest_ids([result])
                 # If we've done ten, update heartbeat
@@ -131,9 +130,18 @@ class SubscriptionWatcher:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()
 
-    def _send_update(self, subscription: 'Subscription', result: FASubmissionFull):
-        subscription.latest_update = datetime.datetime.now()
-        result.send_message(self.bot, subscription.destination, prefix=f"Update on \"{subscription.query}\" subscription:")
+    def _send_updates(self, subscriptions: List['Subscription'], result: FASubmissionFull):
+        destination_map = collections.defaultdict(lambda: [])
+        for sub in subscriptions:
+            sub.latest_update = datetime.datetime.now()
+            destination_map[sub.destination].append(sub)
+        for dest, subs in destination_map.items():
+            queries = ", ".join([f"\"{sub.query}\"" for sub in subs])
+            prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
+            try:
+                result.send_message(self.bot, dest, prefix=prefix)
+            except Exception as e:
+                print(f"Failed to send submission: {result.submission_id} to {dest} because {e}.")
 
     def add_to_blocklist(self, destination: int, tag: str):
         if destination in self.blocklists:

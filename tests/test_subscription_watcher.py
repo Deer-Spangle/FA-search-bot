@@ -216,7 +216,7 @@ class SubscriptionWatcherTest(unittest.TestCase):
         submission = MockSubmission("12322")
         api = MockExportAPI().with_browse_results([submission], 1)
         watcher = SubscriptionWatcher(api, bot)
-        watcher._send_update = lambda *args: (_ for _ in ()).throw(Exception)
+        submission.send_message = lambda *args: (_ for _ in ()).throw(Exception)
         watcher.BACK_OFF = 3
         sub1 = MockSubscription("deer", 0)
         watcher.subscriptions = [sub1]
@@ -345,13 +345,13 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert mock_save_json.called
 
     @patch.object(telegram, "Bot")
-    def test_send_update__sends_message(self, bot):
+    def test_send_updates__sends_message(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         subscription = Subscription("test", 12345)
         submission = SubmissionBuilder().build_mock_submission()
 
-        watcher._send_update(subscription, submission)
+        watcher._send_updates([subscription], submission)
 
         bot.send_message.assert_not_called()
         bot.send_photo.assert_called_once()
@@ -364,13 +364,48 @@ class SubscriptionWatcherTest(unittest.TestCase):
         assert submission.link in kwargs_photo['caption']
 
     @patch.object(telegram, "Bot")
-    def test_send_update__updates_latest(self, bot):
+    def test_send_updates__gathers_subscriptions(self, bot):
+        api = MockExportAPI()
+        watcher = SubscriptionWatcher(api, bot)
+        subscription1 = Subscription("test", 12345)
+        subscription2 = Subscription("test2", 12345)
+        subscription3 = Subscription("test", 54321)
+        submission = SubmissionBuilder().build_mock_submission()
+
+        watcher._send_updates([subscription1, subscription2, subscription3], submission)
+
+        bot.send_message.assert_not_called()
+        assert bot.send_photo.call_count == 2
+        call_list = bot.send_photo.call_args_list
+        # Indifferent to call order, so figure out the order here
+        call1_kwargs = call_list[0][1]
+        call2_kwargs = call_list[1][1]
+        if call_list[0][1]["chat_id"] != 12345:
+            call1_kwargs = call_list[1][1]
+            call2_kwargs = call_list[0][1]
+        # Check call matching two subscriptions
+        assert call1_kwargs['chat_id'] == 12345
+        assert call1_kwargs['photo'] == submission.download_url
+        assert "update" in call1_kwargs['caption'].lower()
+        assert "\"test\", \"test2\"" in call1_kwargs['caption']
+        assert "subscriptions:" in call1_kwargs['caption'].lower()
+        assert submission.link in call1_kwargs['caption']
+        # And check the one subscription call
+        assert call2_kwargs['chat_id'] == 54321
+        assert call2_kwargs['photo'] == submission.download_url
+        assert "update" in call2_kwargs['caption'].lower()
+        assert "\"test\"" in call2_kwargs['caption']
+        assert "subscription:" in call2_kwargs['caption'].lower()
+        assert submission.link in call2_kwargs['caption']
+
+    @patch.object(telegram, "Bot")
+    def test_send_updates__updates_latest(self, bot):
         api = MockExportAPI()
         watcher = SubscriptionWatcher(api, bot)
         subscription = Subscription("test", 12345)
         submission = SubmissionBuilder().build_mock_submission()
 
-        watcher._send_update(subscription, submission)
+        watcher._send_updates([subscription], submission)
 
         assert subscription.latest_update is not None
 
