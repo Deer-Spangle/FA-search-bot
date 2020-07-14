@@ -511,6 +511,21 @@ def test_matches_explicit_rating():
     assert match2
 
 
+def test_matches_result__doesnt_match_blocklisted_rating():
+    query = "an-example"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is just an-example",
+        keywords=["example", "submission", "keywords"],
+        rating=Rating.ADULT
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, {"rating:adult", "rating:mature"})
+
+    assert not match
+
+
 def test_to_json_no_updates():
     sub = Subscription("test query", -12322)
 
