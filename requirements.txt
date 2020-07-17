@@ -2,3 +2,4 @@ python-telegram-bot
 requests
 python-dateutil
 simple-heartbeat
+whoosh
