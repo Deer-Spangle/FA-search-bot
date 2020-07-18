@@ -81,7 +81,7 @@ class OrQuery(Query):
         return (
                 isinstance(other, OrQuery)
                 and len(self.sub_queries) == len(other.sub_queries)
-                and all(self.sub_queries[i] == other.sub_queries[1] for i in range(len(self.sub_queries)))
+                and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
         )
 
     def __repr__(self):
