@@ -6,7 +6,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh.query import Query, Or, Term, Prefix, Wildcard, And, Phrase
 from whoosh.searching import Searcher
 
-from experiments.query_parser import Query, OrQuery, AndQuery, RatingQuery, TextQuery, PrefixQuery, RegexQuery, \
+from experiments.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, get_field_for_name
 from fa_submission import FASubmissionFull, Rating, FAUser
 from subscription_watcher import Subscription, rating_dict
@@ -58,7 +58,7 @@ def whoosh_to_custom(q: Query) -> 'Query':
         if q.fieldname == "rating":
             return RatingQuery(rating_dict[q.text])
         field = get_field_for_name(q.fieldname)
-        return TextQuery(q.text, field)
+        return WordQuery(q.text, field)
     if isinstance(q, Prefix):
         field = get_field_for_name(q.fieldname)
         return PrefixQuery(q.text, field)
