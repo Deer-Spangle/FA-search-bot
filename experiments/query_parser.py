@@ -60,6 +60,15 @@ class DescriptionField(Field):
         return [sub.description]
 
 
+class ArtistField(Field):
+
+    def get_field_words(self, sub: FASubmissionFull) -> List[str]:
+        return [sub.author.name, sub.author.profile_name]
+
+    def get_texts(self, sub: FASubmissionFull) -> List[str]:
+        return [sub.author.name, sub.author.profile_name]
+
+
 class AnyField(Field):
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         return _split_text_to_words(sub.title) + \
@@ -275,6 +284,7 @@ class PhraseQuery(Query):
             return f"\"{self.phrase}\""
         return f"{self.field}:\"{self.phrase}\""
 
+
 class InvalidQueryException(Exception):
     pass
 
@@ -387,10 +397,12 @@ def parse_rating_field(field_value: ParseResults) -> 'Query':
 def parse_field_name(field_name: str) -> 'Field':
     if field_name.lower() == "title":
         return TitleField()
-    if field_name.lower() == "description":
+    if field_name.lower() in ["desc", "description", "message"]:
         return DescriptionField()
-    if field_name.lower() in ["keywords", "keyword"]:
+    if field_name.lower() in ["keywords", "keyword", "tag", "tags"]:
         return KeywordField()
+    if field_name.lower() in ["artist", "author", "poster", "lower"]:
+        return ArtistField()
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
 
