@@ -7,12 +7,20 @@ from whoosh.query import Query, Or, Term, Prefix, Wildcard, And, Phrase
 from whoosh.searching import Searcher
 
 from experiments.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
-    PhraseQuery, get_field_for_name
+    PhraseQuery, TitleField, DescriptionField, KeywordField
 from fa_submission import FASubmissionFull, Rating, FAUser
 from subscription_watcher import Subscription, rating_dict
 
 schema = Schema(title=TEXT, description=TEXT, keywords=KEYWORD)
 search_fields = ["title", "description", "keywords"]
+
+
+def get_field_for_name(name: str) -> 'Field':
+    return {
+        "title": TitleField(),
+        "description": DescriptionField(),
+        "keywords": KeywordField()
+    }[name]
 
 
 def matches_subscription(sub: FASubmissionFull, q: Query) -> bool:

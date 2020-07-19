@@ -275,15 +275,6 @@ class PhraseQuery(Query):
             return f"\"{self.phrase}\""
         return f"{self.field}:\"{self.phrase}\""
 
-
-def get_field_for_name(name: str) -> 'Field':
-    return {
-        "title": TitleField(),
-        "description": DescriptionField(),
-        "keywords": KeywordField()
-    }[name]
-
-
 class InvalidQueryException(Exception):
     pass
 
