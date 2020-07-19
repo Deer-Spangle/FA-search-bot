@@ -20,13 +20,10 @@ class WelcomeFunctionality(BotFunctionality):
                  "or you can file an issue on my [github](https://github.com/Deer-Spangle/FA-search-bot).\n"
                  f"I am version {__VERSION__} and currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
-                 "- Respond to inline search queries\n"
-                 "- Browse user galleries, scraps and favourites inline "
-                 "(use the format 'gallery:username', 'scraps:username', or 'favs:username')\n"
-                 "- Create subscriptions "
-                 "(use `/add_subscription query`, `/list_subscriptions` and `/remove_subscription query`. "
-                 "Queries can specify rating with `rating:general` or exclude ratings with `-rating:adult`)\n"
-                 "- Store blocklists for those subscriptions "
-                 "(use `/add_blocklisted_tag tag`, `/list_blocklisted_tags` and `/remove_blocklisted_tag tag`)",
+                 "- Respond to inline search queries (and browse user galleries inline)\n"
+                 "- Create subscriptions, with specified queries. See readme for more details on query syntax\n"
+                 "- Store blocklists for those subscriptions\n"
+                 "You can get more details by reading "
+                 "[my README on github](https://github.com/Deer-Spangle/FA-search-bot#commands)",
             parse_mode=telegram.ParseMode.MARKDOWN
         )

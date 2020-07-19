@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, Filters
 
 from functionalities.functionalities import BotFunctionality
+from query_parser import InvalidQueryException
 from subscription_watcher import SubscriptionWatcher, Subscription
 
 
@@ -51,7 +52,11 @@ class SubscriptionFunctionality(BotFunctionality):
     def _add_sub(self, destination: int, query: str):
         if query == "":
             return f"Please specify the subscription query you wish to add."
-        new_sub = Subscription(query, destination)
+        try:
+            new_sub = Subscription(query, destination)
+        except InvalidQueryException as e:
+            # TODO: log me
+            return f"Failed to parse subscription query: {e}"
         self.watcher.subscriptions.add(new_sub)
         return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
 
@@ -65,8 +70,8 @@ class SubscriptionFunctionality(BotFunctionality):
 
     def _list_subs(self, destination: int):
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
-        subs.sort(key=lambda sub: sub.query)
-        subs_list = "\n".join([f"- {sub.query}" for sub in subs])
+        subs.sort(key=lambda sub: sub.query_str)
+        subs_list = "\n".join([f"- {sub.query_str}" for sub in subs])
         return f"Current active subscriptions in this chat:\n{subs_list}"
 
 
@@ -138,7 +143,10 @@ class BlocklistFunctionality(BotFunctionality):
     def _add_to_blocklist(self, destination: int, query: str):
         if query == "":
             return f"Please specify the tag you wish to add to blocklist."
-        self.watcher.add_to_blocklist(destination, query)
+        try:
+            self.watcher.add_to_blocklist(destination, query)
+        except InvalidQueryException as e:
+            return f"Failed to parse blocklist query: {e}"
         return f"Added tag to blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
 
     def _remove_from_blocklist(self, destination: int, query: str):

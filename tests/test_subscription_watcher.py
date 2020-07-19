@@ -11,6 +11,7 @@ from unittest.mock import patch
 import telegram
 
 from fa_submission import FASubmissionFull
+from query_parser import AndQuery, NotQuery, WordQuery
 from subscription_watcher import SubscriptionWatcher, Subscription
 from tests.util.mock_export_api import MockExportAPI, MockSubmission
 from tests.util.mock_method import MockMethod
@@ -254,12 +255,13 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         assert submission in sub1.submissions_checked
         assert len(sub1.blocklists) == 1
-        assert len(sub1.blocklists[0]) == 2
-        assert "test" in sub1.blocklists[0]
-        assert "ych" in sub1.blocklists[0]
+        assert sub1.blocklists[0] in [
+            AndQuery([NotQuery(WordQuery("test")), NotQuery(WordQuery("ych"))]),
+            AndQuery([NotQuery(WordQuery("ych")), NotQuery(WordQuery("test"))])
+        ]
         assert submission in sub2.submissions_checked
         assert len(sub2.blocklists) == 1
-        assert len(sub2.blocklists[0]) == 0
+        assert sub2.blocklists[0] == AndQuery([])
         assert method_called.called
 
     @patch.object(telegram, "Bot")
@@ -526,17 +528,17 @@ class SubscriptionWatcherTest(unittest.TestCase):
             assert "12420" in watcher.latest_ids
             assert len(watcher.subscriptions) == 2
             list_subs = list(watcher.subscriptions)
-            if list_subs[0].query == "test":
+            if list_subs[0].query_str == "test":
                 assert list_subs[0].destination == 87238
                 assert list_subs[0].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
-                assert list_subs[1].query == "example"
+                assert list_subs[1].query_str == "example"
                 assert list_subs[1].destination == -87023
                 assert list_subs[1].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
             else:
-                assert list_subs[0].query == "example"
+                assert list_subs[0].query_str == "example"
                 assert list_subs[0].destination == -87023
                 assert list_subs[0].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
-                assert list_subs[1].query == "test"
+                assert list_subs[1].query_str == "test"
                 assert list_subs[1].destination == 87238
                 assert list_subs[1].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
             assert len(watcher.blocklists) == 2
@@ -586,14 +588,14 @@ class SubscriptionWatcherTest(unittest.TestCase):
             assert list(watcher.latest_ids) == list(new_watcher.latest_ids)
             assert len(new_watcher.subscriptions) == 2
             list_subs = list(new_watcher.subscriptions)
-            if list_subs[0].query == "query":
+            if list_subs[0].query_str == "query":
                 assert list_subs[0].destination == 1234
-                assert list_subs[1].query == "example"
+                assert list_subs[1].query_str == "example"
                 assert list_subs[1].destination == 5678
             else:
-                assert list_subs[0].query == "example"
+                assert list_subs[0].query_str == "example"
                 assert list_subs[0].destination == 5678
-                assert list_subs[1].query == "query"
+                assert list_subs[1].query_str == "query"
                 assert list_subs[1].destination == 1234
             assert len(new_watcher.blocklists) == 2
             assert 3452 in new_watcher.blocklists
