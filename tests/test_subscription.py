@@ -3,6 +3,7 @@ import datetime
 from fa_submission import Rating
 from subscription_watcher import Subscription
 from tests.util.submission_builder import SubmissionBuilder
+from query_parser import AndQuery, WordQuery, NotQuery, RatingQuery
 
 
 def test_init():
@@ -11,7 +12,7 @@ def test_init():
 
     sub = Subscription(query, destination)
 
-    assert sub.query == query
+    assert sub.query_str == query
     assert sub.destination == destination
     assert sub.latest_update is None
 
@@ -25,7 +26,7 @@ def test_matches_result__one_word_in_title_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -39,7 +40,7 @@ def test_matches_result__one_word_in_description_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -53,7 +54,7 @@ def test_matches_result__one_word_in_keywords_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -67,7 +68,7 @@ def test_matches_result__substring_in_title_no_match():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -81,7 +82,7 @@ def test_matches_result__substring_in_description_no_match():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -95,7 +96,7 @@ def test_matches_result__substring_in_keywords_no_match():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -109,7 +110,7 @@ def test_matches_result__one_word_no_match():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -123,7 +124,7 @@ def test_matches_result__two_words_in_title_matches():
         keywords=["example", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -137,7 +138,7 @@ def test_matches_result__two_words_in_description_matches():
         keywords=["example", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -151,7 +152,7 @@ def test_matches_result__two_matching_keywords():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -165,7 +166,7 @@ def test_matches_result__two_words_in_title_and_description_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -179,7 +180,7 @@ def test_matches_result__two_words_in_title_and_keyword_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -193,7 +194,7 @@ def test_matches_result__two_words_one_matches():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -207,7 +208,7 @@ def test_matches_result__case_insensitive_title():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -221,7 +222,7 @@ def test_matches_result__case_insensitive_description():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -235,7 +236,7 @@ def test_matches_result__case_insensitive_keywords():
         keywords=["example", "submission", "KEYWORDS"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -249,7 +250,7 @@ def test_matches_result__case_insensitive_query():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -263,7 +264,7 @@ def test_matches_result__does_not_match_negated_query():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -277,7 +278,7 @@ def test_matches_result__does_not_match_negated_query_exclamation_mark():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -291,7 +292,7 @@ def test_matches_result__does_not_match_negated_query_case_insensitive():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -305,7 +306,7 @@ def test_matches_result__matches_non_applicable_negated_query():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -319,7 +320,7 @@ def test_matches_result__matches_query_with_non_applicable_negated_query():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -333,7 +334,7 @@ def test_matches_result__does_not_match_query_with_applicable_negated_query():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -347,7 +348,7 @@ def test_matches_result__does_not_match_query_with_applicable_negated_query_in_s
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -361,7 +362,7 @@ def test_matches_result__matches_query_with_hyphen():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -375,7 +376,7 @@ def test_matches_result__doesnt_match_blocklisted_tag():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, {"test"})
+    match = subscription.matches_result(submission, NotQuery(WordQuery("test")))
 
     assert not match
 
@@ -389,7 +390,7 @@ def test_matches_word_in_quotes():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -403,7 +404,7 @@ def test_matches_word_in_tag():
         keywords=["example", "submission", "keywords"]
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -416,7 +417,7 @@ def test_matches_with_rating():
         rating=Rating.GENERAL
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -429,7 +430,7 @@ def test_matches_not_rating():
         rating=Rating.ADULT
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -442,7 +443,7 @@ def test_matches_negative_rating():
         rating=Rating.MATURE
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert match
 
@@ -455,7 +456,7 @@ def test_matches_not_negative_rating():
         rating=Rating.GENERAL
     ).build_full_submission()
 
-    match = subscription.matches_result(submission, set())
+    match = subscription.matches_result(submission, AndQuery([]))
 
     assert not match
 
@@ -470,8 +471,8 @@ def test_matches_general_rating():
         rating=Rating.GENERAL
     ).build_full_submission()
 
-    match1 = subscription1.matches_result(submission, set())
-    match2 = subscription2.matches_result(submission, set())
+    match1 = subscription1.matches_result(submission, AndQuery([]))
+    match2 = subscription2.matches_result(submission, AndQuery([]))
 
     assert match1
     assert match2
@@ -487,8 +488,8 @@ def test_matches_mature_rating():
         rating=Rating.MATURE
     ).build_full_submission()
 
-    match1 = subscription1.matches_result(submission, set())
-    match2 = subscription2.matches_result(submission, set())
+    match1 = subscription1.matches_result(submission, AndQuery([]))
+    match2 = subscription2.matches_result(submission, AndQuery([]))
 
     assert match1
     assert match2
@@ -504,8 +505,8 @@ def test_matches_explicit_rating():
         rating=Rating.ADULT
     ).build_full_submission()
 
-    match1 = subscription1.matches_result(submission, set())
-    match2 = subscription2.matches_result(submission, set())
+    match1 = subscription1.matches_result(submission, AndQuery([]))
+    match2 = subscription2.matches_result(submission, AndQuery([]))
 
     assert match1
     assert match2
@@ -520,8 +521,9 @@ def test_matches_result__doesnt_match_blocklisted_rating():
         keywords=["example", "submission", "keywords"],
         rating=Rating.ADULT
     ).build_full_submission()
+    blocklist = AndQuery([NotQuery(RatingQuery(Rating.ADULT)), NotQuery(RatingQuery(Rating.MATURE))])
 
-    match = subscription.matches_result(submission, {"rating:adult", "rating:mature"})
+    match = subscription.matches_result(submission, blocklist)
 
     assert not match
 
@@ -559,7 +561,7 @@ def test_from_json_no_update():
     }
 
     sub = Subscription.from_json(data)
-    assert sub.query == "example query"
+    assert sub.query_str == "example query"
     assert sub.destination == 17839
     assert sub.latest_update is None
 
@@ -572,7 +574,7 @@ def test_from_json():
     }
 
     sub = Subscription.from_json(data)
-    assert sub.query == "example query"
+    assert sub.query_str == "example query"
     assert sub.destination == 17839
     assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
 
@@ -583,7 +585,7 @@ def test_to_json_and_back_no_update():
     data = sub.to_json()
     new_sub = Subscription.from_json(data)
 
-    assert new_sub.query == sub.query
+    assert new_sub.query_str == sub.query_str
     assert new_sub.destination == sub.destination
     assert new_sub.latest_update == sub.latest_update
 
@@ -595,6 +597,6 @@ def test_to_json_and_back():
     data = sub.to_json()
     new_sub = Subscription.from_json(data)
 
-    assert new_sub.query == sub.query
+    assert new_sub.query_str == sub.query_str
     assert new_sub.destination == sub.destination
     assert new_sub.latest_update == sub.latest_update

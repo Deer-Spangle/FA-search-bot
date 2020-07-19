@@ -157,7 +157,7 @@ def test_add_sub__adds_subscription(context):
     assert "Listing subscriptions" in resp
     assert len(watcher.subscriptions) == 1
     subscription = list(watcher.subscriptions)[0]
-    assert subscription.query == "test"
+    assert subscription.query_str == "test"
     assert subscription.destination == 18749
     assert subscription.latest_update is None
 
@@ -197,14 +197,14 @@ def test_remove_sub__removes_subscription(context):
     assert "Listing subscriptions" in resp
     assert len(watcher.subscriptions) == 2
     subscriptions = list(watcher.subscriptions)
-    if subscriptions[0].query == "test":
+    if subscriptions[0].query_str == "test":
         assert subscriptions[0].destination == 18747
-        assert subscriptions[1].query == "example"
+        assert subscriptions[1].query_str == "example"
         assert subscriptions[1].destination == 18749
     else:
-        assert subscriptions[0].query == "example"
+        assert subscriptions[0].query_str == "example"
         assert subscriptions[0].destination == 18749
-        assert subscriptions[1].query == "test"
+        assert subscriptions[1].query_str == "test"
         assert subscriptions[1].destination == 18747
 
 

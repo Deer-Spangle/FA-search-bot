@@ -12,6 +12,7 @@ import heartbeat
 
 from fa_export_api import FAExportAPI
 from fa_submission import FASubmissionFull, FASubmissionShort, Rating
+from query_parser import AndQuery, NotQuery, parse_query, Query
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
@@ -32,6 +33,7 @@ class SubscriptionWatcher:
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
         self.blocklists = dict()  # type: Dict[int, Set[str]]
+        self.blocklist_query_cache = dict()  # type: Dict[str, Query]
 
     """
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
@@ -62,7 +64,8 @@ class SubscriptionWatcher:
                 matching_subscriptions = []
                 for subscription in subscriptions:
                     blocklist = self.blocklists.get(subscription.destination, set())
-                    if subscription.matches_result(full_result, blocklist):
+                    blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
+                    if subscription.matches_result(full_result, blocklist_query):
                         matching_subscriptions.append(subscription)
                 if matching_subscriptions:
                     self._send_updates(matching_subscriptions, full_result)
@@ -127,14 +130,22 @@ class SubscriptionWatcher:
             sub.latest_update = datetime.datetime.now()
             destination_map[sub.destination].append(sub)
         for dest, subs in destination_map.items():
-            queries = ", ".join([f"\"{sub.query}\"" for sub in subs])
+            queries = ", ".join([f"\"{sub.query_str}\"" for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             try:
                 result.send_message(self.bot, dest, prefix=prefix)
             except Exception as e:
                 print(f"Failed to send submission: {result.submission_id} to {dest} because {e}.")
 
+    def _get_blocklist_query(self, blocklist_str: str) -> Query:
+        if blocklist_str not in self.blocklist_query_cache:
+            self.blocklist_query_cache[blocklist_str] = parse_query(blocklist_str)
+        return self.blocklist_query_cache[blocklist_str]
+
     def add_to_blocklist(self, destination: int, tag: str):
+        # Ensure blocklist query can be parsed without error
+        self.blocklist_query_cache[tag] = parse_query(tag)
+        # Add to blocklists
         if destination in self.blocklists:
             self.blocklists[destination].add(tag)
         else:
@@ -168,59 +179,22 @@ class SubscriptionWatcher:
 
 class Subscription:
 
-    def __init__(self, query: str, destination: int):
-        self.query = query
+    def __init__(self, query_str: str, destination: int):
+        self.query_str = query_str
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
+        self.query = parse_query(query_str)
 
-    def matches_result(self, result: FASubmissionFull, blocklist: Set[str]) -> bool:
-        query_words = self.query.lower().split()
-        all_text = \
-            self._split_text_to_words(result.title) + \
-            self._split_text_to_words(result.description) + \
-            result.keywords
-        positive_words = [x for x in query_words if x[0] != "-" and x[0] != "!"]
-        negative_words = [x[1:] for x in query_words if x[0] == "-" or x[0] == "!"]
-        negative_words += list(blocklist)
-        # Check if rating is specified
-        allowed_ratings = [Rating.GENERAL, Rating.MATURE, Rating.ADULT]
-        for word in positive_words[:]:
-            if word.startswith("rating:"):
-                positive_words.remove(word)
-                rating = rating_dict.get(word.split(":")[1])
-                if rating is not None:
-                    allowed_ratings = [rating]
-        for word in negative_words[:]:
-            if word.startswith("rating:"):
-                negative_words.remove(word)
-                rating = rating_dict.get(word.split(":")[1])
-                if rating is not None:
-                    allowed_ratings.remove(rating)
-        return all(
-            [
-                self._query_word_matches_text(word, all_text)
-                for word in positive_words
-            ]
-        ) and not any(
-            [
-                self._query_word_matches_text(word, all_text)
-                for word in negative_words
-            ]
-        ) and result.rating in allowed_ratings
-    
-    def _split_text_to_words(self, text: str) -> List[str]:
-        return re.split(r"[\s\"<>]+", text)
-
-    def _query_word_matches_text(self, query_word: str, text: List[str]) -> bool:
-        clean_list = [x.lower().strip(string.punctuation) for x in text]
-        return query_word in clean_list
+    def matches_result(self, result: FASubmissionFull, blocklist_query: Query) -> bool:
+        full_query = AndQuery([self.query, blocklist_query])
+        return full_query.matches_submission(result)
 
     def to_json(self):
         latest_update_str = None
         if self.latest_update is not None:
             latest_update_str = self.latest_update.isoformat()
         return {
-            "query": self.query,
+            "query": self.query_str,
             "destination": self.destination,
             "latest_update": latest_update_str
         }
@@ -238,10 +212,10 @@ class Subscription:
     def __eq__(self, other):
         if not isinstance(other, Subscription):
             return False
-        return self.query == other.query and self.destination == other.destination
+        return self.query_str == other.query_str and self.destination == other.destination
 
     def __hash__(self):
-        return hash((self.query, self.destination))
+        return hash((self.query_str, self.destination))
 
     def __str__(self):
-        return f"Subscription(destination={self.destination}, query=\"{self.query}\")"
+        return f"Subscription(destination={self.destination}, query=\"{self.query_str}\")"
