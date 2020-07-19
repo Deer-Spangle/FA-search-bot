@@ -16,15 +16,6 @@ from fa_submission import FASubmissionFull, FASubmissionShort, Rating
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
 
-rating_dict = {
-    "general": Rating.GENERAL,
-    "safe": Rating.GENERAL,
-    "mature": Rating.MATURE,
-    "questionable": Rating.MATURE,
-    "adult": Rating.ADULT,
-    "explicit": Rating.ADULT
-}
-
 
 class SubscriptionWatcher:
     PAGE_CAP = 900

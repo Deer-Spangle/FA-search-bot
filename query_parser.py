@@ -8,7 +8,15 @@ from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMo
 from pyparsing.diagram import to_railroad, railroad_to_html
 
 from fa_submission import FASubmissionFull, Rating
-from subscription_watcher import rating_dict
+
+rating_dict = {
+    "general": Rating.GENERAL,
+    "safe": Rating.GENERAL,
+    "mature": Rating.MATURE,
+    "questionable": Rating.MATURE,
+    "adult": Rating.ADULT,
+    "explicit": Rating.ADULT
+}
 
 
 def _split_text_to_words(text: str) -> List[str]:
