@@ -5,7 +5,7 @@ from typing import List, Optional
 import pyparsing
 import pytest
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
-    ParseResults, ParseException, CaselessLiteral
+    ParseResults, ParseException, CaselessLiteral, ParserElement
 from pyparsing.diagram import to_railroad, railroad_to_html
 
 from fa_submission import FASubmissionFull, Rating
@@ -288,7 +288,7 @@ class InvalidQueryException(Exception):
     pass
 
 
-def query_parser(query_str: str) -> 'Query':
+def query_parser() -> ParserElement:
     # Creating the grammar
     valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace("\"", "")
     expr = Forward().setName("expression")
@@ -307,10 +307,19 @@ def query_parser(query_str: str) -> 'Query':
     connector = Group(pyparsing.Optional(CaselessLiteral("or") | CaselessLiteral("and")))\
         .setName("connector").setResultsName("connector", listAllMatches=True)
     expr <<= full_element + ZeroOrMore(connector + full_element)
+    return expr
+
+
+def create_railroad_diagram() -> None:
+    expr = query_parser()
     # Creating railroad diagrams
     with open("output.html", "w") as fp:
         railroad = to_railroad(expr)
         fp.write(railroad_to_html(railroad))
+
+
+def parse_query(query_str: str) -> 'Query':
+    expr = query_parser()
     # Parsing input
     try:
         parsed = expr.parseString(query_str, parseAll=True)
@@ -408,43 +417,51 @@ def parse_word(word: str, field: Optional['Field'] = None) -> 'Query':
 
 
 def test_parser():
-    assert query_parser("first") == WordQuery("first")
-    assert query_parser("first document") == AndQuery([WordQuery("first"), WordQuery("document")])
-    assert query_parser("-first") == NotQuery(WordQuery("first"))
-    assert query_parser("!first") == NotQuery(WordQuery("first"))
-    assert query_parser("! first") == NotQuery(WordQuery("first"))
-    assert query_parser("not first") == NotQuery(WordQuery("first"))
-    assert query_parser("NOT first") == NotQuery(WordQuery("first"))
-    assert query_parser("first and document") == AndQuery([WordQuery("first"), WordQuery("document")])
-    assert query_parser("first or document") == OrQuery([WordQuery("first"), WordQuery("document")])
-    assert query_parser("first AND doc OR document") == OrQuery([AndQuery([WordQuery("first"), WordQuery("doc")]), WordQuery("document")])
-    assert query_parser("(first)") == WordQuery("first")
-    assert query_parser("first and (doc or document)") == AndQuery(
-        [WordQuery("first"), OrQuery([WordQuery("doc"), WordQuery("document")])])
-    assert query_parser("first (doc or document)") == AndQuery(
-        [WordQuery("first"), OrQuery([WordQuery("doc"), WordQuery("document")])])
+    assert parse_query("first") == WordQuery("first")
+    assert parse_query("first document") == AndQuery([WordQuery("first"), WordQuery("document")])
+    assert parse_query("-first") == NotQuery(WordQuery("first"))
+    assert parse_query("!first") == NotQuery(WordQuery("first"))
+    assert parse_query("! first") == NotQuery(WordQuery("first"))
+    assert parse_query("not first") == NotQuery(WordQuery("first"))
+    assert parse_query("NOT first") == NotQuery(WordQuery("first"))
+    assert parse_query("first and document") == AndQuery([WordQuery("first"), WordQuery("document")])
+    assert parse_query("first or document") == OrQuery([WordQuery("first"), WordQuery("document")])
+    assert parse_query("first AND doc OR document") == OrQuery(
+        [AndQuery([WordQuery("first"), WordQuery("doc")]), WordQuery("document")]
+    )
+    assert parse_query("(first)") == WordQuery("first")
+    assert parse_query("first and (doc or document)") == AndQuery(
+        [WordQuery("first"), OrQuery([WordQuery("doc"), WordQuery("document")])]
+    )
+    assert parse_query("first (doc or document)") == AndQuery(
+        [WordQuery("first"), OrQuery([WordQuery("doc"), WordQuery("document")])]
+    )
     with pytest.raises(InvalidQueryException):
-        query_parser("first (doc or document")
-    assert query_parser("\"first document\"") == PhraseQuery("first document")
-    assert query_parser("keyword:first document") == AndQuery(
-        [WordQuery("first", KeywordField()), WordQuery("document")])
-    assert query_parser("keyword:\"first document\"") == PhraseQuery("first document", KeywordField())
+        parse_query("first (doc or document")
+    assert parse_query("\"first document\"") == PhraseQuery("first document")
+    assert parse_query("keyword:first document") == AndQuery(
+        [WordQuery("first", KeywordField()), WordQuery("document")]
+    )
+    assert parse_query("keyword:\"first document\"") == PhraseQuery("first document", KeywordField())
     with pytest.raises(InvalidQueryException):
-        query_parser("keyword:(first and document)")
-    assert query_parser("@keyword first document") == AndQuery(
-        [WordQuery("first", KeywordField()), WordQuery("document")])
-    assert query_parser("title:first") == WordQuery("first", TitleField())
-    assert query_parser("TITLE: first") == WordQuery("first", TitleField())
-    assert query_parser("description:first") == WordQuery("first", DescriptionField())
-    assert query_parser("rating:general") == RatingQuery(Rating.GENERAL)
+        parse_query("keyword:(first and document)")
+    assert parse_query("@keyword first document") == AndQuery(
+        [WordQuery("first", KeywordField()), WordQuery("document")]
+    )
+    assert parse_query("title:first") == WordQuery("first", TitleField())
+    assert parse_query("TITLE: first") == WordQuery("first", TitleField())
+    assert parse_query("description:first") == WordQuery("first", DescriptionField())
+    assert parse_query("rating:general") == RatingQuery(Rating.GENERAL)
     with pytest.raises(InvalidQueryException):
-        query_parser("fake:first")
-    assert query_parser("first*") == PrefixQuery("first")
-    assert query_parser("*first") == SuffixQuery("first")
-    assert query_parser("fi*st") == RegexQuery("fi.*st")
-    assert query_parser("fi[*st") == RegexQuery(r"fi\[.*st")
-    assert query_parser("not (hello \"first :) document\")") == NotQuery(
-        AndQuery([WordQuery("hello"), PhraseQuery("first :) document")]))
+        parse_query("fake:first")
+    assert parse_query("first*") == PrefixQuery("first")
+    assert parse_query("*first") == SuffixQuery("first")
+    assert parse_query("fi*st") == RegexQuery("fi.*st")
+    assert parse_query("fi[*st") == RegexQuery(r"fi\[.*st")
+    assert parse_query("\"Hello WORLD!\"") == PhraseQuery("Hello WORLD!")
+    assert parse_query("not (hello \"first :) document\")") == NotQuery(
+        AndQuery([WordQuery("hello"), PhraseQuery("first :) document")])
+    )
     with pytest.raises(InvalidQueryException):
-        query_parser("\"hello \" document\"")
-    assert query_parser("\"hello \\\" document\"") == PhraseQuery("hello \" document")
+        parse_query("\"hello \" document\"")
+    assert parse_query("\"hello \\\" document\"") == PhraseQuery("hello \" document")
