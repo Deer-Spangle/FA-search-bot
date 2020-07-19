@@ -22,9 +22,9 @@ In any chat, mention the bot and pass it a Fur Affinity search query
 `@FASearchBot [query]` and pick from the inline results which image you'd like to share.
 
 You can also use these qualifiers inline:
-`@FASearchBot gallery:username`
-`@FASearchBot scraps:username`
-`@FASearchBot favs:username`
+- `@FASearchBot gallery:username`
+- `@FASearchBot scraps:username`
+- `@FASearchBot favs:username`
 
 #### Inline Search Queries
 
@@ -51,13 +51,13 @@ Taken from FurAffinity's search documentation:
 
 ### Subscriptions
 
-`/add_subscription [query]`
-`/list_subscriptions`
-`/remove subscription [query]`
+- `/add_subscription [query]`
+- `/list_subscriptions`
+- `/remove subscription [query]`
 
-`/add_blocklisted_tag [tag]`
-`/list_blocklisted_tags`
-`/remove_blocklisted_tag [tag]`
+- `/add_blocklisted_tag [tag]`
+- `/list_blocklisted_tags`
+- `/remove_blocklisted_tag [tag]`
 
 #### Subscription queries
 
@@ -82,11 +82,14 @@ You can also combine fields with other operators, for example using one of the n
 
 Words can also be given with asterisks to allow prefixes or suffixes, e.g. `multi*`, `*taur`
 
+Blocklists use the same syntax, and are combined with queries like so: `(query) and not (blocklist)`
+
 ### Miscellaneous
 
 `/beep` - responds with `boop`
 
-Send or forward the bot an image with no text as a private message, and it will recommend you try [@foxbot](https://t.me/foxbot) or [@FindFurryPicBot](https://t.me/FindFurryPicBot) 
+Send or forward the bot an image with no text as a private message, and it will recommend you try 
+[@foxbot](https://t.me/foxbot) or [@FindFurryPicBot](https://t.me/FindFurryPicBot) 
 
 ## Development 
 
@@ -105,5 +108,6 @@ To set this up, you'll need to:
 }
 ```
 
-with `bot_key` set to your telegram bot API key, and `api_url` set to the URL of a valid deployment of [the FA API](https://github.com/Deer-Spangle/faexport).
+- Set `bot_key` to your telegram bot API key, and `api_url` to the URL of a valid deployment of 
+[the FA API](https://github.com/Deer-Spangle/faexport).
  - Run `python3 run.py`
