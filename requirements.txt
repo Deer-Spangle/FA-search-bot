@@ -2,5 +2,4 @@ python-telegram-bot
 requests
 python-dateutil
 simple-heartbeat
-whoosh
 git+https://github.com/pyparsing/pyparsing.git#egg=pyparsing[diagrams]
