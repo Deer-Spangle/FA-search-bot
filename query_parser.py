@@ -411,7 +411,7 @@ def parse_field_name(field_name: str) -> 'Field':
         return DescriptionField()
     if field_name.lower() in ["keywords", "keyword", "tag", "tags"]:
         return KeywordField()
-    if field_name.lower() in ["artist", "author", "poster", "lower"]:
+    if field_name.lower() in ["artist", "author", "poster", "lower", "uploader"]:
         return ArtistField()
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
