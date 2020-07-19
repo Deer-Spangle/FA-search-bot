@@ -1,4 +1,5 @@
 import re
+import string
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -180,7 +181,9 @@ class WordQuery(Query):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return self.word in self.field.get_field_words(sub)
+        text = self.field.get_field_words(sub)
+        clean_list = [x.lower().strip(string.punctuation) for x in text]
+        return self.word.lower() in clean_list
 
     def __eq__(self, other):
         return isinstance(other, WordQuery) and self.word == other.word and self.field == other.field
@@ -276,7 +279,7 @@ class PhraseQuery(Query):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return any(self.phrase in text for text in self.field.get_texts(sub))
+        return any(self.phrase.lower() in text.lower() for text in self.field.get_texts(sub))
 
     def __eq__(self, other):
         return isinstance(other, PhraseQuery) and self.phrase == other.phrase and self.field == other.field
