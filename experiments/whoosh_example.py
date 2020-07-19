@@ -6,7 +6,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh.query import Query, Or, Term, Prefix, Wildcard, And, Phrase
 from whoosh.searching import Searcher
 
-from experiments.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
+from query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, TitleField, DescriptionField, KeywordField
 from fa_submission import FASubmissionFull, Rating, FAUser
 from subscription_watcher import Subscription, rating_dict
