@@ -14,6 +14,22 @@ from subscription_watcher import Subscription, rating_dict
 schema = Schema(title=TEXT, description=TEXT, keywords=KEYWORD)
 search_fields = ["title", "description", "keywords"]
 
+####
+# This experiment is to try and see if we can implement more complex search queries, by using whoosh search library
+####
+# Results
+# - There aren't "matchers" in whoosh as I had hoped.
+# - A new search index needs to be created for each submission match check.
+# - Current matcher implementation takes ~40 microseconds to run.
+# - If creating a RAM search index for each sub check, it takes ~800000 microseconds (800ms)
+# - Whoosh takes ~4000 microseconds if re-using the index for each check on the submission
+# - This is much too slow. This would mean 4 seconds of every minute currently would be checking.
+#  (15 submissions per minute, 50 subscriptions)
+# - The way whoosh works is to store indices for each word, and then operate on those indices. A search for the
+#  phrase "hello world" does not check all the documents and see which contain the phrase. It checks the "hello"
+#  index, and the "world" index, and sees where the document IDs overlap, and where the positions are correctly offset.
+####
+
 
 def get_field_for_name(name: str) -> 'Field':
     return {
