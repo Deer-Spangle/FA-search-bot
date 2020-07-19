@@ -207,7 +207,11 @@ class PrefixQuery(Query):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return any(word.startswith(self.prefix) for word in self.field.get_field_words(sub))
+        return any(
+            word.lower().startswith(self.prefix.lower()) and word.lower() != self.prefix.lower()
+            for word
+            in self.field.get_field_words(sub)
+        )
 
     def __eq__(self, other):
         return isinstance(other, PrefixQuery) and self.prefix == other.prefix and self.field == other.field
@@ -231,7 +235,11 @@ class SuffixQuery(Query):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return any(word.endswith(self.suffix) for word in self.field.get_field_words(sub))
+        return any(
+            word.lower().endswith(self.suffix.lower()) and word.lower() != self.suffix.lower()
+            for word
+            in self.field.get_field_words(sub)
+        )
 
     def __eq__(self, other):
         return isinstance(other, SuffixQuery) and self.suffix == other.suffix and self.field == other.field
@@ -255,7 +263,7 @@ class RegexQuery(Query):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return any(re.search(self.regex, word) for word in self.field.get_field_words(sub))
+        return any(re.search(self.regex, word, re.I) for word in self.field.get_field_words(sub))
 
     def __eq__(self, other):
         return isinstance(other, RegexQuery) and self.regex == other.regex and self.field == other.field
