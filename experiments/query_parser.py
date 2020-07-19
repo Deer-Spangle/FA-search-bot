@@ -5,10 +5,11 @@ from typing import List, Optional
 import pyparsing
 import pytest
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
-    ParseResults, ParseException
+    ParseResults, ParseException, CaselessLiteral
 from pyparsing.diagram import to_railroad, railroad_to_html
 
 from fa_submission import FASubmissionFull, Rating
+from subscription_watcher import rating_dict
 
 
 def _split_text_to_words(text: str) -> List[str]:
@@ -299,11 +300,11 @@ def query_parser(query_str: str) -> 'Query':
         .setName("field name").setResultsName("field_name")
     field_value = Group(quotes | words).setName("field value").setResultsName("field_value")
     field = Group(field_name + field_value).setName("field").setResultsName("field")
-    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | Literal("not")))\
+    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessLiteral("not")))\
         .setName("negator").setResultsName("negator")
     element = Group(quotes | brackets | field | words).setName("element").setResultsName("element")
     full_element = Group(negator + element).setName("full element").setResultsName("full_element", listAllMatches=True)
-    connector = Group(pyparsing.Optional(Literal("or") | Literal("and")))\
+    connector = Group(pyparsing.Optional(CaselessLiteral("or") | CaselessLiteral("and")))\
         .setName("connector").setResultsName("connector", listAllMatches=True)
     expr <<= full_element + ZeroOrMore(connector + full_element)
     # Creating railroad diagrams
@@ -332,9 +333,9 @@ def parse_expression(parsed: ParseResults) -> 'Query':
 def parse_connector(parsed: ParseResults, query1: 'Query', query2: 'Query') -> 'Query':
     if not parsed:
         return AndQuery([query1, query2])
-    if parsed[0] == "and":
+    if parsed[0].lower() == "and":
         return AndQuery([query1, query2])
-    if parsed[0] == "or":
+    if parsed[0].lower() == "or":
         return OrQuery([query1, query2])
     raise InvalidQueryException(f"I do not recognise this connector: {parsed}")
 
@@ -364,6 +365,8 @@ def parse_quotes(phrase: str, field: Optional['Field'] = None) -> 'Query':
 def parse_field(parsed: ParseResults) -> 'Query':
     field_name = parsed.field_name[0]
     field_value = parsed.field_value
+    if field_name.lower() == "rating":
+        return parse_rating_field(field_value)
     field = parse_field_name(field_name)
     if field_value.quotes:
         return parse_quotes(field_value.quotes, field)
@@ -372,12 +375,21 @@ def parse_field(parsed: ParseResults) -> 'Query':
     raise InvalidQueryException(f"Unrecognised field value {field_value}")
 
 
+def parse_rating_field(field_value: ParseResults) -> 'Query':
+    if field_value.quotes:
+        raise InvalidQueryException("Rating field cannot be a quote")
+    rating = rating_dict.get(field_value.word)
+    if rating is None:
+        raise InvalidQueryException(f"Unrecognised rating field value: {field_value.word}")
+    return RatingQuery(rating)
+
+
 def parse_field_name(field_name: str) -> 'Field':
-    if field_name == "title":
+    if field_name.lower() == "title":
         return TitleField()
-    if field_name == "description":
+    if field_name.lower() == "description":
         return DescriptionField()
-    if field_name in ["keywords", "keyword"]:
+    if field_name.lower() in ["keywords", "keyword"]:
         return KeywordField()
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
@@ -402,8 +414,10 @@ def test_parser():
     assert query_parser("!first") == NotQuery(WordQuery("first"))
     assert query_parser("! first") == NotQuery(WordQuery("first"))
     assert query_parser("not first") == NotQuery(WordQuery("first"))
+    assert query_parser("NOT first") == NotQuery(WordQuery("first"))
     assert query_parser("first and document") == AndQuery([WordQuery("first"), WordQuery("document")])
     assert query_parser("first or document") == OrQuery([WordQuery("first"), WordQuery("document")])
+    assert query_parser("first AND doc OR document") == OrQuery([AndQuery([WordQuery("first"), WordQuery("doc")]), WordQuery("document")])
     assert query_parser("(first)") == WordQuery("first")
     assert query_parser("first and (doc or document)") == AndQuery(
         [WordQuery("first"), OrQuery([WordQuery("doc"), WordQuery("document")])])
@@ -420,7 +434,11 @@ def test_parser():
     assert query_parser("@keyword first document") == AndQuery(
         [WordQuery("first", KeywordField()), WordQuery("document")])
     assert query_parser("title:first") == WordQuery("first", TitleField())
+    assert query_parser("TITLE: first") == WordQuery("first", TitleField())
     assert query_parser("description:first") == WordQuery("first", DescriptionField())
+    assert query_parser("rating:general") == RatingQuery(Rating.GENERAL)
+    with pytest.raises(InvalidQueryException):
+        query_parser("fake:first")
     assert query_parser("first*") == PrefixQuery("first")
     assert query_parser("*first") == SuffixQuery("first")
     assert query_parser("fi*st") == RegexQuery("fi.*st")
