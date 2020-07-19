@@ -59,13 +59,28 @@ Taken from FurAffinity's search documentation:
 `/list_blocklisted_tags`
 `/remove_blocklisted_tag [tag]`
 
-#### Subscription filters
+#### Subscription queries
 
-`rating:general` (or `rating:safe`)
-`rating:mature` (or `rating:questionable`)
-`rating:adult` (or `rating:explicit`)
+Subscriptions understand basic boolean operators:
+- `-`, `!`, or `not` to exclude from the results, e.g. `taur -ych -rating:adult`
+- `and` and `or` to combine options, e.g. `taur or centaur`
+- You can use brackets too, e.g. `(taur or centaur) and not ych`
 
-You can also use `-` or `!` to exclude from the results, e.g. `taur -ych -rating:adult`
+Phrases can be specified with quotation marks, e.g. `"open ych" -reminder`
+
+And fields can be specified:
+- `keywords:deer` (or `tags:deer`, `@keyword deer`)
+- `title:free` (or `@title free`)
+- `description:dragoness` (or `message: dragoness`)
+- `artist:rajii` (or `author:rajii`, `uploader:rajii`, `poster:rajii`, `@lower rajii`, etc)
+- `rating:general` (or `rating:safe`)
+- `rating:mature` (or `rating:questionable`)
+- `rating:adult` (or `rating:explicit`)
+
+You can also combine fields with other operators, for example using one of the negation operators
+ to exclude from the results, e.g. `taur -ych -rating:adult`
+
+Words can also be given with asterisks to allow prefixes or suffixes, e.g. `multi*`, `*taur`
 
 ### Miscellaneous
 
