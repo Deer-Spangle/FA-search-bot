@@ -417,9 +417,9 @@ def parse_field_name(field_name: str) -> 'Field':
 
 
 def parse_word(word: str, field: Optional['Field'] = None) -> 'Query':
-    if word.startswith("*"):
+    if word.startswith("*") and "*" not in word[1:]:
         return SuffixQuery(word[1:], field)
-    if word.endswith("*"):
+    if word.endswith("*") and "*" not in word[:-1]:
         return PrefixQuery(word[:-1], field)
     if "*" in word:
         word_split = word.split("*")
