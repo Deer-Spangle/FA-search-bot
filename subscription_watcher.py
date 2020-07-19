@@ -2,16 +2,15 @@ import collections
 import datetime
 import json
 import os
-import re
-import string
 import time
 from typing import List, Optional, Deque, Set, Dict
+
 import dateutil.parser
-import telegram
 import heartbeat
+import telegram
 
 from fa_export_api import FAExportAPI
-from fa_submission import FASubmissionFull, FASubmissionShort, Rating
+from fa_submission import FASubmissionFull, FASubmissionShort
 from query_parser import AndQuery, NotQuery, parse_query, Query
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
@@ -39,6 +38,7 @@ class SubscriptionWatcher:
     This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
     match existing subscriptions
     """
+
     def run(self):
         self.running = True
         while self.running:
