@@ -292,20 +292,19 @@ def query_parser(query_str: str) -> 'Query':
     valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace("\"", "")
     expr = Forward().setName("expression")
     quotes = QuotedString('"', "\\").setName("quoted string").setResultsName("quotes")
-    brackets = Group(Literal("(").suppress() + expr + Literal(")").suppress()).setName(
-        "bracketed expression").setResultsName("brackets")
+    brackets = Group(Literal("(").suppress() + expr + Literal(")").suppress())\
+        .setName("bracketed expression").setResultsName("brackets")
     words = Word(valid_chars).setName("word").setResultsName("word")
-    field_name = Group(
-        (Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress())).setName(
-        "field name").setResultsName("field_name")
+    field_name = Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress()))\
+        .setName("field name").setResultsName("field_name")
     field_value = Group(quotes | words).setName("field value").setResultsName("field_value")
     field = Group(field_name + field_value).setName("field").setResultsName("field")
-    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | Literal("not"))).setName("negator").setResultsName(
-        "negator")
+    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | Literal("not")))\
+        .setName("negator").setResultsName("negator")
     element = Group(quotes | brackets | field | words).setName("element").setResultsName("element")
     full_element = Group(negator + element).setName("full element").setResultsName("full_element", listAllMatches=True)
-    connector = Group(pyparsing.Optional(Literal("or") | Literal("and"))).setName("connector").setResultsName(
-        "connector", listAllMatches=True)
+    connector = Group(pyparsing.Optional(Literal("or") | Literal("and")))\
+        .setName("connector").setResultsName("connector", listAllMatches=True)
     expr <<= full_element + ZeroOrMore(connector + full_element)
     # Creating railroad diagrams
     with open("output.html", "w") as fp:
