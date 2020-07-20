@@ -1,8 +1,11 @@
+import os
 import re
+import uuid
 from abc import ABC
 from enum import Enum
 from typing import Dict, Union, List
 
+import docker
 import requests
 import telegram
 from telegram import InlineQueryResultPhoto
@@ -16,6 +19,11 @@ class Rating(Enum):
     GENERAL = 1
     MATURE = 2
     ADULT = 3
+
+
+def random_sandbox_video_path(file_ext: str = "mp4"):
+    os.makedirs("sandbox", exist_ok=True)
+    return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
 class FAUser(ABC):
@@ -45,12 +53,14 @@ class FAUserShort(FAUser):
 
 class FASubmission(ABC):
     EXTENSIONS_DOCUMENT = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
-    EXTENSIONS_AUTO_DOCUMENT = ["gif", "pdf"]
+    EXTENSIONS_GIF = ["gif"]
+    EXTENSIONS_AUTO_DOCUMENT = ["pdf"]
     EXTENSIONS_AUDIO = ["mp3"]
     EXTENSIONS_PHOTO = ["jpg", "jpeg", "png"]
     EXTENSIONS_ERROR = ["swf"]
 
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
+    SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
 
     def __init__(self, submission_id: str) -> None:
@@ -193,7 +203,11 @@ class FASubmissionFull(FASubmissionShort):
                 parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
             )
             return
-        # Handle gifs, and pdfs, which can be sent as documents
+        # Handle gifs, which can be made pretty
+        if ext in FASubmission.EXTENSIONS_GIF:
+            self._send_gif(bot, chat_id, reply_to=reply_to, prefix=prefix)
+            return
+        # Handle pdfs, which can be sent as documents
         if ext in FASubmission.EXTENSIONS_AUTO_DOCUMENT:
             bot.send_document(
                 chat_id=chat_id,
@@ -215,3 +229,57 @@ class FASubmissionFull(FASubmissionShort):
         if ext in FASubmission.EXTENSIONS_ERROR:
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
+
+    def _send_gif(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
+        output_path = self._convert_gif(self.download_url)
+        bot.send_document(
+            chat_id=chat_id,
+            document=output_path,
+            caption=f"{prefix}{self.link}",
+            reply_to_message_id=reply_to
+        )
+        return
+
+    def _convert_gif(self, gif_url: str) -> str:
+        ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
+                         "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
+                         "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
+        crf_option = " -crf 18"
+        # first pass
+        client = docker.from_env()
+        sandbox_dir = os.getcwd() + "/sandbox"
+        output_path = random_sandbox_video_path("mp4")
+        client.containers.run(
+            "jrottenberg/ffmpeg",
+            f"ffmpeg -i {gif_url} {ffmpeg_options} {crf_option} {output_path}",
+            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
+            working_dir="sandbox"
+        )
+        # Check file size
+        if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
+            return output_path
+        # If it's too big, do a 2 pass run
+        two_pass_filename = random_sandbox_video_path("mp4")
+        # Get video duration from ffprobe
+        duration_str = client.containers.run(
+            "sjourdan/ffprobe",
+            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i {output_path} -v error ",
+            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
+            working_dir="sandbox"
+        )
+        duration = float(duration_str)
+        # 2 pass run
+        bitrate = self.SIZE_LIMIT_GIF / duration * 1000000 * 8
+        client.containers.run(
+            "jrottenberg/ffmpeg",
+            f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
+            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
+            working_dir="sandbox"
+        )
+        client.containers.run(
+            "jrottenberg/ffmpeg",
+            f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
+            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
+            working_dir="sandbox"
+        )
+        return two_pass_filename

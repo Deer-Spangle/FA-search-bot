@@ -283,7 +283,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_pdf_submission(self, bot):
-        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+        submission = SubmissionBuilder(file_ext="pdf", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
 
@@ -407,7 +407,7 @@ class FASubmissionFullTest(unittest.TestCase):
 
     @patch.object(telegram, "Bot")
     def test_auto_doc_just_under_size_limit(self, bot):
-        submission = SubmissionBuilder(file_ext="gif", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)\
+        submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)\
             .build_full_submission()
         chat_id = -9327622
         message_id = 2873292

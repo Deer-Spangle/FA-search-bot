@@ -422,7 +422,7 @@ def test_auto_doc_just_under_size_limit(context):
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
-    submission = MockSubmission(post_id, file_ext="gif", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
+    submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
