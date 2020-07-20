@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from telegram import Chat
 
@@ -24,6 +25,14 @@ class MockTelegramUpdate:
             text=text,
             text_markdown_urled=text_markdown_urled,
             chat_type=chat_type
+        )
+
+    @staticmethod
+    def with_channel_post(message_id: Optional[int] = None, chat_id: Optional[int] = None, text: Optional[str] = None):
+        return _MockTelegramChannelPost(
+            message_id=message_id,
+            chat_id=chat_id,
+            text=text
         )
 
     @classmethod
@@ -68,6 +77,17 @@ class _MockTelegramMessage(MockTelegramUpdate):
     def with_document(self, file_id=None, mime_type=None):
         self.message.set_document(file_id, mime_type)
         return self
+
+
+class _MockTelegramChannelPost(MockTelegramUpdate):
+
+    def __init__(self, message_id: Optional[int] = None, chat_id: Optional[int] = None, text: Optional[str] = None):
+        super().__init__()
+        self.channel_post = _MockChannelPost(
+            message_id=message_id,
+            chat_id=chat_id,
+            text=text
+        )
 
 
 class _MockTelegramCallback(MockTelegramUpdate):
@@ -145,10 +165,40 @@ class _MockMessage:
         )
 
 
+class _MockChannelPost:
+
+    def __init__(
+            self,
+            *,
+            message_id: Optional[int] = None,
+            chat_id: Optional[int] = None,
+            text: Optional[str] = None,
+            text_markdown_urled: Optional[str] = None
+    ):
+        self.message_id = message_id
+        self.chat_id = chat_id
+        self.text = text
+        self.text_markdown_urled = text_markdown_urled or text
+        self.chat = _MockChannel()
+        # Set defaults
+        if message_id is None:
+            self.message_id = generate_key()
+        if chat_id is None:
+            self.chat_id = "-100" + generate_key()
+        if text_markdown_urled is None:
+            self.text_markdown_urled = self.text
+
+
 class _MockChat:
 
     def __init__(self, chat_type=None):
         self.type = chat_type
+
+
+class _MockChannel(_MockChat):
+
+    def __init__(self):
+        super().__init__(chat_type=Chat.CHANNEL)
 
 
 class _MockDocument:

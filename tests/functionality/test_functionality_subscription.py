@@ -71,7 +71,7 @@ def test_call__route_remove_subscription(context):
 
 
 @patch.object(telegram, "Bot")
-def test_call__route_remove_subscription(context):
+def test_call__route_remove_subscription_with_username(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
