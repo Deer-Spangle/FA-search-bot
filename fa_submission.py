@@ -234,7 +234,7 @@ class FASubmissionFull(FASubmissionShort):
         output_path = self._convert_gif(self.download_url)
         bot.send_document(
             chat_id=chat_id,
-            document=output_path,
+            document=open(output_path, "rb"),
             caption=f"{prefix}{self.link}",
             reply_to_message_id=reply_to
         )
