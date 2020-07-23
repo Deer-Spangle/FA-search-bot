@@ -249,12 +249,15 @@ class FASubmissionFull(FASubmissionShort):
         client = docker.from_env()
         sandbox_dir = os.getcwd() + "/sandbox"
         output_path = random_sandbox_video_path("mp4")
-        client.containers.run(
+        output = client.containers.run(
             "jrottenberg/ffmpeg",
             f"ffmpeg -i {gif_url} {ffmpeg_options} {crf_option} {output_path}",
-            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
-            working_dir="sandbox"
+            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+            working_dir="/sandbox",
+            stream=True
         )
+        for line in output:
+            print(f"Docker: {line}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
@@ -264,8 +267,8 @@ class FASubmissionFull(FASubmissionShort):
         duration_str = client.containers.run(
             "sjourdan/ffprobe",
             f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i {output_path} -v error ",
-            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
-            working_dir="sandbox"
+            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+            working_dir="/sandbox"
         )
         duration = float(duration_str)
         # 2 pass run
@@ -273,13 +276,13 @@ class FASubmissionFull(FASubmissionShort):
         client.containers.run(
             "jrottenberg/ffmpeg",
             f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
-            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
-            working_dir="sandbox"
+            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+            working_dir="/sandbox"
         )
         client.containers.run(
             "jrottenberg/ffmpeg",
             f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
-            volumes={sandbox_dir: {"bind": "sandbox", "mode": "rw"}},
-            working_dir="sandbox"
+            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+            working_dir="/sandbox"
         )
         return two_pass_filename
