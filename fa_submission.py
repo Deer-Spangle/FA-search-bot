@@ -251,7 +251,7 @@ class FASubmissionFull(FASubmissionShort):
         output_path = random_sandbox_video_path("mp4")
         output = client.containers.run(
             "jrottenberg/ffmpeg",
-            f"ffmpeg -i {gif_url} {ffmpeg_options} {crf_option} {output_path}",
+            f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox",
             stream=True
@@ -275,13 +275,13 @@ class FASubmissionFull(FASubmissionShort):
         bitrate = self.SIZE_LIMIT_GIF / duration * 1000000 * 8
         client.containers.run(
             "jrottenberg/ffmpeg",
-            f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox"
         )
         client.containers.run(
             "jrottenberg/ffmpeg",
-            f"ffmpeg -i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox"
         )
