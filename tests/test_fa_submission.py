@@ -1,13 +1,13 @@
 import unittest
 from unittest import mock
+from unittest.mock import patch
 
-from unittest.mock import patch, Mock
 import requests_mock
 import telegram
 
-from functionalities.neaten import NeatenFunctionality
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort, \
     Rating
+from functionalities.neaten import NeatenFunctionality
 from tests.util.mock_method import MockMethod
 from tests.util.submission_builder import SubmissionBuilder
 
