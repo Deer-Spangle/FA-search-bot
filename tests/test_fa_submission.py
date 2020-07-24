@@ -8,7 +8,7 @@ import telegram
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort, \
     Rating
 from functionalities.neaten import NeatenFunctionality
-from tests.util.mock_method import MockMethod
+from tests.util.mock_method import MockMethod, MockMultiMethod
 from tests.util.submission_builder import SubmissionBuilder
 
 
@@ -289,6 +289,64 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['document'] == mock_open.return_value
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+
+    def test_convert_gif(self):
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+        mock_run = MockMethod(["Test docker"])
+        mock_filesize = MockMethod(submission.SIZE_LIMIT_GIF - 10)
+
+        with mock.patch("docker.models.containers.ContainerCollection.run", mock_run.call):
+            with mock.patch("os.path.getsize", mock_filesize.call):
+                output_path = submission._convert_gif(submission.download_url)
+
+        assert output_path is not None
+        assert output_path.endswith(".mp4")
+        assert mock_run.called
+        assert mock_run.args[0].endswith("/ffmpeg")
+        assert mock_run.args[1].startswith(f"-i {submission.download_url}")
+        assert mock_run.args[1].endswith(f" /{output_path}")
+        assert len(mock_run.kwargs["volumes"]) == 1
+        assert list(mock_run.kwargs["volumes"].values())[0]["bind"] == "/sandbox"
+        assert mock_run.kwargs["working_dir"] == "/sandbox"
+
+    def test_convert_gif_two_pass(self):
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+        mock_run = MockMultiMethod([["Test docker"], "27.5", None, None])
+        mock_filesize = MockMethod(submission.SIZE_LIMIT_GIF + 10)
+
+        with mock.patch("docker.models.containers.ContainerCollection.run", mock_run.call):
+            with mock.patch("os.path.getsize", mock_filesize.call):
+                output_path = submission._convert_gif(submission.download_url)
+
+        assert output_path is not None
+        assert output_path.endswith(".mp4")
+        assert mock_run.calls == 4
+        # Initial ffmpeg call
+        assert mock_run.args[0][0].endswith("/ffmpeg")
+        assert mock_run.args[0][1].startswith(f"-i {submission.download_url}")
+        assert len(mock_run.kwargs[0]["volumes"]) == 1
+        assert list(mock_run.kwargs[0]["volumes"].values())[0]["bind"] == "/sandbox"
+        assert mock_run.kwargs[0]["working_dir"] == "/sandbox"
+        # ffprobe call
+        assert mock_run.args[1][0].endswith("/ffprobe")
+        assert mock_run.args[1][1].startswith("-show_entries format=duration")
+        assert len(mock_run.kwargs[1]["volumes"]) == 1
+        assert list(mock_run.kwargs[1]["volumes"].values())[0]["bind"] == "/sandbox"
+        assert mock_run.kwargs[1]["working_dir"] == "/sandbox"
+        # First ffmpeg two pass call
+        assert mock_run.args[2][0].endswith("/ffmpeg")
+        assert mock_run.args[2][1].startswith(f"-i {submission.download_url}")
+        assert mock_run.args[2][1].endswith("-pass 1 -f mp4 /dev/null -y")
+        assert len(mock_run.kwargs[2]["volumes"]) == 1
+        assert list(mock_run.kwargs[2]["volumes"].values())[0]["bind"] == "/sandbox"
+        assert mock_run.kwargs[2]["working_dir"] == "/sandbox"
+        # Second ffmpeg two pass call
+        assert mock_run.args[3][0].endswith("/ffmpeg")
+        assert mock_run.args[3][1].startswith(f"-i {submission.download_url}")
+        assert mock_run.args[3][1].endswith(f"-pass 2 {output_path} -y")
+        assert len(mock_run.kwargs[3]["volumes"]) == 1
+        assert list(mock_run.kwargs[3]["volumes"].values())[0]["bind"] == "/sandbox"
+        assert mock_run.kwargs[3]["working_dir"] == "/sandbox"
 
     @patch.object(telegram, "Bot")
     def test_pdf_submission(self, bot):

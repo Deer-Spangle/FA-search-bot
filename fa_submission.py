@@ -266,7 +266,7 @@ class FASubmissionFull(FASubmissionShort):
         # Get video duration from ffprobe
         duration_str = client.containers.run(
             "sjourdan/ffprobe",
-            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i {output_path} -v error ",
+            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox"
         )
