@@ -1,3 +1,4 @@
+from unittest import mock
 from unittest.mock import call
 
 import telegram
@@ -6,6 +7,7 @@ from telegram import Chat
 from fa_submission import FASubmission
 from functionalities.neaten import NeatenFunctionality
 from tests.util.mock_export_api import MockExportAPI, MockSubmission
+from tests.util.mock_method import MockMethod
 from tests.util.mock_telegram_update import MockTelegramUpdate
 
 
@@ -181,13 +183,20 @@ def test_gif_submission(context):
     submission = MockSubmission(post_id, file_ext="gif")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
+    convert = MockMethod("output.gif")
+    submission._convert_gif = convert.call
+    mock_open = mock.mock_open(read_data=b"data")
 
-    neaten.call(update, context)
+    with mock.patch("fa_submission.open", mock_open):
+        neaten.call(update, context)
 
+    assert convert.called
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_called_once()
     assert context.bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_document.call_args[1]['document'] == submission.download_url
+    assert mock_open.call_args[0][0] == "output.gif"
+    assert mock_open.call_args[0][1] == "rb"
+    assert context.bot.send_document.call_args[1]['document'] == mock_open.return_value
     assert context.bot.send_document.call_args[1]['caption'] == submission.link
     assert context.bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
 

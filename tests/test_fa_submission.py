@@ -1,12 +1,14 @@
 import unittest
+from unittest import mock
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 import requests_mock
 import telegram
 
 from functionalities.neaten import NeatenFunctionality
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort, \
     Rating
+from tests.util.mock_method import MockMethod
 from tests.util.submission_builder import SubmissionBuilder
 
 
@@ -271,13 +273,20 @@ class FASubmissionFullTest(unittest.TestCase):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
+        convert = MockMethod("output.gif")
+        submission._convert_gif = convert.call
+        mock_open = mock.mock_open(read_data=b"data")
 
-        submission.send_message(bot, chat_id, message_id)
+        with mock.patch("fa_submission.open", mock_open):
+            submission.send_message(bot, chat_id, message_id)
 
+        assert convert.called
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == chat_id
-        assert bot.send_document.call_args[1]['document'] == submission.download_url
+        assert mock_open.call_args[0][0] == "output.gif"
+        assert mock_open.call_args[0][1] == "rb"
+        assert bot.send_document.call_args[1]['document'] == mock_open.return_value
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
 
