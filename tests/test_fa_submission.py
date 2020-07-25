@@ -339,6 +339,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert len(mock_run.kwargs["volumes"]) == 1
         assert list(mock_run.kwargs["volumes"].values())[0]["bind"] == "/sandbox"
         assert mock_run.kwargs["working_dir"] == "/sandbox"
+        assert mock_run.kwargs["remove"] is True
 
     def test_convert_gif_two_pass(self):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
@@ -358,12 +359,14 @@ class FASubmissionFullTest(unittest.TestCase):
         assert len(mock_run.kwargs[0]["volumes"]) == 1
         assert list(mock_run.kwargs[0]["volumes"].values())[0]["bind"] == "/sandbox"
         assert mock_run.kwargs[0]["working_dir"] == "/sandbox"
+        assert mock_run.kwargs[0]["remove"] is True
         # ffprobe call
         assert mock_run.args[1][0].endswith("/ffprobe")
         assert mock_run.args[1][1].startswith("-show_entries format=duration")
         assert len(mock_run.kwargs[1]["volumes"]) == 1
         assert list(mock_run.kwargs[1]["volumes"].values())[0]["bind"] == "/sandbox"
         assert mock_run.kwargs[1]["working_dir"] == "/sandbox"
+        assert mock_run.kwargs[1]["remove"] is True
         # First ffmpeg two pass call
         assert mock_run.args[2][0].endswith("/ffmpeg")
         assert mock_run.args[2][1].startswith(f"-i {submission.download_url}")
@@ -371,6 +374,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert len(mock_run.kwargs[2]["volumes"]) == 1
         assert list(mock_run.kwargs[2]["volumes"].values())[0]["bind"] == "/sandbox"
         assert mock_run.kwargs[2]["working_dir"] == "/sandbox"
+        assert mock_run.kwargs[2]["remove"] is True
         # Second ffmpeg two pass call
         assert mock_run.args[3][0].endswith("/ffmpeg")
         assert mock_run.args[3][1].startswith(f"-i {submission.download_url}")
@@ -378,6 +382,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert len(mock_run.kwargs[3]["volumes"]) == 1
         assert list(mock_run.kwargs[3]["volumes"].values())[0]["bind"] == "/sandbox"
         assert mock_run.kwargs[3]["working_dir"] == "/sandbox"
+        assert mock_run.kwargs[3]["remove"] is True
 
     @patch.object(telegram, "Bot")
     def test_convert_gif_failure(self, bot):

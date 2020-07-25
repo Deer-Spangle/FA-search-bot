@@ -279,6 +279,7 @@ class FASubmissionFull(FASubmissionShort):
             f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox",
+            remove=True,
             stream=True
         )
         for line in output:
@@ -293,7 +294,8 @@ class FASubmissionFull(FASubmissionShort):
             "sjourdan/ffprobe",
             f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox"
+            working_dir="/sandbox",
+            remove=True
         )
         duration = float(duration_str)
         # 2 pass run
@@ -302,12 +304,14 @@ class FASubmissionFull(FASubmissionShort):
             "jrottenberg/ffmpeg",
             f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox"
+            working_dir="/sandbox",
+            remove=True
         )
         client.containers.run(
             "jrottenberg/ffmpeg",
             f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox"
+            working_dir="/sandbox",
+            remove=True
         )
         return two_pass_filename
