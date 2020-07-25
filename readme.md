@@ -113,3 +113,5 @@ To set this up, you'll need to:
 - Set `bot_key` to your telegram bot API key, and `api_url` to the URL of a valid deployment of 
 [the FA API](https://github.com/Deer-Spangle/faexport).
  - Run `python3 run.py`
+
+If you want it to be able to prettify gifs, you will need docker running on the system.
