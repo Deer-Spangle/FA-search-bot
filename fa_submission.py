@@ -274,16 +274,13 @@ class FASubmissionFull(FASubmissionShort):
         client = docker.from_env()
         sandbox_dir = os.getcwd() + "/sandbox"
         output_path = random_sandbox_video_path("mp4")
-        output = client.containers.run(
+        client.containers.run(
             "jrottenberg/ffmpeg",
             f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}",
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
             working_dir="/sandbox",
-            remove=True,
-            stream=True
+            remove=True
         )
-        for line in output:
-            print(f"Docker: {line}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
