@@ -3,7 +3,7 @@ import re
 import uuid
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Optional
 
 import docker
 import requests
@@ -62,6 +62,8 @@ class FASubmission(ABC):
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
+
+    GIF_CACHE_DIR = "gif_cache"
 
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
@@ -231,12 +233,14 @@ class FASubmissionFull(FASubmissionShort):
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
 
     def _send_gif(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
-        # TODO: caching
         try:
-            output_path = self._convert_gif(self.download_url)
+            filename = self._get_gif_from_cache()
+            if filename is None:
+                output_path = self._convert_gif(self.download_url)
+                filename = self._save_gif_to_cache(output_path)
             bot.send_document(
                 chat_id=chat_id,
-                document=open(output_path, "rb"),
+                document=open(filename, "rb"),
                 caption=f"{prefix}{self.link}",
                 reply_to_message_id=reply_to
             )
@@ -248,6 +252,18 @@ class FASubmissionFull(FASubmissionShort):
                 reply_to_message_id=reply_to
             )
         return
+
+    def _get_gif_from_cache(self) -> Optional[str]:
+        filename = f"{self.GIF_CACHE_DIR}/{self.submission_id}.mp4"
+        if os.path.exists(filename):
+            return filename
+        return None
+
+    def _save_gif_to_cache(self, gif_path: str) -> str:
+        filename = f"{self.GIF_CACHE_DIR}/{self.submission_id}.mp4"
+        os.makedirs(self.GIF_CACHE_DIR, exist_ok=True)
+        os.rename(gif_path, filename)
+        return filename
 
     def _convert_gif(self, gif_url: str) -> str:
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \

@@ -183,18 +183,23 @@ def test_gif_submission(context):
     submission = MockSubmission(post_id, file_ext="gif")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
-    convert = MockMethod("output.gif")
+    convert = MockMethod("output.mp4")
     submission._convert_gif = convert.call
     mock_open = mock.mock_open(read_data=b"data")
+    mock_rename = MockMethod()
 
     with mock.patch("fa_submission.open", mock_open):
-        neaten.call(update, context)
+        with mock.patch("os.rename", mock_rename.call):
+            neaten.call(update, context)
 
     assert convert.called
     context.bot.send_photo.assert_not_called()
     context.bot.send_document.assert_called_once()
     assert context.bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-    assert mock_open.call_args[0][0] == "output.gif"
+    assert mock_rename.called
+    assert mock_rename.args[0] == "output.mp4"
+    assert mock_rename.args[1] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
+    assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
     assert mock_open.call_args[0][1] == "rb"
     assert context.bot.send_document.call_args[1]['document'] == mock_open.return_value
     assert context.bot.send_document.call_args[1]['caption'] == submission.link

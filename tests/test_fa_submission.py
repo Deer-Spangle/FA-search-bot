@@ -273,18 +273,49 @@ class FASubmissionFullTest(unittest.TestCase):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
         message_id = 2873292
-        convert = MockMethod("output.gif")
+        convert = MockMethod("output.mp4")
         submission._convert_gif = convert.call
         mock_open = mock.mock_open(read_data=b"data")
+        mock_rename = MockMethod()
 
         with mock.patch("fa_submission.open", mock_open):
-            submission.send_message(bot, chat_id, message_id)
+            with mock.patch("os.rename", mock_rename.call):
+                submission.send_message(bot, chat_id, message_id)
 
         assert convert.called
         bot.send_photo.assert_not_called()
         bot.send_document.assert_called_once()
         assert bot.send_document.call_args[1]['chat_id'] == chat_id
-        assert mock_open.call_args[0][0] == "output.gif"
+        assert mock_rename.called
+        assert mock_rename.args[0] == "output.mp4"
+        assert mock_rename.args[1] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
+        assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
+        assert mock_open.call_args[0][1] == "rb"
+        assert bot.send_document.call_args[1]['document'] == mock_open.return_value
+        assert bot.send_document.call_args[1]['caption'] == submission.link
+        assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+
+    @patch.object(telegram, "Bot")
+    def test_gif_submission_from_cache(self, bot):
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+        chat_id = -9327622
+        message_id = 2873292
+        convert = MockMethod("output.mp4")
+        submission._convert_gif = convert.call
+        mock_open = mock.mock_open(read_data=b"data")
+        mock_exists = MockMethod(True)
+
+        with mock.patch("fa_submission.open", mock_open):
+            with mock.patch("os.path.exists", mock_exists.call):
+                submission.send_message(bot, chat_id, message_id)
+
+        assert not convert.called
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_called_once()
+        assert bot.send_document.call_args[1]['chat_id'] == chat_id
+        assert mock_exists.called
+        assert mock_exists.args[0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
+        assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
         assert mock_open.call_args[0][1] == "rb"
         assert bot.send_document.call_args[1]['document'] == mock_open.return_value
         assert bot.send_document.call_args[1]['caption'] == submission.link
