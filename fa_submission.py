@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import time
 import uuid
 from abc import ABC
 from enum import Enum
@@ -276,7 +277,6 @@ class FASubmissionFull(FASubmissionShort):
         crf_option = " -crf 18"
         # first pass
         client = docker.from_env()
-        sandbox_dir = os.getcwd() + "/sandbox"
         output_path = random_sandbox_video_path("mp4")
         self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
         # Check file size
@@ -303,7 +303,7 @@ class FASubmissionFull(FASubmissionShort):
         )
         return two_pass_filename
 
-    def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> Optional[str]:
+    def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         sandbox_dir = os.getcwd() + "/sandbox"
         container: Container = client.containers.run(
             "jrottenberg/ffmpeg",
@@ -315,11 +315,13 @@ class FASubmissionFull(FASubmissionShort):
         )
         start_time = datetime.datetime.now()
         while (datetime.datetime.now() - start_time).total_seconds() < self.DOCKER_TIMEOUT:
+            container.reload()
             if container.status == "exited":
                 output = container.logs()
-                container.remove()
+                container.remove(force=True)
                 return output
+            time.sleep(2)
         # Kill container
         container.kill()
-        container.remove()
-        return None
+        container.remove(force=True)
+        raise TimeoutError("Docker container timed out")
