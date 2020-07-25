@@ -14,7 +14,9 @@ You can use it freely at [@FASearchBot](https://t.me/FASearchBot), add it to you
 
 ### Neaten
 
-Private message it a link to a Fur Affinity submission page, thumbnail url or image download url, i.e, a link beginning with `http://?.facdn.net/art/` and it will reply with the image's thumbnail and a link to that image's gallery page.
+Private message it a link to a Fur Affinity submission page, thumbnail url or image download url, i.e, a link beginning with `http://?.facdn.net/art/` 
+and it will reply with the image embedded and a link to that image's gallery page.
+If you send a gif link, it will convert it for optimal quality in telegram.
 
 ### Inline Responses
 
