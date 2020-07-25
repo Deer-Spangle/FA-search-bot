@@ -20,6 +20,7 @@ class WelcomeFunctionality(BotFunctionality):
                  "or you can file an issue on my [github](https://github.com/Deer-Spangle/FA-search-bot).\n"
                  f"I am version {__VERSION__} and currently I can:\n"
                  "- Neaten up any FA submission, direct links, and thumbnail links you give me\n"
+                 "- Optimise FA gif submissions for telegram\n"
                  "- Respond to inline search queries (and browse user galleries inline)\n"
                  "- Create subscriptions, with specified queries. See readme for more details on query syntax\n"
                  "- Store blocklists for those subscriptions\n"
