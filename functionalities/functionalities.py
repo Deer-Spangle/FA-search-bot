@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from typing import Optional
 
 import telegram
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, run_async
 
 
 @contextmanager
@@ -38,7 +38,7 @@ class BotFunctionality(ABC):
 
     def register(self, dispatcher):
         args_dict = self.kwargs
-        args_dict["callback"] = self.call
+        args_dict["callback"] = run_async(self.call)
         handler = self.handler_cls(**args_dict)
         dispatcher.add_handler(handler)
 
