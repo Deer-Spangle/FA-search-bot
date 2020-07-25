@@ -231,13 +231,22 @@ class FASubmissionFull(FASubmissionShort):
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
 
     def _send_gif(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
-        output_path = self._convert_gif(self.download_url)
-        bot.send_document(
-            chat_id=chat_id,
-            document=open(output_path, "rb"),
-            caption=f"{prefix}{self.link}",
-            reply_to_message_id=reply_to
-        )
+        # TODO: caching
+        try:
+            output_path = self._convert_gif(self.download_url)
+            bot.send_document(
+                chat_id=chat_id,
+                document=open(output_path, "rb"),
+                caption=f"{prefix}{self.link}",
+                reply_to_message_id=reply_to
+            )
+        except Exception:
+            bot.send_document(
+                chat_id=chat_id,
+                document=self.download_url,
+                caption=f"{prefix}{self.link}",
+                reply_to_message_id=reply_to
+            )
         return
 
     def _convert_gif(self, gif_url: str) -> str:

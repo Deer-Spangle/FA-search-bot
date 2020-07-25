@@ -349,6 +349,22 @@ class FASubmissionFullTest(unittest.TestCase):
         assert mock_run.kwargs[3]["working_dir"] == "/sandbox"
 
     @patch.object(telegram, "Bot")
+    def test_convert_gif_failure(self, bot):
+        submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+        chat_id = -9327622
+        message_id = 2873292
+        submission._convert_gif = lambda *args: (_ for _ in ()).throw(Exception)
+
+        submission.send_message(bot, chat_id, message_id)
+
+        bot.send_photo.assert_not_called()
+        bot.send_document.assert_called_once()
+        assert bot.send_document.call_args[1]['chat_id'] == chat_id
+        assert bot.send_document.call_args[1]['document'] == submission.download_url
+        assert bot.send_document.call_args[1]['caption'] == submission.link
+        assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+
+    @patch.object(telegram, "Bot")
     def test_pdf_submission(self, bot):
         submission = SubmissionBuilder(file_ext="pdf", file_size=47453).build_full_submission()
         chat_id = -9327622
