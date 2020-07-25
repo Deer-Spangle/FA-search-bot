@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 import uuid
@@ -8,6 +9,8 @@ from typing import Dict, Union, List, Optional
 import docker
 import requests
 import telegram
+from docker import DockerClient
+from docker.models.containers import Container
 from telegram import InlineQueryResultPhoto
 
 
@@ -64,6 +67,7 @@ class FASubmission(ABC):
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
 
     GIF_CACHE_DIR = "gif_cache"
+    DOCKER_TIMEOUT = 5 * 60
 
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
@@ -274,41 +278,48 @@ class FASubmissionFull(FASubmissionShort):
         client = docker.from_env()
         sandbox_dir = os.getcwd() + "/sandbox"
         output_path = random_sandbox_video_path("mp4")
-        client.containers.run(
-            "jrottenberg/ffmpeg",
-            f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}",
-            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox",
-            remove=True
-        )
+        self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
         # If it's too big, do a 2 pass run
         two_pass_filename = random_sandbox_video_path("mp4")
         # Get video duration from ffprobe
-        duration_str = client.containers.run(
-            "sjourdan/ffprobe",
+        duration_str = self._run_docker(
+            client,
             f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
-            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox",
-            remove=True
+            entrypoint="ffprobe"
         )
         duration = float(duration_str)
         # 2 pass run
         bitrate = self.SIZE_LIMIT_GIF / duration * 1000000 * 8
-        client.containers.run(
-            "jrottenberg/ffmpeg",
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y",
-            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox",
-            remove=True
+        self._run_docker(
+            client,
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y"
         )
-        client.containers.run(
-            "jrottenberg/ffmpeg",
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y",
-            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox",
-            remove=True
+        self._run_docker(
+            client,
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y"
         )
         return two_pass_filename
+
+    def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> Optional[str]:
+        sandbox_dir = os.getcwd() + "/sandbox"
+        container: Container = client.containers.run(
+            "jrottenberg/ffmpeg",
+            args,
+            entrypoint=entrypoint,
+            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+            working_dir="/sandbox",
+            detach=True
+        )
+        start_time = datetime.datetime.now()
+        while (datetime.datetime.now() - start_time).total_seconds() < self.DOCKER_TIMEOUT:
+            if container.status == "exited":
+                output = container.logs()
+                container.remove()
+                return output
+        # Kill container
+        container.kill()
+        container.remove()
+        return None
