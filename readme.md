@@ -91,7 +91,7 @@ Blocklists use the same syntax, and are combined with queries like so: `(query) 
 `/beep` - responds with `boop`
 
 Send or forward the bot an image with no text as a private message, and it will recommend you try 
-[@foxbot](https://t.me/foxbot) or [@FindFurryPicBot](https://t.me/FindFurryPicBot) 
+[@foxbot](https://t.me/foxbot) ([open source](https://github.com/Syfaro/foxbot)) or [@FindFurryPicBot](https://t.me/FindFurryPicBot) (closed source)
 
 ## Development 
 
