@@ -1,6 +1,7 @@
 import random
 import string
 from typing import Union, List
+from unittest.mock import MagicMock
 
 from fa_export_api import FAExportAPI, PageNotFound
 from fa_submission import FASubmission, FASubmissionFull, FAUser, Rating
@@ -79,6 +80,7 @@ class MockSubmission(FASubmissionFull):
         )
         self.fav_id = fav_id
         self._download_file_size = file_size
+        self.send_message = MagicMock()
 
 
 class MockExportAPI(FAExportAPI):
