@@ -193,11 +193,19 @@ class FASubmissionFull(FASubmissionShort):
                     parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
                 )
                 return
-            bot.send_photo(
-                chat_id=chat_id,
-                photo=self.download_url,
-                caption=f"{prefix}{self.link}",
-                reply_to_message_id=reply_to
+            bot.send_photo_with_backup(
+                chat_id,
+                {
+                    "photo": self.download_url,
+                    "caption": f"{prefix}{self.link}",
+                    "reply_to_message_id": reply_to
+                },
+                {
+                    "photo": self.thumbnail_url,
+                    "caption": f"{prefix}{self.link}\n[Direct download]({self.download_url})",
+                    "reply_to_message_id": reply_to,
+                    "parse_mode": telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
+                }
             )
             return
         # Handle files telegram can't handle

@@ -1,4 +1,5 @@
 from threading import Thread
+from typing import Dict
 
 import telegram
 import time
@@ -43,6 +44,16 @@ class MQBot(telegram.bot.Bot):
 
     def send_photo(self, chat_id, *args, **kwargs):
         return self._send_photo(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+
+    @mq.queuedmessage
+    def _send_photo_with_backup(self, chat_id: int, kwargs: Dict, kwargs_backup: Dict, isgroup: bool = None):
+        try:
+            return super(MQBot, self).send_photo(chat_id, isgroup=isgroup, **kwargs)
+        except telegram.error.BadRequest:
+            return super(MQBot, self).send_photo(chat_id, isgroup=isgroup, **kwargs_backup)
+
+    def send_photo_with_backup(self, chat_id: int, kwargs: Dict, kwargs_backup: Dict):
+        return self._send_photo_with_backup(chat_id, kwargs, kwargs_backup, isgroup=chat_id < 0)
 
     @mq.queuedmessage
     def _send_document(self, *args, **kwargs):
