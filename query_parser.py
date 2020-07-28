@@ -6,7 +6,6 @@ from typing import List, Optional
 import pyparsing
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
     ParseResults, ParseException, CaselessLiteral, ParserElement
-from pyparsing.diagram import to_railroad, railroad_to_html
 
 from fa_submission import FASubmissionFull, Rating
 
@@ -327,14 +326,6 @@ def query_parser() -> ParserElement:
         .setName("connector").setResultsName("connector", listAllMatches=True)
     expr <<= full_element + ZeroOrMore(connector + full_element)
     return expr
-
-
-def create_railroad_diagram() -> None:
-    expr = query_parser()
-    # Creating railroad diagrams
-    with open("experiments/output.html", "w") as fp:
-        railroad = to_railroad(expr)
-        fp.write(railroad_to_html(railroad))
 
 
 def parse_query(query_str: str) -> 'Query':
