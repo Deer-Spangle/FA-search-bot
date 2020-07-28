@@ -5,6 +5,7 @@ from unittest.mock import patch
 import requests_mock
 import telegram
 
+import bot as mqbot
 from fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, CantSendFileType, FAUser, FAUserShort, \
     Rating
 from functionalities.neaten import NeatenFunctionality
@@ -12,6 +13,7 @@ from tests.util.mock_method import MockMethod, MockMultiMethod
 from tests.util.submission_builder import SubmissionBuilder
 
 
+# noinspection PyMethodMayBeStatic
 class FAUserTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -55,6 +57,7 @@ class FAUserTest(unittest.TestCase):
         assert f"/user/{profile_name}" in author.link
 
 
+# noinspection PyMethodMayBeStatic
 class FAUserShortTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -68,6 +71,7 @@ class FAUserShortTest(unittest.TestCase):
         assert f"/user/{profile_name}" in author.link
 
 
+# noinspection PyMethodMayBeStatic
 class FASubmissionTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -174,7 +178,7 @@ class FASubmissionTest(unittest.TestCase):
         assert file_size == size
 
 
-# noinspection DuplicatedCode
+# noinspection DuplicatedCode,PyMethodMayBeStatic
 class FASubmissionShortTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -211,7 +215,7 @@ class FASubmissionShortTest(unittest.TestCase):
         assert query_result.caption == link
 
 
-# noinspection DuplicatedCode
+# noinspection DuplicatedCode,PyMethodMayBeStatic
 class FASubmissionFullTest(unittest.TestCase):
 
     def test_constructor(self):
@@ -268,7 +272,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert isinstance(file_size2, int)
         assert file_size2 == size
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_gif_submission(self, bot):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -295,7 +299,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_gif_submission_from_cache(self, bot):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -360,7 +364,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert mock_run.args[3][1].startswith(f"-i {submission.download_url}")
         assert mock_run.args[3][1].endswith(f"-pass 2 {output_path} -y")
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_convert_gif_failure(self, bot):
         submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -376,7 +380,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_pdf_submission(self, bot):
         submission = SubmissionBuilder(file_ext="pdf", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -391,7 +395,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_mp3_submission(self, bot):
         submission = SubmissionBuilder(file_ext="mp3", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -408,7 +412,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_audio.call_args[1]['caption'] == submission.link
         assert bot.send_audio.call_args[1]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_txt_submission(self, bot):
         submission = SubmissionBuilder(file_ext="txt").build_full_submission()
         chat_id = -9327622
@@ -427,7 +431,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_swf_submission(self, bot):
         submission = SubmissionBuilder(file_ext="swf", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -439,7 +443,7 @@ class FASubmissionFullTest(unittest.TestCase):
         except CantSendFileType as e:
             assert str(e) == "I'm sorry, I can't neaten \".swf\" files."
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_unknown_type_submission(self, bot):
         submission = SubmissionBuilder(file_ext="zzz", file_size=47453).build_full_submission()
         chat_id = -9327622
@@ -451,7 +455,7 @@ class FASubmissionFullTest(unittest.TestCase):
         except CantSendFileType as e:
             assert str(e) == "I'm sorry, I don't understand that file extension (zzz)."
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_image_just_under_size_limit(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
             .build_full_submission()
@@ -460,13 +464,17 @@ class FASubmissionFullTest(unittest.TestCase):
 
         submission.send_message(bot, chat_id, message_id)
 
-        bot.send_photo.assert_called_once()
-        assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
-        assert bot.send_photo.call_args[1]['caption'] == submission.link
-        assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
+        bot.send_photo_with_backup.assert_called_once()
+        assert bot.send_photo_with_backup.call_args[0][0] == chat_id
+        assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
+        assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
+        assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
+        assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
+            f"{submission.link}\n[Direct download]({submission.download_url})"
+        assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
+        assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_image_just_over_size_limit(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)\
             .build_full_submission()
@@ -483,7 +491,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_image_over_document_size_limit(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)\
             .build_full_submission()
@@ -500,7 +508,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_auto_doc_just_under_size_limit(self, bot):
         submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)\
             .build_full_submission()
@@ -517,7 +525,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_document.call_args[1]['caption'] == submission.link
         assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_auto_doc_just_over_size_limit(self, bot):
         submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)\
             .build_full_submission()
@@ -536,7 +544,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
         assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_send_message__with_prefix(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
             .build_full_submission()
@@ -545,14 +553,18 @@ class FASubmissionFullTest(unittest.TestCase):
 
         submission.send_message(bot, chat_id, message_id, prefix="Update on a search")
 
-        bot.send_photo.assert_called_once()
-        assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
-        assert submission.link in bot.send_photo.call_args[1]['caption']
-        assert "Update on a search\n" in bot.send_photo.call_args[1]['caption']
-        assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
+        bot.send_photo_with_backup.assert_called_once()
+        assert bot.send_photo_with_backup.call_args[0][0] == chat_id
+        assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
+        assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
+        assert submission.link in bot.send_photo_with_backup.call_args[0][1]['caption']
+        assert "Update on a search\n" in bot.send_photo_with_backup.call_args[0][1]['caption']
+        assert submission.link in bot.send_photo_with_backup.call_args[0][2]['caption']
+        assert "Update on a search\n" in bot.send_photo_with_backup.call_args[0][2]['caption']
+        assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
+        assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
 
-    @patch.object(telegram, "Bot")
+    @patch.object(mqbot, "MQBot")
     def test_send_message__without_prefix(self, bot):
         submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)\
             .build_full_submission()
@@ -561,8 +573,12 @@ class FASubmissionFullTest(unittest.TestCase):
 
         submission.send_message(bot, chat_id, message_id)
 
-        bot.send_photo.assert_called_once()
-        assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-        assert bot.send_photo.call_args[1]['photo'] == submission.download_url
-        assert bot.send_photo.call_args[1]['caption'] == submission.link
-        assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
+        bot.send_photo_with_backup.assert_called_once()
+        assert bot.send_photo_with_backup.call_args[0][0] == chat_id
+        assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
+        assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
+        assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
+        assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
+            f"{submission.link}\n[Direct download]({submission.download_url})"
+        assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
+        assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
