@@ -355,15 +355,13 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         watcher._send_updates([subscription], submission)
 
-        bot.send_message.assert_not_called()
-        bot.send_photo.assert_called_once()
-        kwargs_photo = bot.send_photo.call_args[1]
-        assert kwargs_photo['chat_id'] == 12345
-        assert kwargs_photo['photo'] == submission.download_url
-        assert "update" in kwargs_photo['caption'].lower()
-        assert "\"test\"" in kwargs_photo['caption']
-        assert "subscription" in kwargs_photo['caption'].lower()
-        assert submission.link in kwargs_photo['caption']
+        assert submission.send_message.asset_called_once()
+        args, kwargs = submission.send_message.call_args
+        assert args[0] == bot
+        assert args[1] == 12345
+        assert "update" in kwargs['prefix'].lower()
+        assert "\"test\"" in kwargs['prefix']
+        assert "subscription" in kwargs['prefix'].lower()
 
     @patch.object(telegram, "Bot")
     def test_send_updates__gathers_subscriptions(self, bot):
@@ -376,29 +374,28 @@ class SubscriptionWatcherTest(unittest.TestCase):
 
         watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
-        bot.send_message.assert_not_called()
-        assert bot.send_photo.call_count == 2
-        call_list = bot.send_photo.call_args_list
+        assert submission.send_message.call_count == 2
+        call_list = submission.send_message.call_args_list
         # Indifferent to call order, so figure out the order here
-        call1_kwargs = call_list[0][1]
-        call2_kwargs = call_list[1][1]
-        if call_list[0][1]["chat_id"] != 12345:
-            call1_kwargs = call_list[1][1]
-            call2_kwargs = call_list[0][1]
+        call1 = call_list[0]
+        call2 = call_list[1]
+        if call1[0][1] != 12345:
+            call1 = call_list[1]
+            call2 = call_list[0]
+        args1, kwargs1 = call1
+        args2, kwargs2 = call2
         # Check call matching two subscriptions
-        assert call1_kwargs['chat_id'] == 12345
-        assert call1_kwargs['photo'] == submission.download_url
-        assert "update" in call1_kwargs['caption'].lower()
-        assert "\"test\", \"test2\"" in call1_kwargs['caption']
-        assert "subscriptions:" in call1_kwargs['caption'].lower()
-        assert submission.link in call1_kwargs['caption']
+        assert args1[0] == bot
+        assert args2[0] == bot
+        assert args1[1] == 12345
+        assert args2[1] == 54321
+        assert "update" in kwargs1['prefix'].lower()
+        assert "\"test\", \"test2\"" in kwargs1['prefix']
+        assert "subscriptions:" in kwargs1['prefix'].lower()
         # And check the one subscription call
-        assert call2_kwargs['chat_id'] == 54321
-        assert call2_kwargs['photo'] == submission.download_url
-        assert "update" in call2_kwargs['caption'].lower()
-        assert "\"test\"" in call2_kwargs['caption']
-        assert "subscription:" in call2_kwargs['caption'].lower()
-        assert submission.link in call2_kwargs['caption']
+        assert "update" in kwargs2['prefix'].lower()
+        assert "\"test\"" in kwargs2['prefix']
+        assert "subscription:" in kwargs2['prefix'].lower()
 
     @patch.object(telegram, "Bot")
     def test_send_updates__updates_latest(self, bot):

@@ -1,5 +1,3 @@
-from unittest.mock import call
-
 from functionalities.neaten import NeatenFunctionality
 from tests.util.mock_export_api import MockExportAPI, MockSubmission
 from tests.util.mock_telegram_update import MockTelegramUpdate
@@ -16,11 +14,11 @@ def test_thumbnail_link(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_thumbnail_link_not_round(context):
@@ -34,11 +32,11 @@ def test_thumbnail_link_not_round(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_thumbnail_link_big(context):
@@ -52,11 +50,11 @@ def test_thumbnail_link_big(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_doesnt_fire_on_avatar(context):
@@ -84,11 +82,11 @@ def test_thumb_and_submission_link(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_thumb_and_different_submission_link(context):
@@ -104,11 +102,13 @@ def test_thumb_and_different_submission_link(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called()
-    calls = [call(
-        chat_id=update.message.chat_id,
-        photo=submission.download_url,
-        caption=submission.link,
-        reply_to_message_id=update.message.message_id
-    ) for submission in [submission1, submission2]]
-    context.bot.send_photo.assert_has_calls(calls)
+    submission1.send_message.assert_called_once()
+    args1, _ = submission1.send_message.call_args
+    assert args1[0] == context.bot
+    assert args1[1] == update.message.chat_id
+    assert args1[2] == update.message.message_id
+    submission2.send_message.assert_called_once()
+    args2, _ = submission2.send_message.call_args
+    assert args2[0] == context.bot
+    assert args2[1] == update.message.chat_id
+    assert args2[2] == update.message.message_id

@@ -60,11 +60,11 @@ def test_submission_link(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_submission_group_chat(context):
@@ -79,11 +79,11 @@ def test_submission_group_chat(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_submission_link_no_http(context):
@@ -95,11 +95,11 @@ def test_submission_link_no_http(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_two_submission_links(context):
@@ -115,14 +115,16 @@ def test_two_submission_links(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called()
-    calls = [call(
-        chat_id=update.message.chat_id,
-        photo=submission.download_url,
-        caption=submission.link,
-        reply_to_message_id=update.message.message_id
-    ) for submission in [submission1, submission2]]
-    context.bot.send_photo.assert_has_calls(calls)
+    submission1.send_message.assert_called_once()
+    args1, _ = submission1.send_message.call_args
+    assert args1[0] == context.bot
+    assert args1[1] == update.message.chat_id
+    assert args1[2] == update.message.message_id
+    submission2.send_message.assert_called_once()
+    args2, _ = submission2.send_message.call_args
+    assert args2[0] == context.bot
+    assert args2[1] == update.message.chat_id
+    assert args2[2] == update.message.message_id
 
 
 def test_duplicate_submission_links(context):
@@ -136,11 +138,11 @@ def test_duplicate_submission_links(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_deleted_submission(context):
@@ -183,27 +185,14 @@ def test_gif_submission(context):
     submission = MockSubmission(post_id, file_ext="gif")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
-    convert = MockMethod("output.mp4")
-    submission._convert_gif = convert.call
-    mock_open = mock.mock_open(read_data=b"data")
-    mock_rename = MockMethod()
 
-    with mock.patch("fa_submission.open", mock_open):
-        with mock.patch("os.rename", mock_rename.call):
-            neaten.call(update, context)
+    neaten.call(update, context)
 
-    assert convert.called
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_called_once()
-    assert context.bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-    assert mock_rename.called
-    assert mock_rename.args[0] == "output.mp4"
-    assert mock_rename.args[1] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][1] == "rb"
-    assert context.bot.send_document.call_args[1]['document'] == mock_open.return_value
-    assert context.bot.send_document.call_args[1]['caption'] == submission.link
-    assert context.bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_pdf_submission(context):
@@ -215,12 +204,11 @@ def test_pdf_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_called_once()
-    assert context.bot.send_document.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_document.call_args[1]['document'] == submission.download_url
-    assert context.bot.send_document.call_args[1]['caption'] == submission.link
-    assert context.bot.send_document.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_mp3_submission(context):
@@ -232,12 +220,11 @@ def test_mp3_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_audio.assert_called_with(
-        chat_id=update.message.chat_id,
-        audio=submission.download_url,
-        caption=submission.link,
-        reply_to_message_id=update.message.message_id
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_txt_submission(context):
@@ -249,13 +236,11 @@ def test_txt_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_with(
-        chat_id=update.message.chat_id,
-        photo=submission.full_image_url,
-        caption=f"{submission.link}\n[Direct download]({submission.download_url})",
-        reply_to_message_id=update.message.message_id,
-        parse_mode=telegram.ParseMode.MARKDOWN
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_swf_submission(context):
@@ -270,13 +255,11 @@ def test_swf_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="I'm sorry, I can't neaten \".swf\" files.",
-        reply_to_message_id=update.message.message_id
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_swf_submission_groupchat(context):
@@ -316,13 +299,11 @@ def test_unknown_type_submission(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="I'm sorry, I don't understand that file extension (zzz).",
-        reply_to_message_id=update.message.message_id
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_unknown_type_submission_groupchat(context):
@@ -362,11 +343,11 @@ def test_link_in_markdown(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_image_just_under_size_limit(context):
@@ -381,11 +362,11 @@ def test_image_just_under_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.download_url
-    assert context.bot.send_photo.call_args[1]['caption'] == submission.link
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_image_just_over_size_limit(context):
@@ -400,13 +381,11 @@ def test_image_just_over_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
-    assert context.bot.send_photo.call_args[1]['caption'] == \
-           f"{submission.link}\n[Direct download]({submission.download_url})"
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
-    assert context.bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_image_over_document_size_limit(context):
@@ -421,13 +400,11 @@ def test_image_over_document_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_photo.assert_called_once()
-    assert context.bot.send_photo.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
-    assert context.bot.send_photo.call_args[1]['caption'] == \
-           f"{submission.link}\n[Direct download]({submission.download_url})"
-    assert context.bot.send_photo.call_args[1]['reply_to_message_id'] == update.message.message_id
-    assert context.bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_auto_doc_just_under_size_limit(context):
@@ -442,12 +419,11 @@ def test_auto_doc_just_under_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_document.assert_called_with(
-        chat_id=update.message.chat_id,
-        document=submission.download_url,
-        caption=submission.link,
-        reply_to_message_id=update.message.message_id
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
 
 
 def test_auto_doc_just_over_size_limit(context):
@@ -462,11 +438,8 @@ def test_auto_doc_just_over_size_limit(context):
 
     neaten.call(update, context)
 
-    context.bot.send_document.assert_not_called()
-    context.bot.send_photo.assert_called_with(
-        chat_id=update.message.chat_id,
-        photo=submission.full_image_url,
-        caption=f"{submission.link}\n[Direct download]({submission.download_url})",
-        reply_to_message_id=update.message.message_id,
-        parse_mode=telegram.ParseMode.MARKDOWN
-    )
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
