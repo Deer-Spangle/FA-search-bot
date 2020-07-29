@@ -188,9 +188,9 @@ class FASubmissionFull(FASubmissionShort):
                 bot.send_photo(
                     chat_id=chat_id,
                     photo=self.thumbnail_url,
-                    caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
+                    caption=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
                     reply_to_message_id=reply_to,
-                    parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
+                    parse_mode=telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
                 )
                 return
             bot.send_photo_with_backup(
@@ -202,9 +202,9 @@ class FASubmissionFull(FASubmissionShort):
                 },
                 {
                     "photo": self.thumbnail_url,
-                    "caption": f"{prefix}{self.link}\n[Direct download]({self.download_url})",
+                    "caption": f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
                     "reply_to_message_id": reply_to,
-                    "parse_mode": telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
+                    "parse_mode": telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
                 }
             )
             return
@@ -213,9 +213,9 @@ class FASubmissionFull(FASubmissionShort):
             bot.send_photo(
                 chat_id=chat_id,
                 photo=self.full_image_url,
-                caption=f"{prefix}{self.link}\n[Direct download]({self.download_url})",
+                caption=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
                 reply_to_message_id=reply_to,
-                parse_mode=telegram.ParseMode.MARKDOWN  # Markdown is okay here, as the link text is hard coded.
+                parse_mode=telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
             )
             return
         # Handle gifs, which can be made pretty

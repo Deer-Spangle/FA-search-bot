@@ -428,9 +428,9 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['chat_id'] == chat_id
         assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
 
     @patch.object(mqbot, "MQBot")
     def test_swf_submission(self, bot):
@@ -471,7 +471,7 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
         assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
         assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
         assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
 
@@ -488,9 +488,9 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['chat_id'] == chat_id
         assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
 
     @patch.object(mqbot, "MQBot")
     def test_image_over_document_size_limit(self, bot):
@@ -505,9 +505,9 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['chat_id'] == chat_id
         assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
 
     @patch.object(mqbot, "MQBot")
     def test_auto_doc_just_under_size_limit(self, bot):
@@ -541,9 +541,9 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo.call_args[1]['chat_id'] == chat_id
         assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
         assert bot.send_photo.call_args[1]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.MARKDOWN
+        assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
 
     @patch.object(mqbot, "MQBot")
     def test_send_message__with_prefix(self, bot):
@@ -580,6 +580,6 @@ class FASubmissionFullTest(unittest.TestCase):
         assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
         assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
         assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
-            f"{submission.link}\n[Direct download]({submission.download_url})"
+            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
         assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
         assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
