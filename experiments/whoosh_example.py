@@ -6,10 +6,10 @@ from whoosh.qparser import MultifieldParser
 from whoosh.query import Query, Or, Term, Prefix, Wildcard, And, Phrase
 from whoosh.searching import Searcher
 
-from query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
+from fa_search_bot.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, TitleField, DescriptionField, KeywordField
-from fa_submission import FASubmissionFull, Rating, FAUser
-from subscription_watcher import Subscription, rating_dict
+from fa_search_bot.fa_submission import FASubmissionFull, Rating, FAUser
+from fa_search_bot.subscription_watcher import Subscription, rating_dict
 
 schema = Schema(title=TEXT, description=TEXT, keywords=KEYWORD)
 search_fields = ["title", "description", "keywords"]
