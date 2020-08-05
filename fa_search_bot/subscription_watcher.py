@@ -1,6 +1,7 @@
 import collections
 import datetime
 import json
+import logging
 import os
 import time
 from typing import List, Optional, Deque, Set, Dict
@@ -15,6 +16,9 @@ from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
+
+logger = logging.getLogger("fa_search_bot.subscription_watcher")
+usage_logger = logging.getLogger("usage")
 
 
 class SubscriptionWatcher:
@@ -34,18 +38,17 @@ class SubscriptionWatcher:
         self.blocklists = dict()  # type: Dict[int, Set[str]]
         self.blocklist_query_cache = dict()  # type: Dict[str, Query]
 
-    """
-    This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they 
-    match existing subscriptions
-    """
-
     def run(self):
+        """
+        This method is launched as a separate thread, it reads the browse endpoint for new submissions, and checks if they
+        match existing subscriptions
+        """
         self.running = True
         while self.running:
             try:
                 new_results = self._get_new_results()
             except Exception as e:
-                print(f"Failed to get new results because {e}")
+                logger.error("Failed to get new results", exc_info=e)
                 continue
             count = 0
             heartbeat.update_heartbeat(heartbeat_app_name)
@@ -55,8 +58,9 @@ class SubscriptionWatcher:
                 # Try and get the full data
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
+                    logger.debug("Got full data for submission %s", result.submission_id)
                 except Exception:
-                    print(f"Submission {result.submission_id} disappeared before I could check it.")
+                    logger.warning("Submission %s, disappeared before I could check it.", result.submission_id)
                     continue
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
@@ -67,6 +71,7 @@ class SubscriptionWatcher:
                     blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
                     if subscription.matches_result(full_result, blocklist_query):
                         matching_subscriptions.append(subscription)
+                logger.debug("Submission %s matches %s subscriptions", result.submission_id, len(matching_subscriptions))
                 if matching_subscriptions:
                     self._send_updates(matching_subscriptions, full_result)
                 # Update latest ids with the submission we just checked, and save config
@@ -74,10 +79,12 @@ class SubscriptionWatcher:
                 # If we've done ten, update heartbeat
                 if count % self.UPDATE_PER_HEARTBEAT == 0:
                     heartbeat.update_heartbeat(heartbeat_app_name)
+                    logger.debug("Heartbeat")
             # Wait
             self._wait_while_running(self.BACK_OFF)
 
     def stop(self):
+        logger.info("Stopping subscription watcher")
         self.running = False
 
     def _wait_while_running(self, seconds):
@@ -92,6 +99,7 @@ class SubscriptionWatcher:
             try:
                 return self.api.get_browse_page(page)
             except ValueError as e:
+                logger.warning("Failed to get browse page, retrying", exc_info=e)
                 self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
 
     def _get_new_results(self) -> List[FASubmissionShort]:
@@ -99,6 +107,7 @@ class SubscriptionWatcher:
         Gets new results since last scan, returning them in order from oldest to newest.
         """
         if len(self.latest_ids) == 0:
+            logger.info("First time checking subscriptions, getting initial submissions")
             first_page = self._get_browse_page()
             self._update_latest_ids(first_page[::-1])
             return []
@@ -107,6 +116,7 @@ class SubscriptionWatcher:
         new_results = []  # type: List[FASubmissionShort]
         caught_up = False
         while page <= self.PAGE_CAP and not caught_up:
+            logger.info("Getting browse page: %s", page)
             page_results = self._get_browse_page(page)
             browse_results += page_results
             # Get new results
@@ -116,6 +126,7 @@ class SubscriptionWatcher:
                     break
                 new_results.append(result)
             page += 1
+        logger.info("New submissions: %s", len(new_results))
         # Return oldest result first
         return new_results[::-1]
 
@@ -133,9 +144,11 @@ class SubscriptionWatcher:
             queries = ", ".join([f"\"{sub.query_str}\"" for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             try:
+                logger.info("Sending submission %s to subscription", result.submission_id)
+                usage_logger.info("Submission sent to subscription")
                 result.send_message(self.bot, dest, prefix=prefix)
             except Exception as e:
-                print(f"Failed to send submission: {result.submission_id} to {dest} because {e}.")
+                logger.error("Failed to send submission: %s to %s", result.submission_id, dest, exc_info=e)
 
     def _get_blocklist_query(self, blocklist_str: str) -> Query:
         if blocklist_str not in self.blocklist_query_cache:
@@ -152,6 +165,7 @@ class SubscriptionWatcher:
             self.blocklists[destination] = {tag}
 
     def save_to_json(self):
+        logger.debug("Saving subscriptions data")
         subscriptions = self.subscriptions.copy()
         data = {
             "latest_ids": list(self.latest_ids),
@@ -164,10 +178,12 @@ class SubscriptionWatcher:
 
     @staticmethod
     def load_from_json(api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
+        logger.debug("Loading subscription config from file")
         try:
             with open(SubscriptionWatcher.FILENAME, "r") as f:
                 data = json.load(f)
         except FileNotFoundError:
+            logger.info("No subscription config exists, creating a blank one")
             return SubscriptionWatcher(api, bot)
         new_watcher = SubscriptionWatcher(api, bot)
         for old_id in data["latest_ids"]:
