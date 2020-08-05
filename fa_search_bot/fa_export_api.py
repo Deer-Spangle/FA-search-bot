@@ -1,9 +1,12 @@
+import logging
 import time
 from typing import List
 
 import requests
 
 from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav
+
+logger = logging.getLogger("fa_search_bot.fa_export_api")
 
 
 class PageNotFound(Exception):
@@ -30,6 +33,7 @@ class FAExportAPI:
         return resp
 
     def get_full_submission(self, submission_id: str) -> FASubmissionFull:
+        logger.debug("Getting full submission for submission ID %s", submission_id)
         sub_resp = self._api_request_with_retry(f"submission/{submission_id}.json")
         # If API returns fine
         if sub_resp.status_code == 200:
@@ -39,6 +43,7 @@ class FAExportAPI:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
     def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
+        logger.debug("Getting user folder for user %s, folder %s, and page %s", user, folder, page)
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         resp = self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1")
@@ -49,9 +54,11 @@ class FAExportAPI:
                 submissions.append(FASubmission.from_short_dict(submission_data))
             return submissions
         else:
+            logger.warning("User gallery not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
     def get_user_favs(self, user: str, next_id: str = None) -> List[FASubmissionShortFav]:
+        logger.debug("Getting user favourites for user: %s, next_id: %s", user, next_id)
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         next_str = ""
@@ -65,9 +72,11 @@ class FAExportAPI:
                 submissions.append(FASubmission.from_short_dict(submission_data))
             return submissions
         else:
+            logger.warning("User favourites not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
     def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
+        logger.debug("Searching for query: %s, page: %s", query, page)
         resp = self._api_request_with_retry(f"search.json?full=1&perpage=48&q={query}&page={page}")
         data = resp.json()
         submissions = []
@@ -76,6 +85,7 @@ class FAExportAPI:
         return submissions
 
     def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
+        logger.debug("Getting browse page %s", page)
         resp = self._api_request_with_retry(f"browse.json?page={page}")
         data = resp.json()
         submissions = []
