@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Tuple, List, Union, Optional
 
@@ -7,6 +8,10 @@ from telegram.ext import InlineQueryHandler, CallbackContext
 
 from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+
+audit_logger = logging.getLogger("audit")
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger("fa_search_bot.functionalities.inline")
 
 
 class InlineFunctionality(BotFunctionality):
@@ -19,20 +24,24 @@ class InlineFunctionality(BotFunctionality):
         query = update.inline_query.query
         query_clean = query.strip().lower()
         offset = update.inline_query.offset
-        print(f"Got an inline query: {query}, page={offset}")
+        logger.info("Got an inline query, page=%s", offset)
+        audit_logger.info("Got an inline query: %s, page=%s, from %s", query, offset, update.inline_query.from_user.id)
         if query_clean == "":
             context.bot.answer_inline_query(update.inline_query.id, [])
             return
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
+            usage_logger.info("Inline favourites")
             _, username = query_clean.split(":", 1)
             results, next_offset = self._favs_query_results(username, offset)
         else:
             gallery_query = self._parse_folder_and_username(query_clean)
             if gallery_query:
+                usage_logger.info("Inline gallery")
                 folder, username = gallery_query
                 results, next_offset = self._gallery_query_results(folder, username, offset)
             else:
+                usage_logger.info("Inline search")
                 results, next_offset = self._search_query_results(query, offset)
         # Send results
         context.bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
@@ -43,6 +52,7 @@ class InlineFunctionality(BotFunctionality):
         try:
             submissions = self.api.get_user_favs(username, offset)[:48]
         except PageNotFound:
+            logger.warning("User not found for inline favourites query")
             return self._user_not_found(username), ""
         # If no results, send error
         if len(submissions) > 0:
@@ -72,6 +82,7 @@ class InlineFunctionality(BotFunctionality):
         try:
             results = self._create_user_folder_results(username, folder, page)
         except PageNotFound:
+            logger.warning("User not found for inline gallery query")
             return self._user_not_found(username), ""
         # If no results, send error
         if len(results) == 0:
