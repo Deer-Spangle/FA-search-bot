@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import re
 import time
@@ -13,6 +14,9 @@ import telegram
 from docker import DockerClient
 from docker.models.containers import Container
 from telegram import InlineQueryResultPhoto
+
+logger = logging.getLogger("fa_search_bot.fa_submission")
+usage_logger = logging.getLogger("usage")
 
 
 class CantSendFileType(Exception):
@@ -247,8 +251,10 @@ class FASubmissionFull(FASubmissionShort):
 
     def _send_gif(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
         try:
+            logger.info("Sending gif, submission ID %s", self.submission_id)
             filename = self._get_gif_from_cache()
             if filename is None:
+                logger.info("Gif not in cache, converting to video. Submission ID %s", self.submission_id)
                 output_path = self._convert_gif(self.download_url)
                 filename = self._save_gif_to_cache(output_path)
             bot.send_document(
@@ -257,7 +263,8 @@ class FASubmissionFull(FASubmissionShort):
                 caption=f"{prefix}{self.link}",
                 reply_to_message_id=reply_to
             )
-        except Exception:
+        except Exception as e:
+            logger.error("Failed to convert gif to video. Submission ID: %s", self.submission_id, excinfo=e)
             bot.send_document(
                 chat_id=chat_id,
                 document=self.download_url,
@@ -269,6 +276,8 @@ class FASubmissionFull(FASubmissionShort):
     def _get_gif_from_cache(self) -> Optional[str]:
         filename = f"{self.GIF_CACHE_DIR}/{self.submission_id}.mp4"
         if os.path.exists(filename):
+            logger.info("Loading gif from cache, submission ID %s", self.submission_id)
+            usage_logger.info("Pretty gif: from cache")
             return filename
         return None
 
@@ -279,6 +288,7 @@ class FASubmissionFull(FASubmissionShort):
         return filename
 
     def _convert_gif(self, gif_url: str) -> str:
+        usage_logger.info("Pretty gif: converting")
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                          "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
                          "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
@@ -291,6 +301,7 @@ class FASubmissionFull(FASubmissionShort):
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
         # If it's too big, do a 2 pass run
+        logger.info("Doing a two pass gif conversion on submission ID %s", self.submission_id)
         two_pass_filename = random_sandbox_video_path("mp4")
         # Get video duration from ffprobe
         duration_str = self._run_docker(
@@ -313,6 +324,7 @@ class FASubmissionFull(FASubmissionShort):
 
     def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         sandbox_dir = os.getcwd() + "/sandbox"
+        logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
         container: Container = client.containers.run(
             "jrottenberg/ffmpeg",
             args,
@@ -330,6 +342,7 @@ class FASubmissionFull(FASubmissionShort):
                 return output
             time.sleep(2)
         # Kill container
+        logger.warning("Docker timed out, killing container.")
         container.kill()
         container.remove(force=True)
         raise TimeoutError("Docker container timed out")
