@@ -1,3 +1,4 @@
+import logging
 import re
 import string
 from abc import ABC, abstractmethod
@@ -8,6 +9,8 @@ from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMo
     ParseResults, ParseException, CaselessLiteral, ParserElement
 
 from fa_search_bot.fa_submission import FASubmissionFull, Rating
+
+logger = logging.getLogger("fa_search_bot.query_parser")
 
 rating_dict = {
     "general": Rating.GENERAL,
@@ -329,11 +332,13 @@ def query_parser() -> ParserElement:
 
 
 def parse_query(query_str: str) -> 'Query':
+    logger.debug("Parsing query: %s", query_str)
     expr = query_parser()
     # Parsing input
     try:
         parsed = expr.parseString(query_str, parseAll=True)
     except ParseException as e:
+        logger.warning("Failed to parse query %s.", query_str, exc_info=e)
         raise InvalidQueryException(f"ParseException was thrown: {e}")
     # Turning into query
     return parse_expression(parsed)
@@ -356,6 +361,7 @@ def parse_connector(parsed: ParseResults, query1: 'Query', query2: 'Query') -> '
         return AndQuery([query1, query2])
     if parsed[0].lower() == "or":
         return OrQuery([query1, query2])
+    logger.warning("Unrecognised query connector: %s", parsed[0].lower())
     raise InvalidQueryException(f"I do not recognise this connector: {parsed}")
 
 
@@ -374,6 +380,7 @@ def parse_element(parsed: ParseResults) -> 'Query':
         return parse_field(parsed.field)
     if parsed.word:
         return parse_word(parsed.word)
+    logger.warning("Unrecognised query element: %s", parsed)
     raise InvalidQueryException(f"I do not recognise this element: {parsed}")
 
 
@@ -391,14 +398,17 @@ def parse_field(parsed: ParseResults) -> 'Query':
         return parse_quotes(field_value.quotes, field)
     if field_value.word:
         return parse_word(field_value.word, field)
+    logger.warning("Unrecognised query field value type: %s", field_value)
     raise InvalidQueryException(f"Unrecognised field value {field_value}")
 
 
 def parse_rating_field(field_value: ParseResults) -> 'Query':
     if field_value.quotes:
+        logger.warning("Rating field cannot be a quote")
         raise InvalidQueryException("Rating field cannot be a quote")
     rating = rating_dict.get(field_value.word)
     if rating is None:
+        logger.warning("Unrecognised rating field value: %s", field_value.word)
         raise InvalidQueryException(f"Unrecognised rating field value: {field_value.word}")
     return RatingQuery(rating)
 
@@ -412,6 +422,7 @@ def parse_field_name(field_name: str) -> 'Field':
         return KeywordField()
     if field_name.lower() in ["artist", "author", "poster", "lower", "uploader"]:
         return ArtistField()
+    logger.warning("Unrecognised field name: %s", field_name)
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
 
