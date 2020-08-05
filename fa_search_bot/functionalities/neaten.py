@@ -31,6 +31,7 @@ class NeatenFunctionality(BotFunctionality):
         if not matches:
             return
         with in_progress_msg(update, context, "Neatening image link"):
+            logger.info("Neatening links")
             for match in matches:
                 submission_id = self._get_submission_id_from_link(context.bot, update, match[0])
                 if submission_id:
