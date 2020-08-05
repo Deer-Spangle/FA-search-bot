@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Optional, List
 
@@ -8,6 +9,10 @@ from fa_search_bot.filters import FilterRegex
 from fa_search_bot.fa_export_api import PageNotFound
 from fa_search_bot.fa_submission import FASubmissionFull, CantSendFileType, FASubmissionShort
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
+
+audit_logger = logging.getLogger("audit")
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger("fa_search_bot.functionalities.inline")
 
 
 class NeatenFunctionality(BotFunctionality):
@@ -38,13 +43,16 @@ class NeatenFunctionality(BotFunctionality):
                 self._handle_fa_submission_link(context.bot, update, submission_id)
 
     def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
+        audit_logger.info("Got neaten link request: %s from %s", link, update.message.chat_id)
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
+            usage_logger.info("Neaten link: submission link")
             return int(sub_match.group(1))
         # Handle thumbnail link matches
         thumb_match = self.FA_THUMB_LINK.match(link)
         if thumb_match:
+            usage_logger.info("Neaten link: thumbnail link")
             return int(thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
@@ -52,20 +60,27 @@ class NeatenFunctionality(BotFunctionality):
         image_id = int(direct_match.group(2))
         submission_id = self._find_submission(username, image_id)
         if not submission_id:
+            logger.warning("Couldn't find submission by username: %s with image id: %s", username, image_id)
             self._return_error_in_privmsg(
                 bot, update,
                 f"Could not locate the image by {username} with image id {image_id}."
             )
+        usage_logger.info("Neaten link: direct image link")
         return submission_id
 
     def _handle_fa_submission_link(self, bot, update, submission_id: int):
-        print("Found a link, ID:{}".format(submission_id))
+        logger.info("Found a link, ID: %s", submission_id)
         try:
             submission = self.api.get_full_submission(str(submission_id))
             self._send_neat_fa_response(bot, update, submission)
         except PageNotFound:
-            self._return_error_in_privmsg(bot, update, "This doesn't seem to be a valid FA submission: "
-                                                       "https://www.furaffinity.net/view/{}/".format(submission_id))
+            logger.warning("Submission invalid or deleted. Submission ID: %s", submission_id)
+            self._return_error_in_privmsg(
+                bot,
+                update,
+                "This doesn't seem to be a valid FA submission: "
+                "https://www.furaffinity.net/view/{}/".format(submission_id)
+            )
 
     def _send_neat_fa_response(self, bot, update, submission: FASubmissionFull):
         try:
