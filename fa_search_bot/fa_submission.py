@@ -265,7 +265,7 @@ class FASubmissionFull(FASubmissionShort):
                 reply_to_message_id=reply_to
             )
         except Exception as e:
-            logger.error("Failed to convert gif to video. Submission ID: %s", self.submission_id, excinfo=e)
+            logger.error("Failed to convert gif to video. Submission ID: %s", self.submission_id, exc_info=e)
             bot.send_document(
                 chat_id=chat_id,
                 document=self.download_url,
