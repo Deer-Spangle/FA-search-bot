@@ -245,6 +245,7 @@ class FASubmissionFull(FASubmissionShort):
             )
             return
         # Handle known error extensions
+        logger.warning("Can't send file for submission ID %s, file extension is .%s", self.submission_id, ext)
         if ext in FASubmission.EXTENSIONS_ERROR:
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
