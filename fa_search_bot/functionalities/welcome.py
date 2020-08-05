@@ -1,9 +1,14 @@
+import logging
+
 import telegram
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger("fa_search_bot.functionalities.welcome")
 
 
 class WelcomeFunctionality(BotFunctionality):
@@ -12,6 +17,8 @@ class WelcomeFunctionality(BotFunctionality):
         super().__init__(CommandHandler, command='start')
 
     def call(self, update: Update, context: CallbackContext):
+        logger.info("Welcome message sent to user")
+        usage_logger.info("Welcome message")
         context.bot.send_message(
             chat_id=update.message.chat_id,
             text="Hello, I'm a bot to interface with furaffinity through telegram. I can do a few things, "
