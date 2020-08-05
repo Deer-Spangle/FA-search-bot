@@ -1,9 +1,14 @@
+import logging
+
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext, MessageHandler, Filters
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
+
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger("fa_search_bot.functionalities.subscriptions")
 
 
 class SubscriptionFunctionality(BotFunctionality):
@@ -50,17 +55,19 @@ class SubscriptionFunctionality(BotFunctionality):
             )
 
     def _add_sub(self, destination: int, query: str):
+        usage_logger.info("Add subscription")
         if query == "":
             return f"Please specify the subscription query you wish to add."
         try:
             new_sub = Subscription(query, destination)
         except InvalidQueryException as e:
-            # TODO: log me
+            logger.error("Failed to parse new subscription query: %s", query, exc_info=e)
             return f"Failed to parse subscription query: {e}"
         self.watcher.subscriptions.add(new_sub)
         return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
 
     def _remove_sub(self, destination: int, query: str):
+        usage_logger.info("Remove subscription")
         old_sub = Subscription(query, destination)
         try:
             self.watcher.subscriptions.remove(old_sub)
@@ -69,6 +76,7 @@ class SubscriptionFunctionality(BotFunctionality):
             return f"There is not a subscription for \"{query}\" in this chat."
 
     def _list_subs(self, destination: int):
+        usage_logger.info("List subscriptions")
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs.sort(key=lambda sub: sub.query_str)
         subs_list = "\n".join([f"- {sub.query_str}" for sub in subs])
