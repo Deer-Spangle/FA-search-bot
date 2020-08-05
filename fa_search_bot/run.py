@@ -22,13 +22,6 @@ def setup_logging() -> None:
     file_handler.setFormatter(formatter)
     fa_logger.addHandler(file_handler)
 
-    # Set up audit log, for users making actions. May contain user IDs.
-    audit_logger = logging.getLogger("audit")
-    audit_logger.setLevel(logging.INFO)
-    audit_file = logging.FileHandler("logs/audit.log")
-    audit_file.setFormatter(formatter)
-    audit_logger.addHandler(audit_file)
-
     # Set up feature usage logger. Anonymous information on how often features are used
     usage_logger = logging.getLogger("usage")
     usage_logger.setLevel(logging.DEBUG)

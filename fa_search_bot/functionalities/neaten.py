@@ -10,7 +10,6 @@ from fa_search_bot.fa_export_api import PageNotFound
 from fa_search_bot.fa_submission import FASubmissionFull, CantSendFileType, FASubmissionShort
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 
-audit_logger = logging.getLogger("audit")
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger("fa_search_bot.functionalities.inline")
 
@@ -43,7 +42,6 @@ class NeatenFunctionality(BotFunctionality):
                 self._handle_fa_submission_link(context.bot, update, submission_id)
 
     def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
-        audit_logger.info("Got neaten link request: %s from %s", link, update.message.chat_id)
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:

@@ -9,7 +9,6 @@ from telegram.ext import InlineQueryHandler, CallbackContext
 from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
-audit_logger = logging.getLogger("audit")
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger("fa_search_bot.functionalities.inline")
 
@@ -25,7 +24,6 @@ class InlineFunctionality(BotFunctionality):
         query_clean = query.strip().lower()
         offset = update.inline_query.offset
         logger.info("Got an inline query, page=%s", offset)
-        audit_logger.info("Got an inline query: %s, page=%s, from %s", query, offset, update.inline_query.from_user.id)
         if query_clean == "":
             context.bot.answer_inline_query(update.inline_query.id, [])
             return
