@@ -5,7 +5,7 @@ from telegram import Message
 from telegram.ext import CallbackContext
 from telegram.utils.promise import Promise
 
-from fa_search_bot.bot import MQBot
+from fa_search_bot.mqbot import MQBot
 
 
 def mock_message_promise(message_id):
