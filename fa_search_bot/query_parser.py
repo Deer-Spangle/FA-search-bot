@@ -271,7 +271,7 @@ class WordQuery(LocationQuery):
         regex = re.compile(r"\b" + re.escape(self.word) + r"\b", re.I)
         return [
             MatchLocation(location, m.start(), m.end())
-            for location, text in self.field.get_texts_dict(sub)
+            for location, text in self.field.get_texts_dict(sub).items()
             for m in regex.finditer(text)
         ]
 
@@ -307,7 +307,7 @@ class PrefixQuery(LocationQuery):
         regex = re.compile(r"\b" + re.escape(self.prefix) + r"\S+\b", re.I)
         return [
             MatchLocation(location, m.start(), m.end())
-            for location, text in self.field.get_texts_dict(sub)
+            for location, text in self.field.get_texts_dict(sub).items()
             for m in regex.finditer(text)
         ]
 
@@ -343,7 +343,7 @@ class SuffixQuery(LocationQuery):
         regex = re.compile(r"\b\S+" + re.escape(self.suffix) + r"\b", re.I)
         return [
             MatchLocation(location, m.start(), m.end())
-            for location, text in self.field.get_texts_dict(sub)
+            for location, text in self.field.get_texts_dict(sub).items()
             for m in regex.finditer(text)
         ]
 
@@ -375,7 +375,7 @@ class RegexQuery(LocationQuery):
         regex = re.compile(self.regex, re.I)
         return [
             MatchLocation(location, m.start(), m.end())
-            for location, text in self.field.get_texts_dict(sub)
+            for location, text in self.field.get_texts_dict(sub).items()
             for m in regex.finditer(text)
         ]
 
@@ -407,7 +407,7 @@ class PhraseQuery(LocationQuery):
         regex = re.compile(re.escape(self.phrase), re.I)
         return [
             MatchLocation(location, m.start(), m.end())
-            for location, text in self.field.get_texts_dict(sub)
+            for location, text in self.field.get_texts_dict(sub).items()
             for m in regex.finditer(text)
         ]
 
@@ -603,7 +603,7 @@ def parse_word(word: str, field: Optional['Field'] = None) -> 'LocationQuery':
     return WordQuery(word, field)
 
 
-def parse_exception(parsed: ParseResults, field: Optional['Field']) -> ['LocationQuery']:
+def parse_exception(parsed: ParseResults, field: Optional['Field']) -> 'LocationQuery':
     elements = []
     for elem in parsed.exception_element:
         if elem.quotes:
