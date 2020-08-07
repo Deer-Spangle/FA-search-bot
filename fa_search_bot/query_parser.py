@@ -538,13 +538,15 @@ def parse_element(parsed: ParseResults) -> 'Query':
         return parse_expression(parsed.brackets)
     if parsed.field:
         return parse_field(parsed.field)
+    if parsed.word_with_exception:
+        return parse_word_with_exception(parsed.word_with_exception)
     if parsed.word:
         return parse_word(parsed.word)
     logger.warning("Unrecognised query element: %s", parsed)
     raise InvalidQueryException(f"I do not recognise this element: {parsed}")
 
 
-def parse_quotes(phrase: str, field: Optional['Field'] = None) -> 'Query':
+def parse_quotes(phrase: str, field: Optional['Field'] = None) -> 'LocationQuery':
     return PhraseQuery(phrase, field)
 
 
@@ -556,6 +558,8 @@ def parse_field(parsed: ParseResults) -> 'Query':
     field = parse_field_name(field_name)
     if field_value.quotes:
         return parse_quotes(field_value.quotes, field)
+    if field_value.word_with_exception:
+        return parse_word_with_exception(field_value.word_with_exception, field)
     if field_value.word:
         return parse_word(field_value.word, field)
     logger.warning("Unrecognised query field value type: %s", field_value)
@@ -586,7 +590,7 @@ def parse_field_name(field_name: str) -> 'Field':
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
 
-def parse_word(word: str, field: Optional['Field'] = None) -> 'Query':
+def parse_word(word: str, field: Optional['Field'] = None) -> 'LocationQuery':
     if word.startswith("*") and "*" not in word[1:]:
         return SuffixQuery(word[1:], field)
     if word.endswith("*") and "*" not in word[:-1]:
@@ -597,3 +601,23 @@ def parse_word(word: str, field: Optional['Field'] = None) -> 'Query':
         regex = ".*".join(parts)
         return RegexQuery(regex, field)
     return WordQuery(word, field)
+
+
+def parse_exception(parsed: ParseResults, field: Optional['Field']) -> ['LocationQuery']:
+    elements = []
+    for elem in parsed.exception_element:
+        if elem.quotes:
+            elements.append(parse_quotes(elem.quotes, field))
+            continue
+        if elem.word:
+            elements.append(parse_word(elem.word, field))
+            continue
+        logger.error("Unrecognised exception query element: %s", parsed)
+        raise ParseException(f"Unrecognised exception query element: {parsed}")
+    return LocationOrQuery(elements)
+
+
+def parse_word_with_exception(parsed: ParseResults, field: Optional['Field'] = None) -> 'Query':
+    word = parse_word(parsed.word, field)
+    exc = parse_exception(parsed.exception, field)
+    return ExceptionQuery(word, exc)
