@@ -121,6 +121,36 @@ class AnyField(Field):
         }
 
 
+class MatchLocation:
+
+    def __init__(self, field: FieldLocation, start_position: int, end_position: int):
+        self.field = field
+        self.start_position = start_position
+        self.end_position = end_position
+
+    def overlaps(self, location: 'MatchLocation') -> bool:
+        if self.field != location.field:
+            return False
+        if self.start_position < location.start_position:
+            return self.end_position > location.start_position
+        else:
+            return location.end_position > self.start_position
+
+    def overlaps_any(self, locations: List['MatchLocation']) -> bool:
+        return any(self.overlaps(location) for location in locations)
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, MatchLocation)
+            and self.field == other.field
+            and self.start_position == other.start_position
+            and self.end_position == other.end_position
+        )
+
+    def __hash__(self):
+        return hash((self.field, self.start_position, self.end_position))
+
+
 class Query(ABC):
 
     @abstractmethod
