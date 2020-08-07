@@ -1,8 +1,10 @@
 import pytest
 
 from fa_search_bot.fa_submission import Rating
-from fa_search_bot.query_parser import parse_query, WordQuery, AndQuery, NotQuery, OrQuery, KeywordField, InvalidQueryException, \
-    PhraseQuery, TitleField, RatingQuery, DescriptionField, PrefixQuery, SuffixQuery, RegexQuery, ArtistField
+from fa_search_bot.query_parser import parse_query, WordQuery, AndQuery, NotQuery, OrQuery, KeywordField, \
+    InvalidQueryException, \
+    PhraseQuery, TitleField, RatingQuery, DescriptionField, PrefixQuery, SuffixQuery, RegexQuery, ArtistField, \
+    ExceptionQuery, LocationOrQuery
 
 
 def test_parser():
@@ -140,3 +142,31 @@ def test_regex():
 
 def test_regex_escape():
     assert parse_query("fi[*st") == RegexQuery(r"fi\[.*st")
+
+
+def test_exception():
+    assert parse_query("multi* except multitude") == ExceptionQuery(
+        PrefixQuery("multi"), LocationOrQuery([WordQuery("multitude")])
+    )
+
+
+def test_exceptions():
+    assert parse_query("multi* except (multitude or \"no multi\" or multicol*)") == ExceptionQuery(
+        PrefixQuery("multi"), LocationOrQuery([
+            WordQuery("multitude"), PhraseQuery("no multi"), PrefixQuery("multicol")
+        ])
+    )
+
+
+def test_field_exceptions():
+    assert parse_query("keywords:multi* except multicol*") == ExceptionQuery(
+        PrefixQuery("multi", KeywordField()),
+        LocationOrQuery([PrefixQuery("multicol", KeywordField())])
+    )
+
+
+def test_field_exceptions_brackets():
+    assert parse_query("keywords:(multi* except multicol*)") == ExceptionQuery(
+        PrefixQuery("multi", KeywordField()),
+        LocationOrQuery([PrefixQuery("multicol", KeywordField())])
+    )

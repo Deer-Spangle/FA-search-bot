@@ -381,6 +381,132 @@ def test_matches_result__doesnt_match_blocklisted_tag():
     assert not match
 
 
+def test_matches_result__phrase():
+    query = "\"hello world\""
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission says hello world",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert match
+
+
+def test_matches_result__keywords_not_phrase():
+    query = "\"hello world\""
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission says hello to the world",
+        keywords=["example", "hello", "world"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__keyword_field():
+    query = "keywords:deer"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission has no deer and will not be tagged deer",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__doesnt_match_except_clause():
+    query = "multi* except multitude"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is just an example of a multitude of things",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__doesnt_match_except_prefix_clause():
+    query = "multi* except multicol*"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is just an example of some multicoloured things",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__doesnt_match_except_bracket_clause():
+    query = "multi* except (multicol* or multitude)"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is just an example of a multitude of multicoloured things",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__except_matches_other_match():
+    query = "multi* except multitude"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is just an example of a multitude of multiple things",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert match
+
+
+def test_matches_result__doesnt_match_except_quote():
+    query = "taur except \"no taur\""
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission contains no taur",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
+def test_matches_result__doesnt_match_except_field():
+    query = "keywords:(multi* except (multitude multiple multicol*))"
+    subscription = Subscription(query, 12432)
+    submission = SubmissionBuilder(
+        title="Test submission",
+        description="this submission is about multiplication but not tagged like that",
+        keywords=["multitude", "multiple", "multicoloured", "multicolors"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
 def test_matches_word_in_quotes():
     query = "deer"
     subscription = Subscription(query, 12432)
