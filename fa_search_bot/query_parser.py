@@ -454,17 +454,36 @@ def query_parser() -> ParserElement:
     # Creating the grammar
     valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace("\"", "")
     expr = Forward().setName("expression")
+
     quotes = QuotedString('"', "\\").setName("quoted string").setResultsName("quotes")
+
     brackets = Group(Literal("(").suppress() + expr + Literal(")").suppress()) \
         .setName("bracketed expression").setResultsName("brackets")
+
     words = Word(valid_chars).setName("word").setResultsName("word")
+
+    exception_elem = (quotes | words).setName("exception element")\
+        .setResultsName("exception_element", listAllMatches=True)
+    exception = (
+        exception_elem | (
+            Literal("(") +
+            exception_elem + ZeroOrMore(pyparsing.Optional(CaselessLiteral("or")) + exception_elem)
+            + Literal(")")
+        )
+    ).setName("exception").setResultsName("exception")
+
+    word_with_exception = Group(words + (CaselessLiteral("except") | CaselessLiteral("ignore")) + exception) \
+        .setName("word with exception").setResultsName("word_with_exception")
+
     field_name = Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress())) \
         .setName("field name").setResultsName("field_name")
-    field_value = Group(quotes | words).setName("field value").setResultsName("field_value")
+    field_value = Group(quotes | word_with_exception | words).setName("field value").setResultsName("field_value")
     field = Group(field_name + field_value).setName("field").setResultsName("field")
+
     negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessLiteral("not"))) \
         .setName("negator").setResultsName("negator")
-    element = Group(quotes | brackets | field | words).setName("element").setResultsName("element")
+    element = Group(quotes | brackets | field | word_with_exception | words) \
+        .setName("element").setResultsName("element")
     full_element = Group(negator + element).setName("full element").setResultsName("full_element", listAllMatches=True)
     connector = Group(pyparsing.Optional(CaselessLiteral("or") | CaselessLiteral("and"))) \
         .setName("connector").setResultsName("connector", listAllMatches=True)
