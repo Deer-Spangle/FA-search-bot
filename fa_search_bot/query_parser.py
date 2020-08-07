@@ -605,6 +605,13 @@ def parse_word(word: str, field: Optional['Field'] = None) -> 'LocationQuery':
         parts = [re.escape(part) for part in word_split]
         regex = ".*".join(parts)
         return RegexQuery(regex, field)
+    reserved_keywords = ["not", "and", "or", "except", "ignore"]
+    if word.lower() in reserved_keywords:
+        logger.warning("Word query (\"%s\") cannot be a reserved keyword.", word)
+        raise InvalidQueryException(
+            f"Word query (\"{word}\") cannot be a reserved keyword: {reserved_keywords}. "
+            f"If you really want to search for this word, please surround it with quotation marks"
+        )
     return WordQuery(word, field)
 
 
