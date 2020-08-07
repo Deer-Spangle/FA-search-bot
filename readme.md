@@ -84,7 +84,17 @@ You can also combine fields with other operators, for example using one of the n
 
 Words can also be given with asterisks to allow prefixes or suffixes, e.g. `multi*`, `*taur`
 
-Blocklists use the same syntax, and are combined with queries like so: `(query) and not (blocklist)`
+Words (particularly ones with asterisks) can have an "except" or "ignore" clause, 
+which can be a word, a quote, or a bracketed list of words/quotes, 
+e.g. `taurs except "no taurs"`, `multi* ignore (multitude or multicolour*)`  
+Submissions matching the original word, only in the case of the ignored words, will then not be included.
+But submissions that match both separately will be included. 
+For example `multi* ignore multicolour*` would still match `multicoloured multi-armed friend`.
+
+Block queries use the same syntax, and are combined with queries like so: `(query) and not (blocklist)`
+
+A full [railroad/syntax diagram](https://en.wikipedia.org/wiki/Syntax_diagram) of the query syntax is available here: 
+[query_parser_railroad.html](docs/query_parser_railroad.html)
 
 ### Miscellaneous
 
