@@ -462,17 +462,20 @@ def query_parser() -> ParserElement:
 
     words = Word(valid_chars).setName("word").setResultsName("word")
 
-    exception_elem = (quotes | words).setName("exception element")\
+    exception_elem = Group(quotes | words).setName("exception element")\
         .setResultsName("exception_element", listAllMatches=True)
-    exception = (
+    exception = Group(
         exception_elem | (
             Literal("(") +
             exception_elem + ZeroOrMore(pyparsing.Optional(CaselessLiteral("or")) + exception_elem)
             + Literal(")")
         )
     ).setName("exception").setResultsName("exception")
+    exception_connector = (CaselessLiteral("except") | CaselessLiteral("ignore"))\
+        .setName("Except").setResultsName("except")
+    exception_word = words.setName("exception word").setResultsName("exception_word")
 
-    word_with_exception = Group(words + (CaselessLiteral("except") | CaselessLiteral("ignore")) + exception) \
+    word_with_exception = Group(exception_word + exception_connector + exception) \
         .setName("word with exception").setResultsName("word_with_exception")
 
     field_name = Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress())) \
@@ -618,6 +621,6 @@ def parse_exception(parsed: ParseResults, field: Optional['Field']) -> 'Location
 
 
 def parse_word_with_exception(parsed: ParseResults, field: Optional['Field'] = None) -> 'Query':
-    word = parse_word(parsed.word, field)
+    word = parse_word(parsed.exception_word, field)
     exc = parse_exception(parsed.exception, field)
     return ExceptionQuery(word, exc)
