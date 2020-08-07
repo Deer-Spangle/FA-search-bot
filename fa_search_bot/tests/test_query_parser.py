@@ -170,3 +170,7 @@ def test_field_exceptions_brackets():
         PrefixQuery("multi", KeywordField()),
         LocationOrQuery([PrefixQuery("multicol", KeywordField())])
     )
+
+
+def test_word_starting_not():
+    assert parse_query("notice") == WordQuery("notice")

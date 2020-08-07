@@ -6,7 +6,7 @@ from typing import List, Optional, NewType, Dict
 
 import pyparsing
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
-    ParseResults, ParseException, CaselessLiteral, ParserElement
+    ParseResults, ParseException, ParserElement, CaselessKeyword
 
 from fa_search_bot.fa_submission import FASubmissionFull, Rating
 
@@ -467,11 +467,11 @@ def query_parser() -> ParserElement:
     exception = Group(
         exception_elem | (
             Literal("(") +
-            exception_elem + ZeroOrMore(pyparsing.Optional(CaselessLiteral("or")) + exception_elem)
+            exception_elem + ZeroOrMore(pyparsing.Optional(CaselessKeyword("or")) + exception_elem)
             + Literal(")")
         )
     ).setName("exception").setResultsName("exception")
-    exception_connector = (CaselessLiteral("except") | CaselessLiteral("ignore"))\
+    exception_connector = (CaselessKeyword("except") | CaselessKeyword("ignore"))\
         .setName("Except").setResultsName("except")
     exception_word = words.setName("exception word").setResultsName("exception_word")
 
@@ -485,12 +485,12 @@ def query_parser() -> ParserElement:
         .setName("field value").setResultsName("field_value")
     field = Group(field_name + field_value).setName("field").setResultsName("field")
 
-    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessLiteral("not"))) \
+    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessKeyword("not"))) \
         .setName("negator").setResultsName("negator")
     element = Group(quotes | brackets | field | word_with_exception | words) \
         .setName("element").setResultsName("element")
     full_element = Group(negator + element).setName("full element").setResultsName("full_element", listAllMatches=True)
-    connector = Group(pyparsing.Optional(CaselessLiteral("or") | CaselessLiteral("and"))) \
+    connector = Group(pyparsing.Optional(CaselessKeyword("or") | CaselessKeyword("and"))) \
         .setName("connector").setResultsName("connector", listAllMatches=True)
     expr <<= full_element + ZeroOrMore(connector + full_element)
     return expr
