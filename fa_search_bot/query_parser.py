@@ -425,6 +425,27 @@ class PhraseQuery(LocationQuery):
         return f"{self.field}:\"{self.phrase}\""
 
 
+class ExceptionQuery(Query):
+
+    def __init__(self, word: LocationQuery, exception: LocationQuery):
+        self.word = word
+        self.exception = exception
+
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
+        word_locations = self.word.match_locations(sub)
+        exception_locations = self.exception.match_locations(sub)
+        return any(not location.overlaps_any(exception_locations) for location in word_locations)
+
+    def __eq__(self, other):
+        return isinstance(other, ExceptionQuery) and self.word == other.word and self.exception == other.exception
+
+    def __repr__(self):
+        return f"EXCEPTION({self.word!r}, {self.exception!r})"
+
+    def __str__(self):
+        return f"{self.word} EXCEPT {self.exception}"
+
+
 class InvalidQueryException(Exception):
     pass
 
