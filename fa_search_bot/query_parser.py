@@ -154,7 +154,14 @@ class MatchLocation:
 class Query(ABC):
 
     @abstractmethod
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
+        pass
+
+
+class LocationQuery(Query, ABC):
+
+    @abstractmethod
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         pass
 
 
@@ -163,7 +170,7 @@ class OrQuery(Query):
     def __init__(self, sub_queries: List['Query']):
         self.sub_queries = sub_queries
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(q.matches_submission(sub) for q in self.sub_queries)
 
     def __eq__(self, other):
@@ -178,6 +185,17 @@ class OrQuery(Query):
 
     def __str__(self):
         return "(" + " OR ".join(str(q) for q in self.sub_queries) + ")"
+
+
+class LocationOrQuery(OrQuery, LocationQuery):
+
+    def __init__(self, sub_queries: List['LocationQuery']):
+        super().__init__(sub_queries)
+        # Set it again, so we know sub_queries are LocationQuery objects, rather than just Query objects
+        self.sub_queries = sub_queries
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        return list(set(match for q in self.sub_queries for match in q.match_locations(sub)))
 
 
 class AndQuery(Query):
@@ -236,7 +254,7 @@ class RatingQuery(Query):
         return f"rating:{self.rating}"
 
 
-class WordQuery(Query):
+class WordQuery(LocationQuery):
 
     def __init__(self, word: str, field: Optional['Field'] = None):
         self.word = word
@@ -248,6 +266,14 @@ class WordQuery(Query):
         text = self.field.get_field_words(sub)
         clean_list = [x.lower().strip(string.punctuation) for x in text]
         return self.word.lower() in clean_list
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        regex = re.compile(r"\b" + re.escape(self.word) + r"\b", re.I)
+        return [
+            MatchLocation(location, m.start(), m.end())
+            for location, text in self.field.get_texts_dict(sub)
+            for m in regex.finditer(text)
+        ]
 
     def __eq__(self, other):
         return isinstance(other, WordQuery) and self.word == other.word and self.field == other.field
@@ -263,7 +289,7 @@ class WordQuery(Query):
         return f"{self.field}:{self.word}"
 
 
-class PrefixQuery(Query):
+class PrefixQuery(LocationQuery):
     def __init__(self, prefix: str, field: Optional['Field'] = None):
         self.prefix = prefix
         if field is None:
@@ -276,6 +302,14 @@ class PrefixQuery(Query):
             for word
             in self.field.get_field_words(sub)
         )
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        regex = re.compile(r"\b" + re.escape(self.prefix) + r"\S+\b", re.I)
+        return [
+            MatchLocation(location, m.start(), m.end())
+            for location, text in self.field.get_texts_dict(sub)
+            for m in regex.finditer(text)
+        ]
 
     def __eq__(self, other):
         return isinstance(other, PrefixQuery) and self.prefix == other.prefix and self.field == other.field
@@ -291,7 +325,7 @@ class PrefixQuery(Query):
         return f"{self.field}:{self.prefix}*"
 
 
-class SuffixQuery(Query):
+class SuffixQuery(LocationQuery):
     def __init__(self, suffix: str, field: Optional['Field'] = None):
         self.suffix = suffix
         if field is None:
@@ -304,6 +338,14 @@ class SuffixQuery(Query):
             for word
             in self.field.get_field_words(sub)
         )
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        regex = re.compile(r"\b\S+" + re.escape(self.suffix) + r"\b", re.I)
+        return [
+            MatchLocation(location, m.start(), m.end())
+            for location, text in self.field.get_texts_dict(sub)
+            for m in regex.finditer(text)
+        ]
 
     def __eq__(self, other):
         return isinstance(other, SuffixQuery) and self.suffix == other.suffix and self.field == other.field
@@ -319,7 +361,7 @@ class SuffixQuery(Query):
         return f"{self.field}:*{self.suffix}"
 
 
-class RegexQuery(Query):
+class RegexQuery(LocationQuery):
     def __init__(self, regex: str, field: Optional['Field'] = None):
         self.regex = regex
         if field is None:
@@ -328,6 +370,14 @@ class RegexQuery(Query):
 
     def matches_submission(self, sub: FASubmissionFull):
         return any(re.search(self.regex, word, re.I) for word in self.field.get_field_words(sub))
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        regex = re.compile(self.regex, re.I)
+        return [
+            MatchLocation(location, m.start(), m.end())
+            for location, text in self.field.get_texts_dict(sub)
+            for m in regex.finditer(text)
+        ]
 
     def __eq__(self, other):
         return isinstance(other, RegexQuery) and self.regex == other.regex and self.field == other.field
@@ -343,7 +393,7 @@ class RegexQuery(Query):
         return f"{self.field}:{self.regex}"
 
 
-class PhraseQuery(Query):
+class PhraseQuery(LocationQuery):
     def __init__(self, phrase: str, field: Optional['Field'] = None):
         self.phrase = phrase
         if field is None:
@@ -352,6 +402,14 @@ class PhraseQuery(Query):
 
     def matches_submission(self, sub: FASubmissionFull):
         return any(self.phrase.lower() in text.lower() for text in self.field.get_texts(sub))
+
+    def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
+        regex = re.compile(re.escape(self.phrase), re.I)
+        return [
+            MatchLocation(location, m.start(), m.end())
+            for location, text in self.field.get_texts_dict(sub)
+            for m in regex.finditer(text)
+        ]
 
     def __eq__(self, other):
         return isinstance(other, PhraseQuery) and self.phrase == other.phrase and self.field == other.field
