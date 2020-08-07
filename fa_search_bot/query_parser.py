@@ -1,3 +1,4 @@
+import functools
 import logging
 import re
 import string
@@ -450,6 +451,7 @@ class InvalidQueryException(Exception):
     pass
 
 
+@functools.lru_cache()
 def query_parser() -> ParserElement:
     # Creating the grammar
     valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace("\"", "")
