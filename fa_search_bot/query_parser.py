@@ -477,10 +477,12 @@ def query_parser() -> ParserElement:
 
     word_with_exception = Group(exception_word + exception_connector + exception) \
         .setName("word with exception").setResultsName("word_with_exception")
+    word_with_exception_brackets = Literal("(") + word_with_exception + Literal(")")
 
     field_name = Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress())) \
         .setName("field name").setResultsName("field_name")
-    field_value = Group(quotes | word_with_exception | words).setName("field value").setResultsName("field_value")
+    field_value = Group(quotes | word_with_exception_brackets | word_with_exception | words)\
+        .setName("field value").setResultsName("field_value")
     field = Group(field_name + field_value).setName("field").setResultsName("field")
 
     negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessLiteral("not"))) \
