@@ -2,7 +2,7 @@ import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, NewType, Dict
 
 import pyparsing
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
@@ -26,6 +26,9 @@ def _split_text_to_words(text: str) -> List[str]:
     return re.split(r"[\s\"<>]+", text)
 
 
+FieldLocation = NewType('FieldLocation', str)
+
+
 class Field(ABC):
 
     @abstractmethod
@@ -34,6 +37,10 @@ class Field(ABC):
 
     @abstractmethod
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
+        pass
+
+    @abstractmethod
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
         pass
 
     def __eq__(self, other):
@@ -51,6 +58,12 @@ class KeywordField(Field):
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return sub.keywords
 
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
+        return {
+            FieldLocation(f"keyword_{num}"): keyword
+            for num, keyword in enumerate(sub.keywords)
+        }
+
 
 class TitleField(Field):
 
@@ -59,6 +72,9 @@ class TitleField(Field):
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.title]
+
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
+        return {FieldLocation("title"): sub.title}
 
 
 class DescriptionField(Field):
@@ -69,6 +85,9 @@ class DescriptionField(Field):
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.description]
 
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
+        return {FieldLocation("description"): sub.description}
+
 
 class ArtistField(Field):
 
@@ -77,6 +96,12 @@ class ArtistField(Field):
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.author.name, sub.author.profile_name]
+
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
+        return {
+            FieldLocation("name"): sub.author.name,
+            FieldLocation("profile_name"): sub.author.profile_name
+        }
 
 
 class AnyField(Field):
@@ -87,6 +112,13 @@ class AnyField(Field):
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.title, sub.description] + sub.keywords
+
+    def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
+        return {
+            **TitleField().get_texts_dict(sub),
+            **DescriptionField().get_texts_dict(sub),
+            **KeywordField().get_texts_dict(sub)
+        }
 
 
 class Query(ABC):
