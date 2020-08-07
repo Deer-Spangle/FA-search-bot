@@ -172,5 +172,18 @@ def test_field_exceptions_brackets():
     )
 
 
+def test_field_exception_invalid():
+    with pytest.raises(InvalidQueryException):
+        parse_query("multi* except keywords:multitude")
+
+
+def test_keyword_exception_invalid():
+    with pytest.raises(InvalidQueryException):
+        q = parse_query("multi* except (multiple and multitude)")
+        print(q)
+    with pytest.raises(InvalidQueryException):
+        parse_query("multi* except (not multitude)")
+
+
 def test_word_starting_not():
     assert parse_query("notice") == WordQuery("notice")
