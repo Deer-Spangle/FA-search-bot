@@ -164,6 +164,21 @@ class SubscriptionWatcher:
         else:
             self.blocklists[destination] = {tag}
 
+    def migrate_chat(self, old_chat_id: int, new_chat_id: int) -> None:
+        # Migrate blocklist
+        if old_chat_id in self.blocklists:
+            for query in self.blocklists[old_chat_id]:
+                self.add_to_blocklist(new_chat_id, query)
+        # Migrate subscriptions
+        for subscription in self.subscriptions:
+            if subscription.destination == old_chat_id:
+                subscription.destination = new_chat_id
+        # Remove old blocklist
+        if old_chat_id in self.blocklists:
+            del self.blocklists[old_chat_id]
+        # Save
+        self.save_to_json()
+
     def save_to_json(self):
         logger.debug("Saving subscriptions data")
         subscriptions = self.subscriptions.copy()

@@ -18,13 +18,23 @@ class MockTelegramUpdate:
         self.callback_query = None
 
     @staticmethod
-    def with_message(message_id=None, chat_id=None, text=None, text_markdown_urled=None, chat_type=Chat.PRIVATE):
+    def with_message(
+            message_id=None,
+            chat_id=None,
+            text=None,
+            text_markdown_urled=None,
+            chat_type=Chat.PRIVATE,
+            migrate_from_chat_id: int = None,
+            migrate_to_chat_id: int = None
+    ):
         return _MockTelegramMessage(
             message_id=message_id,
             chat_id=chat_id,
             text=text,
             text_markdown_urled=text_markdown_urled,
-            chat_type=chat_type
+            chat_type=chat_type,
+            migrate_from_chat_id=migrate_from_chat_id,
+            migrate_to_chat_id=migrate_to_chat_id
         )
 
     @staticmethod
@@ -59,7 +69,17 @@ class MockTelegramUpdate:
 
 class _MockTelegramMessage(MockTelegramUpdate):
 
-    def __init__(self, *, message_id=None, text=None, text_markdown_urled=None, chat_id=None, chat_type=None):
+    def __init__(
+            self,
+            *,
+            message_id=None,
+            text=None,
+            text_markdown_urled=None,
+            chat_id=None,
+            chat_type=None,
+            migrate_from_chat_id: int = None,
+            migrate_to_chat_id: int = None
+    ):
         super().__init__()
         # Set up message data
         self.message = _MockMessage(
@@ -67,7 +87,9 @@ class _MockTelegramMessage(MockTelegramUpdate):
             chat_id=chat_id,
             text=text,
             text_markdown_urled=text_markdown_urled,
-            chat_type=chat_type
+            chat_type=chat_type,
+            migrate_from_chat_id=migrate_from_chat_id,
+            migrate_to_chat_id=migrate_to_chat_id
         )
 
     def with_photo(self, photo_file_id=None, caption=None):
@@ -133,12 +155,24 @@ class _MockInlineQuery:
 
 class _MockMessage:
 
-    def __init__(self, *, message_id=None, chat_id=None, text=None, text_markdown_urled=None, chat_type=None):
+    def __init__(
+            self,
+            *,
+            message_id=None,
+            chat_id=None,
+            text=None,
+            text_markdown_urled=None,
+            chat_type=None,
+            migrate_from_chat_id: int = None,
+            migrate_to_chat_id: int = None
+    ):
         self.message_id = message_id
         self.chat_id = chat_id
         self.text = text
         self.text_markdown_urled = text_markdown_urled or text
         self.chat = _MockChat(chat_type=chat_type)
+        self.migrate_from_chat_id = migrate_from_chat_id
+        self.migrate_to_chat_id = migrate_to_chat_id
         # Set defaults
         self.photo = []
         self.caption = None

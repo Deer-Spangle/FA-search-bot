@@ -451,6 +451,87 @@ def test_add_to_blocklist__append_blocklist(bot):
 
 
 @patch.object(telegram, "Bot")
+def test_migrate_no_block_queries(bot):
+    old_chat_id = 12345
+    new_chat_id = 54321
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, bot)
+    watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
+
+    watcher.migrate_chat(old_chat_id, new_chat_id)
+
+    assert len(watcher.subscriptions) == 1
+    sub = list(watcher.subscriptions)[0]
+    assert sub.query_str == "ych"
+    assert sub.destination == new_chat_id
+
+
+@patch.object(telegram, "Bot")
+def test_migrate_with_block_queries(bot):
+    old_chat_id = 12345
+    new_chat_id = 54321
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, bot)
+    watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
+    watcher.add_to_blocklist(old_chat_id, "test")
+
+    watcher.migrate_chat(old_chat_id, new_chat_id)
+
+    assert len(watcher.blocklists[new_chat_id]) == 1
+    assert old_chat_id not in watcher.blocklists
+    assert isinstance(watcher.blocklists[new_chat_id], set)
+    assert watcher.blocklists[new_chat_id] == {"test"}
+    assert len(watcher.subscriptions) == 1
+    sub = list(watcher.subscriptions)[0]
+    assert sub.query_str == "ych"
+    assert sub.destination == new_chat_id
+
+
+@patch.object(telegram, "Bot")
+def test_migrate_nothing_matching(bot):
+    old_chat_id = 12345
+    new_chat_id = 54321
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, bot)
+    watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
+    watcher.add_to_blocklist(new_chat_id, "test")
+
+    watcher.migrate_chat(old_chat_id, new_chat_id)
+
+    assert len(watcher.blocklists[new_chat_id]) == 1
+    assert old_chat_id not in watcher.blocklists
+    assert isinstance(watcher.blocklists[new_chat_id], set)
+    assert watcher.blocklists[new_chat_id] == {"test"}
+    assert len(watcher.subscriptions) == 1
+    sub = list(watcher.subscriptions)[0]
+    assert sub.query_str == "ych"
+    assert sub.destination == new_chat_id
+
+
+@patch.object(telegram, "Bot")
+def test_migrate_merge_blocklists(bot):
+    old_chat_id = 12345
+    new_chat_id = 54321
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, bot)
+    watcher.subscriptions.add(MockSubscription("deer", old_chat_id))
+    watcher.add_to_blocklist(old_chat_id, "test")
+    watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
+    watcher.add_to_blocklist(new_chat_id, "example")
+
+    watcher.migrate_chat(old_chat_id, new_chat_id)
+
+    assert len(watcher.blocklists[new_chat_id]) == 2
+    assert old_chat_id not in watcher.blocklists
+    assert isinstance(watcher.blocklists[new_chat_id], set)
+    assert watcher.blocklists[new_chat_id] == {"test", "example"}
+    assert len(watcher.subscriptions) == 2
+    for sub in watcher.subscriptions:
+        assert sub.destination == new_chat_id
+        assert sub.query_str in ["deer", "ych"]
+
+
+@patch.object(telegram, "Bot")
 def test_save_to_json(bot):
     test_watcher_file = "./test_subscription_watcher.json"
     if os.path.exists(test_watcher_file):
