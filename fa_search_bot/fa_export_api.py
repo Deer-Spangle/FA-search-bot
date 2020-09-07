@@ -47,7 +47,7 @@ class FAExportAPI:
                 self.last_status_check is None
                 or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
         ):
-            status = self.api.status()
+            status = self.status()
             self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
         return self.slow_down_status
 
