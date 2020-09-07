@@ -21,7 +21,7 @@ class FAExportAPI:
     STATUS_LIMIT_REGISTERED = 10_000
     SLOWDOWN_BACKOFF = 1
 
-    def __init__(self, base_url: str, ignore_status = False):
+    def __init__(self, base_url: str, ignore_status: bool = False):
         self.base_url = base_url.rstrip("/")
         self.last_status_check = None
         self.slow_down_status = False

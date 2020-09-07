@@ -415,3 +415,103 @@ class FAExportAPITest(unittest.TestCase):
         results = api.get_browse_page(5)
 
         assert len(results) == 0
+
+    @requests_mock.mock()
+    def test_get_status_before_submission(self, r):
+        builder = SubmissionBuilder(thumb_size=300)
+        api = FAExportAPI("http://example.com/")
+        r.get(
+            "http://example.com/status.json",
+            json={
+                "online": {
+                    "guests": 17,
+                    "registered": api.STATUS_LIMIT_REGISTERED-1,
+                    "other": 12,
+                    "total": api.STATUS_LIMIT_REGISTERED + 28
+                },
+                "fa_server_time_at": "2020-09-08T00:13:14Z"
+            }
+        )
+        r.get(
+            f"http://example.com/submission/{builder.submission_id}.json",
+            json=builder.build_submission_json()
+        )
+
+        submission = api.get_full_submission(builder.submission_id)
+
+        assert api.last_status_check is not None
+        assert api.slow_down_status is False
+        assert isinstance(submission, FASubmissionFull)
+        assert submission.submission_id == builder.submission_id
+        assert submission.link == builder.link
+        assert submission.thumbnail_url == builder.thumbnail_url.replace("@300-", "@1600-")
+        assert submission.download_url == builder.download_url
+        assert submission.full_image_url == builder.download_url
+
+    @requests_mock.mock()
+    def test_get_status_api_retry(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/200"
+        api = FAExportAPI(api_url, ignore_status=True)
+        test_obj = {"key": "value"}
+        r.get(
+            "http://example.com/status.json",
+            json={
+                "online": {
+                    "guests": 17,
+                    "registered": api.STATUS_LIMIT_REGISTERED-1,
+                    "other": 12,
+                    "total": api.STATUS_LIMIT_REGISTERED + 28
+                },
+                "fa_server_time_at": "2020-09-08T00:13:14Z"
+            }
+        )
+        r.get(
+            "http://example.com/resources/200",
+            [
+                {"json": test_obj, "status_code": 200},
+            ]
+        )
+
+        resp = api._api_request_with_retry(path)
+
+        assert api.last_status_check is not None
+        assert api.slow_down_status is False
+        assert resp.status_code == 200
+        assert resp.json() == test_obj
+
+    @requests_mock.mock()
+    def test_get_status_turns_on_slowdown(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/200"
+        api = FAExportAPI(api_url, ignore_status=True)
+        test_obj = {"key": "value"}
+        r.get(
+            "http://example.com/status.json",
+            json={
+                "online": {
+                    "guests": 17,
+                    "registered": api.STATUS_LIMIT_REGISTERED+1,
+                    "other": 12,
+                    "total": api.STATUS_LIMIT_REGISTERED + 30
+                },
+                "fa_server_time_at": "2020-09-08T00:13:14Z"
+            }
+        )
+        r.get(
+            "http://example.com/resources/200",
+            [
+                {"json": test_obj, "status_code": 200},
+            ]
+        )
+
+        start_time = datetime.datetime.now()
+        resp = api._api_request_with_retry(path)
+        end_time = datetime.datetime.now()
+
+        assert api.last_status_check is not None
+        assert api.slow_down_status is True
+        time_waited = end_time - start_time
+        assert time_waited.seconds >= 1
+        assert resp.status_code == 200
+        assert resp.json() == test_obj
