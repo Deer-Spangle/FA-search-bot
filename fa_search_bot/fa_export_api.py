@@ -27,12 +27,12 @@ class FAExportAPI:
         self.slow_down_status = False
 
     def _api_request(self, path: str) -> requests.Response:
-        if self._is_site_slowdown():
-            time.sleep(self.SLOWDOWN_BACKOFF)
         path = path.lstrip("/")
         return requests.get(f"{self.base_url}/{path}")
 
     def _api_request_with_retry(self, path: str) -> requests.Response:
+        if self._is_site_slowdown():
+            time.sleep(self.SLOWDOWN_BACKOFF)
         resp = self._api_request(path)
         for tries in range(self.MAX_RETRIES):
             if str(resp.status_code)[0] != "5":
@@ -48,6 +48,7 @@ class FAExportAPI:
                 or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
         ):
             status = self.status()
+            self.last_status_check = now
             self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
         return self.slow_down_status
 
@@ -114,6 +115,11 @@ class FAExportAPI:
 
     def status(self) -> FAStatus:
         logger.debug("Getting status page")
-        resp = self._api_request_with_retry("status.json")
+        path = "status.json"
+        resp = self._api_request(path)
+        for tries in range(self.MAX_RETRIES):
+            if str(resp.status_code)[0] != "5":
+                break
+            resp = self._api_request(path)
         data = resp.json()
         return FAStatus.from_dict(data)
