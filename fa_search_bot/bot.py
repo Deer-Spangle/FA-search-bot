@@ -12,6 +12,7 @@ from fa_search_bot.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
 from fa_search_bot.functionalities.inline import InlineFunctionality
+from fa_search_bot.functionalities.menus import MenuFunctionality, MenuCallbackFunctionality
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality, BlocklistFunctionality, \
     ChannelSubscriptionFunctionality, ChannelBlocklistFunctionality
@@ -85,5 +86,7 @@ class FASearchBot:
             BlocklistFunctionality(self.subscription_watcher),
             ChannelBlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
+            MenuFunctionality(),
+            MenuCallbackFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]
