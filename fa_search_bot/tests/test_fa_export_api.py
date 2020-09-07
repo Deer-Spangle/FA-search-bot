@@ -452,7 +452,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_status_api_retry(self, r):
         api_url = "http://example.com/"
         path = "/resources/200"
-        api = FAExportAPI(api_url, ignore_status=True)
+        api = FAExportAPI(api_url)
         test_obj = {"key": "value"}
         r.get(
             "http://example.com/status.json",
@@ -484,7 +484,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_status_turns_on_slowdown(self, r):
         api_url = "http://example.com/"
         path = "/resources/200"
-        api = FAExportAPI(api_url, ignore_status=True)
+        api = FAExportAPI(api_url)
         test_obj = {"key": "value"}
         r.get(
             "http://example.com/status.json",
