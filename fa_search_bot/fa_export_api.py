@@ -1,10 +1,12 @@
 import logging
 import time
+import datetime
 from typing import List
 
 import requests
 
-from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav
+from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
+    FAStatus
 
 logger = logging.getLogger("fa_search_bot.fa_export_api")
 
@@ -15,11 +17,18 @@ class PageNotFound(Exception):
 
 class FAExportAPI:
     MAX_RETRIES = 7
+    STATUS_CHECK_BACKOFF = 60 * 5
+    STATUS_LIMIT_REGISTERED = 10_000
+    SLOWDOWN_BACKOFF = 1
 
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
+        self.last_status_check = None
+        self.slow_down_status = False
 
     def _api_request(self, path: str) -> requests.Response:
+        if self._is_site_slowdown():
+            time.sleep(self.SLOWDOWN_BACKOFF)
         path = path.lstrip("/")
         return requests.get(f"{self.base_url}/{path}")
 
@@ -31,6 +40,16 @@ class FAExportAPI:
             time.sleep(tries ** 2)
             resp = self._api_request(path)
         return resp
+
+    def _is_site_slowdown(self) -> bool:
+        now = datetime.datetime.now()
+        if (
+                self.last_status_check is None
+                or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
+        ):
+            status = self.api.status()
+            self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
+        return self.slow_down_status
 
     def get_full_submission(self, submission_id: str) -> FASubmissionFull:
         logger.debug("Getting full submission for submission ID %s", submission_id)
@@ -92,3 +111,9 @@ class FAExportAPI:
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
         return submissions
+
+    def status(self) -> FAStatus:
+        logger.debug("Getting status page")
+        resp = self._api_request_with_retry("status.json")
+        data = resp.json()
+        return FAStatus.from_dict(data)

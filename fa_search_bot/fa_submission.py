@@ -8,6 +8,7 @@ from abc import ABC
 from enum import Enum
 from typing import Dict, Union, List, Optional
 
+import dateutil.parser
 import docker
 import requests
 import telegram
@@ -347,3 +348,29 @@ class FASubmissionFull(FASubmissionShort):
         container.kill()
         container.remove(force=True)
         raise TimeoutError("Docker container timed out")
+
+
+class FAStatus:
+    def __init__(
+            self,
+            online_guests: int,
+            online_registered: int,
+            online_other: int,
+            online_total: int,
+            server_time: datetime
+    ):
+        self.online_guests = online_guests
+        self.online_registered = online_registered
+        self.online_other = online_other
+        self.online_total = online_total
+        self.server_time = server_time
+
+    @classmethod
+    def from_dict(cls, status_dict: Dict[str, Union[str, Dict[str, int]]]) -> 'FAStatus':
+        return FAStatus(
+            status_dict["online"]["guests"],
+            status_dict["online"]["registered"],
+            status_dict["online"]["other"],
+            status_dict["online"]["total"],
+            dateutil.parser.parse(status_dict["fa_server_time_at"])
+        )
