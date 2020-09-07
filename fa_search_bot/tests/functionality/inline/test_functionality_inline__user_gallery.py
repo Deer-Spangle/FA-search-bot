@@ -176,7 +176,7 @@ def test_no_user_exists(context, requests_mock):
     update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com")
+    inline.api = FAExportAPI("http://example.com", ignore_status=True)
     requests_mock.get(
         f"http://example.com/user/{username}/gallery.json",
         status_code=404
@@ -203,7 +203,7 @@ def test_username_with_colon(context, requests_mock):
     update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com")
+    inline.api = FAExportAPI("http://example.com", ignore_status=True)
     requests_mock.get(
         f"http://example.com/user/{username}/gallery.json",
         status_code=404
@@ -330,7 +330,7 @@ def test_no_username_set(context, requests_mock):
     update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com")
+    inline.api = FAExportAPI("http://example.com", ignore_status=True)
     requests_mock.get(
         f"http://example.com/user/{username}/gallery.json?page=1&full=1",
         json={

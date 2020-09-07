@@ -13,7 +13,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_constructor(self):
         api_url = "http://example.com/"
 
-        api = FAExportAPI(api_url)
+        api = FAExportAPI(api_url, ignore_status=True)
 
         assert api.base_url == "http://example.com"
 
@@ -21,7 +21,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_api_request(self, r):
         api_url = "http://example.com/"
         path = "/resources/123"
-        api = FAExportAPI(api_url)
+        api = FAExportAPI(api_url, ignore_status=True)
         test_obj = {"key": "value"}
         r.get(
             "http://example.com/resources/123",
@@ -36,7 +36,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_api_request_with_retry__does_not_retry_200(self, r):
         api_url = "http://example.com/"
         path = "/resources/200"
-        api = FAExportAPI(api_url)
+        api = FAExportAPI(api_url, ignore_status=True)
         test_obj = {"key": "value"}
         r.get(
             "http://example.com/resources/200",
@@ -59,7 +59,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_api_request_with_retry__does_not_retry_400_error(self, r):
         api_url = "http://example.com/"
         path = "/resources/400"
-        api = FAExportAPI(api_url)
+        api = FAExportAPI(api_url, ignore_status=True)
         r.get(
             "http://example.com/resources/400",
             [
@@ -81,7 +81,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_api_request_with_retry__retries_500_error(self, r):
         api_url = "http://example.com/"
         path = "/resources/500"
-        api = FAExportAPI(api_url)
+        api = FAExportAPI(api_url, ignore_status=True)
         test_obj = {"key": "value"}
         r.get(
             "http://example.com/resources/500",
@@ -104,7 +104,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_full_submission(self, r):
         builder = SubmissionBuilder(thumb_size=300)
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/submission/{builder.submission_id}.json",
             json=builder.build_submission_json()
@@ -122,7 +122,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_full_submission_fails(self, r):
         post_id = "45282"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/submission/{post_id}.json",
             status_code=404
@@ -141,7 +141,7 @@ class FAExportAPITest(unittest.TestCase):
         builder1 = SubmissionBuilder(submission_id=post_id1)
         builder2 = SubmissionBuilder(submission_id=post_id2)
         username = "fender"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=1&full=1",
             json=[
@@ -166,7 +166,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_user_folder_scraps(self, r):
         builder = SubmissionBuilder()
         username = "citrinelle"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/scraps.json?page=1&full=1",
             json=[
@@ -187,7 +187,7 @@ class FAExportAPITest(unittest.TestCase):
         builder = SubmissionBuilder()
         username = "l[i]s"
         safe_username = "l%5Bi%5Ds"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{safe_username}/gallery.json?page=1&full=1",
             json=[
@@ -207,7 +207,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_user_folder_specified_page(self, r):
         builder = SubmissionBuilder()
         username = "citrinelle"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=2&full=1",
             json=[
@@ -226,7 +226,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_user_folder_empty(self, r):
         username = "fender"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=1&full=1",
             json=[]
@@ -239,7 +239,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_user_folder_does_not_exist(self, r):
         username = "dont-real"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=1&full=1",
             status_code=404
@@ -254,7 +254,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_user_folder_blank_username(self, r):
         username = ""
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/user/{username}/gallery.json?page=1&full=1",
             json={
@@ -277,7 +277,7 @@ class FAExportAPITest(unittest.TestCase):
         builder1 = SubmissionBuilder(submission_id=post_id1)
         builder2 = SubmissionBuilder(submission_id=post_id2)
         search = "deer"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
             json=[
@@ -303,7 +303,7 @@ class FAExportAPITest(unittest.TestCase):
         builder = SubmissionBuilder()
         search = "deer lion"
         search_safe = "deer%20lion"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
             json=[
@@ -322,7 +322,7 @@ class FAExportAPITest(unittest.TestCase):
         builder = SubmissionBuilder()
         search = "(deer & !lion) | (goat & !tiger)"
         search_safe = "(deer%20&%20!lion)%20%7C%20(goat%20&%20!tiger)"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
             json=[
@@ -340,7 +340,7 @@ class FAExportAPITest(unittest.TestCase):
     def test_get_search_results_specified_page(self, r):
         builder = SubmissionBuilder()
         search = "deer"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search}&page=2",
             json=[
@@ -357,7 +357,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_search_results_no_results(self, r):
         search = "chital_deer"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
             json=[
@@ -371,7 +371,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_browse_page_default_1(self, r):
         builder = SubmissionBuilder()
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/browse.json?page=1",
             json=[
@@ -388,7 +388,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_browse_page_specify_page(self, r):
         builder = SubmissionBuilder()
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/browse.json?page=5",
             json=[
@@ -405,7 +405,7 @@ class FAExportAPITest(unittest.TestCase):
     @requests_mock.mock()
     def test_get_browse_page_no_results(self, r):
         post_id = "32342"
-        api = FAExportAPI("http://example.com/")
+        api = FAExportAPI("http://example.com/", ignore_status=True)
         r.get(
             f"http://example.com/browse.json?page=5",
             json=[

@@ -21,10 +21,11 @@ class FAExportAPI:
     STATUS_LIMIT_REGISTERED = 10_000
     SLOWDOWN_BACKOFF = 1
 
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, ignore_status = False):
         self.base_url = base_url.rstrip("/")
         self.last_status_check = None
         self.slow_down_status = False
+        self.ignore_status = ignore_status
 
     def _api_request(self, path: str) -> requests.Response:
         path = path.lstrip("/")
@@ -42,6 +43,8 @@ class FAExportAPI:
         return resp
 
     def _is_site_slowdown(self) -> bool:
+        if self.ignore_status:
+            return False
         now = datetime.datetime.now()
         if (
                 self.last_status_check is None
