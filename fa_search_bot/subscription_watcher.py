@@ -17,7 +17,7 @@ from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
 
-logger = logging.getLogger("fa_search_bot.subscription_watcher")
+logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
 
 

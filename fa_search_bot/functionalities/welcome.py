@@ -8,7 +8,7 @@ from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.welcome")
+logger = logging.getLogger(__name__)
 
 
 class WelcomeFunctionality(BotFunctionality):

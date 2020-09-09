@@ -8,7 +8,7 @@ from fa_search_bot.filters import FilterImageNoCaption
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.image_hash_recommend")
+logger = logging.getLogger(__name__)
 
 
 class ImageHashRecommendFunctionality(BotFunctionality):

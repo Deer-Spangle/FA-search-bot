@@ -8,7 +8,7 @@ import requests
 from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
     FAStatus
 
-logger = logging.getLogger("fa_search_bot.fa_export_api")
+logger = logging.getLogger(__name__)
 
 
 class PageNotFound(Exception):

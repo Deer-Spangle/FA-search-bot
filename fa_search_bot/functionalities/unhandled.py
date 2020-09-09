@@ -7,7 +7,7 @@ from telegram.ext import MessageHandler, CallbackContext, Filters
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.unhandled")
+logger = logging.getLogger(__name__)
 
 
 class UnhandledMessageFunctionality(BotFunctionality):

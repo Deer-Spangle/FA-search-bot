@@ -4,7 +4,7 @@ from typing import Dict
 import telegram
 from telegram.ext import MessageQueue, messagequeue as mq
 
-logger = logging.getLogger("fa_search_bot.mqbot")
+logger = logging.getLogger(__name__)
 
 
 class MQBot(telegram.bot.Bot):

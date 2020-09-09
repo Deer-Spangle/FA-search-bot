@@ -8,7 +8,7 @@ from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.supergroup_upgrade")
+logger = logging.getLogger(__name__)
 
 
 class SupergroupUpgradeFunctionality(BotFunctionality):

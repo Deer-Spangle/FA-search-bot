@@ -11,7 +11,7 @@ from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMo
 
 from fa_search_bot.fa_submission import FASubmissionFull, Rating
 
-logger = logging.getLogger("fa_search_bot.query_parser")
+logger = logging.getLogger(__name__)
 
 rating_dict = {
     "general": Rating.GENERAL,

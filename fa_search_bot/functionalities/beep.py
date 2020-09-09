@@ -6,7 +6,7 @@ from telegram.ext import CommandHandler, CallbackContext
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.beep")
+logger = logging.getLogger(__name__)
 
 
 class BeepFunctionality(BotFunctionality):

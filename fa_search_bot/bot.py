@@ -21,7 +21,7 @@ from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.mqbot import MQBot
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
-logger = logging.getLogger("fa_search_bot")
+logger = logging.getLogger(__name__)
 
 
 class FASearchBot:

@@ -16,7 +16,7 @@ from docker import DockerClient
 from docker.models.containers import Container
 from telegram import InlineQueryResultPhoto
 
-logger = logging.getLogger("fa_search_bot.fa_submission")
+logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
 
 

@@ -8,7 +8,7 @@ from fa_search_bot.query_parser import InvalidQueryException
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 
 usage_logger = logging.getLogger("usage")
-logger = logging.getLogger("fa_search_bot.functionalities.subscriptions")
+logger = logging.getLogger(__name__)
 
 
 class SubscriptionFunctionality(BotFunctionality):
