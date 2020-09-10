@@ -23,22 +23,40 @@ class MQBot(telegram.bot.Bot):
     def send_message(self, chat_id, *args, **kwargs):
         return self._send_message(chat_id, *args, **kwargs, isgroup=chat_id < 0)
 
-    @mq.queuedmessage
-    def _send_photo(self, *args, **kwargs):
+    def _send_photo_roll_param(self, chat_id: int, photo: str, *args, **kwargs):
         logger.debug("Sending photo")
-        return super(MQBot, self).send_photo(*args, **kwargs)
+        try:
+            return super(MQBot, self).send_photo(chat_id, photo, *args, **kwargs)
+        except telegram.error.BadRequest:
+            logger.info("Failed to send photo, rolling random param")
+            param = 1
+            while param < 5:
+                try:
+                    url = f"{photo}?rand={param}"
+                    if "?" in photo:
+                        url = f"{photo}&rand={param}"
+                    return super(MQBot, self).send_photo(chat_id, url, *args, **kwargs)
+                except telegram.error.BadRequest:
+                    param += 1
+            logger.warning("Failed to send photo at all, after trying params")
 
-    def send_photo(self, chat_id, *args, **kwargs):
-        return self._send_photo(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+    @mq.queuedmessage
+    def _send_photo(self, chat_id: int, photo: str, *args, **kwargs):
+        self._send_photo_roll_param(chat_id, photo, *args, **kwargs)
+
+    def send_photo(self, chat_id: int, photo: str, *args, **kwargs):
+        return self._send_photo(chat_id, photo, *args, **kwargs, isgroup=chat_id < 0)
 
     @mq.queuedmessage
     def _send_photo_with_backup(self, chat_id: int, kwargs: Dict, kwargs_backup: Dict, isgroup: bool = None):
         logger.debug("Sending a photo with backup")
         try:
-            return super(MQBot, self).send_photo(chat_id, isgroup=isgroup, **kwargs)
+            photo = kwargs.pop("photo")
+            return self._send_photo_roll_param(chat_id, photo, isgroup=isgroup, **kwargs)
         except telegram.error.BadRequest:
             logger.info("Sending photo by backup")
-            return super(MQBot, self).send_photo(chat_id, isgroup=isgroup, **kwargs_backup)
+            photo = kwargs_backup.pop("photo")
+            return self._send_photo_roll_param(chat_id, photo, isgroup=isgroup, **kwargs_backup)
 
     def send_photo_with_backup(self, chat_id: int, kwargs: Dict, kwargs_backup: Dict):
         return self._send_photo_with_backup(chat_id, kwargs, kwargs_backup, isgroup=chat_id < 0)
