@@ -68,6 +68,29 @@ def test_direct_link(context):
     assert args[2] == update.message.message_id
 
 
+def test_direct_link__new_cdn(context):
+    username = "fender"
+    image_id = 1560331512
+    post_id = 232347
+    update = MockTelegramUpdate.with_message(
+        text="http://d2.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
+    )
+    goal_submission = MockSubmission(post_id, image_id=image_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_user_folder(username, "gallery", [
+        goal_submission,
+        MockSubmission(post_id - 1, image_id=image_id - 15)
+    ])
+
+    neaten.call(update, context)
+
+    goal_submission.send_message.assert_called_once()
+    args, kwargs = goal_submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
+
+
 def test_direct_in_progress_message(context):
     username = "fender"
     image_id = 1560331512

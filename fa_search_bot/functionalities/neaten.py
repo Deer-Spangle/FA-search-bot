@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class NeatenFunctionality(BotFunctionality):
     FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
-    FA_DIRECT_LINK = re.compile(r"d\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
-    FA_THUMB_LINK = re.compile(r"t\.facdn\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
+    FA_DIRECT_LINK = re.compile(r"d2?\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
+    FA_THUMB_LINK = re.compile(r"t2?\.facdn\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
     FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})")
 
     def __init__(self, api):
