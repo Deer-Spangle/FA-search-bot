@@ -1,7 +1,7 @@
 
 This was an experiment to check maximum image size that can be sent via URL on telegram. And work out the limits.
 
-## Results
+## Results (2020-09-09)
 So, using this script, I have found that:
 - There is a maximum image semi-perimeter (width + height) of 10,000pixels.
 - There is a maximum image aspect ratio of 1:20
@@ -9,6 +9,15 @@ So, using this script, I have found that:
   - Width 476 means height 9520, due to aspect ratio
   - Width 477 means height 9523, due to semi-perimeter
 
+## Addendum (2020-09-28)
+Using a different script, I have found the gif size limits:
+- Size limit is based on maximum dimension.
+  - After these dimensions, the gif will display as a video
+  - On android the max gif dimension is 1280px. (width, or height, or both)
+  - On desktop the max gif dimension is 1440px. (width, or height, or both)
+  - On iOS, there is no maximum dimension. I tested up to 5760x3240 and it still displays as a gif.
+- I am not sure if there is an aspect ratio limit.
+- I believe the file size limit to be 8MB?
 
 Swapping out the call() method in BeepFunctionality, for this:
 ```
