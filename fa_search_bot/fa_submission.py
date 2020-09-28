@@ -292,7 +292,7 @@ class FASubmissionFull(FASubmissionShort):
     def _convert_gif(self, gif_url: str) -> str:
         usage_logger.info("Pretty gif: converting")
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
-                         "-vf \"scale='min(1280,iw)':'min(720,ih)':force_original_aspect_" \
+                         "-vf \"scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_" \
                          "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
         crf_option = " -crf 18"
         # first pass
