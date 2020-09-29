@@ -1,11 +1,14 @@
 import uuid
-from typing import Optional
+from typing import Optional, List, Dict
 
 from telegram import Chat
 
 
 def generate_key():
     return str(uuid.uuid4())
+
+
+PhotoType = List[Dict]
 
 
 class MockTelegramUpdate:
@@ -21,8 +24,8 @@ class MockTelegramUpdate:
     def with_message(
             message_id=None,
             chat_id=None,
-            text=None,
-            text_markdown_urled=None,
+            text: str = None,
+            text_markdown_urled: str = None,
             chat_type=Chat.PRIVATE,
             migrate_from_chat_id: int = None,
             migrate_to_chat_id: int = None
@@ -34,7 +37,7 @@ class MockTelegramUpdate:
             text_markdown_urled=text_markdown_urled,
             chat_type=chat_type,
             migrate_from_chat_id=migrate_from_chat_id,
-            migrate_to_chat_id=migrate_to_chat_id
+            migrate_to_chat_id=migrate_to_chat_id,
         )
 
     @staticmethod
@@ -73,8 +76,8 @@ class _MockTelegramMessage(MockTelegramUpdate):
             self,
             *,
             message_id=None,
-            text=None,
-            text_markdown_urled=None,
+            text: str = None,
+            text_markdown_urled: str = None,
             chat_id=None,
             chat_type=None,
             migrate_from_chat_id: int = None,
@@ -92,8 +95,8 @@ class _MockTelegramMessage(MockTelegramUpdate):
             migrate_to_chat_id=migrate_to_chat_id
         )
 
-    def with_photo(self, photo_file_id=None, caption=None):
-        self.message.set_photo(photo_file_id, caption)
+    def with_photo(self, photo_file_id=None, caption: str = None, caption_markdown_urled: str = None):
+        self.message.set_photo(photo_file_id, caption, caption_markdown_urled)
         return self
 
     def with_document(self, file_id=None, mime_type=None):
@@ -160,8 +163,8 @@ class _MockMessage:
             *,
             message_id=None,
             chat_id=None,
-            text=None,
-            text_markdown_urled=None,
+            text: str = None,
+            text_markdown_urled: str = None,
             chat_type=None,
             migrate_from_chat_id: int = None,
             migrate_to_chat_id: int = None
@@ -174,8 +177,9 @@ class _MockMessage:
         self.migrate_from_chat_id = migrate_from_chat_id
         self.migrate_to_chat_id = migrate_to_chat_id
         # Set defaults
-        self.photo = []
-        self.caption = None
+        self.photo: PhotoType = []
+        self.caption: Optional[str] = None
+        self.caption_markdown_urled: Optional[str] = None
         self.document = None
         if message_id is None:
             self.message_id = generate_key()
@@ -184,13 +188,14 @@ class _MockMessage:
         if text_markdown_urled is None:
             self.text_markdown_urled = self.text
 
-    def set_photo(self, photo_file_id, caption):
+    def set_photo(self, photo_file_id, caption: str = None, caption_markdown_urled: str = None):
         # Defaults
         if photo_file_id is None:
             photo_file_id = generate_key()
         # Set values
         self.photo.append({"file_id": photo_file_id})
         self.caption = caption
+        self.caption_markdown_urled = caption_markdown_urled or caption
 
     def set_document(self, file_id, mime_type):
         self.document = _MockDocument(

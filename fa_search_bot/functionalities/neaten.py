@@ -25,7 +25,15 @@ class NeatenFunctionality(BotFunctionality):
         self.api = api
 
     def call(self, update: Update, context: CallbackContext):
-        message = update.message.text_markdown_urled or update.message.caption_markdown_urled
+        # Only deal with messages, not channel posts
+        if not update.message:
+            return
+        # Only use caption in private chats
+        message = update.message.text_markdown_urled
+        if not message and update.message.chat.type == Chat.PRIVATE:
+            message = update.message.caption_markdown_urled
+        if message is None:
+            return
         submission_ids = []
         matches = self.FA_LINKS.findall(message)
         if not matches:

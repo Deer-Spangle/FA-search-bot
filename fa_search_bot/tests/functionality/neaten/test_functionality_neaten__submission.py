@@ -46,9 +46,37 @@ def test_ignore_journal_link(context):
     context.bot.send_photo.assert_not_called()
 
 
+def test_ignore_channel_post(context):
+    post_id = 23636984
+    update = MockTelegramUpdate.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    neaten.call(update, context)
+
+    submission.send_message.assert_not_called()
+
+
 def test_submission_link(context):
     post_id = 23636984
     update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    neaten.call(update, context)
+
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
+
+
+def test_submission_link_in_caption(context):
+    post_id = 23636984
+    update = MockTelegramUpdate.with_message().with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -79,6 +107,20 @@ def test_submission_group_chat(context):
     assert args[0] == context.bot
     assert args[1] == update.message.chat_id
     assert args[2] == update.message.message_id
+
+
+def test_submission_link_in_group_caption(context):
+    post_id = 23636984
+    update = MockTelegramUpdate.with_message(
+        chat_type=Chat.GROUP
+    ).with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    neaten.call(update, context)
+
+    submission.send_message.assert_not_called()
 
 
 def test_submission_link_no_http(context):
