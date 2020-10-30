@@ -8,4 +8,4 @@ install:
   - poetry install
 # command to run tests
 script:
-  - poetry run py.test fa_search_bot/tests
+  - poetry run task test
