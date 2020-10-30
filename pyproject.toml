@@ -16,7 +16,7 @@ pyparsing = "3.0.0a2"
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
 requests-mock = "^1.7.0"
-# pyparsing = {version = "3.0.0a2", extras = ["diagrams"]}
+pyparsing = {version = "3.0.0a2", extras = ["diagrams"]}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
