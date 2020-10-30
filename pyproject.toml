@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "fa-search-bot"
+version = "1.7.6"
+description = "Telegram bot which provides FurAffinity integration. With searches, subscriptions and automated embedding"
+authors = ["Deer Spangle <deer@spangle.org.uk>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+python-telegram-bot = "12.8"
+requests = "^2.24.0"
+python-dateutil = "^2.8.1"
+simple-heartbeat = "^0.1.2"
+docker = "^4.2.2"
+pyparsing = "3.0.0a2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.1"
+requests-mock = "^1.7.0"
+pyparsing = {version = "3.0.0a2", extras = ["diagrams"]}
+taskipy = "^1.4.0"
+
+[tool.taskipy.tasks]
+test = "py.test fa_search_bot/tests"
+run = "python3 run.py"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -2,9 +2,10 @@ language: python
 python:
   - "3.6"
 # command to install dependencies
+before_install:
+  - pip install poetry
 install:
-  - make install
-  - pip install -r requirements-test.txt
+  - poetry install
 # command to run tests
 script:
-  - make test
+  - poetry run task test
