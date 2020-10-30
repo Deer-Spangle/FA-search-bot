@@ -1,5 +1,5 @@
 install:
-	pip install -r requirements.txt
+	poetry install --no-dev
 
 test:
 	py.test fa_search_bot/tests

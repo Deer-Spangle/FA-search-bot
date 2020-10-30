@@ -3,8 +3,7 @@ python:
   - "3.6"
 # command to install dependencies
 install:
-  - make install
-  - pip install -r requirements-test.txt
+  - poetry install
 # command to run tests
 script:
   - make test
