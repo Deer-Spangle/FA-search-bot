@@ -2,8 +2,10 @@ language: python
 python:
   - "3.6"
 # command to install dependencies
+before_install:
+  - pip install poetry
 install:
   - poetry install
 # command to run tests
 script:
-  - make test
+  - poetry run py.test fa_search_bot/tests
