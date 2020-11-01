@@ -10,9 +10,6 @@ from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 
 @patch.object(telegram, "Bot")
 def test_load_old_save_new(bot):
-    test_watcher_file = "./test_subscription_watcher.json"
-    if os.path.exists(test_watcher_file):
-        os.remove(test_watcher_file)
     old_data = {
         "latest_ids": [
             "38447607",
@@ -74,7 +71,7 @@ def test_load_old_save_new(bot):
     assert len(watcher.latest_ids) == 4
 
     with mock.patch("json.dump", mock_dump.call):
-        watcher.save_to_json_new()
+        watcher.save_to_json()
 
     new_data = mock_dump.dumped_data
     assert "latest_ids" in new_data

@@ -756,8 +756,6 @@ def test_to_json_no_updates():
     data = sub.to_json()
     assert "query" in data
     assert data["query"] == "test query"
-    assert "destination" in data
-    assert data["destination"] == -12322
     assert "latest_update" in data
     assert data["latest_update"] is None
 
@@ -769,33 +767,55 @@ def test_to_json():
     data = sub.to_json()
     assert "query" in data
     assert data["query"] == "test query"
-    assert "destination" in data
-    assert data["destination"] == -12322
     assert "latest_update" in data
     assert data["latest_update"] == "2019-09-17T21:08:35"
 
 
-def test_from_json_no_update():
+def test_from_json_old_format_no_update():
     data = {
         "query": "example query",
         "destination": 17839,
         "latest_update": None
     }
 
-    sub = Subscription.from_json(data)
+    sub = Subscription.from_json_old_format(data)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
     assert sub.latest_update is None
 
 
-def test_from_json():
+def test_from_json_new_format_no_update():
+    data = {
+        "query": "example query",
+        "latest_update": None
+    }
+
+    sub = Subscription.from_json_new_format(data, 17839)
+    assert sub.query_str == "example query"
+    assert sub.destination == 17839
+    assert sub.latest_update is None
+
+
+def test_from_json_old_format():
     data = {
         "query": "example query",
         "destination": 17839,
         "latest_update": "2019-09-17T21:14:07Z"
     }
 
-    sub = Subscription.from_json(data)
+    sub = Subscription.from_json_old_format(data)
+    assert sub.query_str == "example query"
+    assert sub.destination == 17839
+    assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
+
+
+def test_from_json_new_format():
+    data = {
+        "query": "example query",
+        "latest_update": "2019-09-17T21:14:07Z"
+    }
+
+    sub = Subscription.from_json_new_format(data, 17839)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
     assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
@@ -805,7 +825,7 @@ def test_to_json_and_back_no_update():
     sub = Subscription("an example", -63939)
 
     data = sub.to_json()
-    new_sub = Subscription.from_json(data)
+    new_sub = Subscription.from_json_new_format(data, -63939)
 
     assert new_sub.query_str == sub.query_str
     assert new_sub.destination == sub.destination
@@ -817,7 +837,7 @@ def test_to_json_and_back():
     sub.latest_update = datetime.datetime(2019, 9, 17, 21, 16, 14, tzinfo=datetime.timezone.utc)
 
     data = sub.to_json()
-    new_sub = Subscription.from_json(data)
+    new_sub = Subscription.from_json_new_format(data, 3223)
 
     assert new_sub.query_str == sub.query_str
     assert new_sub.destination == sub.destination

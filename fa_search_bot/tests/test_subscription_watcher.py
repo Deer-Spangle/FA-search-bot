@@ -563,26 +563,22 @@ def test_save_to_json(bot):
         assert "123240" in data['latest_ids']
         assert "123242" in data['latest_ids']
         assert "123243" in data['latest_ids']
-        assert len(data['subscriptions']) == 2
-        if data['subscriptions'][0]['query'] == "query":
-            assert data['subscriptions'][0]['destination'] == 1234
-            assert data['subscriptions'][1]['query'] == "example"
-            assert data['subscriptions'][1]['destination'] == 5678
-        else:
-            assert data['subscriptions'][0]['query'] == "example"
-            assert data['subscriptions'][0]['destination'] == 5678
-            assert data['subscriptions'][1]['query'] == "query"
-            assert data['subscriptions'][1]['destination'] == 1234
-        assert len(data["blacklists"]) == 2
-        assert "3452" in data["blacklists"]
-        assert len(data["blacklists"]["3452"]) == 2
-        assert isinstance(data["blacklists"]["3452"], list)
-        assert "test" in data["blacklists"]["3452"]
-        assert "example" in data["blacklists"]["3452"]
-        assert "1453" in data["blacklists"]
-        assert len(data["blacklists"]["1453"]) == 1
-        assert isinstance(data["blacklists"]["1453"], list)
-        assert data["blacklists"]["1453"] == ["ych"]
+        assert len(data["destinations"]) == 4
+        assert len(data["destinations"]["1234"]["subscriptions"]) == 1
+        assert data["destinations"]["1234"]["subscriptions"][0]["query"] == "query"
+        assert len(data["destinations"]["1234"]["blocks"]) == 0
+
+        assert len(data["destinations"]["5678"]["subscriptions"]) == 1
+        assert data["destinations"]["5678"]["subscriptions"][0]["query"] == "example"
+        assert len(data["destinations"]["5678"]["blocks"]) == 0
+
+        assert len(data["destinations"]["3452"]["subscriptions"]) == 0
+        assert len(data["destinations"]["3452"]["blocks"]) == 2
+        assert set([block["query"] for block in data["destinations"]["3452"]["blocks"]]) == {"test", "example"}
+
+        assert len(data["destinations"]["1453"]["subscriptions"]) == 0
+        assert len(data["destinations"]["1453"]["blocks"]) == 1
+        assert data["destinations"]["1453"]["blocks"][0]["query"] == "ych"
     finally:
         os.remove(test_watcher_file)
 

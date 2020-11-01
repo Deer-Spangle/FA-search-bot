@@ -180,25 +180,13 @@ class SubscriptionWatcher:
         self.save_to_json()
 
     def save_to_json(self):
-        logger.debug("Saving subscriptions data")
-        subscriptions = self.subscriptions.copy()
-        data = {
-            "latest_ids": list(self.latest_ids),
-            "subscriptions": [x.to_json() for x in subscriptions],
-            "blacklists": {str(k): list(v) for k, v in self.blocklists.items()}
-        }
-        with open(self.FILENAME_TEMP, "w") as f:
-            json.dump(data, f, indent=2)
-        os.replace(self.FILENAME_TEMP, self.FILENAME)
-
-    def save_to_json_new(self):
         logger.debug("Saving subscription data in new format")
         destination_dict = collections.defaultdict(lambda: {
             "subscriptions": [],
             "blocks": []
         })
         for subscription in self.subscriptions.copy():
-            destination_dict[str(subscription.destination)]["subscriptions"].append(subscription.to_json_new())
+            destination_dict[str(subscription.destination)]["subscriptions"].append(subscription.to_json())
         for dest, block_queries in self.blocklists.items():
             for block in block_queries:
                 destination_dict[str(dest)]["blocks"].append({"query": block})
@@ -219,22 +207,23 @@ class SubscriptionWatcher:
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
             return SubscriptionWatcher(api, bot)
+        if "destinations" not in data:
+            return SubscriptionWatcher.load_from_json_old_format(data, api, bot)
+        return SubscriptionWatcher.load_from_json_new_format(data, api, bot)
+
+    @staticmethod
+    def load_from_json_old_format(data: Dict, api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
+        logger.debug("Loading subscription config from file in old format")
         new_watcher = SubscriptionWatcher(api, bot)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
-        new_watcher.subscriptions = set(Subscription.from_json(x) for x in data["subscriptions"])
+        new_watcher.subscriptions = set(Subscription.from_json_old_format(x) for x in data["subscriptions"])
         new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
     @staticmethod
-    def load_from_json_new(api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
+    def load_from_json_new_format(data: Dict, api: FAExportAPI, bot: telegram.Bot) -> 'SubscriptionWatcher':
         logger.debug("Loading subscription config from file in new format")
-        try:
-            with open(SubscriptionWatcher.FILENAME, "r") as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            logger.info("No subscription config exists, creating a blank one")
-            return SubscriptionWatcher(api, bot)
         new_watcher = SubscriptionWatcher(api, bot)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
@@ -242,8 +231,9 @@ class SubscriptionWatcher:
         for dest, value in data["destinations"].items():
             dest_id = int(dest)
             for subscription in value["subscriptions"]:
-                subscriptions.add(Subscription.from_json_new(subscription, dest_id))
-            new_watcher.blocklists[dest_id] = set(block["query"] for block in value["blocks"])
+                subscriptions.add(Subscription.from_json_new_format(subscription, dest_id))
+            if value["blocks"]:
+                new_watcher.blocklists[dest_id] = set(block["query"] for block in value["blocks"])
         new_watcher.subscriptions = subscriptions
         return new_watcher
 
@@ -266,21 +256,11 @@ class Subscription:
             latest_update_str = self.latest_update.isoformat()
         return {
             "query": self.query_str,
-            "destination": self.destination,
-            "latest_update": latest_update_str
-        }
-
-    def to_json_new(self):
-        latest_update_str = None
-        if self.latest_update is not None:
-            latest_update_str = self.latest_update.isoformat()
-        return {
-            "query": self.query_str,
             "latest_update": latest_update_str
         }
 
     @staticmethod
-    def from_json(saved_sub) -> 'Subscription':
+    def from_json_old_format(saved_sub) -> 'Subscription':
         query = saved_sub["query"]
         destination = saved_sub["destination"]
         new_sub = Subscription(query, destination)
@@ -290,7 +270,7 @@ class Subscription:
         return new_sub
 
     @staticmethod
-    def from_json_new(saved_sub: Dict, dest_id: int) -> 'Subscription':
+    def from_json_new_format(saved_sub: Dict, dest_id: int) -> 'Subscription':
         query = saved_sub["query"]
         new_sub = Subscription(query, dest_id)
         new_sub.latest_update = None
