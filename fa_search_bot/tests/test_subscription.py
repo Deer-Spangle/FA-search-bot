@@ -17,6 +17,12 @@ def test_init():
     assert sub.latest_update is None
 
 
+def test_init_not_paused():
+    sub = Subscription("yo", 12423)
+
+    assert sub.paused is False
+
+
 def test_matches_result__one_word_in_title_matches():
     query = "test"
     subscription = Subscription(query, 12432)
@@ -507,6 +513,21 @@ def test_matches_result__doesnt_match_except_field():
     assert not match
 
 
+def test_matches_result__not_when_paused():
+    query = "test"
+    subscription = Subscription(query, 12432)
+    subscription.paused = True
+    submission = SubmissionBuilder(
+        title="test submission",
+        description="this submission is just an example",
+        keywords=["example", "submission", "keywords"]
+    ).build_full_submission()
+
+    match = subscription.matches_result(submission, AndQuery([]))
+
+    assert not match
+
+
 def test_matches_word_in_quotes():
     query = "deer"
     subscription = Subscription(query, 12432)
@@ -769,6 +790,16 @@ def test_to_json():
     assert data["query"] == "test query"
     assert "latest_update" in data
     assert data["latest_update"] == "2019-09-17T21:08:35"
+    assert data["paused"] is False
+
+
+def test_to_json__paused():
+    sub = Subscription("test query", -12322)
+    sub.paused = True
+
+    data = sub.to_json()
+
+    assert data["paused"] is True
 
 
 def test_from_json_old_format_no_update():
@@ -819,6 +850,38 @@ def test_from_json_new_format():
     assert sub.query_str == "example query"
     assert sub.destination == 17839
     assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
+
+
+def test_from_json_paused_unset():
+    data = {
+        "query": "example query",
+        "latest_update": "2020-11-01T22:16:26Z"
+    }
+
+    sub = Subscription.from_json_new_format(data, 17839)
+    assert sub.paused is False
+
+
+def test_from_json_paused_false():
+    data = {
+        "query": "example query",
+        "latest_update": "2020-11-01T22:16:26Z",
+        "paused": False
+    }
+
+    sub = Subscription.from_json_new_format(data, 17839)
+    assert sub.paused is False
+
+
+def test_from_json_paused_true():
+    data = {
+        "query": "example query",
+        "latest_update": "2020-11-01T22:16:26Z",
+        "paused": True
+    }
+
+    sub = Subscription.from_json_new_format(data, 17839)
+    assert sub.paused is True
 
 
 def test_to_json_and_back_no_update():

@@ -245,8 +245,11 @@ class Subscription:
         self.destination = destination
         self.latest_update = None  # type: Optional[datetime.datetime]
         self.query = parse_query(query_str)
+        self.paused = False
 
     def matches_result(self, result: FASubmissionFull, blocklist_query: Query) -> bool:
+        if self.paused:
+            return False
         full_query = AndQuery([self.query, blocklist_query])
         return full_query.matches_submission(result)
 
@@ -256,7 +259,8 @@ class Subscription:
             latest_update_str = self.latest_update.isoformat()
         return {
             "query": self.query_str,
-            "latest_update": latest_update_str
+            "latest_update": latest_update_str,
+            "paused": self.paused
         }
 
     @staticmethod
@@ -276,6 +280,8 @@ class Subscription:
         new_sub.latest_update = None
         if saved_sub["latest_update"] is not None:
             new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])
+        if saved_sub.get("paused"):
+            new_sub.paused = True
         return new_sub
 
     def __eq__(self, other):
@@ -287,4 +293,9 @@ class Subscription:
         return hash((self.query_str, self.destination))
 
     def __str__(self):
-        return f"Subscription(destination={self.destination}, query=\"{self.query_str}\")"
+        return \
+            f"Subscription(" \
+            f"destination={self.destination}, " \
+            f"query=\"{self.query_str}\", " \
+            f"{'paused' if self.paused else ''}" \
+            f")"
