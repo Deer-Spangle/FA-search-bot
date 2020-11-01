@@ -87,7 +87,8 @@ def test_load_old_save_new(bot):
     assert len(dest1["blocks"]) == 0
     assert dest1["subscriptions"][0] == {
         "query": "deer",
-        "latest_update": "2020-09-20T11:11:19.329747"
+        "latest_update": "2020-09-20T11:11:19.329747",
+        "paused": False
     }
     # check dest -76543
     dest2 = new_data["destinations"]["-76543"]
@@ -95,7 +96,8 @@ def test_load_old_save_new(bot):
     assert len(dest2["blocks"]) == 1
     assert dest2["subscriptions"][0] == {
         "query": "rating:safe rabbit",
-        "latest_update": "2020-10-31T21:50:54.020924"
+        "latest_update": "2020-10-31T21:50:54.020924",
+        "paused": False
     }
     assert dest2["blocks"][0] == {
         "query": "artist:fred"
@@ -107,12 +109,14 @@ def test_load_old_save_new(bot):
     assert \
         {
             "query": "@keywords deer",
-            "latest_update": "2020-10-31T21:09:58.755093"
+            "latest_update": "2020-10-31T21:09:58.755093",
+            "paused": False
         } in dest3["subscriptions"]
     assert \
         {
             "query": "@keywords dragon",
-            "latest_update": "2020-10-31T21:09:58.755093"
+            "latest_update": "2020-10-31T21:09:58.755093",
+            "paused": False
         } in dest3["subscriptions"]
     # Check dest 87654
     dest4 = new_data["destinations"]["87654"]
