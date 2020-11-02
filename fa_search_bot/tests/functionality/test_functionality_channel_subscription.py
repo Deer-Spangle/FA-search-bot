@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import telegram
 
-from fa_search_bot.functionalities.subscriptions import ChannelSubscriptionFunctionality
+from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
@@ -14,7 +14,7 @@ def test_call__route_add_subscription(context):
     update = MockTelegramUpdate.with_channel_post(chat_id=-10014358, text="/add_subscription test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = ChannelSubscriptionFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     add_sub = MockMethod("Added channel subscription test")
     func._add_sub = add_sub.call
 
@@ -34,7 +34,7 @@ def test_call__route_remove_subscription(context):
     update = MockTelegramUpdate.with_channel_post(chat_id=-10014358, text="/remove_subscription example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = ChannelSubscriptionFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     delete_sub = MockMethod("Removed channel subscription test")
     func._remove_sub = delete_sub.call
 
@@ -54,7 +54,7 @@ def test_call__route_list_subscriptions(context):
     update = MockTelegramUpdate.with_channel_post(chat_id=-10014358, text="/list_subscriptions")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = ChannelSubscriptionFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing channel subscriptions")
     func._list_subs = list_subs.call
 

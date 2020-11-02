@@ -13,8 +13,7 @@ from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
-from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality, BlocklistFunctionality, \
-    ChannelSubscriptionFunctionality, ChannelBlocklistFunctionality
+from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality, BlocklistFunctionality
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality

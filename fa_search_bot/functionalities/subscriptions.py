@@ -1,9 +1,9 @@
 import logging
 
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext, MessageHandler, Filters
+from telegram.ext import CallbackContext
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality
+from fa_search_bot.functionalities.channel_agnostic_func import ChannelAgnosticFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 
@@ -11,26 +11,18 @@ usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
-class SubscriptionFunctionality(BotFunctionality):
+class SubscriptionFunctionality(ChannelAgnosticFunctionality):
     add_sub_cmd = "add_subscription"
     remove_sub_cmd = "remove_subscription"
     list_sub_cmd = "list_subscriptions"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__(CommandHandler, command=[self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd])
+        super().__init__([self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd])
         self.watcher = watcher
 
-    def call(self, update: Update, context: CallbackContext):
-        message_text = None
-        destination = None
-        if update.message is not None:
-            message_text = update.message.text
-            destination = update.message.chat_id
-        if update.channel_post is not None:
-            message_text = update.channel_post.text
-            destination = update.channel_post.chat_id
-        if message_text is None or destination is None:
-            return None
+    def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
+        message_text = text
+        destination = chat_id
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         if command.startswith("/" + self.add_sub_cmd):
@@ -83,48 +75,18 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Current active subscriptions in this chat:\n{subs_list}"
 
 
-class ChannelSubscriptionFunctionality(SubscriptionFunctionality):
-
-    def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__(watcher)
-        self.handler_cls = MessageHandler
-        self.kwargs = {
-            "filters": Filters.regex("^/({}|{}|{})".format(self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd))
-        }
-
-    def call(self, update: Update, context: CallbackContext):
-        if update.channel_post is None:
-            return
-        if (
-                update.channel_post.text.startswith("/" + self.add_sub_cmd)
-                or update.channel_post.text.startswith("/" + self.remove_sub_cmd)
-                or update.channel_post.text.startswith("/" + self.list_sub_cmd)
-        ):
-            return super(ChannelSubscriptionFunctionality, self).call(update, context)
-
-
-class BlocklistFunctionality(BotFunctionality):
+class BlocklistFunctionality(ChannelAgnosticFunctionality):
     add_block_tag_cmd = "add_blocklisted_tag"
     remove_block_tag_cmd = "remove_blocklisted_tag"
     list_block_tag_cmd = "list_blocklisted_tags"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__(
-            CommandHandler, command=[self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd]
-        )
+        super().__init__([self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd])
         self.watcher = watcher
 
-    def call(self, update: Update, context: CallbackContext):
-        message_text = None
-        destination = None
-        if update.message is not None:
-            message_text = update.message.text
-            destination = update.message.chat_id
-        if update.channel_post is not None:
-            message_text = update.channel_post.text
-            destination = update.channel_post.chat_id
-        if message_text is None or destination is None:
-            return None
+    def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
+        message_text = text
+        destination = chat_id
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         if command.startswith("/" + self.add_block_tag_cmd):
@@ -168,25 +130,3 @@ class BlocklistFunctionality(BotFunctionality):
         blocklist = self.watcher.blocklists[destination]
         tags_list = "\n".join([f"- {tag}" for tag in blocklist])
         return f"Current blocklist for this chat:\n{tags_list}"
-
-
-class ChannelBlocklistFunctionality(BlocklistFunctionality):
-
-    def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__(watcher)
-        self.handler_cls = MessageHandler
-        self.kwargs = {
-            "filters": Filters.regex("^/({}|{}|{})".format(
-                self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd
-            ))
-        }
-
-    def call(self, update: Update, context: CallbackContext):
-        if update.channel_post is None:
-            return
-        if (
-                update.channel_post.text.startswith("/" + self.add_block_tag_cmd)
-                or update.channel_post.text.startswith("/" + self.remove_block_tag_cmd)
-                or update.channel_post.text.startswith("/" + self.list_block_tag_cmd)
-        ):
-            return super(ChannelBlocklistFunctionality, self).call(update, context)
