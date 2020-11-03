@@ -3,7 +3,7 @@ from typing import List
 
 import telegram
 from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext, Filters, MessageHandler
+from telegram.ext import CallbackContext, Filters, MessageHandler
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
