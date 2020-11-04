@@ -61,6 +61,9 @@ Taken from FurAffinity's search documentation:
 - `/list_blocklisted_tags`
 - `/remove_blocklisted_tag [tag]`
 
+- `/pause [query?]` - Pauses all subscriptions in chat, or specified subscription
+- `/resume [query?]` - Resumes all subscriptions in chat, or specified subscription
+
 #### Subscription queries
 
 Subscriptions understand basic boolean operators:
