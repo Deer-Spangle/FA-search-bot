@@ -80,9 +80,7 @@ class FASearchBot:
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
             SubscriptionFunctionality(self.subscription_watcher),
-            ChannelSubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
-            ChannelBlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]
