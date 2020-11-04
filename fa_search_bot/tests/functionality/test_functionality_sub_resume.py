@@ -31,6 +31,25 @@ def test_call__route_resume_destination(context):
 
 
 @patch.object(telegram, "Bot")
+def test_call__route_unpause_destination(context):
+    update = MockTelegramUpdate.with_message(chat_id=14358, text="/unpause")
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    func = SubResumeFunctionality(watcher)
+    resume_dest = MockMethod("Resumed all subscriptions")
+    func._resume_destination = resume_dest.call
+
+    func.call(update, context)
+
+    assert resume_dest.called
+    assert resume_dest.args is not None
+    assert resume_dest.args[0] == update.message.chat_id
+    context.bot.send_message.assert_called()
+    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+    assert context.bot.send_message.call_args[1]['text'] == "Resumed all subscriptions"
+
+
+@patch.object(telegram, "Bot")
 def test_call__route_resume_destination_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume@FASearchBot")
     api = MockExportAPI()

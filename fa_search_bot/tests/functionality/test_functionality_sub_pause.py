@@ -31,6 +31,25 @@ def test_call__route_pause_destination(context):
 
 
 @patch.object(telegram, "Bot")
+def test_call__route_suspend_destination(context):
+    update = MockTelegramUpdate.with_message(chat_id=14358, text="/suspend")
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    func = SubPauseFunctionality(watcher)
+    pause_dest = MockMethod("Paused all subscriptions")
+    func._pause_destination = pause_dest.call
+
+    func.call(update, context)
+
+    assert pause_dest.called
+    assert pause_dest.args is not None
+    assert pause_dest.args[0] == update.message.chat_id
+    context.bot.send_message.assert_called()
+    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
+    assert context.bot.send_message.call_args[1]['text'] == "Paused all subscriptions"
+
+
+@patch.object(telegram, "Bot")
 def test_call__route_pause_destination_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause@FASearchBot")
     api = MockExportAPI()
