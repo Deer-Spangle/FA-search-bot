@@ -242,7 +242,6 @@ def test_list_subs__alphabetical(context):
     assert "- deer\n- example\n- test" in resp
 
 
-@pytest.mark.skip()
 @patch.object(telegram, "Bot")
 def test_list_subs__alphabetical_case_insensitive(context):
     api = MockExportAPI()
