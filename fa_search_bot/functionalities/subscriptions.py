@@ -116,9 +116,10 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
             return f"There is not a subscription for \"{sub_name}\" in this chat."
-        matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub]
-        for sub in matching:
-            sub.paused = True
+        matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
+        if matching.paused:
+            return f"Subscription for \"{sub_name}\" is already paused."
+        matching.paused = True
         return f"Paused subscription \"{sub_name}\".\n{self._list_subs(chat_id)}"
 
     def _resume_destination(self, chat_id: int) -> str:
