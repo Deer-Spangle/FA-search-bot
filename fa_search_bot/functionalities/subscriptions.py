@@ -104,7 +104,10 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat_id]
         if not subs:
             return "There are no subscriptions posting here to pause."
-        for sub in subs:
+        running_subs = [sub for sub in subs if sub.paused is False]
+        if not running_subs:
+            return "All subscriptions are already paused."
+        for sub in running_subs:
             sub.paused = True
         return f"Paused all subscriptions.\n{self._list_subs(chat_id)}"
 

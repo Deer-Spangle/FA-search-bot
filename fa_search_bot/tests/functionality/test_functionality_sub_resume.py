@@ -1,5 +1,3 @@
-import datetime
-
 from unittest.mock import patch
 import telegram
 
@@ -211,17 +209,13 @@ def test_resume_destination__all_running(context):
     watcher.subscriptions.add(sub1)
     sub2 = Subscription("example", 18749)
     sub2.paused = False
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
-    list_subs = MockMethod("Listing subscriptions")
-    func._list_subs = list_subs.call
 
     resp = func._resume_destination(18749)
 
     assert resp == "All subscriptions are already running."
     assert len(watcher.subscriptions) == 2
-    assert list_subs.called
-    assert list_subs.args[0] == 18749
-    assert "Listing subscriptions" in resp
     for subscription in watcher.subscriptions:
         assert subscription.query_str in ["test", "example"]
         assert subscription.destination == 18749
@@ -237,17 +231,13 @@ def test_resume_destination__all_running_except_elsewhere(context):
     watcher.subscriptions.add(sub1)
     sub2 = Subscription("example", 12345)
     sub2.paused = True
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
-    list_subs = MockMethod("Listing subscriptions")
-    func._list_subs = list_subs.call
 
     resp = func._resume_destination(18749)
 
     assert resp == "All subscriptions are already running."
     assert len(watcher.subscriptions) == 2
-    assert list_subs.called
-    assert list_subs.args[0] == 18749
-    assert "Listing subscriptions" in resp
     sub1, sub2 = list(watcher.subscriptions)[:2]
     if sub1.destination != 18749:
         sub2, sub1 = sub1, sub2
@@ -329,6 +319,7 @@ def test_resume_subscription__one_matching(context):
     assert sub2.query_str == "example"
     assert sub2.destination == 18749
     assert sub2.paused is True
+
 
 @patch.object(telegram, "Bot")
 def test_resume_subscription__case_insensitive(context):
