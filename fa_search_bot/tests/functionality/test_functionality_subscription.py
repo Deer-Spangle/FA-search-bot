@@ -2,7 +2,6 @@ import datetime
 
 from unittest.mock import patch
 
-import pytest
 import telegram
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
@@ -291,7 +290,7 @@ def test_list_subs(context):
 
     resp = func._list_subs(18749)
 
-    assert "Current active subscriptions in this chat:" in resp
+    assert "Current subscriptions in this chat:" in resp
     assert "- deer" in resp
     assert "- example" in resp
     assert "- test" not in resp
@@ -308,7 +307,7 @@ def test_list_subs__alphabetical(context):
 
     resp = func._list_subs(18749)
 
-    assert "Current active subscriptions in this chat:" in resp
+    assert "Current subscriptions in this chat:" in resp
     assert "- deer\n- example\n- test" in resp
 
 
@@ -323,7 +322,7 @@ def test_list_subs__alphabetical_case_insensitive(context):
 
     resp = func._list_subs(18749)
 
-    assert "Current active subscriptions in this chat:" in resp
+    assert "Current subscriptions in this chat:" in resp
     assert "- deer\n- Example\n- test" in resp
 
 
@@ -340,5 +339,5 @@ def test_list_subs__some_paused(context):
 
     resp = func._list_subs(18749)
 
-    assert "Current active subscriptions in this chat:" in resp
-    assert "- deer\n- example\n- ⏸test" in resp
+    assert "Current subscriptions in this chat:" in resp
+    assert "- deer\n- example\n- ⏸<s>test</s>" in resp

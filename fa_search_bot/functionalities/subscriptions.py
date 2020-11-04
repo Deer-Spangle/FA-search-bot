@@ -1,6 +1,7 @@
+import html
 import logging
 
-from telegram import Update
+from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 
 from fa_search_bot.functionalities.channel_agnostic_func import ChannelAgnosticFunctionality
@@ -25,49 +26,31 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
 
     def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
         message_text = text
-        destination = chat_id
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=self._route_command(chat_id, command, args),
+            parse_mode=ParseMode.HTML
+        )
+
+    def _route_command(self, destination: int, command: str, args: str) -> str:
         if command.startswith("/" + self.add_sub_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._add_sub(destination, args)
-            )
+            return self._add_sub(destination, args)
         elif command.startswith("/" + self.remove_sub_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._remove_sub(destination, args)
-            )
+            return self._remove_sub(destination, args)
         elif command.startswith("/" + self.list_sub_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._list_subs(destination)
-            )
+            return self._list_subs(destination)
         elif any(command.startswith("/" + cmd) for cmd in self.pause_cmds):
             if args:
-                return context.bot.send_message(
-                    chat_id=chat_id,
-                    text=self._pause_subscription(chat_id, args)
-                )
-            context.bot.send_message(
-                chat_id=chat_id,
-                text=self._pause_destination(chat_id)
-            )
+                return self._pause_subscription(destination, args)
+            return self._pause_destination(destination)
         elif any(command.startswith("/" + cmd) for cmd in self.resume_cmds):
             if args:
-                return context.bot.send_message(
-                    chat_id=chat_id,
-                    text=self._resume_subscription(chat_id, args)
-                )
-            context.bot.send_message(
-                chat_id=chat_id,
-                text=self._resume_destination(chat_id)
-            )
+                return self._resume_subscription(destination, args)
+            return self._resume_destination(destination)
         else:
-            context.bot.send_message(
-                chat_id=destination,
-                text="I do not understand."
-            )
+            return "I do not understand."
 
     def _add_sub(self, destination: int, query: str):
         usage_logger.info("Add subscription")
@@ -77,27 +60,33 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
             new_sub = Subscription(query, destination)
         except InvalidQueryException as e:
             logger.error("Failed to parse new subscription query: %s", query, exc_info=e)
-            return f"Failed to parse subscription query: {e}"
+            return f"Failed to parse subscription query: {html.escape(str(e))}"
         if new_sub in self.watcher.subscriptions:
-            return f"A subscription already exists for \"{query}\"."
+            return f"A subscription already exists for \"{html.escape(query)}\"."
         self.watcher.subscriptions.add(new_sub)
-        return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
+        return f"Added subscription: \"{html.escape(query)}\".\n{self._list_subs(destination)}"
 
     def _remove_sub(self, destination: int, query: str):
         usage_logger.info("Remove subscription")
         old_sub = Subscription(query, destination)
         try:
             self.watcher.subscriptions.remove(old_sub)
-            return f"Removed subscription: \"{query}\".\n{self._list_subs(destination)}"
+            return f"Removed subscription: \"{html.escape(query)}\".\n{self._list_subs(destination)}"
         except KeyError:
-            return f"There is not a subscription for \"{query}\" in this chat."
+            return f"There is not a subscription for \"{html.escape(query)}\" in this chat."
 
     def _list_subs(self, destination: int):
         usage_logger.info("List subscriptions")
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs.sort(key=lambda sub: sub.query_str.casefold())
-        subs_list = "\n".join([f"- {'⏸' if sub.paused else ''}{sub.query_str}" for sub in subs])
-        return f"Current active subscriptions in this chat:\n{subs_list}"
+        sub_list_entries = []
+        for sub in subs:
+            sub_title = f"- {html.escape(sub.query_str)}"
+            if sub.paused:
+                sub_title = f"- ⏸<s>{html.escape(sub.query_str)}</s>"
+            sub_list_entries.append(sub_title)
+        subs_list = "\n".join(sub_list_entries)
+        return f"Current subscriptions in this chat:\n{subs_list}"
 
     def _pause_destination(self, chat_id: int):
         usage_logger.info("Pause destination")
@@ -115,12 +104,12 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         usage_logger.info("Pause subscription")
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
-            return f"There is not a subscription for \"{sub_name}\" in this chat."
+            return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
         matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
         if matching.paused:
-            return f"Subscription for \"{sub_name}\" is already paused."
+            return f"Subscription for \"{html.escape(sub_name)}\" is already paused."
         matching.paused = True
-        return f"Paused subscription: \"{sub_name}\".\n{self._list_subs(chat_id)}"
+        return f"Paused subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
 
     def _resume_destination(self, chat_id: int) -> str:
         usage_logger.info("Resume destination")
@@ -138,12 +127,12 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         usage_logger.info("Resume subscription")
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
-            return f"There is not a subscription for \"{sub_name}\" in this chat."
+            return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
         matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
         if not matching.paused:
-            return f"Subscription for \"{sub_name}\" is already running."
+            return f"Subscription for \"{html.escape(sub_name)}\" is already running."
         matching.paused = False
-        return f"Resumed subscription: \"{sub_name}\".\n{self._list_subs(chat_id)}"
+        return f"Resumed subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
 
 
 class BlocklistFunctionality(ChannelAgnosticFunctionality):
