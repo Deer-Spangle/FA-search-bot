@@ -22,6 +22,7 @@ taskipy = "^1.4.0"
 [tool.taskipy.tasks]
 test = "py.test fa_search_bot/tests"
 run = "python3 run.py"
+generate_railroad_diagram = "python3 experiments/pyparsing_railroad.py"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
