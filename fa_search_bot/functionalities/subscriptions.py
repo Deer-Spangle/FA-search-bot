@@ -55,6 +55,8 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         except InvalidQueryException as e:
             logger.error("Failed to parse new subscription query: %s", query, exc_info=e)
             return f"Failed to parse subscription query: {e}"
+        if new_sub in self.watcher.subscriptions:
+            return f"A subscription already exists for \"{query}\"."
         self.watcher.subscriptions.add(new_sub)
         return f"Added subscription: \"{query}\".\n{self._list_subs(destination)}"
 

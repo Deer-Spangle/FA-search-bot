@@ -143,6 +143,44 @@ def test_add_sub__no_add_blank(context):
 
 
 @patch.object(telegram, "Bot")
+def test_add_sub__invalid_query(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._add_sub(18749, "(hello")
+
+    assert resp.startswith("Failed to parse subscription query")
+    assert len(watcher.subscriptions) == 0
+
+
+@patch.object(telegram, "Bot")
+def test_add_sub__no_add_duplicate(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("test", 18749))
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._add_sub(18749, "test")
+
+    assert resp == "A subscription already exists for \"test\"."
+    assert len(watcher.subscriptions) == 1
+
+
+@patch.object(telegram, "Bot")
+def test_add_sub__no_add_duplicate_case_insensitive(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("test", 18749))
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._add_sub(18749, "TEST")
+
+    assert resp == "A subscription already exists for \"TEST\"."
+    assert len(watcher.subscriptions) == 1
+
+
+@patch.object(telegram, "Bot")
 def test_add_sub__adds_subscription(context):
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
@@ -194,6 +232,38 @@ def test_remove_sub__removes_subscription(context):
     resp = func._remove_sub(18749, "test")
 
     assert "Removed subscription: \"test\"." in resp
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    assert len(watcher.subscriptions) == 2
+    subscriptions = list(watcher.subscriptions)
+    if subscriptions[0].query_str == "test":
+        assert subscriptions[0].destination == 18747
+        assert subscriptions[1].query_str == "example"
+        assert subscriptions[1].destination == 18749
+    else:
+        assert subscriptions[0].query_str == "example"
+        assert subscriptions[0].destination == 18749
+        assert subscriptions[1].query_str == "test"
+        assert subscriptions[1].destination == 18747
+
+
+@patch.object(telegram, "Bot")
+def test_remove_sub__removes_subscription_case_insensitive(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("example", 18749))
+    watcher.subscriptions.add(Subscription("test", 18747))
+    new_sub = Subscription("test", 18749)
+    new_sub.latest_update = datetime.datetime.now()
+    watcher.subscriptions.add(new_sub)
+    func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
+
+    resp = func._remove_sub(18749, "TEST")
+
+    assert "Removed subscription: \"TEST\"." in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp

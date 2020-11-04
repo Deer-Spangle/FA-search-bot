@@ -287,10 +287,10 @@ class Subscription:
     def __eq__(self, other):
         if not isinstance(other, Subscription):
             return False
-        return self.query_str == other.query_str and self.destination == other.destination
+        return self.query_str.casefold() == other.query_str.casefold() and self.destination == other.destination
 
     def __hash__(self):
-        return hash((self.query_str, self.destination))
+        return hash((self.query_str.casefold(), self.destination))
 
     def __str__(self):
         return \
