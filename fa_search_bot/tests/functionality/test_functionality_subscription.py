@@ -1,6 +1,8 @@
 import datetime
 
 from unittest.mock import patch
+
+import pytest
 import telegram
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
@@ -238,3 +240,36 @@ def test_list_subs__alphabetical(context):
 
     assert "Current active subscriptions in this chat:" in resp
     assert "- deer\n- example\n- test" in resp
+
+
+@pytest.mark.skip()
+@patch.object(telegram, "Bot")
+def test_list_subs__alphabetical_case_insensitive(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("Example", 18749))
+    watcher.subscriptions.add(Subscription("test", 18749))
+    watcher.subscriptions.add(Subscription("deer", 18749))
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._list_subs(18749)
+
+    assert "Current active subscriptions in this chat:" in resp
+    assert "- deer\n- Example\n- test" in resp
+
+
+@patch.object(telegram, "Bot")
+def test_list_subs__some_paused(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("example", 18749))
+    sub_paused = Subscription("test", 18749)
+    sub_paused.paused = True
+    watcher.subscriptions.add(sub_paused)
+    watcher.subscriptions.add(Subscription("deer", 18749))
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._list_subs(18749)
+
+    assert "Current active subscriptions in this chat:" in resp
+    assert "- deer\n- example\n- ⏸test" in resp
