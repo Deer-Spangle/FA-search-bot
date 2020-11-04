@@ -261,71 +261,129 @@ def test_resume_destination__all_running_except_elsewhere(context):
 
 @patch.object(telegram, "Bot")
 def test_resume_subscription__no_matching(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    watcher.subscriptions.add(Subscription("example", 18749))
-    watcher.subscriptions.add(Subscription("test", 18747))
-    new_sub = Subscription("test", 18749)
-    new_sub.latest_update = datetime.datetime.now()
-    watcher.subscriptions.add(new_sub)
+    sub1 = Subscription("example", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("deer", 18749)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
-    list_subs = MockMethod("Listing subscriptions")
-    func._list_subs = list_subs.call
 
-    resp = func._remove_sub(18749, "test")
+    resp = func._resume_subscription(18749, "test")
 
-    assert "Removed subscription: \"test\"." in resp
-    assert list_subs.called
-    assert list_subs.args[0] == 18749
-    assert "Listing subscriptions" in resp
+    assert resp == "There is not a subscription for \"test\" in this chat."
     assert len(watcher.subscriptions) == 2
-    subscriptions = list(watcher.subscriptions)
-    if subscriptions[0].query_str == "test":
-        assert subscriptions[0].destination == 18747
-        assert subscriptions[1].query_str == "example"
-        assert subscriptions[1].destination == 18749
-    else:
-        assert subscriptions[0].query_str == "example"
-        assert subscriptions[0].destination == 18749
-        assert subscriptions[1].query_str == "test"
-        assert subscriptions[1].destination == 18747
+    for subscription in watcher.subscriptions:
+        assert subscription.paused is True
+
+
+@patch.object(telegram, "Bot")
+def test_resume_subscription__one_matching_in_wrong_destination(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    sub1 = Subscription("example", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("test", 12345)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._resume_subscription(18749, "test")
+
+    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert len(watcher.subscriptions) == 2
+    for subscription in watcher.subscriptions:
+        assert subscription.paused is True
 
 
 @patch.object(telegram, "Bot")
 def test_resume_subscription__one_matching(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    watcher.subscriptions.add(Subscription("example", 18749))
-    watcher.subscriptions.add(Subscription("test", 18747))
-    watcher.subscriptions.add(Subscription("deer", 18749))
+    sub1 = Subscription("example", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("test", 18749)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
 
-    resp = func._list_subs(18749)
+    resp = func._resume_subscription(18749, "test")
 
-    assert "Current active subscriptions in this chat:" in resp
-    assert "- deer" in resp
-    assert "- example" in resp
-    assert "- test" not in resp
-
+    assert "Resumed subscription: \"test\"." in resp
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    assert len(watcher.subscriptions) == 2
+    sub1, sub2 = watcher.subscriptions
+    if sub1.query_str != "test":
+        sub1, sub2 = sub2, sub1
+    assert sub1.query_str == "test"
+    assert sub1.destination == 18749
+    assert sub1.paused is False
+    assert sub2.query_str == "example"
+    assert sub2.destination == 18749
+    assert sub2.paused is True
 
 @patch.object(telegram, "Bot")
 def test_resume_subscription__case_insensitive(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    watcher.subscriptions.add(Subscription("example", 18749))
-    watcher.subscriptions.add(Subscription("test", 18749))
-    watcher.subscriptions.add(Subscription("deer", 18749))
+    sub1 = Subscription("EXAMPLE", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("TEST", 18749)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
 
-    resp = func._list_subs(18749)
+    resp = func._resume_subscription(18749, "test")
 
-    assert "Current active subscriptions in this chat:" in resp
-    assert "- deer\n- example\n- test" in resp
+    assert f"Resumed subscription \"test\"." in resp
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    assert len(watcher.subscriptions) == 2
+    sub1, sub2 = watcher.subscriptions
+    if sub1.query_str != "TEST":
+        sub1, sub2 = sub2, sub1
+    assert sub1.query_str == "TEST"
+    assert sub1.destination == 18749
+    assert sub1.paused is False
+    assert sub2.query_str == "EXAMPLE"
+    assert sub2.destination == 18749
+    assert sub2.paused is True
 
 
 @patch.object(telegram, "Bot")
 def test_resume_subscription__already_running(context):
-    assert False
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    sub1 = Subscription("example", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("test", 18749)
+    sub2.paused = False
+    watcher.subscriptions.add(sub2)
+    func = SubscriptionFunctionality(watcher)
+
+    resp = func._resume_subscription(18749, "test")
+
+    assert resp == f"Subscription for \"test\" is already running."
+    assert len(watcher.subscriptions) == 2
+    sub1, sub2 = watcher.subscriptions
+    if sub1.query_str != "test":
+        sub1, sub2 = sub2, sub1
+    assert sub1.query_str == "test"
+    assert sub1.destination == 18749
+    assert sub1.paused is False
+    assert sub2.query_str == "example"
+    assert sub2.destination == 18749
+    assert sub2.paused is True
