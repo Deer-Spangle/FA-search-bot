@@ -101,10 +101,12 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
 
     def _pause_destination(self, chat_id: int):
         usage_logger.info("Pause destination")
-        for sub in self.watcher.subscriptions.copy():
-            if sub.destination == chat_id:
-                sub.paused = True
-        return f"Paused all subscriptions."
+        subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat_id]
+        if not subs:
+            return "There are no subscriptions posting here to pause."
+        for sub in subs:
+            sub.paused = True
+        return f"Paused all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _pause_subscription(self, chat_id: int, sub_name: str):
         pass
