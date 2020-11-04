@@ -165,7 +165,7 @@ def test_resume_destination__multiple_subs(context):
     for subscription in watcher.subscriptions:
         assert subscription.query_str in ["test", "example"]
         assert subscription.destination == 18749
-        assert subscription.paused is True
+        assert subscription.paused is False
 
 
 @patch.object(telegram, "Bot")
@@ -337,7 +337,7 @@ def test_resume_subscription__case_insensitive(context):
 
     resp = func._resume_subscription(18749, "test")
 
-    assert f"Resumed subscription \"test\"." in resp
+    assert f"Resumed subscription: \"test\"." in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp

@@ -120,13 +120,30 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         if matching.paused:
             return f"Subscription for \"{sub_name}\" is already paused."
         matching.paused = True
-        return f"Paused subscription \"{sub_name}\".\n{self._list_subs(chat_id)}"
+        return f"Paused subscription: \"{sub_name}\".\n{self._list_subs(chat_id)}"
 
     def _resume_destination(self, chat_id: int) -> str:
-        pass
+        usage_logger.info("Resume destination")
+        subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat_id]
+        if not subs:
+            return "There are no subscriptions posting here to resume."
+        running_subs = [sub for sub in subs if sub.paused is True]
+        if not running_subs:
+            return "All subscriptions are already running."
+        for sub in running_subs:
+            sub.paused = False
+        return f"Resumed all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _resume_subscription(self, chat_id: int, sub_name: str) -> str:
-        pass
+        usage_logger.info("Resume subscription")
+        pause_sub = Subscription(sub_name, chat_id)
+        if pause_sub not in self.watcher.subscriptions:
+            return f"There is not a subscription for \"{sub_name}\" in this chat."
+        matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
+        if not matching.paused:
+            return f"Subscription for \"{sub_name}\" is already running."
+        matching.paused = False
+        return f"Resumed subscription: \"{sub_name}\".\n{self._list_subs(chat_id)}"
 
 
 class BlocklistFunctionality(ChannelAgnosticFunctionality):

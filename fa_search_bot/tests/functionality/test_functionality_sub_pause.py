@@ -283,7 +283,7 @@ def test_pause_subscription__one_matching(context):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f"Paused subscription \"test\"." in resp
+    assert f"Paused subscription: \"test\"." in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -311,7 +311,7 @@ def test_pause_subscription__case_insensitive(context):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f"Paused subscription \"test\"." in resp
+    assert f"Paused subscription: \"test\"." in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
