@@ -71,7 +71,7 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         usage_logger.info("List subscriptions")
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs.sort(key=lambda sub: sub.query_str)
-        subs_list = "\n".join([f"- {sub.query_str}" for sub in subs])
+        subs_list = "\n".join([f"- {'⏸' if sub.paused else ''}{sub.query_str}" for sub in subs])
         return f"Current active subscriptions in this chat:\n{subs_list}"
 
 
