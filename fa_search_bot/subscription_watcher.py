@@ -170,7 +170,7 @@ class SubscriptionWatcher:
             for query in self.blocklists[old_chat_id]:
                 self.add_to_blocklist(new_chat_id, query)
         # Migrate subscriptions
-        for subscription in self.subscriptions:
+        for subscription in self.subscriptions.copy():
             if subscription.destination == old_chat_id:
                 subscription.destination = new_chat_id
         # Remove old blocklist
