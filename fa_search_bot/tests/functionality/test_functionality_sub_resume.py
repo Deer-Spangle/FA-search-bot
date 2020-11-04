@@ -121,17 +121,18 @@ def test_resume_destination__no_subs(context):
 
 @patch.object(telegram, "Bot")
 def test_resume_destination__one_sub(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
+    sub = Subscription("test", 18749)
+    sub.paused = True
+    watcher.subscriptions.add(sub)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
 
-    resp = func._add_sub(18749, "test")
+    resp = func._resume_destination(18749)
 
-    assert "Added subscription" in resp
-    assert "\"test\"" in resp
+    assert "Resumed all subscriptions" in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -139,27 +140,123 @@ def test_resume_destination__one_sub(context):
     subscription = list(watcher.subscriptions)[0]
     assert subscription.query_str == "test"
     assert subscription.destination == 18749
-    assert subscription.latest_update is None
+    assert subscription.paused is False
 
 
 @patch.object(telegram, "Bot")
 def test_resume_destination__multiple_subs(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    watcher.subscriptions.add(Subscription("example", 18749))
-    watcher.subscriptions.add(Subscription("test", 18747))
+    sub1 = Subscription("test", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("example", 18749)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
     func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
 
-    resp = func._remove_sub(18749, "test")
+    resp = func._resume_destination(18749)
 
-    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert "Resumed all subscriptions." in resp
     assert len(watcher.subscriptions) == 2
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    for subscription in watcher.subscriptions:
+        assert subscription.query_str in ["test", "example"]
+        assert subscription.destination == 18749
+        assert subscription.paused is True
+
+
+@patch.object(telegram, "Bot")
+def test_resume_destination__not_in_other_destination(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    sub1 = Subscription("test", 18749)
+    sub1.paused = True
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("example", 12345)
+    sub2.paused = True
+    watcher.subscriptions.add(sub2)
+    func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
+
+    resp = func._resume_destination(18749)
+
+    assert "Resumed all subscriptions." in resp
+    assert len(watcher.subscriptions) == 2
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    sub1, sub2 = list(watcher.subscriptions)[:2]
+    if sub1.destination != 18749:
+        sub2, sub1 = sub1, sub2
+    assert sub1.destination == 18749
+    assert sub1.query_str == "test"
+    assert sub1.paused is False
+    assert sub2.destination == 12345
+    assert sub2.query_str == "example"
+    assert sub2.paused is True
 
 
 @patch.object(telegram, "Bot")
 def test_resume_destination__all_running(context):
-    assert False
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    sub1 = Subscription("test", 18749)
+    sub1.paused = False
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("example", 18749)
+    sub2.paused = False
+    func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
+
+    resp = func._resume_destination(18749)
+
+    assert resp == "All subscriptions are already running."
+    assert len(watcher.subscriptions) == 2
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    for subscription in watcher.subscriptions:
+        assert subscription.query_str in ["test", "example"]
+        assert subscription.destination == 18749
+        assert subscription.paused is False
+
+
+@patch.object(telegram, "Bot")
+def test_resume_destination__all_running_except_elsewhere(context):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, context.bot)
+    sub1 = Subscription("test", 18749)
+    sub1.paused = False
+    watcher.subscriptions.add(sub1)
+    sub2 = Subscription("example", 12345)
+    sub2.paused = True
+    func = SubscriptionFunctionality(watcher)
+    list_subs = MockMethod("Listing subscriptions")
+    func._list_subs = list_subs.call
+
+    resp = func._resume_destination(18749)
+
+    assert resp == "All subscriptions are already running."
+    assert len(watcher.subscriptions) == 2
+    assert list_subs.called
+    assert list_subs.args[0] == 18749
+    assert "Listing subscriptions" in resp
+    sub1, sub2 = list(watcher.subscriptions)[:2]
+    if sub1.destination != 18749:
+        sub2, sub1 = sub1, sub2
+    assert sub1.destination == 18749
+    assert sub1.query_str == "test"
+    assert sub1.paused is False
+    assert sub2.destination == 12345
+    assert sub2.query_str == "example"
+    assert sub2.paused is True
 
 
 @patch.object(telegram, "Bot")
