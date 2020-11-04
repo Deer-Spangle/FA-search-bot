@@ -3,7 +3,6 @@ import datetime
 from unittest.mock import patch
 import telegram
 
-from fa_search_bot.functionalities.sub_pause import SubPauseFunctionality
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
@@ -16,7 +15,7 @@ def test_call__route_pause_destination(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
@@ -35,7 +34,7 @@ def test_call__route_suspend_destination(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/suspend")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
@@ -54,7 +53,7 @@ def test_call__route_pause_destination_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
@@ -73,7 +72,7 @@ def test_call__route_pause_subscription(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     pause_sub = MockMethod("Paused subscription")
     func._pause_subscription = pause_sub.call
 
@@ -93,7 +92,7 @@ def test_call__route_pause_subscription_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     pause_sub = MockMethod("Paused subscription")
     func._pause_subscription = pause_sub.call
 
@@ -112,7 +111,7 @@ def test_call__route_pause_subscription_with_handle(context):
 def test_pause_destination__no_subs(context):
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubPauseFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
 
     resp = func._pause_destination(18749)
 
@@ -122,17 +121,17 @@ def test_pause_destination__no_subs(context):
 
 @patch.object(telegram, "Bot")
 def test_pause_destination__one_sub(context):
-    assert False
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
+    watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
 
-    resp = func._add_sub(18749, "test")
+    resp = func._pause_destination(18749)
 
-    assert "Added subscription" in resp
-    assert "\"test\"" in resp
+    assert resp == "Paused all subscriptions."
+    assert len(watcher.subscriptions) == 1
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -140,7 +139,7 @@ def test_pause_destination__one_sub(context):
     subscription = list(watcher.subscriptions)[0]
     assert subscription.query_str == "test"
     assert subscription.destination == 18749
-    assert subscription.latest_update is None
+    assert subscription.paused is True
 
 
 @patch.object(telegram, "Bot")

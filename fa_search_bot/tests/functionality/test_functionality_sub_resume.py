@@ -3,7 +3,6 @@ import datetime
 from unittest.mock import patch
 import telegram
 
-from fa_search_bot.functionalities.sub_pause import SubResumeFunctionality
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
@@ -16,7 +15,7 @@ def test_call__route_resume_destination(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
 
@@ -35,7 +34,7 @@ def test_call__route_unpause_destination(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/unpause")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
 
@@ -54,7 +53,7 @@ def test_call__route_resume_destination_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
 
@@ -73,7 +72,7 @@ def test_call__route_resume_subscription(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     resume_sub = MockMethod("Resumed subscription")
     func._resume_subscription = resume_sub.call
 
@@ -93,7 +92,7 @@ def test_call__route_resume_subscription_with_handle(context):
     update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
     resume_sub = MockMethod("Resumed subscription")
     func._resume_subscription = resume_sub.call
 
@@ -112,7 +111,7 @@ def test_call__route_resume_subscription_with_handle(context):
 def test_resume_destination__no_subs(context):
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
-    func = SubResumeFunctionality(watcher)
+    func = SubscriptionFunctionality(watcher)
 
     resp = func._resume_destination(18749)
 

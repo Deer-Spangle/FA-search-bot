@@ -15,9 +15,12 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
     add_sub_cmd = "add_subscription"
     remove_sub_cmd = "remove_subscription"
     list_sub_cmd = "list_subscriptions"
+    pause_cmds = ["pause", "suspend"]
+    resume_cmds = ["unpause", "resume"]
 
     def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__([self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd])
+        commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
+        super().__init__(commands)
         self.watcher = watcher
 
     def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
@@ -39,6 +42,26 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
             context.bot.send_message(
                 chat_id=destination,
                 text=self._list_subs(destination)
+            )
+        elif any(command.startswith("/" + cmd) for cmd in self.pause_cmds):
+            if args:
+                return context.bot.send_message(
+                    chat_id=chat_id,
+                    text=self._pause_subscription(chat_id, args)
+                )
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=self._pause_destination(chat_id)
+            )
+        elif any(command.startswith("/" + cmd) for cmd in self.resume_cmds):
+            if args:
+                return context.bot.send_message(
+                    chat_id=chat_id,
+                    text=self._resume_subscription(chat_id, args)
+                )
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=self._resume_destination(chat_id)
             )
         else:
             context.bot.send_message(
@@ -75,6 +98,22 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         subs.sort(key=lambda sub: sub.query_str.casefold())
         subs_list = "\n".join([f"- {'⏸' if sub.paused else ''}{sub.query_str}" for sub in subs])
         return f"Current active subscriptions in this chat:\n{subs_list}"
+
+    def _pause_destination(self, chat_id: int):
+        usage_logger.info("Pause destination")
+        for sub in self.watcher.subscriptions.copy():
+            if sub.destination == chat_id:
+                sub.paused = True
+        return f"Paused all subscriptions."
+
+    def _pause_subscription(self, chat_id: int, sub_name: str):
+        pass
+
+    def _resume_destination(self, chat_id: int) -> str:
+        pass
+
+    def _resume_subscription(self, chat_id: int, sub_name: str) -> str:
+        pass
 
 
 class BlocklistFunctionality(ChannelAgnosticFunctionality):
