@@ -80,6 +80,7 @@ async def test_neaten_link(controller):
 
 @pytest.mark.skip("Not sure how to test in group yet.")
 def test_neaten_link_in_group():
+    # TODO
     # - neaten link in group
     assert False
     pass
@@ -87,6 +88,7 @@ def test_neaten_link_in_group():
 
 @pytest.mark.skip("Not sure how to test in group yet.")
 def test_no_neaten_caption_in_group():
+    # TODO
     # - in group neaten doesn't reply to image with caption link
     assert False
     pass
