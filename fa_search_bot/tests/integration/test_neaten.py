@@ -1,16 +1,8 @@
 import pytest
+from tgintegration import BotController
 
 
-async def test_start(controller):
-    # - Get start message
-    async with controller.collect(count=1) as response:
-        await controller.send_command("/start")
-
-    assert response.num_messages == 1
-    assert "@deerspangle" in response.messages[0].text
-
-
-async def test_neaten_link(controller):
+async def test_neaten_link(controller: BotController):
     # - send link, get neatened pic
     async with controller.collect(count=2) as response:
         # TODO: swap if send_message() gets added to BotController
