@@ -1,6 +1,8 @@
 import pytest
 from tgintegration import BotController
 
+pytestmark = pytest.mark.asyncio
+
 
 async def test_neaten_link(controller: BotController):
     # - send link, get neatened pic

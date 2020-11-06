@@ -1,4 +1,7 @@
+import pytest
 from tgintegration import BotController
+
+pytestmark = pytest.mark.asyncio
 
 
 async def test_start(controller: BotController):

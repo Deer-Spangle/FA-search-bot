@@ -9,8 +9,6 @@ from tgintegration import BotController
 
 from fa_search_bot.bot import FASearchBot
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture(scope="session", autouse=True)
 def event_loop(request):
