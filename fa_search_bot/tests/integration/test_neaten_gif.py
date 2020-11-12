@@ -19,7 +19,6 @@ async def test_neaten_gif(controller: BotController):
 
     # Send neaten command
     async with controller.collect(count=2, max_wait=300) as response:
-        # TODO: swap if send_message() gets added to BotController
         await controller.client.send_message(controller.peer_id, f"https://www.furaffinity.net/view/{submission_id}/")
 
     assert response.num_messages == 2
@@ -39,7 +38,6 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
         submission._save_gif_to_cache(output_path)
 
     async with controller.collect(count=2) as response:
-        # TODO: swap if send_message() gets added to BotController
         await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/27408045/")
 
     assert response.num_messages == 2
