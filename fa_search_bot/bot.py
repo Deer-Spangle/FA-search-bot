@@ -45,13 +45,11 @@ class FASearchBot:
         self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
         self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
         updater = Updater(bot=self.bot, use_context=True)
-        dispatcher = updater.dispatcher
-        # logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
         self.functionalities = self.initialise_functionalities()
         for func in self.functionalities:
             logger.info("Registering functionality: %s", func.__class__.__name__)
-            func.register(dispatcher)
+            func.register(updater.dispatcher)
 
         updater.start_polling()
         self.alive = True
@@ -62,11 +60,13 @@ class FASearchBot:
         while self.alive:
             logger.info("Main thread alive")
             try:
-                time.sleep(30)
+                time.sleep(2)
             except KeyboardInterrupt:
                 logger.info("Received keyboard interrupt")
                 self.alive = False
         logger.info("Shutting down")
+        updater.stop()
+        self.bot.stop()
 
         # Kill the sub watcher
         self.subscription_watcher.running = False

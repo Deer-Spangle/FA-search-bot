@@ -76,3 +76,6 @@ class MQBot(telegram.bot.Bot):
 
     def send_audio(self, chat_id, *args, **kwargs):
         return self._send_audio(chat_id, *args, **kwargs, isgroup=chat_id < 0)
+
+    def stop(self):
+        self._msg_queue.stop()
