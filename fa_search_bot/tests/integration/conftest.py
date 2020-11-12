@@ -34,7 +34,7 @@ async def client() -> Client:
 
 
 @pytest.fixture(scope="session")
-async def bot() -> FASearchBot:
+def bot() -> FASearchBot:
     bot = FASearchBot("config.json")
     bot_thread = Thread(target=bot.start)
     bot_thread.start()
@@ -52,4 +52,4 @@ async def controller(client, bot) -> BotController:
         client=client
     )
     await controller.initialize(start_client=False)
-    yield controller
+    return controller
