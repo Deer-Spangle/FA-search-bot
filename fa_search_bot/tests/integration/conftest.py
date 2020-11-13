@@ -5,6 +5,7 @@ from threading import Thread
 
 import pytest
 from pyrogram import Client
+from pyrogram.types import Chat
 from tgintegration import BotController
 
 from fa_search_bot.bot import FASearchBot
@@ -53,3 +54,10 @@ async def controller(client, bot) -> BotController:
     )
     await controller.initialize(start_client=False)
     return controller
+
+
+@pytest.fixture(scope="session")
+async def group_chat(client, bot) -> Chat:
+    group = await client.create_group("Automated test group", [bot.bot.username])
+    yield group
+    await client.leave_chat(group.id, delete=True)
