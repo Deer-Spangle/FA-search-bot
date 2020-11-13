@@ -25,11 +25,7 @@ def event_loop(request):
 
 @pytest.fixture(scope="session")
 async def client() -> Client:
-    client = Client(
-        "test_client",
-        api_id=int(os.getenv("CLIENT_API_ID")),
-        api_hash=os.getenv("CLIENT_API_HASH")
-    )
+    client = Client(os.getenv("CLIENT_SESSION_STRING"))
     await client.start()
     yield client
     await client.stop()
