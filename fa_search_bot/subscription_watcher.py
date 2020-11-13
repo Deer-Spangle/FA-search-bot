@@ -172,7 +172,10 @@ class SubscriptionWatcher:
         # Migrate subscriptions
         for subscription in self.subscriptions.copy():
             if subscription.destination == old_chat_id:
+                # Remove and re-add subscription, as chat id will change the hash
+                self.subscriptions.remove(subscription)
                 subscription.destination = new_chat_id
+                self.subscriptions.add(subscription)
         # Remove old blocklist
         if old_chat_id in self.blocklists:
             del self.blocklists[old_chat_id]
