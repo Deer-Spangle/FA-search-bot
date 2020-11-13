@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 import time
 from threading import Thread
@@ -26,8 +27,8 @@ def event_loop(request):
 async def client() -> Client:
     client = Client(
         "test_client",
-        api_id=0,
-        api_hash=""
+        api_id=int(os.getenv("CLIENT_API_ID")),
+        api_hash=os.getenv("CLIENT_API_HASH")
     )
     await client.start()
     yield client
