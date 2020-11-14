@@ -38,6 +38,8 @@ async def client() -> Client:
 @pytest.fixture(scope="session")
 def bot() -> FASearchBot:
     bot = FASearchBot(os.getenv('CONFIG_FILE', 'config.json'))
+    if os.getenv("BOT_KEY"):
+        bot.bot_key = os.getenv("BOT_KEY")
     bot_thread = Thread(target=bot.start)
     bot_thread.start()
     while not bot.alive:
