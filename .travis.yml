@@ -9,5 +9,9 @@ before_install:
 install:
   - poetry install
 # command to run tests
-script:
-  - poetry run task test
+jobs:
+  include:
+    - stage: "unit tests"
+      script: poetry run task test
+    - stage: "integration tests"
+      script: poetry run task test_integration
