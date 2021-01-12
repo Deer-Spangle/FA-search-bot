@@ -11,7 +11,7 @@ import heartbeat
 import telegram
 
 from fa_search_bot.fa_export_api import FAExportAPI
-from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort
+from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
@@ -102,7 +102,7 @@ class SubscriptionWatcher:
                 logger.warning("Failed to get browse page, retrying", exc_info=e)
                 self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
 
-    def _get_new_results(self) -> List[FASubmissionShort]:
+    def _get_new_results(self) -> List[FASubmission]:
         """
         Gets new results since last scan, returning them in order from oldest to newest.
         """
@@ -130,7 +130,7 @@ class SubscriptionWatcher:
         # Return oldest result first
         return new_results[::-1]
 
-    def _update_latest_ids(self, browse_results: List[FASubmissionShort]):
+    def _update_latest_ids(self, browse_results: List[FASubmission]):
         for result in browse_results:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()
