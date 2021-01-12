@@ -111,21 +111,11 @@ class SubscriptionWatcher:
             first_page = self._get_browse_page()
             self._update_latest_ids(first_page[::-1])
             return []
-        page = 1
-        browse_results = []  # type: List[FASubmissionShort]
-        new_results = []  # type: List[FASubmissionShort]
-        caught_up = False
-        while page <= self.PAGE_CAP and not caught_up:
-            logger.info("Getting browse page: %s", page)
-            page_results = self._get_browse_page(page)
-            browse_results += page_results
-            # Get new results
-            for result in page_results:
-                if result.submission_id in self.latest_ids:
-                    caught_up = True
-                    break
-                new_results.append(result)
-            page += 1
+        first_page = self._get_browse_page()
+        newest_id = int(first_page[0].submission_id)
+        latest_recorded_id = int(self.latest_ids[-1])
+        logger.info("Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id)
+        new_results = [FASubmission(str(x)) for x in range(newest_id, latest_recorded_id, -1)]
         logger.info("New submissions: %s", len(new_results))
         # Return oldest result first
         return new_results[::-1]
