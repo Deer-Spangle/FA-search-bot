@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "fa-search-bot"
-version = "1.8.0"
+version = "1.8.1"
 description = "Telegram bot which provides FurAffinity integration. With searches, subscriptions and automated embedding"
 authors = ["Deer Spangle <deer@spangle.org.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 python-telegram-bot = "12.8"
 requests = "^2.24.0"
 python-dateutil = "^2.8.1"
