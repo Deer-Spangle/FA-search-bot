@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "fa-search-bot"
-version = "1.8.0"
+version = "1.8.1"
 description = "Telegram bot which provides FurAffinity integration. With searches, subscriptions and automated embedding"
 authors = ["Deer Spangle <deer@spangle.org.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 python-telegram-bot = "12.8"
 requests = "^2.24.0"
 python-dateutil = "^2.8.1"
@@ -19,11 +19,15 @@ pytest = "^5.4.1"
 requests-mock = "^1.7.0"
 pyparsing = {version = "3.0.0a2", extras = ["diagrams"]}
 taskipy = "^1.4.0"
+Pyrogram = "^1.0.7"
+tgintegration = "^1.1.0"
+pytest-asyncio = "^0.14.0"
 
 [tool.taskipy.tasks]
-test = "py.test fa_search_bot/tests"
+test = "py.test fa_search_bot/tests --ignore=fa_search_bot/tests/integration"
 run = "python3 run.py"
 generate_railroad_diagram = "python3 experiments/pyparsing_railroad.py"
+test_integration = "py.test fa_search_bot/tests/integration -s"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

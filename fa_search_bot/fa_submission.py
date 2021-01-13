@@ -328,7 +328,7 @@ class FASubmissionFull(FASubmissionShort):
         sandbox_dir = os.getcwd() + "/sandbox"
         logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
         container: Container = client.containers.run(
-            "jrottenberg/ffmpeg",
+            "jrottenberg/ffmpeg:alpine",
             args,
             entrypoint=entrypoint,
             volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
