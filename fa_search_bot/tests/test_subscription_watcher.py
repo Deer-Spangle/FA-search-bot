@@ -1,4 +1,3 @@
-import collections
 import datetime
 import json
 import os
@@ -43,9 +42,9 @@ def watcher_killer(watcher: SubscriptionWatcher):
 
 
 @patch.object(telegram, "Bot")
-def test_init(bot):
+def test_init(tbot):
     api = MockExportAPI()
-    s = SubscriptionWatcher(api, bot)
+    s = SubscriptionWatcher(api, tbot)
 
     assert s.api == api
     assert len(s.latest_ids) == 0
@@ -54,9 +53,9 @@ def test_init(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__is_stopped_by_running_false(bot):
+def test_run__is_stopped_by_running_false(tbot):
     api = MockExportAPI()
-    s = SubscriptionWatcher(api, bot)
+    s = SubscriptionWatcher(api, tbot)
     # Shorten the wait
     s.BACK_OFF = 1
 
@@ -71,9 +70,9 @@ def test_run__is_stopped_by_running_false(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__calls_get_new_results(bot):
+def test_run__calls_get_new_results(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([])
     watcher._get_new_results = method_called.call
     # Shorten the wait
@@ -89,11 +88,11 @@ def test_run__calls_get_new_results(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__calls_update_latest_ids(bot):
+def test_run__calls_update_latest_ids(tbot):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     mock_new_results = MockMethod([submission1, submission2])
     watcher._get_new_results = mock_new_results.call
     mock_update_latest = MockMethod()
@@ -112,11 +111,11 @@ def test_run__calls_update_latest_ids(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__updates_latest_ids(bot):
+def test_run__updates_latest_ids(tbot):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     mock_new_results = MockMethod([submission1, submission2])
     watcher._get_new_results = mock_new_results.call
     mock_save_json = MockMethod()
@@ -136,10 +135,10 @@ def test_run__updates_latest_ids(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__checks_all_subscriptions(bot):
+def test_run__checks_all_subscriptions(tbot):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_submission(submission)
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission])
     watcher._get_new_results = method_called.call
     watcher.BACK_OFF = 1
@@ -159,11 +158,11 @@ def test_run__checks_all_subscriptions(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__checks_all_new_results(bot):
+def test_run__checks_all_new_results(tbot):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission1, submission2])
     watcher._get_new_results = method_called.call
     watcher.BACK_OFF = 1
@@ -182,9 +181,9 @@ def test_run__checks_all_new_results(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__sleeps_backoff_time(bot):
+def test_run__sleeps_backoff_time(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     # Shorten the wait
     watcher.BACK_OFF = 3
 
@@ -200,9 +199,9 @@ def test_run__sleeps_backoff_time(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__can_exit_fast(bot):
+def test_run__can_exit_fast(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     # Shorten the wait
     watcher.BACK_OFF = 3
 
@@ -220,10 +219,10 @@ def test_run__can_exit_fast(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__failed_to_send_doesnt_kill_watcher(bot):
+def test_run__failed_to_send_doesnt_kill_watcher(tbot):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_browse_results([submission], 1)
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     submission.send_message = lambda *args: (_ for _ in ()).throw(Exception)
     watcher.BACK_OFF = 3
     sub1 = MockSubscription("deer", 0)
@@ -240,10 +239,10 @@ def test_run__failed_to_send_doesnt_kill_watcher(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_run__passes_correct_blocklists_to_subscriptions(bot):
+def test_run__passes_correct_blocklists_to_subscriptions(tbot):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_submission(submission)
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission])
     watcher._get_new_results = method_called.call
     watcher.BACK_OFF = 1
@@ -274,10 +273,10 @@ def test_run__passes_correct_blocklists_to_subscriptions(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_get_new_results__handles_empty_latest_ids(bot):
+def test_get_new_results__handles_empty_latest_ids(tbot):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.running = True
 
     results = watcher._get_new_results()
@@ -290,65 +289,72 @@ def test_get_new_results__handles_empty_latest_ids(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_get_new_results__returns_new_results(bot):
+def test_get_new_results__returns_new_results(tbot):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, bot)
+    api.with_browse_results([MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")])
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.latest_ids.append("1220")
     watcher.running = True
 
     results = watcher._get_new_results()
 
     assert len(results) == 2
-    assert results[0].submission_id == "1222"
-    assert results[1].submission_id == "1223"
+    assert results[0].submission_id == "1221"
+    assert results[1].submission_id == "1222"
 
 
 @patch.object(telegram, "Bot")
-def test_get_new_results__goes_to_another_page(bot):
+def test_get_new_results__includes_missing_ids(tbot):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1227"), MockSubmission("1225"), MockSubmission("1224")], page=1)
-    api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")], page=2)
-    watcher = SubscriptionWatcher(api, bot)
-    watcher.latest_ids = collections.deque(maxlen=4)
+    api.with_browse_results([MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")])
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.latest_ids.append("1220")
     watcher.running = True
 
     results = watcher._get_new_results()
 
-    assert len(results) == 5
-    assert results[0].submission_id == "1222"
-    assert results[1].submission_id == "1223"
-    assert results[2].submission_id == "1224"
-    assert results[3].submission_id == "1225"
-    assert results[4].submission_id == "1227"
+    assert len(results) == 4
+    assert results[0].submission_id == "1221"
+    assert results[1].submission_id == "1222"
+    assert results[2].submission_id == "1223"
+    assert results[3].submission_id == "1224"
 
 
 @patch.object(telegram, "Bot")
-def test_get_new_results__respects_page_cap(bot):
+def test_get_new_results__requests_only_page_one(tbot):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1300")], page=1)
-    api.with_browse_results([MockSubmission("1298")], page=2)
-    api.with_browse_results([MockSubmission("1297")], page=3)
-    api.with_browse_results([MockSubmission("1295")], page=4)
-    api.with_browse_results([MockSubmission("1280")], page=5)
-    api.with_browse_results([MockSubmission("1272")], page=6)
-    api.with_browse_results([MockSubmission("1250")], page=7)
-    watcher = SubscriptionWatcher(api, bot)
-    watcher.PAGE_CAP = 5
+    api.with_browse_results([MockSubmission("1254")], page=1)
+    api.call_after_x_browse = (lambda *args: (_ for _ in ()).throw(Exception), 2)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.latest_ids.append("1250")
     watcher.running = True
 
     results = watcher._get_new_results()
 
-    assert len(results) == 5
-    assert "1272" not in [x.submission_id for x in results]
+    assert len(results) == 4
+    assert results[0].submission_id == "1251"
+    assert results[1].submission_id == "1252"
+    assert results[2].submission_id == "1253"
+    assert results[3].submission_id == "1254"
 
 
 @patch.object(telegram, "Bot")
-def test_update_latest_ids(bot):
+def test_get_new_results__handles_sub_id_drop(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    api.with_browse_results([MockSubmission("1220")])
+    watcher = SubscriptionWatcher(api, tbot)
+    watcher.latest_ids.append("1225")
+    watcher.running = True
+
+    results = watcher._get_new_results()
+
+    assert len(results) == 0
+
+
+@patch.object(telegram, "Bot")
+def test_update_latest_ids(tbot):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, tbot)
     id_list = ["1234", "1233", "1230", "1229"]
     submissions = [MockSubmission(x) for x in id_list]
     mock_save_json = MockMethod()
@@ -361,9 +367,9 @@ def test_update_latest_ids(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_send_updates__sends_message(bot):
+def test_send_updates__sends_message(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
@@ -371,7 +377,7 @@ def test_send_updates__sends_message(bot):
 
     assert submission.send_message.asset_called_once()
     args, kwargs = submission.send_message.call_args
-    assert args[0] == bot
+    assert args[0] == tbot
     assert args[1] == 12345
     assert "update" in kwargs['prefix'].lower()
     assert "\"test\"" in kwargs['prefix']
@@ -379,9 +385,9 @@ def test_send_updates__sends_message(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_send_updates__gathers_subscriptions(bot):
+def test_send_updates__gathers_subscriptions(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     subscription1 = Subscription("test", 12345)
     subscription2 = Subscription("test2", 12345)
     subscription3 = Subscription("test", 54321)
@@ -400,8 +406,8 @@ def test_send_updates__gathers_subscriptions(bot):
     args1, kwargs1 = call1
     args2, kwargs2 = call2
     # Check call matching two subscriptions
-    assert args1[0] == bot
-    assert args2[0] == bot
+    assert args1[0] == tbot
+    assert args2[0] == tbot
     assert args1[1] == 12345
     assert args2[1] == 54321
     assert "update" in kwargs1['prefix'].lower()
@@ -414,9 +420,9 @@ def test_send_updates__gathers_subscriptions(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_send_updates__updates_latest(bot):
+def test_send_updates__updates_latest(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
@@ -426,9 +432,9 @@ def test_send_updates__updates_latest(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_add_to_blocklist__new_blocklist(bot):
+def test_add_to_blocklist__new_blocklist(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
 
     watcher.add_to_blocklist(18749, "test")
 
@@ -438,9 +444,9 @@ def test_add_to_blocklist__new_blocklist(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_add_to_blocklist__append_blocklist(bot):
+def test_add_to_blocklist__append_blocklist(tbot):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.blocklists[18749] = {"example"}
 
     watcher.add_to_blocklist(18749, "test")
@@ -451,11 +457,11 @@ def test_add_to_blocklist__append_blocklist(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_migrate_no_block_queries(bot):
+def test_migrate_no_block_queries(tbot):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
 
     watcher.migrate_chat(old_chat_id, new_chat_id)
@@ -467,11 +473,11 @@ def test_migrate_no_block_queries(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_migrate_with_block_queries(bot):
+def test_migrate_with_block_queries(tbot):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
     watcher.add_to_blocklist(old_chat_id, "test")
 
@@ -488,11 +494,11 @@ def test_migrate_with_block_queries(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_migrate_nothing_matching(bot):
+def test_migrate_nothing_matching(tbot):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
     watcher.add_to_blocklist(new_chat_id, "test")
 
@@ -509,11 +515,11 @@ def test_migrate_nothing_matching(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_migrate_merge_blocklists(bot):
+def test_migrate_merge_blocklists(tbot):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher.subscriptions.add(MockSubscription("deer", old_chat_id))
     watcher.add_to_blocklist(old_chat_id, "test")
     watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
@@ -532,7 +538,7 @@ def test_migrate_merge_blocklists(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_save_to_json(bot):
+def test_save_to_json(tbot):
     test_watcher_file = "./test_subscription_watcher.json"
     if os.path.exists(test_watcher_file):
         os.remove(test_watcher_file)
@@ -544,7 +550,7 @@ def test_save_to_json(bot):
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher._update_latest_ids(latest_submissions)
     watcher.subscriptions.add(subscription1)
     watcher.subscriptions.add(subscription2)
@@ -584,7 +590,7 @@ def test_save_to_json(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_from_json(bot):
+def test_from_json(tbot):
     test_watcher_file = "./test_subscription_watcher.json"
     if os.path.exists(test_watcher_file):
         os.remove(test_watcher_file)
@@ -614,7 +620,7 @@ def test_from_json(bot):
             json.dump(data, f)
         api = MockExportAPI()
 
-        watcher = SubscriptionWatcher.load_from_json(api, bot)
+        watcher = SubscriptionWatcher.load_from_json(api, tbot)
 
         assert len(watcher.latest_ids) == 3
         assert "12423" in watcher.latest_ids
@@ -651,7 +657,7 @@ def test_from_json(bot):
 
 
 @patch.object(telegram, "Bot")
-def test_to_json_and_back(bot):
+def test_to_json_and_back(tbot):
     test_watcher_file = "./test_subscription_watcher.json"
     if os.path.exists(test_watcher_file):
         os.remove(test_watcher_file)
@@ -665,7 +671,7 @@ def test_to_json_and_back(bot):
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)
-    watcher = SubscriptionWatcher(api, bot)
+    watcher = SubscriptionWatcher(api, tbot)
     watcher._update_latest_ids(latest_submissions)
     watcher.subscriptions.add(subscription1)
     watcher.subscriptions.add(subscription2)
@@ -674,7 +680,7 @@ def test_to_json_and_back(bot):
 
     try:
         watcher.save_to_json()
-        new_watcher = SubscriptionWatcher.load_from_json(api, bot)
+        new_watcher = SubscriptionWatcher.load_from_json(api, tbot)
 
         assert len(new_watcher.latest_ids) == 3
         assert "123243" in new_watcher.latest_ids
