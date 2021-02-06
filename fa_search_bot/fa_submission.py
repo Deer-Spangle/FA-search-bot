@@ -94,9 +94,12 @@ class FASubmission(ABC):
     @staticmethod
     def from_full_dict(full_dict: Dict[str, Union[str, List[str]]]) -> 'FASubmissionFull':
         submission_id = FASubmission.id_from_link(full_dict['link'])
-        thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
         download_url = full_dict['download']
         full_image_url = full_dict['full']
+        if full_dict['thumbnail'] is None:
+            thumbnail_url = FASubmission.construct_thumbnail_url(submission_id, download_url)
+        else:
+            thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict['thumbnail'])
         title = full_dict['title']
         description = full_dict['description_body']
         author = FAUser.from_submission_dict(full_dict)
@@ -114,6 +117,13 @@ class FASubmission(ABC):
     @staticmethod
     def make_thumbnail_bigger(thumbnail_url: str) -> str:
         return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
+
+    @staticmethod
+    def construct_thumbnail_url(submission_id: str, download_url: str) -> str:
+        # TODO: reuse regex between here and neaten functionality
+        direct_link_regex = re.compile(r"d2?\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
+        sub_timestamp = direct_link_regex.search(download_url).group(2)
+        return f"https://t.facdn.net/{submission_id}@1600-{sub_timestamp}.jpg"
 
     @staticmethod
     def make_thumbnail_smaller(thumbnail_url: str) -> str:
