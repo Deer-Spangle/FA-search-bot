@@ -10,7 +10,7 @@ import dateutil.parser
 import heartbeat
 import telegram
 
-from fa_search_bot.fa_export_api import FAExportAPI
+from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
@@ -59,8 +59,11 @@ class SubscriptionWatcher:
                 try:
                     full_result = self.api.get_full_submission(result.submission_id)
                     logger.debug("Got full data for submission %s", result.submission_id)
-                except Exception:
+                except PageNotFound:
                     logger.warning("Submission %s, disappeared before I could check it.", result.submission_id)
+                    continue
+                except Exception as e:
+                    logger.error("Failed to get submission %s", result.submission_id, exc_info=e)
                     continue
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
