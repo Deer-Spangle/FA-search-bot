@@ -27,7 +27,7 @@ jobs:
         env:
           CONFIG_FILE: "config-test.json"
       - name: Integration tests
-        if: ${{ github.event_name == 'schedule' || ( github.event_name == 'push' && github.ref == 'refs/head/main' ) }}
+        if: ${{ github.event_name == 'schedule' || ( github.event_name == 'push' && github.ref == 'refs/head/master' ) }}
         run: poetry run task test_integration
         env:
           BOT_KEY: ${{ secrets.BOT_KEY }}
