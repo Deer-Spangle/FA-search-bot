@@ -31,7 +31,7 @@ async def test_neaten_link_in_group(controller: BotController, group_chat: Chat)
 async def test_no_neaten_caption_in_group(controller: BotController, group_chat: Chat):
     # - in group neaten doesn't reply to image with caption link
     group_id = group_chat.id
-    thumb_link = "https://t.facdn.net/19925704@400-1462827244.jpg"
+    thumb_link = "https://t.furaffinity.net/19925704@400-1462827244.jpg"
     async with controller.collect(peer=group_id, raise_=False) as response:
         await controller.client.send_photo(group_id, thumb_link, caption="https://www.furaffinity.net/view/19925704/")
 

@@ -121,9 +121,11 @@ class FASubmission(ABC):
     @staticmethod
     def construct_thumbnail_url(submission_id: str, download_url: str) -> str:
         # TODO: reuse regex between here and neaten functionality
-        direct_link_regex = re.compile(r"d2?\.facdn\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I)
+        direct_link_regex = re.compile(
+            r"d2?\.(?:facdn|furaffinity)\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/", re.I
+        )
         sub_timestamp = direct_link_regex.search(download_url).group(2)
-        return f"https://t.facdn.net/{submission_id}@1600-{sub_timestamp}.jpg"
+        return f"https://t.furaffinity.net/{submission_id}@1600-{sub_timestamp}.jpg"
 
     @staticmethod
     def make_thumbnail_smaller(thumbnail_url: str) -> str:

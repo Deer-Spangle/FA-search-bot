@@ -136,8 +136,18 @@ class FASubmissionTest(unittest.TestCase):
     def test_make_thumbnail_bigger(self):
         post_id = "1234"
         image_id = "5324543"
+        thumb_link = f"https://t.furaffinity.net/{post_id}@400-{image_id}.jpg"
+        big_thumb_link = f"https://t.furaffinity.net/{post_id}@1600-{image_id}.jpg"
+
+        big_link = FASubmission.make_thumbnail_bigger(thumb_link)
+
+        assert big_link == big_thumb_link
+
+    def test_make_thumbnail_bigger_facdn(self):
+        post_id = "1234"
+        image_id = "5324543"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        big_thumb_link = f"https://t.furaffinity.net/{post_id}@1600-{image_id}.jpg"
 
         big_link = FASubmission.make_thumbnail_bigger(thumb_link)
 
@@ -147,8 +157,8 @@ class FASubmissionTest(unittest.TestCase):
         post_id = "1234"
         image_id = "5324543"
         # Only available size not ending 0
-        thumb_link = f"https://t.facdn.net/{post_id}@75-{image_id}.jpg"
-        big_thumb_link = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        thumb_link = f"https://t.furaffinity.net/{post_id}@75-{image_id}.jpg"
+        big_thumb_link = f"https://t.furaffinity.net/{post_id}@1600-{image_id}.jpg"
 
         big_link = FASubmission.make_thumbnail_bigger(thumb_link)
 
@@ -186,7 +196,7 @@ class FASubmissionShortTest(unittest.TestCase):
         post_id = "1234"
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
+        thumb_link = f"https://t.furaffinity.net/{post_id}@400-{image_id}.jpg"
         title = "Example post"
         author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
 
@@ -203,7 +213,7 @@ class FASubmissionShortTest(unittest.TestCase):
         post_id = "1234"
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_url = f"https://t.facdn.net/{post_id}@1600-{image_id}.jpg"
+        thumb_url = f"https://t.furaffinity.net/{post_id}@1600-{image_id}.jpg"
         title = "Example post"
         author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
         submission = FASubmissionShort(post_id, thumb_url, title, author)
@@ -223,8 +233,8 @@ class FASubmissionFullTest(unittest.TestCase):
         post_id = "1234"
         image_id = "5324543"
         link = f"https://furaffinity.net/view/{post_id}/"
-        thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
-        full_link = f"https://d.facdn.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
+        thumb_link = f"https://t.furaffinity.net/{post_id}@400-{image_id}.jpg"
+        full_link = f"https://d.furaffinity.net/art/fender/{image_id}/{image_id}.fender_blah-de-blah.jpg"
         title = "Example post"
         author = FAUser.from_short_dict({"name": "John", "profile_name": "john"})
         description = "This is an example post for testing"

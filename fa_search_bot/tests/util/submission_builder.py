@@ -42,8 +42,8 @@ class SubmissionBuilder:
         if thumb_size is None:
             thumb_size = 1600
         # Variables for superclass
-        thumbnail_url = f"https://t.facdn.net/{submission_id}@{thumb_size}-{image_id}.jpg"
-        download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
+        thumbnail_url = f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
+        download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
         if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
             full_image_url = download_url

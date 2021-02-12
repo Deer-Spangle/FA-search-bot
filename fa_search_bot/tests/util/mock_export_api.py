@@ -53,9 +53,9 @@ class MockSubmission(FASubmissionFull):
             folder = "stories/"
         # Variables for superclass
         if thumbnail_url is None:
-            thumbnail_url = f"https://t.facdn.net/{submission_id}@1600-{image_id}.jpg"
+            thumbnail_url = f"https://t.furaffinity.net/{submission_id}@1600-{image_id}.jpg"
         if download_url is None:
-            download_url = f"https://d.facdn.net/art/{username}/{folder}{image_id}/" \
+            download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
                 f"{image_id}.{username}_{_random_string()}.{file_ext}"
         if full_image_url is None:
             if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
