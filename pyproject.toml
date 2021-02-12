@@ -28,6 +28,7 @@ test = "py.test fa_search_bot/tests --ignore=fa_search_bot/tests/integration"
 run = "python3 run.py"
 generate_railroad_diagram = "python3 experiments/pyparsing_railroad.py"
 test_integration = "py.test fa_search_bot/tests/integration -s"
+get_session_string = "python3 fa_search_bot/tests/integration/create_session_string.py"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
