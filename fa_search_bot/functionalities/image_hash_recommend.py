@@ -17,9 +17,9 @@ class ImageHashRecommendFunctionality(BotFunctionality):
         super().__init__(MessageHandler, filters=FilterImageNoCaption())
 
     def call(self, update: telegram.Update, context: CallbackContext):
-        logger.info("Recommending image hash bots")
-        usage_logger.info("Image hash recommend")
         if update.message.chat.type == Chat.PRIVATE:
+            logger.info("Recommending image hash bots")
+            usage_logger.info("Image hash recommend")
             context.bot.send_message(
                 chat_id=update.message.chat_id,
                 text="I can't find an image without a link, try using @FindFurryPicBot or @FoxBot",
