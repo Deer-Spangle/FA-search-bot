@@ -1,0 +1,34 @@
+name: Update railroad diagram
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "fa_search_bot/query_parser.py"
+
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+      - name: Generate railroad diagram
+        run: poetry run task generate_railroad_diagram
+      - name: Save diagram
+        uses: EndBug/add-and-commit@v7
+        with:
+          add: "docs/query_parser_railroad.html"
+          message: "Updating submission query railroad diagram"
