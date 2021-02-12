@@ -85,6 +85,7 @@ class SubscriptionWatcher:
                     logger.debug("Heartbeat")
             # Wait
             self._wait_while_running(self.BACK_OFF)
+        logger.info("Subscription watcher shutting down")
 
     def stop(self):
         logger.info("Stopping subscription watcher")
