@@ -26,6 +26,8 @@ jobs:
         run: poetry run task test
         env:
           CONFIG_FILE: "config-test.json"
+      - name: Cleanup subscription config
+        run: echo "import os\nfrom fa_search_bot.subscription_watcher import SubscriptionWatcher as SW\nos.remove(SW.FILENAME)" | python
       - name: Integration tests
         if: github.event_name == 'schedule' || ( github.event_name == 'push' && github.ref == 'refs/heads/master' )
         run: poetry run task test_integration
