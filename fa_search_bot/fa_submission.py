@@ -116,7 +116,7 @@ class FASubmission(ABC):
 
     @staticmethod
     def make_thumbnail_bigger(thumbnail_url: str) -> str:
-        return re.sub('@[0-9]+-', '@1600-', thumbnail_url)
+        return re.sub('@[0-9]+-', '@1600-', thumbnail_url).replace("facdn", "furaffinity")
 
     @staticmethod
     def construct_thumbnail_url(submission_id: str, download_url: str) -> str:

@@ -143,7 +143,7 @@ class FASubmissionTest(unittest.TestCase):
 
         assert big_link == big_thumb_link
 
-    def test_make_thumbnail_bigger_facdn(self):
+    def test_make_thumbnail_bigger__facdn(self):
         post_id = "1234"
         image_id = "5324543"
         thumb_link = f"https://t.facdn.net/{post_id}@400-{image_id}.jpg"
