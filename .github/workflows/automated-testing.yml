@@ -1,4 +1,4 @@
-name: Unit tests
+name: Automated testing
 
 on:
   schedule:
@@ -25,4 +25,13 @@ jobs:
       - name: Unit tests
         run: poetry run task test
         env:
+          CONFIG_FILE: "config-test.json"
+      - name: Integration tests
+        if: ${{ github.event_name == "schedule" || ( github.event_name == "push" && github.ref == "refs/head/main" ) }}
+        run: poetry run task test_integration
+        env:
+          BOT_KEY: ${{ secrets.BOT_KEY }}
+          CLIENT_API_HASH: ${{ secrets.CLIENT_API_HASH }}
+          CLIENT_API_ID: ${{ secrets.CLIENT_API_ID }}
+          CLIENT_SESSION_STRING: ${{ secrets.CLIENT_SESSION_STRING }}
           CONFIG_FILE: "config-test.json"
