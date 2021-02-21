@@ -1,6 +1,7 @@
 from fa_search_bot.fa_submission import Rating, FAUser
 from fa_search_bot.query_parser import MatchLocation, FieldLocation, RatingQuery, WordQuery, TitleField, \
-    DescriptionField, KeywordField, ArtistField, NotQuery, AndQuery, OrQuery, LocationOrQuery, PrefixQuery, PhraseQuery
+    DescriptionField, KeywordField, ArtistField, NotQuery, AndQuery, OrQuery, LocationOrQuery, PrefixQuery, PhraseQuery, \
+    SuffixQuery
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -752,14 +753,357 @@ def test_word_query__locations_no_match_hypenated():
     assert len(locations) == 0
 
 
+def test_word_query__detects_name_in_link():
+    submission = SubmissionBuilder(
+        description="<a href=\"/user/zephyr42\" class=\"linkusername\">zephyr42</a>"
+    ).build_full_submission()
+    query = WordQuery("zephyr42")
+
+    assert query.matches_submission(submission)
+
+
+def test_word_query__detects_name_in_icon():
+    submission = SubmissionBuilder(
+        description=(
+            "<a href=\"/user/zephyr42\" class=\"iconusername\"><img src=\"//a.furaffinity.net/20210221/zephyr42.gif\" "
+            "align=\"middle\" title=\"zephyr42\" alt=\"zephyr42\"></a>"
+        )
+    ).build_full_submission()
+    query = WordQuery("zephyr42")
+
+    assert query.matches_submission(submission)
+
+
+def test_word_query__detects_name_in_icon_with_link():
+    submission = SubmissionBuilder(
+        description=(
+            "<a href=\"/user/zephyr42\" class=\"iconusername\"><img src=\"//a.furaffinity.net/20210221/zephyr42.gif\" "
+            "align=\"middle\" title=\"zephyr42\" alt=\"zephyr42\"> zephyr42</a>"
+        )
+    ).build_full_submission()
+    query = WordQuery("zephyr42")
+
+    assert query.matches_submission(submission)
+
+
 def test_prefix_query():
-    assert False
-    pass
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("sub")
+
+    assert query.matches_submission(submission)
+
+
+def test_prefix_query__no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("deer")
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__inside_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("miss")
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__location():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("sub")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 21, 31)
+
+
+def test_prefix_query__location_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("miss")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_prefix_query__no_match_full_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("deer")
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("hello")
+
+    assert query.matches_submission(submission)
+
+
+def test_prefix_query__location_follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("hell")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
+
+
+def test_prefix_query__location_dont_include_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("worl")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 7, 12)
+
+
+def test_prefix_query__dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("hello")
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__location_dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("hell")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 5)
+
+
+def test_prefix_query__allow_punctuation_before():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("worl")
+
+    assert query.matches_submission(submission)
+
+
+def test_prefix_query__location_allow_punctuation_before():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("worl")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
 
 
 def test_suffix_query():
-    assert False
-    pass
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("ion")
+
+    assert query.matches_submission(submission)
+
+
+def test_suffix_query__no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("deer")
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__inside_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("miss")
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__location():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("ion")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 21, 31)
+
+
+def test_suffix_query__location_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("miss")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_suffix_query__no_match_full_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("deer")
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("world")
+
+    assert query.matches_submission(submission)
+
+
+def test_suffix_query__location_follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("orld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
+
+
+def test_suffix_query__location_dont_include_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello ,world example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("orld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 7, 12)
+
+
+def test_suffix_query__dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("world")
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__location_dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("orld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
+
+
+def test_suffix_query__allow_punctuation_after():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("orld")
+
+    assert query.matches_submission(submission)
+
+
+def test_suffix_query__location_allow_punctuation_after():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example deer submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("orld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
 
 
 def test_regex_query():
