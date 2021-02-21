@@ -151,6 +151,9 @@ class MatchLocation:
     def __hash__(self):
         return hash((self.field, self.start_position, self.end_position))
 
+    def __repr__(self):
+        return f"MatchLocation(FieldLocation({self.field}), {self.start_position}, {self.end_position})"
+
 
 class Query(ABC):
 
