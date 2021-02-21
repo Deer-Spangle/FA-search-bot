@@ -1,7 +1,7 @@
 from fa_search_bot.fa_submission import Rating, FAUser
 from fa_search_bot.query_parser import MatchLocation, FieldLocation, RatingQuery, WordQuery, TitleField, \
     DescriptionField, KeywordField, ArtistField, NotQuery, AndQuery, OrQuery, LocationOrQuery, PrefixQuery, PhraseQuery, \
-    SuffixQuery
+    SuffixQuery, RegexQuery
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -963,6 +963,105 @@ def test_prefix_query__location_allow_punctuation_before():
     assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
 
 
+def test_prefix_query__field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("worl", DescriptionField())
+
+    assert query.matches_submission(submission)
+
+
+def test_prefix_query__location_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("worl", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert MatchLocation(FieldLocation("description"), 6, 11) in locations
+
+
+def test_prefix_query__field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("blah", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__location_field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("blah", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_prefix_query__field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("tes", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_prefix_query__location_field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("tes", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_prefix_query__field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("tes", TitleField())
+
+    assert query.matches_submission(submission)
+
+
+def test_prefix_query__location_field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PrefixQuery("tes", TitleField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert MatchLocation(FieldLocation("title"), 0, 4) in locations
+    assert MatchLocation(FieldLocation("keyword_0"), 0, 4) not in locations
+
+
 def test_suffix_query():
     submission = SubmissionBuilder(
         title="test",
@@ -1140,9 +1239,459 @@ def test_suffix_query__location_allow_punctuation_after():
     assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
 
 
+def test_suffix_query__field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("blah", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__location_field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("blah", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_suffix_query__field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("est", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_suffix_query__location_field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("est", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_suffix_query__field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("est", TitleField())
+
+    assert query.matches_submission(submission)
+
+
+def test_suffix_query__location_field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = SuffixQuery("est", TitleField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert MatchLocation(FieldLocation("title"), 0, 4) in locations
+    assert MatchLocation(FieldLocation("keyword_0"), 0, 4) not in locations
+
+
 def test_regex_query():
-    assert False
-    pass
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*o")
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*o")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 5)
+
+
+def test_regex_query__no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("de*r")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("de*r")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__inside_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("bm*io")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_inside_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("bm*io")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__infix():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*miss*")
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_infix():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*miss*")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 21, 31)
+
+
+def test_regex_query__follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*orld")
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*orld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
+
+
+def test_regex_query__infix_follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*llo*")
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_infix_follow_hyphen():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello-world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*llo*")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
+
+
+def test_regex_query__dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*ld")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("he*ld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__infix_dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*llo*")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_infix_dont_follow_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello,world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*llo*")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__location_infix_dont_include_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*ll*")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 5)
+
+
+def test_regex_query__infix_doesnt_match_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*world*")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_infix_doesnt_match_word():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("*world*")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__asterisk_matches_at_least_one_character():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wor*ld")
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_asterisk_matches_at_least_one_character():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wor*ld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__double_asterisk_matches_one_character():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wo**ld")
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_double_asterisk_matches_one_character():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wo**ld")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
+
+
+def test_regex_query__field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wo*ld", DescriptionField())
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("wo*ld", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 6, 11)
+
+
+def test_regex_query__field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("de*r", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("de*r", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("t*t", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_regex_query__location_field_only_match_other_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("t*t", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_regex_query__match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("t*t", TitleField())
+
+    assert query.matches_submission(submission)
+
+
+def test_regex_query__location_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = RegexQuery.from_string_with_asterisks("t*t", TitleField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("title"), 0, 4)
 
 
 def test_phrase_query():
