@@ -1695,8 +1695,248 @@ def test_regex_query__location_match_ignore_other():
 
 
 def test_phrase_query():
-    assert False
-    pass
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello world")
+
+    assert query.matches_submission(submission)
+
+
+def test_phrase_query__location():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello world")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
+
+
+def test_phrase_query__no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer")
+
+    assert not query.matches_submission(submission)
+
+
+def test_phrase_query__location_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_phrase_query__dont_match_inside_words():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("ple sub")
+
+    assert not query.matches_submission(submission)
+
+
+def test_phrase_query__location_dont_match_inside_words():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("ple sub")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_phrase_query__include_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.")
+
+    assert query.matches_submission(submission)
+
+
+def test_phrase_query__location_include_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 13)
+
+
+def test_phrase_query__require_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.")
+
+    assert not query.matches_submission(submission)
+
+
+def test_phrase_query__location_require_punctuation():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_phrase_query__allow_punctuation_at_ends():
+    submission = SubmissionBuilder(
+        title="test",
+        description=".hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world")
+
+    assert query.matches_submission(submission)
+
+
+def test_phrase_query__location_allow_punctuation_at_ends():
+    submission = SubmissionBuilder(
+        title="test",
+        description=".hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 1, 13)
+
+
+def test_phrase_query__field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.", DescriptionField())
+
+    assert query.matches_submission(submission)
+
+
+def test_phrase_query__location_field():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello, world.", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 13)
+
+
+def test_phrase_query__field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_phrase_query__location_field_no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_phrase_query__field_match_only_in_other_fields():
+    submission = SubmissionBuilder(
+        title="love deer",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer", DescriptionField())
+
+    assert not query.matches_submission(submission)
+
+
+def test_phrase_query__location_field_match_only_in_other_fields():
+    submission = SubmissionBuilder(
+        title="love deer",
+        description="hello, world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("love deer", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 0
+
+
+def test_phrase_query__field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="hello world",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello world", DescriptionField())
+
+    assert query.matches_submission(submission)
+
+
+def test_phrase_query__location_field_match_ignore_other():
+    submission = SubmissionBuilder(
+        title="hello world",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = PhraseQuery("hello world", DescriptionField())
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 1
+    assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
 
 
 def test_exception_query():
