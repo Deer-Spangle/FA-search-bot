@@ -1,7 +1,7 @@
 from fa_search_bot.fa_submission import Rating, FAUser
 from fa_search_bot.query_parser import MatchLocation, FieldLocation, RatingQuery, WordQuery, TitleField, \
     DescriptionField, KeywordField, ArtistField, NotQuery, AndQuery, OrQuery, LocationOrQuery, PrefixQuery, PhraseQuery, \
-    SuffixQuery, RegexQuery
+    SuffixQuery, RegexQuery, ExceptionQuery
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -1939,6 +1939,78 @@ def test_phrase_query__location_field_match_ignore_other():
     assert locations[0] == MatchLocation(FieldLocation("description"), 0, 11)
 
 
-def test_exception_query():
-    assert False
-    pass
+def test_exception_query__match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("hel"), WordQuery("help"))
+
+    assert query.matches_submission(submission)
+
+
+def test_exception_query__no_match():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("dee"), WordQuery("deer"))
+
+    assert not query.matches_submission(submission)
+
+
+def test_exception_query__matches_except():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("hel"), WordQuery("hello"))
+
+    assert not query.matches_submission(submission)
+
+
+def test_exception_query__match_many_one_except():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example help submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("hel"), WordQuery("hello"))
+
+    assert query.matches_submission(submission)
+
+
+def test_exception_query__matches_with_superstring_except():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(WordQuery("world"), PhraseQuery("hello world."))
+
+    assert not query.matches_submission(submission)
+
+
+def test_exception_query__one_match_many_except():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. examplo submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("hel"), SuffixQuery("lo"))
+
+    assert not query.matches_submission(submission)
+
+
+def test_exception_query__one_match_many_except_no_overlap():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world. example submission",
+        keywords=["test", "thing"]
+    ).build_full_submission()
+    query = ExceptionQuery(PrefixQuery("hel"), WordQuery("test"))
+
+    assert query.matches_submission(submission)
