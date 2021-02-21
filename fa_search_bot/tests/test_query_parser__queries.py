@@ -833,6 +833,23 @@ def test_prefix_query__location():
     assert locations[0] == MatchLocation(FieldLocation("description"), 21, 31)
 
 
+def test_prefix_query__location_many_matches():
+    submission = SubmissionBuilder(
+        title="test",
+        description="hello world, example testing",
+        keywords=["test", "thing", "tes"]
+    ).build_full_submission()
+    query = PrefixQuery("tes")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 3
+    assert MatchLocation(FieldLocation("title"), 0, 4) in locations
+    assert MatchLocation(FieldLocation("keyword_0"), 0, 4) in locations
+    assert MatchLocation(FieldLocation("description"), 21, 28) in locations
+    assert MatchLocation(FieldLocation("keyword_2"), 0, 3) not in locations
+
+
 def test_prefix_query__location_no_match():
     submission = SubmissionBuilder(
         title="test",
@@ -991,6 +1008,23 @@ def test_suffix_query__location():
 
     assert len(locations) == 1
     assert locations[0] == MatchLocation(FieldLocation("description"), 21, 31)
+
+
+def test_suffix_query__location_many_matches():
+    submission = SubmissionBuilder(
+        title="titling",
+        description="hello world, example testing",
+        keywords=["trying", "thing", "ing"]
+    ).build_full_submission()
+    query = PrefixQuery("ing")
+
+    locations = query.match_locations(submission)
+
+    assert len(locations) == 3
+    assert MatchLocation(FieldLocation("title"), 0, 7) in locations
+    assert MatchLocation(FieldLocation("keyword_0"), 0, 6) in locations
+    assert MatchLocation(FieldLocation("description"), 21, 28) in locations
+    assert MatchLocation(FieldLocation("keyword_2"), 0, 3) not in locations
 
 
 def test_suffix_query__location_no_match():
