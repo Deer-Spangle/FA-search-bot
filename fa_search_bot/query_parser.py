@@ -22,9 +22,23 @@ rating_dict = {
     "explicit": Rating.ADULT
 }
 
+punctuation = string.punctuation.replace("-", "").replace("_", "")
+punctuation_pattern = r"[\s"+re.escape(punctuation)+"]+"
+not_punctuation_pattern = r"[^\s"+re.escape(punctuation)+"]+"
+boundary_pattern_start = r"(?:^|(?<=[\s"+re.escape(punctuation)+"]))"
+boundary_pattern_end = r"(?:(?=[\s"+re.escape(punctuation)+"])|$)"
+
 
 def _split_text_to_words(text: str) -> List[str]:
-    return re.split(r"[\s\"<>]+", text)
+    return re.split(punctuation_pattern, text)
+
+
+def _clean_word_list(words: List[str]) -> List[str]:
+    return [x.lower().strip(punctuation) for x in words]
+
+
+def _split_text_to_cleaned_words(text: str) -> List[str]:
+    return _clean_word_list(_split_text_to_words(text))
 
 
 FieldLocation = NewType('FieldLocation', str)
@@ -69,7 +83,7 @@ class KeywordField(Field):
 class TitleField(Field):
 
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        return _split_text_to_words(sub.title)
+        return _split_text_to_cleaned_words(sub.title)
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.title]
@@ -81,7 +95,7 @@ class TitleField(Field):
 class DescriptionField(Field):
 
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        return _split_text_to_words(sub.description)
+        return _split_text_to_cleaned_words(sub.description)
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.description]
@@ -93,7 +107,7 @@ class DescriptionField(Field):
 class ArtistField(Field):
 
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        return [sub.author.name, sub.author.profile_name]
+        return [sub.author.name.lower(), sub.author.profile_name.lower()]
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.author.name, sub.author.profile_name]
@@ -107,9 +121,10 @@ class ArtistField(Field):
 
 class AnyField(Field):
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        return _split_text_to_words(sub.title) + \
-               _split_text_to_words(sub.description) + \
-               sub.keywords
+        words = _split_text_to_cleaned_words(sub.title) + \
+               _split_text_to_cleaned_words(sub.description) + \
+               _clean_word_list(sub.keywords)
+        return words
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return [sub.title, sub.description] + sub.keywords
@@ -267,12 +282,10 @@ class WordQuery(LocationQuery):
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        text = self.field.get_field_words(sub)
-        clean_list = [x.lower().strip(string.punctuation) for x in text]
-        return self.word.lower() in clean_list
+        return self.word.lower() in self.field.get_field_words(sub)
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
-        regex = re.compile(r"\b" + re.escape(self.word) + r"\b", re.I)
+        regex = re.compile(boundary_pattern_start + re.escape(self.word) + boundary_pattern_end, re.I)
         return [
             MatchLocation(location, m.start(), m.end())
             for location, text in self.field.get_texts_dict(sub).items()
@@ -302,13 +315,16 @@ class PrefixQuery(LocationQuery):
 
     def matches_submission(self, sub: FASubmissionFull):
         return any(
-            word.lower().startswith(self.prefix.lower()) and word.lower() != self.prefix.lower()
+            word.startswith(self.prefix.lower()) and word != self.prefix.lower()
             for word
             in self.field.get_field_words(sub)
         )
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
-        regex = re.compile(r"\b" + re.escape(self.prefix) + r"\S+\b", re.I)
+        regex = re.compile(
+            boundary_pattern_start + re.escape(self.prefix) + not_punctuation_pattern + boundary_pattern_end,
+            re.I
+        )
         return [
             MatchLocation(location, m.start(), m.end())
             for location, text in self.field.get_texts_dict(sub).items()
@@ -338,13 +354,16 @@ class SuffixQuery(LocationQuery):
 
     def matches_submission(self, sub: FASubmissionFull):
         return any(
-            word.lower().endswith(self.suffix.lower()) and word.lower() != self.suffix.lower()
+            word.endswith(self.suffix.lower()) and word != self.suffix.lower()
             for word
             in self.field.get_field_words(sub)
         )
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
-        regex = re.compile(r"\b\S+" + re.escape(self.suffix) + r"\b", re.I)
+        regex = re.compile(
+            boundary_pattern_start + not_punctuation_pattern + re.escape(self.suffix) + boundary_pattern_end,
+            re.I
+        )
         return [
             MatchLocation(location, m.start(), m.end())
             for location, text in self.field.get_texts_dict(sub).items()
@@ -384,9 +403,9 @@ class RegexQuery(LocationQuery):
 
     @classmethod
     def from_string_with_asterisks(cls, word: string, field: Optional['Field'] = None) -> 'RegexQuery':
-        word_split = word.split("*")
+        word_split = re.split(r"\*+", word)
         parts = [re.escape(part) for part in word_split]
-        regex = ".*".join(parts)
+        regex = boundary_pattern_start + not_punctuation_pattern.join(parts) + boundary_pattern_end
         pattern = re.compile(regex, re.I)
         return RegexQuery(pattern, field)
 
@@ -411,19 +430,19 @@ class RegexQuery(LocationQuery):
 class PhraseQuery(LocationQuery):
     def __init__(self, phrase: str, field: Optional['Field'] = None):
         self.phrase = phrase
+        self.phrase_regex = re.compile(boundary_pattern_start + re.escape(self.phrase) + boundary_pattern_end, re.I)
         if field is None:
             field = AnyField()
         self.field = field
 
     def matches_submission(self, sub: FASubmissionFull):
-        return any(self.phrase.lower() in text.lower() for text in self.field.get_texts(sub))
+        return any(self.phrase_regex.search(text) for text in self.field.get_texts(sub))
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
-        regex = re.compile(re.escape(self.phrase), re.I)
         return [
             MatchLocation(location, m.start(), m.end())
             for location, text in self.field.get_texts_dict(sub).items()
-            for m in regex.finditer(text)
+            for m in self.phrase_regex.finditer(text)
         ]
 
     def __eq__(self, other):
