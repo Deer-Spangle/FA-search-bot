@@ -1113,9 +1113,9 @@ def test_suffix_query__location_many_matches():
     submission = SubmissionBuilder(
         title="titling",
         description="hello world, example testing",
-        keywords=["trying", "thing", "ing"]
+        keywords=["trying", "test", "ing"]
     ).build_full_submission()
-    query = PrefixQuery("ing")
+    query = SuffixQuery("ing")
 
     locations = query.match_locations(submission)
 
