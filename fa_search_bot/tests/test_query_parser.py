@@ -136,12 +136,8 @@ def test_suffix():
 
 
 def test_regex():
-    assert parse_query("fi*st") == RegexQuery("fi.*st")
-    assert parse_query("*fi*st*") == RegexQuery(".*fi.*st.*")
-
-
-def test_regex_escape():
-    assert parse_query("fi[*st") == RegexQuery(r"fi\[.*st")
+    assert parse_query("fi*st") == RegexQuery.from_string_with_asterisks("fi*st")
+    assert parse_query("*fi*st*") == RegexQuery.from_string_with_asterisks("*fi*st*")
 
 
 def test_exception():
