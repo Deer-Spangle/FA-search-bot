@@ -42,28 +42,31 @@ async def test_no_neaten_caption_in_group(controller: BotController, group_chat:
 
 
 async def test_neaten_link_in_button(controller: BotController, bot: FASearchBot):
-    # - send link, get neatened pic
+    # Creating an example message to forward to the bot
     client_user = await controller.client.get_me()
     user_id = client_user.id
-    msg_resp = requests.post(
-        f"https://api.telegram.org/bot{bot.bot_key}/sendMessage",
-        json={
-            "chat_id": user_id,
-            "text": "Hello there",
-            "reply_markup": {
-                "inline_keyboard": [[{
-                    "text": "View on FA",
-                    "url": "https://www.furaffinity.net/view/19925704/"
-                }]]
+    async with controller.collect(count=1) as test_msg:
+        requests.post(
+            f"https://api.telegram.org/bot{bot.bot_key}/sendMessage",
+            json={
+                "chat_id": user_id,
+                "text": "Hello there",
+                "reply_markup": {
+                    "inline_keyboard": [[{
+                        "text": "View on FA",
+                        "url": "https://www.furaffinity.net/view/19925704/"
+                    }]]
+                }
             }
-        }
-    )
-    msg_id = msg_resp.json()["result"]["message_id"]
+        )
+    msg_id = test_msg.messages[0].message_id
+
+    # Run the test
     async with controller.collect(count=2) as response:
         await controller.client.forward_messages(
             controller.peer_id,
             controller.peer_id,
-            message_ids=[msg_id]
+            msg_id
         )
 
     assert response.num_messages == 2
