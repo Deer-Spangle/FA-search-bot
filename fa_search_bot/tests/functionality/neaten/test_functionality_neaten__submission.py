@@ -3,7 +3,7 @@ from telegram import Chat
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate, MockButton
 
 
 def test_ignore_message(context):
@@ -373,6 +373,34 @@ def test_link_in_markdown(context):
     update = MockTelegramUpdate.with_message(
         text="Hello",
         text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
+    )
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    neaten.call(update, context)
+
+    submission.send_message.assert_called_once()
+    args, _ = submission.send_message.call_args
+    assert args[0] == context.bot
+    assert args[1] == update.message.chat_id
+    assert args[2] == update.message.message_id
+
+
+def test_link_in_button(context):
+    post_id = 23636984
+    update = MockTelegramUpdate.with_message(
+        text="Hello"
+    ).with_buttons(
+        [
+            [
+                MockButton("View on E621", "https://e621.net/post/show/1699284"),
+                MockButton("View on FA", f"https://www.furaffinity.net/view/{post_id}")
+            ],
+            [
+                MockButton("Visit my website", "https://example.com")
+            ]
+        ]
     )
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())

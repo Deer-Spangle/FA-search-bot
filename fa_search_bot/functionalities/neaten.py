@@ -31,20 +31,15 @@ class NeatenFunctionality(BotFunctionality):
         # Only deal with messages, not channel posts
         if not update.message:
             return
-        # Only use caption in private chats
-        message = update.message.text_markdown_urled
-        if not message and update.message.chat.type == Chat.PRIVATE:
-            message = update.message.caption_markdown_urled
-        if message is None:
-            return
-        submission_ids = []
-        matches = self.FA_LINKS.findall(message)
+        # Get links from message
+        matches = self._find_links_in_message(update)
         if not matches:
             return
+        submission_ids = []
         with in_progress_msg(update, context, "Neatening image link"):
             logger.info("Neatening links")
             for match in matches:
-                submission_id = self._get_submission_id_from_link(context.bot, update, match[0])
+                submission_id = self._get_submission_id_from_link(context.bot, update, match)
                 if submission_id:
                     submission_ids.append(submission_id)
             # Remove duplicates, preserving order
@@ -52,6 +47,22 @@ class NeatenFunctionality(BotFunctionality):
             # Handle each submission
             for submission_id in submission_ids:
                 self._handle_fa_submission_link(context.bot, update, submission_id)
+
+    def _find_links_in_message(self, update) -> Optional[List[str]]:
+        # Only use caption in private chats
+        message = update.message.text_markdown_urled
+        if not message and update.message.chat.type == Chat.PRIVATE:
+            message = update.message.caption_markdown_urled
+        if message is None:
+            return None
+        link_matches = [match[0] for match in self.FA_LINKS.findall(message)]
+        if update.message.reply_markup and update.message.reply_markup.inline_keyboard:
+            for button_row in update.message.reply_markup.inline_keyboard:
+                for button in button_row:
+                    button_matches = self.FA_LINKS.findall(button.url)
+                    if button_matches:
+                        link_matches += [match[0] for match in button_matches]
+        return link_matches
 
     def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
         # Handle submission page link matches
