@@ -103,6 +103,10 @@ class _MockTelegramMessage(MockTelegramUpdate):
         self.message.set_document(file_id, mime_type)
         return self
 
+    def with_buttons(self, buttons: List[List['MockButton']]):
+        self.message.set_keyboard(buttons)
+        return self
+
 
 class _MockTelegramChannelPost(MockTelegramUpdate):
 
@@ -181,6 +185,7 @@ class _MockMessage:
         self.caption: Optional[str] = None
         self.caption_markdown_urled: Optional[str] = None
         self.document = None
+        self.reply_markup = None
         if message_id is None:
             self.message_id = generate_key()
         if chat_id is None:
@@ -202,6 +207,9 @@ class _MockMessage:
             file_id,
             mime_type
         )
+
+    def set_keyboard(self, buttons: List[List['MockButton']]):
+        self.reply_markup = _MockKeyboard(buttons)
 
 
 class _MockChannelPost:
@@ -258,3 +266,16 @@ class _MockCallback:
 
     def set_message(self, message_id, chat_id):
         self.message = _MockMessage(message_id=message_id, chat_id=chat_id)
+
+
+class _MockKeyboard:
+
+    def __init__(self, buttons: List[List['MockButton']]):
+        self.inline_keyboard = buttons
+
+
+class MockButton:
+
+    def __init__(self, text: str, url: str):
+        self.text = text
+        self.url = url
