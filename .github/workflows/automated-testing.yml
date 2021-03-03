@@ -29,7 +29,7 @@ jobs:
       - name: Cleanup subscription config
         run: rm subscriptions.json
       - name: Integration tests
-        if: github.event_name == 'schedule' || ( github.event_name == 'push' && github.ref == 'refs/heads/master' )
+        if: github.event_name == 'schedule' || ( ( github.event_name == 'pull_request' || github.event_name == 'push' ) && github.ref == 'refs/heads/master' )
         run: poetry run task test_integration
         env:
           BOT_KEY: ${{ secrets.BOT_KEY }}
