@@ -14,7 +14,8 @@ def test_unhandled_message(context):
 
     context.bot.send_message.assert_called_with(
         chat_id=update.message.chat_id,
-        text="Sorry, I'm not sure how to handle that message"
+        text="Sorry, I'm not sure how to handle that message",
+        reply_to_message_id=update.message.message_id
     )
 
 

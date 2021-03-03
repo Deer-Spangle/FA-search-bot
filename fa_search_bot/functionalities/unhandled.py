@@ -21,5 +21,6 @@ class UnhandledMessageFunctionality(BotFunctionality):
             usage_logger.info("Unhandled message")
             context.bot.send_message(
                 chat_id=update.message.chat_id,
-                text="Sorry, I'm not sure how to handle that message"
+                text="Sorry, I'm not sure how to handle that message",
+                reply_to_message_id=update.message.message_id
             )
