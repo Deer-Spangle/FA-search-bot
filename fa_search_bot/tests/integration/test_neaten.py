@@ -58,7 +58,7 @@ async def test_neaten_link_in_button(controller: BotController, bot: FASearchBot
             }
         }
     )
-    msg_id = msg_resp.json()["message_id"]
+    msg_id = msg_resp.json()["result"]["message_id"]
     async with controller.collect(count=2) as response:
         await controller.client.forward_messages(
             controller.peer_id,
