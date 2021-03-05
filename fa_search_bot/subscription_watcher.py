@@ -10,7 +10,7 @@ import dateutil.parser
 import heartbeat
 import telegram
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
 from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
@@ -104,6 +104,9 @@ class SubscriptionWatcher:
                 return self.api.get_browse_page(page)
             except ValueError as e:
                 logger.warning("Failed to get browse page, retrying", exc_info=e)
+                self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
+            except CloudflareError as e:
+                logger.warning("FA is under cloudflare protection, waiting before retry")
                 self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
 
     def _get_new_results(self) -> List[FASubmission]:

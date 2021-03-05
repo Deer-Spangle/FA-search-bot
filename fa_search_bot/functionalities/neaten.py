@@ -6,7 +6,7 @@ from telegram import Chat, Update
 from telegram.ext import MessageHandler, CallbackContext
 
 from fa_search_bot.filters import FilterRegex
-from fa_search_bot.fa_export_api import PageNotFound
+from fa_search_bot.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.fa_submission import FASubmissionFull, CantSendFileType, FASubmissionShort
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 
@@ -101,6 +101,13 @@ class NeatenFunctionality(BotFunctionality):
                 update,
                 "This doesn't seem to be a valid FA submission: "
                 "https://www.furaffinity.net/view/{}/".format(submission_id)
+            )
+        except CloudflareError:
+            logger.warning("Cloudflare error")
+            self._return_error_in_privmsg(
+                bot,
+                update,
+                "Furaffinity is currently under cloudflare protection, so I cannot neaten links."
             )
 
     def _send_neat_fa_response(self, bot, update, submission: FASubmissionFull):

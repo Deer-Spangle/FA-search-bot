@@ -15,6 +15,10 @@ class PageNotFound(Exception):
     pass
 
 
+class CloudflareError(Exception):
+    pass
+
+
 class FAExportAPI:
     MAX_RETRIES = 7
     STATUS_CHECK_BACKOFF = 60 * 5
@@ -29,7 +33,10 @@ class FAExportAPI:
 
     def _api_request(self, path: str) -> requests.Response:
         path = path.lstrip("/")
-        return requests.get(f"{self.base_url}/{path}")
+        resp = requests.get(f"{self.base_url}/{path}")
+        if resp.status_code == 503:
+            raise CloudflareError()
+        return resp
 
     def _api_request_with_retry(self, path: str) -> requests.Response:
         if self._is_site_slowdown():
