@@ -116,9 +116,13 @@ class SubscriptionWatcher:
         if len(self.latest_ids) == 0:
             logger.info("First time checking subscriptions, getting initial submissions")
             first_page = self._get_browse_page()
+            if not first_page:
+                return []
             self._update_latest_ids(first_page[::-1])
             return []
         first_page = self._get_browse_page()
+        if not first_page:
+            return []
         newest_id = int(first_page[0].submission_id)
         latest_recorded_id = int(self.latest_ids[-1])
         logger.info("Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id)

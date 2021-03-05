@@ -8,6 +8,7 @@ from typing import List
 from unittest.mock import patch
 import telegram
 
+from fa_search_bot.fa_export_api import CloudflareError
 from fa_search_bot.fa_submission import FASubmissionFull
 from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
@@ -347,6 +348,26 @@ def test_get_new_results__handles_sub_id_drop(tbot):
     watcher.running = True
 
     results = watcher._get_new_results()
+
+    assert len(results) == 0
+
+
+@patch.object(telegram, "Bot")
+def test_get_new_results__handles_cloudflare(tbot):
+    api = MockExportAPI()
+
+    def raise_cloudflare(*args, **kwargs):
+        raise CloudflareError()
+    api.get_browse_page = raise_cloudflare
+    watcher = SubscriptionWatcher(api, tbot)
+    watcher.BROWSE_RETRY_BACKOFF = 0.1
+    watcher.latest_ids.append("1225")
+    watcher.running = True
+
+    thread = Thread(target=lambda: watcher_killer(watcher))
+    thread.start()
+    results = watcher._get_new_results()
+    thread.join()
 
     assert len(results) == 0
 

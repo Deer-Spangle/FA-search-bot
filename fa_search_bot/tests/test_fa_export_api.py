@@ -3,7 +3,7 @@ import unittest
 
 import requests_mock
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
 from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -31,6 +31,26 @@ class FAExportAPITest(unittest.TestCase):
         resp = api._api_request(path)
 
         assert resp.json() == test_obj
+
+    @requests_mock.mock()
+    def test_api_request__detects_cloudflare(self, r):
+        api_url = "http://example.com/"
+        path = "/resources/123"
+        api = FAExportAPI(api_url, ignore_status=True)
+        r.get(
+            "http://example.com/resources/123",
+            status_code=503,
+            json={
+              "error": "Cannot access FA, https://www.furaffinity.net/ as cloudflare protection is up",
+              "url": "https://www.furaffinity.net/"
+            }
+        )
+
+        try:
+            api._api_request(path)
+            assert False, "Should have thrown cloudflare error"
+        except CloudflareError as e:
+            pass
 
     @requests_mock.mock()
     def test_api_request_with_retry__does_not_retry_200(self, r):

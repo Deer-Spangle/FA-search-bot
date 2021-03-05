@@ -1,5 +1,6 @@
 from telegram import Chat
 
+from fa_search_bot.fa_export_api import CloudflareError
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
@@ -508,3 +509,25 @@ def test_auto_doc_just_over_size_limit(context):
     assert args[0] == context.bot
     assert args[1] == update.message.chat_id
     assert args[2] == update.message.message_id
+
+
+def test_cloudflare_error(context):
+    post_id = 23636984
+    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    submission = MockSubmission(post_id)
+    api = MockExportAPI()
+    neaten = NeatenFunctionality(api)
+    
+    def raise_cloudflare(*args, **kwargs):
+        raise CloudflareError()
+    api.get_full_submission = raise_cloudflare
+
+    neaten.call(update, context)
+
+    submission.send_message.assert_not_called()
+    context.bot.send_photo.assert_not_called()
+    context.bot.send_message.assert_called_with(
+        chat_id=update.message.chat_id,
+        reply_to_message_id=update.message.message_id,
+        text=f"Furaffinity is currently under cloudflare protection, so I cannot neaten links."
+    )
