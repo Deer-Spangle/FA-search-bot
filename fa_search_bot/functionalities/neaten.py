@@ -49,13 +49,15 @@ class NeatenFunctionality(BotFunctionality):
                 self._handle_fa_submission_link(context.bot, update, submission_id)
 
     def _find_links_in_message(self, update) -> Optional[List[str]]:
-        # Only use caption in private chats
+        link_matches = []
+        # Get links from text
         message = update.message.text_markdown_urled
+        # Only use image caption in private chats
         if not message and update.message.chat.type == Chat.PRIVATE:
             message = update.message.caption_markdown_urled
-        if message is None:
-            return None
-        link_matches = [match[0] for match in self.FA_LINKS.findall(message)]
+        if message is not None:
+            link_matches += [match[0] for match in self.FA_LINKS.findall(message)]
+        # Get links from buttons
         if update.message.reply_markup and update.message.reply_markup.inline_keyboard:
             for button_row in update.message.reply_markup.inline_keyboard:
                 for button in button_row:
