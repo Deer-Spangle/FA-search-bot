@@ -23,5 +23,10 @@ class FilterRegex(Filters.regex):
 class FilterImageNoCaption(BaseFilter):
 
     def filter(self, message: Message) -> bool:
+        keyboard = message.reply_markup and message.reply_markup.inline_keyboard
+        has_buttons = False
+        if keyboard:
+            has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
         text = message.text_markdown_urled or message.caption_markdown_urled
-        return not text and (bool(message.photo) or bool(message.document))
+        media = message.photo or message.document
+        return not (text or has_buttons) and media
