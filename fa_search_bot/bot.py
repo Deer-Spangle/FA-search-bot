@@ -107,7 +107,7 @@ class FASearchBot:
     def initialise_functionalities(self):
         return [
             BeepFunctionality(),
-            # WelcomeFunctionality(),
+            WelcomeFunctionality(),
             # ImageHashRecommendFunctionality(),
             # NeatenFunctionality(self.api),
             # InlineFunctionality(self.api),
