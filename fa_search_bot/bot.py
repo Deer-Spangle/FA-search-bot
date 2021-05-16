@@ -1,11 +1,15 @@
+import dataclasses
 from threading import Thread
 
 import time
+from typing import Dict
 
 from telegram.ext import Updater
 import logging
 from telegram.utils.request import Request
 import json
+
+from telethon import TelegramClient
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.fa_export_api import FAExportAPI
@@ -68,47 +72,47 @@ class FASearchBot:
         self.subscription_watcher_thread = None
 
     def start(self):
-        request = Request(con_pool_size=8)
-        self.bot = MQBot(token=self.bot_key, request=request)
-        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
-        self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
-        updater = Updater(bot=self.bot, use_context=True)
+        # request = Request(con_pool_size=8)
+        self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
+        self.client.start(bot_token=self.config.telegram.bot_token)
+        # self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
+        # self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
 
         self.functionalities = self.initialise_functionalities()
         for func in self.functionalities:
             logger.info("Registering functionality: %s", func.__class__.__name__)
-            func.register(updater.dispatcher)
+            func.register(self.client)
 
-        updater.start_polling()
-        self.alive = True
+        self.client.run_until_disconnected()
+        # self.alive = True
 
-        # Start the sub watcher
-        self.subscription_watcher_thread.start()
+        # Start the sub watcher TODO
+        # self.subscription_watcher_thread.start()
 
-        while self.alive:
-            logger.info("Main thread alive")
-            try:
-                time.sleep(2)
-            except KeyboardInterrupt:
-                logger.info("Received keyboard interrupt")
-                self.alive = False
-        logger.info("Shutting down")
-        updater.stop()
-        self.bot.stop()
+        # while self.alive:
+        #     logger.info("Main thread alive")
+        #     try:
+        #         time.sleep(2)
+        #     except KeyboardInterrupt:
+        #         logger.info("Received keyboard interrupt")
+        #         self.alive = False
+        # logger.info("Shutting down")
+        # updater.stop()
+        # self.bot.stop()
 
         # Kill the sub watcher
-        self.subscription_watcher.running = False
-        self.subscription_watcher_thread.join()
+        # self.subscription_watcher.running = False
+        # self.subscription_watcher_thread.join()
 
     def initialise_functionalities(self):
         return [
             BeepFunctionality(),
-            WelcomeFunctionality(),
-            ImageHashRecommendFunctionality(),
-            NeatenFunctionality(self.api),
-            InlineFunctionality(self.api),
-            SubscriptionFunctionality(self.subscription_watcher),
-            BlocklistFunctionality(self.subscription_watcher),
-            SupergroupUpgradeFunctionality(self.subscription_watcher),
-            UnhandledMessageFunctionality(),
+            # WelcomeFunctionality(),
+            # ImageHashRecommendFunctionality(),
+            # NeatenFunctionality(self.api),
+            # InlineFunctionality(self.api),
+            # SubscriptionFunctionality(self.subscription_watcher),
+            # BlocklistFunctionality(self.subscription_watcher),
+            # SupergroupUpgradeFunctionality(self.subscription_watcher),
+            # UnhandledMessageFunctionality(),
         ]
