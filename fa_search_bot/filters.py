@@ -1,5 +1,6 @@
 from telegram import Message
 from telegram.ext import Filters, BaseFilter
+from telethon.events import NewMessage
 
 
 class FilterRegex(Filters.regex):
@@ -20,13 +21,11 @@ class FilterRegex(Filters.regex):
         return False
 
 
-class FilterImageNoCaption(BaseFilter):
-
-    def filter(self, message: Message) -> bool:
-        keyboard = message.reply_markup and message.reply_markup.inline_keyboard
-        has_buttons = False
-        if keyboard:
-            has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
-        text = message.text_markdown_urled or message.caption_markdown_urled
-        media = message.photo or message.document
-        return not (text or has_buttons) and media
+def filter_image_no_caption(event: NewMessage.Event) -> bool:
+    keyboard = event.message.buttons
+    has_buttons = False
+    if keyboard:
+        has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
+    text = event.message.text
+    media = event.message.photo or event.message.document
+    return not (text or has_buttons) and media

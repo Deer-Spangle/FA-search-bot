@@ -108,7 +108,7 @@ class FASearchBot:
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
-            # ImageHashRecommendFunctionality(),
+            ImageHashRecommendFunctionality(),
             # NeatenFunctionality(self.api),
             # InlineFunctionality(self.api),
             # SubscriptionFunctionality(self.subscription_watcher),
