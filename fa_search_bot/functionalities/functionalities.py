@@ -3,7 +3,9 @@ from contextlib import contextmanager
 from typing import Optional
 
 import telegram
-from telegram.ext import CallbackContext, run_async
+from telegram.ext import CallbackContext
+from telethon import TelegramClient
+from telethon.events.common import EventCommon, EventBuilder
 
 
 @contextmanager
@@ -32,16 +34,12 @@ def in_progress_msg(update: telegram.Update, context: CallbackContext, text: Opt
 
 class BotFunctionality(ABC):
 
-    def __init__(self, handler_cls, **kwargs):
-        self.kwargs = kwargs
-        self.handler_cls = handler_cls
+    def __init__(self, event: EventBuilder):
+        self.event = event
 
-    def register(self, dispatcher):
-        args_dict = self.kwargs
-        args_dict["callback"] = run_async(self.call)
-        handler = self.handler_cls(**args_dict)
-        dispatcher.add_handler(handler)
+    def register(self, client: TelegramClient) -> None:
+        client.add_event_handler(self.call, self.event)
 
     @abstractmethod
-    def call(self, update: telegram.Update, context: CallbackContext):
+    async def call(self, event: EventCommon) -> None:
         pass
