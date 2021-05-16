@@ -11,10 +11,12 @@ from typing import Dict, Union, List, Optional
 import dateutil.parser
 import docker
 import requests
-import telegram
 from docker import DockerClient
 from docker.models.containers import Container
+from pyrogram.raw.base import InputPeer
 from telegram import InlineQueryResultPhoto
+from telethon import TelegramClient
+from telethon.errors import BadRequestError
 
 logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
@@ -193,7 +195,14 @@ class FASubmissionFull(FASubmissionShort):
             self._download_file_size = FASubmission._get_file_size(self.download_url)
         return self._download_file_size
 
-    def send_message(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
+    async def send_message(
+            self,
+            client: TelegramClient,
+            chat: InputPeer,
+            *,
+            reply_to: int = None,
+            prefix: str = None
+    ) -> None:
         if prefix is None:
             prefix = ""
         else:
@@ -202,59 +211,64 @@ class FASubmissionFull(FASubmissionShort):
         # Handle photos
         if ext in FASubmission.EXTENSIONS_PHOTO:
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
-                bot.send_photo(
-                    chat_id=chat_id,
-                    photo=self.thumbnail_url,
-                    caption=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                    reply_to_message_id=reply_to,
-                    parse_mode=telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
+                await client.send_message(
+                    entity=chat,
+                    file=self.thumbnail_url,
+                    message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
+                    reply_to=reply_to,
+                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
                 )
                 return
-            bot.send_photo_with_backup(
-                chat_id,
-                {
-                    "photo": self.download_url,
-                    "caption": f"{prefix}{self.link}",
-                    "reply_to_message_id": reply_to
-                },
-                {
-                    "photo": self.thumbnail_url,
-                    "caption": f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                    "reply_to_message_id": reply_to,
-                    "parse_mode": telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
-                }
-            )
+            try:
+                await client.send_message(
+                    entity=chat,
+                    message=f"{prefix}{self.link}",
+                    file=self.download_url,
+                    reply_to=reply_to,
+                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
+                )
+            except BadRequestError:
+                await client.send_message(
+                    entity=chat,
+                    file=self.thumbnail_url,
+                    message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
+                    reply_to=reply_to,
+                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
+                )
             return
         # Handle files telegram can't handle
         if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
-            bot.send_photo(
-                chat_id=chat_id,
-                photo=self.full_image_url,
-                caption=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                reply_to_message_id=reply_to,
-                parse_mode=telegram.ParseMode.HTML  # Markdown is not safe here, because of the prefix.
+            await client.send_message(
+                entity=chat,
+                file=self.full_image_url,
+                message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
+                reply_to=reply_to,
+                parse_mode='html'  # Markdown is not safe here, because of the prefix.
             )
             return
         # Handle gifs, which can be made pretty
         if ext in FASubmission.EXTENSIONS_GIF:
-            self._send_gif(bot, chat_id, reply_to=reply_to, prefix=prefix)
+            await self._send_gif(client, chat, reply_to=reply_to, prefix=prefix)
             return
         # Handle pdfs, which can be sent as documents
         if ext in FASubmission.EXTENSIONS_AUTO_DOCUMENT:
-            bot.send_document(
-                chat_id=chat_id,
-                document=self.download_url,
-                caption=f"{prefix}{self.link}",
-                reply_to_message_id=reply_to
+            await client.send_message(
+                entity=chat,
+                file=self.download_url,
+                force_document=True,
+                message=f"{prefix}{self.link}",
+                reply_to=reply_to,
+                parse_mode='html'  # Markdown is not safe here, because of the prefix.
             )
             return
         # Handle audio
         if ext in FASubmission.EXTENSIONS_AUDIO:
-            bot.send_audio(
-                chat_id=chat_id,
-                audio=self.download_url,
-                caption=f"{prefix}{self.link}",
-                reply_to_message_id=reply_to
+            await client.send_message(
+                entity=chat,
+                file=self.download_url,
+                message=f"{prefix}{self.link}",
+                reply_to=reply_to,
+                parse_mode='html'  # Markdown is not safe here, because of the prefix.
             )
             return
         # Handle known error extensions
@@ -263,7 +277,13 @@ class FASubmissionFull(FASubmissionShort):
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
 
-    def _send_gif(self, bot, chat_id: int, reply_to: int = None, prefix: str = None) -> None:
+    async def _send_gif(
+            self,
+            client: TelegramClient,
+            chat: InputPeer,
+            reply_to: int = None,
+            prefix: str = None
+    ) -> None:
         try:
             logger.info("Sending gif, submission ID %s", self.submission_id)
             filename = self._get_gif_from_cache()
@@ -271,19 +291,19 @@ class FASubmissionFull(FASubmissionShort):
                 logger.info("Gif not in cache, converting to video. Submission ID %s", self.submission_id)
                 output_path = self._convert_gif(self.download_url)
                 filename = self._save_gif_to_cache(output_path)
-            bot.send_document(
-                chat_id=chat_id,
-                document=open(filename, "rb"),
-                caption=f"{prefix}{self.link}",
-                reply_to_message_id=reply_to
+            await client.send_message(
+                entity=chat,
+                file=open(filename, "rb"),
+                message=f"{prefix}{self.link}",
+                reply_to=reply_to
             )
         except Exception as e:
             logger.error("Failed to convert gif to video. Submission ID: %s", self.submission_id, exc_info=e)
-            bot.send_document(
-                chat_id=chat_id,
-                document=self.download_url,
-                caption=f"{prefix}{self.link}",
-                reply_to_message_id=reply_to
+            await client.send_message(
+                entity=chat,
+                file=self.download_url,
+                message=f"{prefix}{self.link}",
+                reply_to=reply_to
             )
         return
 
