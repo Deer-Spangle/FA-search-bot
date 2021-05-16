@@ -1,24 +1,20 @@
-from telegram import Message
-from telegram.ext import Filters, BaseFilter
+import re
+
 from telethon.events import NewMessage
 
 
-class FilterRegex(Filters.regex):
-
-    def filter(self, message: Message) -> bool:
-        text = message.text_markdown_urled or message.caption_markdown_urled
-        if text and self.pattern.search(text):
-            return True
-        buttons = [[]]
-        if message.reply_markup and message.reply_markup.inline_keyboard:
-            buttons = message.reply_markup.inline_keyboard
-        for button_row in buttons:
+def filter_regex(event: NewMessage.Event, pattern: re.Pattern) -> bool:
+    text = event.message.text
+    if text and pattern.search(text):
+        return True
+    if event.message.buttons:
+        for button_row in event.message.buttons:
             for button in button_row:
-                if button.text and self.pattern.search(button.text):
+                if button.text and pattern.search(button.text):
                     return True
-                if button.url and self.pattern.search(button.url):
+                if button.url and pattern.search(button.url):
                     return True
-        return False
+    return False
 
 
 def filter_image_no_caption(event: NewMessage.Event) -> bool:
