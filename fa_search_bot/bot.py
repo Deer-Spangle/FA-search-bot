@@ -23,17 +23,45 @@ from fa_search_bot.subscription_watcher import SubscriptionWatcher
 logger = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class TelegramConfig:
+    api_id: int
+    api_hash: str
+    bot_token: str
+
+    @classmethod
+    def from_dict(cls, conf: Dict) -> 'TelegramConfig':
+        return cls(
+            conf["telegram_api_id"],
+            conf["telegram_api_hash"],
+            conf["bot_key"]
+        )
+
+
+@dataclasses.dataclass
+class Config:
+    fa_api_url: str
+    telegram: TelegramConfig
+
+    @classmethod
+    def from_dict(cls, conf: Dict) -> 'Config':
+        return cls(
+            conf["api_url"],
+            TelegramConfig.from_dict(conf)
+        )
+
+
 class FASearchBot:
 
     VERSION = __VERSION__
 
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
-            self.config = json.load(f)
-        self.bot_key = self.config["bot_key"]
-        self.api_url = self.config['api_url']
-        self.api = FAExportAPI(self.config['api_url'])
+            self.config = Config.from_dict(json.load(f))
+        self.bot_key = self.config.telegram.bot_token
+        self.api = FAExportAPI(self.config.fa_api_url)
         self.bot = None
+        self.client = None
         self.alive = False
         self.functionalities = []
         self.subscription_watcher = None
