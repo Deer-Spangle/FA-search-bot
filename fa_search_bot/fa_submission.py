@@ -6,17 +6,17 @@ import time
 import uuid
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union, List, Optional
+from typing import Dict, Union, List, Optional, Coroutine
 
 import dateutil.parser
 import docker
 import requests
 from docker import DockerClient
 from docker.models.containers import Container
-from pyrogram.raw.base import InputPeer
-from telegram import InlineQueryResultPhoto
 from telethon import TelegramClient
 from telethon.errors import BadRequestError
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
 logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
@@ -151,12 +151,11 @@ class FASubmissionShort(FASubmission):
         self.title = title
         self.author = author
 
-    def to_inline_query_result(self) -> InlineQueryResultPhoto:
-        return InlineQueryResultPhoto(
+    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+        return builder.photo(
+            file=self.thumbnail_url,
             id=self.submission_id,
-            photo_url=self.thumbnail_url,
-            thumb_url=FASubmission.make_thumbnail_smaller(self.thumbnail_url),
-            caption=self.link
+            text=self.link
         )
 
 
@@ -198,7 +197,7 @@ class FASubmissionFull(FASubmissionShort):
     async def send_message(
             self,
             client: TelegramClient,
-            chat: InputPeer,
+            chat: TypeInputPeer,
             *,
             reply_to: int = None,
             prefix: str = None
@@ -280,7 +279,7 @@ class FASubmissionFull(FASubmissionShort):
     async def _send_gif(
             self,
             client: TelegramClient,
-            chat: InputPeer,
+            chat: TypeInputPeer,
             reply_to: int = None,
             prefix: str = None
     ) -> None:
