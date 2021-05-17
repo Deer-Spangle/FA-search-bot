@@ -1,10 +1,10 @@
 import html
 import logging
+import re
 
-from telegram import Update, ParseMode
-from telegram.ext import CallbackContext
+from telethon.events import NewMessage, StopPropagation
 
-from fa_search_bot.functionalities.channel_agnostic_func import ChannelAgnosticFunctionality
+from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 
@@ -12,7 +12,7 @@ usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
-class SubscriptionFunctionality(ChannelAgnosticFunctionality):
+class SubscriptionFunctionality(BotFunctionality):
     add_sub_cmd = "add_subscription"
     remove_sub_cmd = "remove_subscription"
     list_sub_cmd = "list_subscriptions"
@@ -21,18 +21,19 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
 
     def __init__(self, watcher: SubscriptionWatcher):
         commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
-        super().__init__(commands)
+        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
+        super().__init__(NewMessage(pattern=commands_pattern))
         self.watcher = watcher
 
-    def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
-        message_text = text
+    async def call(self, event: NewMessage.Event):
+        message_text = event.text
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=self._route_command(chat_id, command, args),
-            parse_mode=ParseMode.HTML
+        await event.reply(
+            self._route_command(event.chat_id, command, args),
+            parse_mode='html'
         )
+        raise StopPropagation
 
     def _route_command(self, destination: int, command: str, args: str) -> str:
         if command.startswith("/" + self.add_sub_cmd):
@@ -135,40 +136,39 @@ class SubscriptionFunctionality(ChannelAgnosticFunctionality):
         return f"Resumed subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
 
 
-class BlocklistFunctionality(ChannelAgnosticFunctionality):
+class BlocklistFunctionality(BotFunctionality):
     add_block_tag_cmd = "add_blocklisted_tag"
     remove_block_tag_cmd = "remove_blocklisted_tag"
     list_block_tag_cmd = "list_blocklisted_tags"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__([self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd])
+        commands = [self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd]
+        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
+        super().__init__(NewMessage(pattern=commands_pattern))
         self.watcher = watcher
 
-    def call_text(self, update: Update, context: CallbackContext, text: str, chat_id: int):
-        message_text = text
-        destination = chat_id
+    async def call(self, event: NewMessage.Event):
+        message_text = event.text
+        destination = event.chat_id
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         if command.startswith("/" + self.add_block_tag_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._add_to_blocklist(destination, args)
+            await event.reply(
+                self._add_to_blocklist(destination, args)
             )
         elif command.startswith("/" + self.remove_block_tag_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._remove_from_blocklist(destination, args)
+            await event.reply(
+                self._remove_from_blocklist(destination, args)
             )
         elif command.startswith("/" + self.list_block_tag_cmd):
-            context.bot.send_message(
-                chat_id=destination,
-                text=self._list_blocklisted_tags(destination)
+            await event.reply(
+                self._list_blocklisted_tags(destination)
             )
         else:
-            context.bot.send_message(
-                chat_id=destination,
-                text="I do not understand."
+            await event.reply(
+                "I do not understand."
             )
+        raise StopPropagation
 
     def _add_to_blocklist(self, destination: int, query: str):
         if query == "":
@@ -181,12 +181,12 @@ class BlocklistFunctionality(ChannelAgnosticFunctionality):
 
     def _remove_from_blocklist(self, destination: int, query: str):
         try:
-            self.watcher.blocklists[destination].remove(query)
+            self.watcher.blocklists.get(destination, []).remove(query)
             return f"Removed tag from blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
         except KeyError:
             return f"The tag \"{query}\" is not on the blocklist for this chat."
 
     def _list_blocklisted_tags(self, destination: int):
-        blocklist = self.watcher.blocklists[destination]
+        blocklist = self.watcher.blocklists.get(destination, [])
         tags_list = "\n".join([f"- {tag}" for tag in blocklist])
         return f"Current blocklist for this chat:\n{tags_list}"

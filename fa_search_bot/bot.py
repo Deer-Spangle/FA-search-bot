@@ -75,7 +75,7 @@ class FASearchBot:
         # request = Request(con_pool_size=8)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
-        # self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
         # self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
 
         self.functionalities = self.initialise_functionalities()
@@ -111,8 +111,8 @@ class FASearchBot:
             ImageHashRecommendFunctionality(),
             NeatenFunctionality(self.api),
             InlineFunctionality(self.api),
-            # SubscriptionFunctionality(self.subscription_watcher),
-            # BlocklistFunctionality(self.subscription_watcher),
+            SubscriptionFunctionality(self.subscription_watcher),
+            BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]
