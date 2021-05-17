@@ -113,6 +113,6 @@ class FASearchBot:
             InlineFunctionality(self.api),
             # SubscriptionFunctionality(self.subscription_watcher),
             # BlocklistFunctionality(self.subscription_watcher),
-            # SupergroupUpgradeFunctionality(self.subscription_watcher),
+            SupergroupUpgradeFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]

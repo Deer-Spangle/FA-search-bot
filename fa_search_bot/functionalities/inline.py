@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Tuple, List, Union, Optional, Coroutine
 
-from telethon.events import InlineQuery
+from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
@@ -52,6 +52,7 @@ class InlineFunctionality(BotFunctionality):
             results,
             next_offset=str(next_offset) if next_offset else None
         )
+        raise StopPropagation
 
     def _favs_query_results(
             self,
