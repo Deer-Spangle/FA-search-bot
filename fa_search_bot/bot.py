@@ -1,12 +1,9 @@
+import asyncio
 import dataclasses
-from threading import Thread
 
-import time
 from typing import Dict
 
-from telegram.ext import Updater
 import logging
-from telegram.utils.request import Request
 import json
 
 from telethon import TelegramClient
@@ -21,7 +18,6 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
-from fa_search_bot.mqbot import MQBot
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
@@ -64,7 +60,6 @@ class FASearchBot:
             self.config = Config.from_dict(json.load(f))
         self.bot_key = self.config.telegram.bot_token
         self.api = FAExportAPI(self.config.fa_api_url)
-        self.bot = None
         self.client = None
         self.alive = False
         self.functionalities = []
@@ -75,34 +70,38 @@ class FASearchBot:
         # request = Request(con_pool_size=8)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
-        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.bot)
-        # self.subscription_watcher_thread = Thread(target=self.subscription_watcher.run)
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.client)
 
         self.functionalities = self.initialise_functionalities()
         for func in self.functionalities:
             logger.info("Registering functionality: %s", func.__class__.__name__)
             func.register(self.client)
+        self.alive = True
+        event_loop = asyncio.get_event_loop()
 
-        self.client.run_until_disconnected()
-        # self.alive = True
+        # Log every couple seconds so we know the bot is still running
+        log_task = event_loop.create_task(self.periodic_log())
+        # Start the sub watcher
+        watcher_task = event_loop.create_task(self.subscription_watcher.run())
 
-        # Start the sub watcher TODO
-        # self.subscription_watcher_thread.start()
+        try:
+            self.client.run_until_disconnected()
+        finally:
+            # Shut down sub watcher
+            self.alive = False
+            self.subscription_watcher.running = False
+            event_loop.run_until_complete(watcher_task)
+            event_loop.run_until_complete(log_task)
 
-        # while self.alive:
-        #     logger.info("Main thread alive")
-        #     try:
-        #         time.sleep(2)
-        #     except KeyboardInterrupt:
-        #         logger.info("Received keyboard interrupt")
-        #         self.alive = False
-        # logger.info("Shutting down")
-        # updater.stop()
-        # self.bot.stop()
-
-        # Kill the sub watcher
-        # self.subscription_watcher.running = False
-        # self.subscription_watcher_thread.join()
+    async def periodic_log(self):
+        while self.alive:
+            logger.info("Main thread alive")
+            try:
+                await asyncio.sleep(2)
+            except KeyboardInterrupt:
+                logger.info("Received keyboard interrupt")
+                self.alive = False
+        logger.info("Shutting down")
 
     def initialise_functionalities(self):
         return [
