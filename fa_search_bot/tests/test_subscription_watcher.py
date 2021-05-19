@@ -1,8 +1,7 @@
+import asyncio
 import datetime
 import json
 import os
-import time
-from threading import Thread
 from typing import List
 
 from unittest.mock import patch
@@ -34,10 +33,10 @@ class MockSubscription(Subscription):
 
 
 # noinspection DuplicatedCode
-def watcher_killer(watcher: SubscriptionWatcher):
+async def watcher_killer(watcher: SubscriptionWatcher):
     # Wait until watcher is running
     while watcher.running is False:
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
     # Stop watcher
     watcher.running = False
 
@@ -60,14 +59,13 @@ def test_run__is_stopped_by_running_false(tbot):
     # Shorten the wait
     s.BACK_OFF = 1
 
-    thread = Thread(target=lambda: watcher_killer(s))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(s))
 
     # Run watcher
-    s.run()
+    asyncio.get_event_loop().run_until_complete(s.run())
 
     assert True
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(task)
 
 
 @patch.object(telegram, "Bot")
@@ -75,15 +73,14 @@ def test_run__calls_get_new_results(tbot):
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([])
-    watcher._get_new_results = method_called.call
+    watcher._get_new_results = method_called.async_call
     # Shorten the wait
     watcher.BACK_OFF = 1
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert method_called.called
 
@@ -95,17 +92,16 @@ def test_run__calls_update_latest_ids(tbot):
     api = MockExportAPI().with_submissions([submission1, submission2])
     watcher = SubscriptionWatcher(api, tbot)
     mock_new_results = MockMethod([submission1, submission2])
-    watcher._get_new_results = mock_new_results.call
+    watcher._get_new_results = mock_new_results.async_call
     mock_update_latest = MockMethod()
     watcher._update_latest_ids = mock_update_latest.call
     # Shorten the wait
     watcher.BACK_OFF = 1
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert mock_update_latest.called
     assert mock_update_latest.args[0] == [submission2]
@@ -118,17 +114,16 @@ def test_run__updates_latest_ids(tbot):
     api = MockExportAPI().with_submissions([submission1, submission2])
     watcher = SubscriptionWatcher(api, tbot)
     mock_new_results = MockMethod([submission1, submission2])
-    watcher._get_new_results = mock_new_results.call
+    watcher._get_new_results = mock_new_results.async_call
     mock_save_json = MockMethod()
     watcher.save_to_json = mock_save_json.call
     # Shorten the wait
     watcher.BACK_OFF = 1
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert mock_save_json.called
     assert submission1.submission_id in watcher.latest_ids
@@ -141,17 +136,16 @@ def test_run__checks_all_subscriptions(tbot):
     api = MockExportAPI().with_submission(submission)
     watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission])
-    watcher._get_new_results = method_called.call
+    watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
     sub1 = MockSubscription("deer", 0)
     sub2 = MockSubscription("dog", 0)
     watcher.subscriptions = [sub1, sub2]
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert submission in sub1.submissions_checked
     assert submission in sub2.submissions_checked
@@ -165,16 +159,15 @@ def test_run__checks_all_new_results(tbot):
     api = MockExportAPI().with_submissions([submission1, submission2])
     watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission1, submission2])
-    watcher._get_new_results = method_called.call
+    watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
     sub = MockSubscription("deer", 0)
     watcher.subscriptions = [sub]
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert submission1 in sub.submissions_checked
     assert submission2 in sub.submissions_checked
@@ -192,7 +185,7 @@ def test_run__sleeps_backoff_time(tbot):
 
     # Run watcher
     start_time = datetime.datetime.now()
-    watcher.run()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
     end_time = datetime.datetime.now()
 
     time_waited = end_time - start_time
@@ -206,14 +199,13 @@ def test_run__can_exit_fast(tbot):
     # Shorten the wait
     watcher.BACK_OFF = 3
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
 
     # Run watcher
     start_time = datetime.datetime.now()
-    watcher.run()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
     end_time = datetime.datetime.now()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(task)
 
     time_waited = end_time - start_time
     assert time_waited.seconds <= 1
@@ -232,7 +224,7 @@ def test_run__failed_to_send_doesnt_kill_watcher(tbot):
     api.call_after_x_browse = (lambda: watcher.stop(), 2)
     # Run watcher
     start_time = datetime.datetime.now()
-    watcher.run()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
     end_time = datetime.datetime.now()
 
     time_waited = end_time - start_time
@@ -245,7 +237,7 @@ def test_run__passes_correct_blocklists_to_subscriptions(tbot):
     api = MockExportAPI().with_submission(submission)
     watcher = SubscriptionWatcher(api, tbot)
     method_called = MockMethod([submission])
-    watcher._get_new_results = method_called.call
+    watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
     watcher.blocklists = {
         156: {"test", "ych"},
@@ -255,11 +247,10 @@ def test_run__passes_correct_blocklists_to_subscriptions(tbot):
     sub2 = MockSubscription("dog", -232)
     watcher.subscriptions = [sub1, sub2]
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     # Run watcher
-    watcher.run()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(watcher.run())
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert submission in sub1.submissions_checked
     assert len(sub1.blocklists) == 1
@@ -364,10 +355,9 @@ def test_get_new_results__handles_cloudflare(tbot):
     watcher.latest_ids.append("1225")
     watcher.running = True
 
-    thread = Thread(target=lambda: watcher_killer(watcher))
-    thread.start()
+    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
     results = watcher._get_new_results()
-    thread.join()
+    asyncio.get_event_loop().run_until_complete(task)
 
     assert len(results) == 0
 

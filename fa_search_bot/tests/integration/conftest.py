@@ -43,7 +43,7 @@ def bot() -> FASearchBot:
     bot_thread = Thread(target=bot.start)
     bot_thread.start()
     while not bot.alive:
-        time.sleep(0.1)
+        asyncio.sleep(0.1)
     yield bot
     bot.alive = False
     bot_thread.join()

@@ -12,6 +12,9 @@ class MockMethod:
         self.kwargs = kwargs
         return self.value
 
+    async def async_call(self, *args, **kwargs):
+        return self.call(*args, **kwargs)
+
 
 class MockMultiMethod:
 
