@@ -1,14 +1,9 @@
 from unittest import mock
-from unittest.mock import patch, Mock
 
-import requests_mock
-import telegram
-import telethon
-from telethon.tl.types import TypeInputPeer
+import pytest
 
-from fa_search_bot import bot as mqbot
 from fa_search_bot.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
-from fa_search_bot.tests.test_fa_submission import loop
+from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -68,10 +63,10 @@ def test_download_file_size(requests_mock):
     assert file_size2 == size
 
 
-@patch.object(mqbot, "MQBot")
-def test_gif_submission(bot):
+@pytest.mark.asyncio
+async def test_gif_submission(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
     convert = MockMethod("output.mp4")
     submission._convert_gif = convert.call
@@ -80,26 +75,25 @@ def test_gif_submission(bot):
 
     with mock.patch("fa_search_bot.fa_submission.open", mock_open):
         with mock.patch("os.rename", mock_rename.call):
-            submission.send_message(bot, chat_id, message_id)
+            await submission.send_message(mock_client, chat, reply_to=message_id)
 
     assert convert.called
-    bot.send_photo.assert_not_called()
-    bot.send_document.assert_called_once()
-    assert bot.send_document.call_args[1]['chat_id'] == chat_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_rename.called
     assert mock_rename.args[0] == "output.mp4"
     assert mock_rename.args[1] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
     assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
     assert mock_open.call_args[0][1] == "rb"
-    assert bot.send_document.call_args[1]['document'] == mock_open.return_value
-    assert bot.send_document.call_args[1]['caption'] == submission.link
-    assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+    assert mock_client.send_message.call_args[1]['file'] == mock_open.return_value
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_gif_submission_from_cache(bot):
+@pytest.mark.asyncio
+async def test_gif_submission_from_cache(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
     convert = MockMethod("output.mp4")
     submission._convert_gif = convert.call
@@ -108,19 +102,18 @@ def test_gif_submission_from_cache(bot):
 
     with mock.patch("fa_search_bot.fa_submission.open", mock_open):
         with mock.patch("os.path.exists", mock_exists.call):
-            submission.send_message(bot, chat_id, message_id)
+            await submission.send_message(mock_client, chat, reply_to=message_id)
 
     assert not convert.called
-    bot.send_photo.assert_not_called()
-    bot.send_document.assert_called_once()
-    assert bot.send_document.call_args[1]['chat_id'] == chat_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_exists.called
     assert mock_exists.args[0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
     assert mock_open.call_args[0][0] == f"{submission.GIF_CACHE_DIR}/{submission.submission_id}.mp4"
     assert mock_open.call_args[0][1] == "rb"
-    assert bot.send_document.call_args[1]['document'] == mock_open.return_value
-    assert bot.send_document.call_args[1]['caption'] == submission.link
-    assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+    assert mock_client.send_message.call_args[1]['file'] == mock_open.return_value
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
 def test_convert_gif():
@@ -164,236 +157,209 @@ def test_convert_gif_two_pass():
     assert mock_run.args[3][1].endswith(f"-pass 2 {output_path} -y")
 
 
-@patch.object(mqbot, "MQBot")
-def test_convert_gif_failure(bot):
+@pytest.mark.asyncio
+async def test_convert_gif_failure(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
     submission._convert_gif = lambda *args: (_ for _ in ()).throw(Exception)
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo.assert_not_called()
-    bot.send_document.assert_called_once()
-    assert bot.send_document.call_args[1]['chat_id'] == chat_id
-    assert bot.send_document.call_args[1]['document'] == submission.download_url
-    assert bot.send_document.call_args[1]['caption'] == submission.link
-    assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_pdf_submission(bot):
+@pytest.mark.asyncio
+async def test_pdf_submission(mock_client):
     submission = SubmissionBuilder(file_ext="pdf", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo.assert_not_called()
-    bot.send_document.assert_called_once()
-    assert bot.send_document.call_args[1]['chat_id'] == chat_id
-    assert bot.send_document.call_args[1]['document'] == submission.download_url
-    assert bot.send_document.call_args[1]['caption'] == submission.link
-    assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_mp3_submission(bot):
+@pytest.mark.asyncio
+async def test_mp3_submission(mock_client):
     submission = SubmissionBuilder(file_ext="mp3", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_message.assert_not_called()
-    bot.send_photo.assert_not_called()
-    bot.send_document.assert_not_called()
-    bot.send_audio.assert_called_once()
-    assert bot.send_audio.call_args[1]['chat_id'] == chat_id
-    assert bot.send_audio.call_args[1]['audio'] == submission.download_url
-    assert bot.send_audio.call_args[1]['caption'] == submission.link
-    assert bot.send_audio.call_args[1]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_txt_submission(bot):
+@pytest.mark.asyncio
+async def test_txt_submission(mock_client):
     submission = SubmissionBuilder(file_ext="txt").build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_message.assert_not_called()
-    bot.send_photo.assert_called_once()
-    bot.send_document.assert_not_called()
-    bot.send_audio.assert_not_called()
-    assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-    assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
-    assert bot.send_photo.call_args[1]['caption'] == \
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
+    assert mock_client.send_message.call_args[1]['message'] == \
            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-    assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
 
 
-@patch.object(mqbot, "MQBot")
-def test_swf_submission(bot):
+@pytest.mark.asyncio
+async def test_swf_submission(mock_client):
     submission = SubmissionBuilder(file_ext="swf", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
     try:
-        submission.send_message(bot, chat_id, message_id)
+        await submission.send_message(mock_client, chat, reply_to=message_id)
         assert False, "Should have thrown exception."
     except CantSendFileType as e:
         assert str(e) == "I'm sorry, I can't neaten \".swf\" files."
 
 
-@patch.object(mqbot, "MQBot")
-def test_unknown_type_submission(bot):
+@pytest.mark.asyncio
+async def test_unknown_type_submission(mock_client):
     submission = SubmissionBuilder(file_ext="zzz", file_size=47453).build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
     try:
-        submission.send_message(bot, chat_id, message_id)
+        await submission.send_message(mock_client, chat, reply_to=message_id)
         assert False, "Should have thrown exception."
     except CantSendFileType as e:
         assert str(e) == "I'm sorry, I don't understand that file extension (zzz)."
 
 
-@patch.object(mqbot, "MQBot")
-def test_image_just_under_size_limit(bot):
+@pytest.mark.asyncio
+async def test_image_just_under_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo_with_backup.assert_called_once()
-    assert bot.send_photo_with_backup.call_args[0][0] == chat_id
-    assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
-    assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
-    assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
-    assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
-    assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_image_just_over_size_limit(bot):
+@pytest.mark.asyncio
+async def test_image_just_over_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE + 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo.assert_called_once()
-    assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-    assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
-    assert bot.send_photo.call_args[1]['caption'] == \
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.thumbnail_url
+    assert mock_client.send_message.call_args[1]['message'] == \
            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-    assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
 
 
-@patch.object(mqbot, "MQBot")
-def test_image_over_document_size_limit(bot):
+@pytest.mark.asyncio
+async def test_image_over_document_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo.assert_called_once()
-    assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-    assert bot.send_photo.call_args[1]['photo'] == submission.thumbnail_url
-    assert bot.send_photo.call_args[1]['caption'] == \
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.thumbnail_url
+    assert mock_client.send_message.call_args[1]['message'] == \
            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-    assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
 
 
-@patch.object(mqbot, "MQBot")
-def test_auto_doc_just_under_size_limit(bot):
+@pytest.mark.asyncio
+async def test_auto_doc_just_under_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_document.assert_called_once()
-    bot.send_photo.assert_not_called()
-    bot.send_message.assert_not_called()
-    assert bot.send_document.call_args[1]['chat_id'] == chat_id
-    assert bot.send_document.call_args[1]['document'] == submission.download_url
-    assert bot.send_document.call_args[1]['caption'] == submission.link
-    assert bot.send_document.call_args[1]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_auto_doc_just_over_size_limit(bot):
+@pytest.mark.asyncio
+async def test_auto_doc_just_over_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(client, chat, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo.assert_called_once()
-    bot.send_document.assert_not_called()
-    bot.send_message.assert_not_called()
-    assert bot.send_photo.call_args[1]['chat_id'] == chat_id
-    assert bot.send_photo.call_args[1]['photo'] == submission.full_image_url
-    assert bot.send_photo.call_args[1]['caption'] == \
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
+    assert mock_client.send_message.call_args[1]['message'] == \
            f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo.call_args[1]['reply_to_message_id'] == message_id
-    assert bot.send_photo.call_args[1]['parse_mode'] == telegram.ParseMode.HTML
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
 
 
-@patch.object(telethon, "TelegramClient")
-def test_send_message__with_prefix(client):
+@pytest.mark.asyncio
+async def test_send_message__with_prefix(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1) \
         .build_full_submission()
-    chat_id = -9327622
-    chat = Mock(TypeInputPeer)
-    chat.id = chat_id
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    loop.run_until_complete(submission.send_message(client, chat, reply_to=message_id, prefix="Update on a search"))
+    await submission.send_message(mock_client, chat, reply_to=message_id, prefix="Update on a search")
 
-    client.send_message.assert_called_once()
-    bot.send_photo_with_backup.assert_called_once()
-    assert bot.send_photo_with_backup.call_args[0][0] == chat_id
-    assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
-    assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
-    assert submission.link in bot.send_photo_with_backup.call_args[0][1]['caption']
-    assert "Update on a search\n" in bot.send_photo_with_backup.call_args[0][1]['caption']
-    assert submission.link in bot.send_photo_with_backup.call_args[0][2]['caption']
-    assert "Update on a search\n" in bot.send_photo_with_backup.call_args[0][2]['caption']
-    assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
-    assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert submission.link in mock_client.send_message.call_args[1]['message']
+    assert "Update on a search\n" in mock_client.send_message.call_args[1]['message']
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-@patch.object(mqbot, "MQBot")
-def test_send_message__without_prefix(bot):
+@pytest.mark.asyncio
+async def test_send_message__without_prefix(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE - 1) \
         .build_full_submission()
-    chat_id = -9327622
+    chat = MockChat(-9327622)
     message_id = 2873292
 
-    submission.send_message(bot, chat_id, message_id)
+    await submission.send_message(mock_client, chat, reply_to=message_id)
 
-    bot.send_photo_with_backup.assert_called_once()
-    assert bot.send_photo_with_backup.call_args[0][0] == chat_id
-    assert bot.send_photo_with_backup.call_args[0][1]['photo'] == submission.download_url
-    assert bot.send_photo_with_backup.call_args[0][2]['photo'] == submission.thumbnail_url
-    assert bot.send_photo_with_backup.call_args[0][1]['caption'] == submission.link
-    assert bot.send_photo_with_backup.call_args[0][2]['caption'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert bot.send_photo_with_backup.call_args[0][1]['reply_to_message_id'] == message_id
-    assert bot.send_photo_with_backup.call_args[0][2]['reply_to_message_id'] == message_id
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['message'] == submission.link
+    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
