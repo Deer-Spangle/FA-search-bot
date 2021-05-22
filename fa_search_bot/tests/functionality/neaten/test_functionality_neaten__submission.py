@@ -4,11 +4,11 @@ from fa_search_bot.fa_export_api import CloudflareError
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate, MockButton
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, MockButton
 
 
 def test_ignore_message(context):
-    update = MockTelegramUpdate.with_message(text="hello world")
+    update = MockTelegramEvent.with_message(text="hello world")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -18,7 +18,7 @@ def test_ignore_message(context):
 
 
 def test_ignore_link(context):
-    update = MockTelegramUpdate.with_message(text="http://example.com")
+    update = MockTelegramEvent.with_message(text="http://example.com")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -28,7 +28,7 @@ def test_ignore_link(context):
 
 
 def test_ignore_profile_link(context):
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/user/fender/")
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -38,7 +38,7 @@ def test_ignore_profile_link(context):
 
 
 def test_ignore_journal_link(context):
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/journal/9150534/")
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -49,7 +49,7 @@ def test_ignore_journal_link(context):
 
 def test_ignore_channel_post(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
+    update = MockTelegramEvent.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -61,7 +61,7 @@ def test_ignore_channel_post(context):
 
 def test_submission_link(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -77,7 +77,7 @@ def test_submission_link(context):
 
 def test_submission_link_in_caption(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message().with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
+    update = MockTelegramEvent.with_message().with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -93,7 +93,7 @@ def test_submission_link_in_caption(context):
 
 def test_submission_group_chat(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.GROUP
     )
@@ -112,7 +112,7 @@ def test_submission_group_chat(context):
 
 def test_submission_link_in_group_caption(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         chat_type=Chat.GROUP
     ).with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
@@ -126,7 +126,7 @@ def test_submission_link_in_group_caption(context):
 
 def test_submission_link_no_http(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
+    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -143,7 +143,7 @@ def test_submission_link_no_http(context):
 def test_two_submission_links(context):
     post_id1 = 23636984
     post_id2 = 23636996
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(post_id1, post_id2)
     )
     submission1 = MockSubmission(post_id1)
@@ -167,7 +167,7 @@ def test_two_submission_links(context):
 
 def test_duplicate_submission_links(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id)
     )
     submission = MockSubmission(post_id)
@@ -185,7 +185,7 @@ def test_duplicate_submission_links(context):
 
 def test_deleted_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id))
+    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -200,7 +200,7 @@ def test_deleted_submission(context):
 
 def test_deleted_submission_group_chat(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
+    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -219,7 +219,7 @@ def test_deleted_submission_group_chat(context):
 
 def test_gif_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id, file_ext="gif")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -235,7 +235,7 @@ def test_gif_submission(context):
 
 def test_pdf_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id, file_ext="pdf")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -251,7 +251,7 @@ def test_pdf_submission(context):
 
 def test_mp3_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id, file_ext="mp3")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -267,7 +267,7 @@ def test_mp3_submission(context):
 
 def test_txt_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id, file_ext="txt")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
@@ -283,7 +283,7 @@ def test_txt_submission(context):
 
 def test_swf_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.PRIVATE
     )
@@ -302,7 +302,7 @@ def test_swf_submission(context):
 
 def test_swf_submission_groupchat(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.GROUP
     )
@@ -327,7 +327,7 @@ def test_swf_submission_groupchat(context):
 
 def test_unknown_type_submission(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.PRIVATE
     )
@@ -346,7 +346,7 @@ def test_unknown_type_submission(context):
 
 def test_unknown_type_submission_groupchat(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.GROUP
     )
@@ -371,7 +371,7 @@ def test_unknown_type_submission_groupchat(context):
 
 def test_link_in_markdown(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
     )
@@ -390,7 +390,7 @@ def test_link_in_markdown(context):
 
 def test_link_in_button(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello"
     ).with_buttons(
         [
@@ -418,7 +418,7 @@ def test_link_in_button(context):
 
 def test_image_just_under_size_limit(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
@@ -437,7 +437,7 @@ def test_image_just_under_size_limit(context):
 
 def test_image_just_over_size_limit(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
@@ -456,7 +456,7 @@ def test_image_just_over_size_limit(context):
 
 def test_image_over_document_size_limit(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
@@ -475,7 +475,7 @@ def test_image_over_document_size_limit(context):
 
 def test_auto_doc_just_under_size_limit(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
@@ -494,7 +494,7 @@ def test_auto_doc_just_under_size_limit(context):
 
 def test_auto_doc_just_over_size_limit(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello",
         text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
     )
@@ -513,7 +513,7 @@ def test_auto_doc_just_over_size_limit(context):
 
 def test_cloudflare_error(context):
     post_id = 23636984
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id)
     api = MockExportAPI()
     neaten = NeatenFunctionality(api)

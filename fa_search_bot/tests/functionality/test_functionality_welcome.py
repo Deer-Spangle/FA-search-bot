@@ -1,10 +1,10 @@
 from fa_search_bot.bot import FASearchBot
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_welcome_message(context):
-    update = MockTelegramUpdate.with_command()
+    update = MockTelegramEvent.with_command()
     func = WelcomeFunctionality()
 
     func.call(update, context)

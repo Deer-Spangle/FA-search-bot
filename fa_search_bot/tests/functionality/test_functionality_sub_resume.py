@@ -5,12 +5,12 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 @patch.object(telegram, "Bot")
 def test_call__route_resume_destination(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/resume")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -29,7 +29,7 @@ def test_call__route_resume_destination(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_unpause_destination(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/unpause")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/unpause")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -48,7 +48,7 @@ def test_call__route_unpause_destination(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_resume_destination_with_handle(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume@FASearchBot")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/resume@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -67,7 +67,7 @@ def test_call__route_resume_destination_with_handle(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_resume_subscription(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/resume test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -87,7 +87,7 @@ def test_call__route_resume_subscription(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_resume_subscription_with_handle(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/resume@FASearchBot test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/resume@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)

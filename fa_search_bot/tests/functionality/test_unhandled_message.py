@@ -1,11 +1,11 @@
 from telegram import Chat
 
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_unhandled_message(context):
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hello can I have a picture"
     )
     unhandled = UnhandledMessageFunctionality()
@@ -20,7 +20,7 @@ def test_unhandled_message(context):
 
 
 def test_unhandled_group_message(context):
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="Hey friendo, how are you?",
         chat_type=Chat.GROUP
     )

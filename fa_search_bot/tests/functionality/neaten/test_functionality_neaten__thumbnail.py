@@ -1,11 +1,11 @@
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_thumbnail_link(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.furaffinity.net/{post_id}@400-1562445328.jpg"
     )
     submission = MockSubmission(post_id)
@@ -23,7 +23,7 @@ def test_thumbnail_link(context):
 
 def test_thumbnail_link__old_cdn(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.facdn.net/{post_id}@400-1562445328.jpg"
     )
     submission = MockSubmission(post_id)
@@ -41,7 +41,7 @@ def test_thumbnail_link__old_cdn(context):
 
 def test_thumbnail_link__newer_cdn(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t2.facdn.net/{post_id}@400-1562445328.jpg"
     )
     submission = MockSubmission(post_id)
@@ -59,7 +59,7 @@ def test_thumbnail_link__newer_cdn(context):
 
 def test_thumbnail_link_not_round(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.furaffinity.net/{post_id}@75-1562445328.jpg"
     )
     submission = MockSubmission(post_id)
@@ -77,7 +77,7 @@ def test_thumbnail_link_not_round(context):
 
 def test_thumbnail_link_big(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.furaffinity.net/{post_id}@1600-1562445328.jpg"
     )
     submission = MockSubmission(post_id)
@@ -94,7 +94,7 @@ def test_thumbnail_link_big(context):
 
 
 def test_doesnt_fire_on_avatar(context):
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://a.furaffinity.net/1538326752/geordie79.gif"
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -109,7 +109,7 @@ def test_doesnt_fire_on_avatar(context):
 
 def test_thumb_and_submission_link(context):
     post_id = 382632
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.furaffinity.net/{post_id}@1600-1562445328.jpg\nhttps://furaffinity.net/view/{post_id}"
     )
     submission = MockSubmission(post_id)
@@ -128,7 +128,7 @@ def test_thumb_and_submission_link(context):
 def test_thumb_and_different_submission_link(context):
     post_id1 = 382632
     post_id2 = 382672
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=f"https://t.furaffinity.net/{post_id1}@1600-1562445328.jpg\nhttps://furaffinity.net/view/{post_id2}"
     )
     submission1 = MockSubmission(post_id1)

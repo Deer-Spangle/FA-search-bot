@@ -2,11 +2,11 @@ from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_call__route_add_blocklisted_tag(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/add_blocklisted_tag test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/add_blocklisted_tag test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = BlocklistFunctionality(watcher)
@@ -25,7 +25,7 @@ def test_call__route_add_blocklisted_tag(context):
 
 
 def test_call__route_remove_blocklisted_tag(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_blocklisted_tag example")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/remove_blocklisted_tag example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = BlocklistFunctionality(watcher)
@@ -44,7 +44,7 @@ def test_call__route_remove_blocklisted_tag(context):
 
 
 def test_call__route_list_blocklisted_tags(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/list_blocklisted_tags")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/list_blocklisted_tags")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = BlocklistFunctionality(watcher)

@@ -1,11 +1,11 @@
 from telegram import Chat
 
 from fa_search_bot.bot import ImageHashRecommendFunctionality
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_sends_recommendation(context):
-    update = MockTelegramUpdate.with_message(text=None).with_photo()
+    update = MockTelegramEvent.with_message(text=None).with_photo()
     func = ImageHashRecommendFunctionality()
 
     func.call(update, context)
@@ -19,7 +19,7 @@ def test_sends_recommendation(context):
 
 
 def test_no_reply_in_group(context):
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text=None,
         chat_type=Chat.GROUP
     ).with_photo()

@@ -1,5 +1,7 @@
 import uuid
+from asyncio import Future
 from typing import Optional, List, Dict
+from unittest.mock import MagicMock, Mock, AsyncMock
 
 from telegram import Chat
 
@@ -11,14 +13,16 @@ def generate_key():
 PhotoType = List[Dict]
 
 
-class MockTelegramUpdate:
+class MockTelegramEvent:
 
     def __init__(self):
-        if self.__class__ == MockTelegramUpdate:
+        if self.__class__ == MockTelegramEvent:
             raise NotImplementedError()
         self.message = None
         self.channel_post = None
         self.callback_query = None
+
+    respond = AsyncMock()
 
     @staticmethod
     def with_message(
@@ -70,7 +74,7 @@ class MockTelegramUpdate:
         )
 
 
-class _MockTelegramMessage(MockTelegramUpdate):
+class _MockTelegramMessage(MockTelegramEvent):
 
     def __init__(
             self,
@@ -108,7 +112,7 @@ class _MockTelegramMessage(MockTelegramUpdate):
         return self
 
 
-class _MockTelegramChannelPost(MockTelegramUpdate):
+class _MockTelegramChannelPost(MockTelegramEvent):
 
     def __init__(self, message_id: Optional[int] = None, chat_id: Optional[int] = None, text: Optional[str] = None):
         super().__init__()
@@ -119,7 +123,7 @@ class _MockTelegramChannelPost(MockTelegramUpdate):
         )
 
 
-class _MockTelegramCallback(MockTelegramUpdate):
+class _MockTelegramCallback(MockTelegramEvent):
 
     def __init__(self, *, data=None):
         super().__init__()
@@ -130,7 +134,7 @@ class _MockTelegramCallback(MockTelegramUpdate):
         return self
 
 
-class _MockTelegramCommand(MockTelegramUpdate):
+class _MockTelegramCommand(MockTelegramEvent):
 
     def __init__(self, *, message_id=None, chat_id=None):
         super().__init__()
@@ -140,7 +144,7 @@ class _MockTelegramCommand(MockTelegramUpdate):
         )
 
 
-class _MockTelegramInlineQuery(MockTelegramUpdate):
+class _MockTelegramInlineQuery(MockTelegramEvent):
 
     def __init__(self, *, query_id=None, query=None, offset=None):
         super().__init__()

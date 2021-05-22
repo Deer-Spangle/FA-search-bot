@@ -3,11 +3,11 @@ from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMess
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_empty_query_no_results(context):
-    update = MockTelegramUpdate.with_inline_query(query="")
+    update = MockTelegramEvent.with_inline_query(query="")
     inline = InlineFunctionality(MockExportAPI())
 
     inline.call(update, context)
@@ -20,7 +20,7 @@ def test_empty_query_no_results(context):
 def test_simple_search(context):
     post_id = 234563
     search_term = "YCH"
-    update = MockTelegramUpdate.with_inline_query(query=search_term)
+    update = MockTelegramEvent.with_inline_query(query=search_term)
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission])
@@ -43,7 +43,7 @@ def test_simple_search(context):
 
 def test_no_search_results(context):
     search_term = "RareKeyword"
-    update = MockTelegramUpdate.with_inline_query(query=search_term)
+    update = MockTelegramEvent.with_inline_query(query=search_term)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [])
 
@@ -65,7 +65,7 @@ def test_search_with_offset(context):
     post_id = 234563
     search_term = "YCH"
     offset = 2
-    update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
+    update = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission], page=offset)
@@ -88,7 +88,7 @@ def test_search_with_offset(context):
 def test_search_with_offset_no_more_results(context):
     search_term = "YCH"
     offset = 2
-    update = MockTelegramUpdate.with_inline_query(query=search_term, offset=offset)
+    update = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [], page=offset)
 
@@ -104,7 +104,7 @@ def test_search_with_offset_no_more_results(context):
 
 def test_search_with_spaces(context):
     search_term = "deer YCH"
-    update = MockTelegramUpdate.with_inline_query(query=search_term)
+    update = MockTelegramEvent.with_inline_query(query=search_term)
     post_id1 = 213231
     post_id2 = 84331
     submission1 = MockSubmission(post_id1)
@@ -134,7 +134,7 @@ def test_search_with_spaces(context):
 
 def test_search_with_combo_characters(context):
     search_term = "(deer & !ych) | (dragon & !ych)"
-    update = MockTelegramUpdate.with_inline_query(query=search_term)
+    update = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
@@ -157,7 +157,7 @@ def test_search_with_combo_characters(context):
 
 def test_search_with_field(context):
     search_term = "@lower citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=search_term)
+    update = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())

@@ -5,12 +5,12 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 @patch.object(telegram, "Bot")
 def test_call__route_pause_destination(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -29,7 +29,7 @@ def test_call__route_pause_destination(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_suspend_destination(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/suspend")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/suspend")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -48,7 +48,7 @@ def test_call__route_suspend_destination(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_pause_destination_with_handle(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause@FASearchBot")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -67,7 +67,7 @@ def test_call__route_pause_destination_with_handle(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_pause_subscription(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -87,7 +87,7 @@ def test_call__route_pause_subscription(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_pause_subscription_with_handle(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/pause@FASearchBot test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)

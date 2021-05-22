@@ -2,11 +2,11 @@ from telegram import Chat
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_ignore_message(context):
-    update = MockTelegramUpdate.with_message(text="hello world")
+    update = MockTelegramEvent.with_message(text="hello world")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -16,7 +16,7 @@ def test_ignore_message(context):
 
 
 def test_ignore_link(context):
-    update = MockTelegramUpdate.with_message(text="http://example.com")
+    update = MockTelegramEvent.with_message(text="http://example.com")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -26,7 +26,7 @@ def test_ignore_link(context):
 
 
 def test_ignore_profile_link(context):
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/user/fender/")
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -36,7 +36,7 @@ def test_ignore_profile_link(context):
 
 
 def test_ignore_journal_link(context):
-    update = MockTelegramUpdate.with_message(text="https://www.furaffinity.net/journal/9150534/")
+    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
     neaten = NeatenFunctionality(MockExportAPI())
 
     neaten.call(update, context)
@@ -49,7 +49,7 @@ def test_direct_link(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     goal_submission = MockSubmission(post_id, image_id=image_id)
@@ -72,7 +72,7 @@ def test_direct_link__old_cdn(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     goal_submission = MockSubmission(post_id, image_id=image_id)
@@ -95,7 +95,7 @@ def test_direct_link__newer_cdn(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d2.facdn.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     goal_submission = MockSubmission(post_id, image_id=image_id)
@@ -118,7 +118,7 @@ def test_direct_in_progress_message(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     goal_submission = MockSubmission(post_id, image_id=image_id)
@@ -145,7 +145,7 @@ def test_direct_in_progress_message_groupchat(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     goal_submission = MockSubmission(post_id, image_id=image_id)
@@ -172,7 +172,7 @@ def test_direct_no_match(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -197,7 +197,7 @@ def test_direct_no_match_groupchat(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id),
         chat_type=Chat.GROUP
     )
@@ -228,7 +228,7 @@ def test_two_direct_links(context):
     image_id2 = 1560331510
     post_id1 = 232347
     post_id2 = 232346
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png "
              "http://d.facdn.net/art/{0}/{2}/{2}.pic_of_you.png".format(username, image_id1, image_id2)
     )
@@ -259,7 +259,7 @@ def test_duplicate_direct_link(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png ".format(username, image_id) * 2
     )
     submission = MockSubmission(post_id, image_id=image_id)
@@ -282,7 +282,7 @@ def test_direct_link_and_matching_submission_link(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png https://furaffinity.net/view/{2}/".format(
             username, image_id, post_id
         )
@@ -309,7 +309,7 @@ def test_direct_link_and_different_submission_link(context):
     image_id2 = image_id1 + 300
     post_id1 = 232347
     post_id2 = 233447
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png https://furaffinity.net/view/{2}/".format(
             username, image_id1, post_id2
         )
@@ -343,7 +343,7 @@ def test_submission_link_and_different_direct_link(context):
     image_id2 = image_id1 + 300
     post_id1 = 232347
     post_id2 = 233447
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="https://furaffinity.net/view/{2}/ http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
             username, image_id1, post_id2
         )
@@ -375,7 +375,7 @@ def test_result_on_first_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     submission = MockSubmission(post_id, image_id=image_id)
@@ -400,7 +400,7 @@ def test_result_on_third_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -426,7 +426,7 @@ def test_result_missing_from_first_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -451,7 +451,7 @@ def test_result_missing_from_second_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -477,7 +477,7 @@ def test_result_missing_between_pages(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -504,7 +504,7 @@ def test_result_last_on_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     submission = MockSubmission(post_id, image_id=image_id)
@@ -529,7 +529,7 @@ def test_result_first_on_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     submission = MockSubmission(post_id, image_id=image_id)
@@ -558,7 +558,7 @@ def test_not_on_first_page_empty_second_page(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     neaten = NeatenFunctionality(MockExportAPI())
@@ -583,7 +583,7 @@ def test_result_in_scraps(context):
     username = "fender"
     image_id = 1560331512
     post_id = 232347
-    update = MockTelegramUpdate.with_message(
+    update = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id)
     )
     submission = MockSubmission(post_id, image_id=image_id)

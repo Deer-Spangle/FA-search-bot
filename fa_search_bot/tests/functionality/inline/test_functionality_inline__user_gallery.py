@@ -4,14 +4,14 @@ from fa_search_bot.fa_export_api import FAExportAPI
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_get_user_gallery(context):
     post_id1 = 234563
     post_id2 = 393282
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     inline = InlineFunctionality(MockExportAPI())
@@ -40,7 +40,7 @@ def test_get_user_gallery(context):
 def test_user_scraps(context):
     post_id = 234563
     username = "citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=f"scraps:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "scraps", [submission])
@@ -63,7 +63,7 @@ def test_user_scraps(context):
 def test_second_page(context):
     post_id = 234563
     username = "citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=f"scraps:{username}", offset="2")
+    update = MockTelegramEvent.with_inline_query(query=f"scraps:{username}", offset="2")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "scraps", [submission], page=2)
@@ -85,7 +85,7 @@ def test_second_page(context):
 
 def test_empty_gallery(context):
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", [])
 
@@ -106,7 +106,7 @@ def test_empty_gallery(context):
 
 def test_empty_scraps(context):
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"scraps:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "scraps", [])
 
@@ -128,7 +128,7 @@ def test_empty_scraps(context):
 def test_hypens_in_username(context):
     post_id = 234563
     username = "dr-spangle"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", [submission])
@@ -151,7 +151,7 @@ def test_hypens_in_username(context):
 def test_weird_characters_in_username(context):
     post_id = 234563
     username = "l[i]s"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", [submission])
@@ -173,7 +173,7 @@ def test_weird_characters_in_username(context):
 
 def test_no_user_exists(context, requests_mock):
     username = "fakelad"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)
@@ -200,7 +200,7 @@ def test_no_user_exists(context, requests_mock):
 def test_username_with_colon(context, requests_mock):
     # FA doesn't allow usernames to have : in them
     username = "fake:lad"
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)
@@ -230,7 +230,7 @@ def test_over_48_submissions(context):
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", submissions)
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
 
     inline.call(update, context)
 
@@ -255,7 +255,7 @@ def test_over_48_submissions_continue(context):
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", submissions)
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset="1:48")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset="1:48")
 
     inline.call(update, context)
 
@@ -281,7 +281,7 @@ def test_over_48_submissions_continue_weird(context):
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", submissions)
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
     inline.call(update, context)
 
@@ -306,7 +306,7 @@ def test_double_48_submissions_continue(context):
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", submissions)
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}", offset="1:48")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset="1:48")
 
     inline.call(update, context)
 
@@ -327,7 +327,7 @@ def test_double_48_submissions_continue(context):
 
 def test_no_username_set(context, requests_mock):
     username = ""
-    update = MockTelegramUpdate.with_inline_query(query=f"gallery:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)

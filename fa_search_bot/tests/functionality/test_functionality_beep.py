@@ -1,13 +1,17 @@
+import pytest
+from telethon.events import StopPropagation
+
 from fa_search_bot.functionalities.beep import BeepFunctionality
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
-def test_beep(context):
-    update = MockTelegramUpdate.with_command()
+@pytest.mark.asyncio
+async def test_beep(context):
+    event = MockTelegramEvent.with_command()
     beep = BeepFunctionality()
 
-    beep.call(update, context)
+    with pytest.raises(StopPropagation):
+        await beep.call(event)
 
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "boop"
+    event.respond.assert_called()
+    assert event.respond.call_args[0][0] == "boop"

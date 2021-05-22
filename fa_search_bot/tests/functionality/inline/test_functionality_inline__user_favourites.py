@@ -4,14 +4,14 @@ from fa_search_bot.fa_export_api import FAExportAPI
 from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 def test_user_favourites(context):
     post_id1 = 234563
     post_id2 = 393282
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"favourites:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favourites:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     inline = InlineFunctionality(MockExportAPI())
@@ -40,7 +40,7 @@ def test_user_favourites(context):
 def test_user_favs(context):
     post_id = 234563
     username = "citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission])
@@ -63,7 +63,7 @@ def test_user_favs(context):
 def test_american_spelling(context):
     post_id = 234563
     username = "citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=f"favorites:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favorites:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission])
@@ -87,7 +87,7 @@ def test_continue_from_fav_id(context):
     post_id = 234563
     fav_id = "354233"
     username = "citrinelle"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}", offset=fav_id)
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}", offset=fav_id)
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission], next_id=fav_id)
@@ -109,7 +109,7 @@ def test_continue_from_fav_id(context):
 
 def test_empty_favs(context):
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [])
 
@@ -131,7 +131,7 @@ def test_empty_favs(context):
 def test_hypens_in_username(context):
     post_id = 234563
     username = "dr-spangle"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission])
@@ -154,7 +154,7 @@ def test_hypens_in_username(context):
 def test_weird_characters_in_username(context):
     post_id = 234563
     username = "l[i]s"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission])
@@ -176,7 +176,7 @@ def test_weird_characters_in_username(context):
 
 def test_no_user_exists(context, requests_mock):
     username = "fakelad"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)
@@ -203,7 +203,7 @@ def test_no_user_exists(context, requests_mock):
 def test_username_with_colon(context, requests_mock):
     # FA doesn't allow usernames to have : in them
     username = "fake:lad"
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)
@@ -233,7 +233,7 @@ def test_over_48_favs(context):
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, submissions)
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
 
     inline.call(update, context)
 
@@ -254,7 +254,7 @@ def test_over_48_favs(context):
 
 def test_no_username_set(context, requests_mock):
     username = ""
-    update = MockTelegramUpdate.with_inline_query(query=f"favs:{username}")
+    update = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
     inline.api = FAExportAPI("http://example.com", ignore_status=True)
@@ -289,7 +289,7 @@ def test_user_favourites_last_page(context):
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     username = "fender"
-    update = MockTelegramUpdate.with_inline_query(query=f"favourites:{username}", offset=submission2.fav_id)
+    update = MockTelegramEvent.with_inline_query(query=f"favourites:{username}", offset=submission2.fav_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
 

@@ -8,12 +8,12 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 @patch.object(telegram, "Bot")
 def test_call__route_add_subscription(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/add_subscription test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -33,7 +33,7 @@ def test_call__route_add_subscription(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_add_subscription_with_username(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -53,7 +53,7 @@ def test_call__route_add_subscription_with_username(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_remove_subscription(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_subscription example")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -73,7 +73,7 @@ def test_call__route_remove_subscription(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_remove_subscription_with_username(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -93,7 +93,7 @@ def test_call__route_remove_subscription_with_username(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_list_subscriptions(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/list_subscriptions")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
@@ -112,7 +112,7 @@ def test_call__route_list_subscriptions(context):
 
 @patch.object(telegram, "Bot")
 def test_call__route_list_subscriptions_with_username(context):
-    update = MockTelegramUpdate.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
+    update = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, context.bot)
     func = SubscriptionFunctionality(watcher)
