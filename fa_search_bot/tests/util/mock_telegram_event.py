@@ -18,11 +18,12 @@ class MockTelegramEvent:
     def __init__(self):
         if self.__class__ == MockTelegramEvent:
             raise NotImplementedError()
-        self.message = None
+        self.text = None
         self.channel_post = None
         self.callback_query = None
 
     respond = AsyncMock()
+    reply = AsyncMock()
 
     @staticmethod
     def with_message(
@@ -33,8 +34,8 @@ class MockTelegramEvent:
             chat_type=Chat.PRIVATE,
             migrate_from_chat_id: int = None,
             migrate_to_chat_id: int = None
-    ):
-        return _MockTelegramMessage(
+    ) -> '_MockMessage':
+        return _MockMessage(
             message_id=message_id,
             chat_id=chat_id,
             text=text,
@@ -72,44 +73,6 @@ class MockTelegramEvent:
             query=query,
             offset=offset
         )
-
-
-class _MockTelegramMessage(MockTelegramEvent):
-
-    def __init__(
-            self,
-            *,
-            message_id=None,
-            text: str = None,
-            text_markdown_urled: str = None,
-            chat_id=None,
-            chat_type=None,
-            migrate_from_chat_id: int = None,
-            migrate_to_chat_id: int = None
-    ):
-        super().__init__()
-        # Set up message data
-        self.message = _MockMessage(
-            message_id=message_id,
-            chat_id=chat_id,
-            text=text,
-            text_markdown_urled=text_markdown_urled,
-            chat_type=chat_type,
-            migrate_from_chat_id=migrate_from_chat_id,
-            migrate_to_chat_id=migrate_to_chat_id
-        )
-
-    def with_photo(self, photo_file_id=None, caption: str = None, caption_markdown_urled: str = None):
-        self.message.set_photo(photo_file_id, caption, caption_markdown_urled)
-        return self
-
-    def with_document(self, file_id=None, mime_type=None):
-        self.message.set_document(file_id, mime_type)
-        return self
-
-    def with_buttons(self, buttons: List[List['MockButton']]):
-        self.message.set_keyboard(buttons)
-        return self
 
 
 class _MockTelegramChannelPost(MockTelegramEvent):
@@ -164,19 +127,20 @@ class _MockInlineQuery:
             self.offset = ""
 
 
-class _MockMessage:
+class _MockMessage(MockTelegramEvent):
 
     def __init__(
             self,
             *,
             message_id=None,
-            chat_id=None,
             text: str = None,
             text_markdown_urled: str = None,
+            chat_id=None,
             chat_type=None,
             migrate_from_chat_id: int = None,
             migrate_to_chat_id: int = None
     ):
+        super().__init__()
         self.message_id = message_id
         self.chat_id = chat_id
         self.text = text
@@ -196,6 +160,18 @@ class _MockMessage:
             self.chat_id = generate_key()
         if text_markdown_urled is None:
             self.text_markdown_urled = self.text
+
+    def with_photo(self, photo_file_id=None, caption: str = None, caption_markdown_urled: str = None):
+        self.set_photo(photo_file_id, caption, caption_markdown_urled)
+        return self
+
+    def with_document(self, file_id=None, mime_type=None):
+        self.set_document(file_id, mime_type)
+        return self
+
+    def with_buttons(self, buttons: List[List['MockButton']]):
+        self.set_keyboard(buttons)
+        return self
 
     def set_photo(self, photo_file_id, caption: str = None, caption_markdown_urled: str = None):
         # Defaults
