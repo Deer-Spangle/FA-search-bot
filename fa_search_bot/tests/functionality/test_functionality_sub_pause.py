@@ -1,5 +1,5 @@
-from unittest.mock import patch
-import telegram
+import pytest
+from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
@@ -8,107 +8,106 @@ from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_pause_destination(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause")
+@pytest.mark.asyncio
+async def test_call__route_pause_destination(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/pause")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert pause_dest.called
     assert pause_dest.args is not None
-    assert pause_dest.args[0] == update.message.chat_id
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Paused all subscriptions"
+    assert pause_dest.args[0] == event.chat_id
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Paused all subscriptions"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_suspend_destination(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/suspend")
+@pytest.mark.asyncio
+async def test_call__route_suspend_destination(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/suspend")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert pause_dest.called
     assert pause_dest.args is not None
-    assert pause_dest.args[0] == update.message.chat_id
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Paused all subscriptions"
+    assert pause_dest.args[0] == event.chat_id
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Paused all subscriptions"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_pause_destination_with_handle(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot")
+@pytest.mark.asyncio
+async def test_call__route_pause_destination_with_handle(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     pause_dest = MockMethod("Paused all subscriptions")
     func._pause_destination = pause_dest.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert pause_dest.called
     assert pause_dest.args is not None
-    assert pause_dest.args[0] == update.message.chat_id
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Paused all subscriptions"
+    assert pause_dest.args[0] == event.chat_id
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Paused all subscriptions"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_pause_subscription(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause test")
+@pytest.mark.asyncio
+async def test_call__route_pause_subscription(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/pause test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     pause_sub = MockMethod("Paused subscription")
     func._pause_subscription = pause_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert pause_sub.called
     assert pause_sub.args is not None
-    assert pause_sub.args[0] == update.message.chat_id
+    assert pause_sub.args[0] == event.chat_id
     assert pause_sub.args[1] == "test"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Paused subscription"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Paused subscription"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_pause_subscription_with_handle(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot test")
+@pytest.mark.asyncio
+async def test_call__route_pause_subscription_with_handle(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/pause@FASearchBot test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     pause_sub = MockMethod("Paused subscription")
     func._pause_subscription = pause_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert pause_sub.called
     assert pause_sub.args is not None
-    assert pause_sub.args[0] == update.message.chat_id
+    assert pause_sub.args[0] == event.chat_id
     assert pause_sub.args[1] == "test"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Paused subscription"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Paused subscription"
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__no_subs(context):
+def test_pause_destination__no_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._pause_destination(18749)
@@ -117,10 +116,9 @@ def test_pause_destination__no_subs(context):
     assert len(watcher.subscriptions) == 0
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__one_sub(context):
+def test_pause_destination__one_sub(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
@@ -139,10 +137,9 @@ def test_pause_destination__one_sub(context):
     assert subscription.paused is True
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__multiple_subs(context):
+def test_pause_destination__multiple_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("example", 18749))
     func = SubscriptionFunctionality(watcher)
@@ -162,10 +159,9 @@ def test_pause_destination__multiple_subs(context):
         assert subscription.paused is True
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__not_in_other_destination(context):
+def test_pause_destination__not_in_other_destination(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("example", 12345))
     func = SubscriptionFunctionality(watcher)
@@ -190,10 +186,9 @@ def test_pause_destination__not_in_other_destination(context):
     assert sub2.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__all_paused(context):
+def test_pause_destination__all_paused(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     sub1 = Subscription("test", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -212,10 +207,9 @@ def test_pause_destination__all_paused(context):
         assert subscription.paused is True
 
 
-@patch.object(telegram, "Bot")
-def test_pause_destination__all_paused_except_elsewhere(context):
+def test_pause_destination__all_paused_except_elsewhere(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     sub1 = Subscription("test", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -239,10 +233,9 @@ def test_pause_destination__all_paused_except_elsewhere(context):
     assert sub2.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_subscription__no_matching(context):
+def test_pause_subscription__no_matching(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("deer", 18749))
     func = SubscriptionFunctionality(watcher)
@@ -255,10 +248,9 @@ def test_pause_subscription__no_matching(context):
         assert subscription.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_subscription__one_matching_in_wrong_destination(context):
+def test_pause_subscription__one_matching_in_wrong_destination(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 12345))
     func = SubscriptionFunctionality(watcher)
@@ -271,10 +263,9 @@ def test_pause_subscription__one_matching_in_wrong_destination(context):
         assert subscription.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_subscription__one_matching(context):
+def test_pause_subscription__one_matching(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
@@ -299,10 +290,9 @@ def test_pause_subscription__one_matching(context):
     assert sub2.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_subscription__case_insensitive(context):
+def test_pause_subscription__case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("EXAMPLE", 18749))
     watcher.subscriptions.add(Subscription("TEST", 18749))
     func = SubscriptionFunctionality(watcher)
@@ -327,10 +317,9 @@ def test_pause_subscription__case_insensitive(context):
     assert sub2.paused is False
 
 
-@patch.object(telegram, "Bot")
-def test_pause_subscription__already_paused(context):
+def test_pause_subscription__already_paused(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     sub = Subscription("test", 18749)
     sub.paused = True
