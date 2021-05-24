@@ -1,5 +1,6 @@
 import uuid
 from asyncio import Future
+from enum import Enum, auto
 from typing import Optional, List, Dict
 from unittest.mock import MagicMock, Mock, AsyncMock
 
@@ -13,6 +14,12 @@ def generate_key():
 PhotoType = List[Dict]
 
 
+class ChatType(Enum):
+    PRIVATE = auto()
+    GROUP = auto()
+    CHANNEL = auto()
+
+
 class MockTelegramEvent:
 
     def __init__(self):
@@ -21,19 +28,18 @@ class MockTelegramEvent:
         self.text = None
         self.channel_post = None
         self.callback_query = None
-
-    respond = AsyncMock()
-    reply = AsyncMock()
+        self.respond = AsyncMock()
+        self.reply = AsyncMock()
 
     @staticmethod
     def with_message(
-            message_id=None,
-            chat_id=None,
-            text: str = None,
-            text_markdown_urled: str = None,
-            chat_type=Chat.PRIVATE,
-            migrate_from_chat_id: int = None,
-            migrate_to_chat_id: int = None
+            message_id: Optional[int] = None,
+            chat_id: Optional[int] = None,
+            text: Optional[str] = None,
+            text_markdown_urled: Optional[str] = None,
+            chat_type: ChatType = ChatType.PRIVATE,
+            migrate_from_chat_id: Optional[int] = None,
+            migrate_to_chat_id: Optional[int] = None
     ) -> '_MockMessage':
         return _MockMessage(
             message_id=message_id,
@@ -132,13 +138,13 @@ class _MockMessage(MockTelegramEvent):
     def __init__(
             self,
             *,
-            message_id=None,
-            text: str = None,
-            text_markdown_urled: str = None,
-            chat_id=None,
-            chat_type=None,
-            migrate_from_chat_id: int = None,
-            migrate_to_chat_id: int = None
+            message_id: Optional[int] = None,
+            text: Optional[str] = None,
+            text_markdown_urled: Optional[str] = None,
+            chat_id: Optional[int] = None,
+            chat_type: ChatType = ChatType.PRIVATE,
+            migrate_from_chat_id: Optional[int] = None,
+            migrate_to_chat_id: Optional[int] = None
     ):
         super().__init__()
         self.message_id = message_id
@@ -146,6 +152,9 @@ class _MockMessage(MockTelegramEvent):
         self.text = text
         self.text_markdown_urled = text_markdown_urled or text
         self.chat = _MockChat(chat_type=chat_type)
+        self.is_private = chat_type == ChatType.PRIVATE
+        self.is_group = chat_type == ChatType.GROUP
+        self.is_channel = chat_type == ChatType.CHANNEL
         self.migrate_from_chat_id = migrate_from_chat_id
         self.migrate_to_chat_id = migrate_to_chat_id
         # Set defaults
@@ -218,7 +227,7 @@ class _MockChannelPost:
 
 class _MockChat:
 
-    def __init__(self, chat_type=None):
+    def __init__(self, chat_type: ChatType = ChatType.PRIVATE):
         self.type = chat_type
 
 
