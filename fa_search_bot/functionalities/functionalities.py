@@ -1,47 +1,37 @@
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from typing import Optional
 
-import telegram
-from telegram.ext import CallbackContext, run_async
+from telethon import TelegramClient
+from telethon.events import NewMessage, StopPropagation
+from telethon.events.common import EventCommon, EventBuilder
 
 
-@contextmanager
-def in_progress_msg(update: telegram.Update, context: CallbackContext, text: Optional[str]):
+@asynccontextmanager
+async def in_progress_msg(event: NewMessage.Event, text: Optional[str]):
     if text is None:
         text = f"In progress"
     text = f"⏳ {text}"
-    msg_promise = context.bot.send_message(
-        chat_id=update.message.chat_id,
-        text=text,
-        reply_to_message_id=update.message.message_id
-    )
-    msg = msg_promise.result()
+    msg = await event.reply(text)
     try:
         yield
-    except Exception as e:
-        context.bot.send_message(
-            chat_id=update.message.chat_id,
-            text=f"Command failed. Sorry, I tried but failed to process this.",
-            reply_to_message_id=update.message.message_id
+    except Exception:
+        await event.reply(
+            "Command failed. Sorry, I tried but failed to process this."
         )
-        raise e
+        raise StopPropagation
     finally:
-        context.bot.delete_message(update.message.chat_id, msg.message_id)
+        await msg.delete()
 
 
 class BotFunctionality(ABC):
 
-    def __init__(self, handler_cls, **kwargs):
-        self.kwargs = kwargs
-        self.handler_cls = handler_cls
+    def __init__(self, event: EventBuilder):
+        self.event = event
 
-    def register(self, dispatcher):
-        args_dict = self.kwargs
-        args_dict["callback"] = run_async(self.call)
-        handler = self.handler_cls(**args_dict)
-        dispatcher.add_handler(handler)
+    def register(self, client: TelegramClient) -> None:
+        client.add_event_handler(self.call, self.event)
 
     @abstractmethod
-    def call(self, update: telegram.Update, context: CallbackContext):
+    async def call(self, event: EventCommon) -> None:
         pass

@@ -1,10 +1,10 @@
+import asyncio
 import logging
-import uuid
-from typing import Tuple, List, Union, Optional
+from typing import Tuple, List, Union, Optional, Coroutine
 
-from telegram import InlineQueryResult, InlineQueryResultPhoto, InlineQueryResultArticle, InputTextMessageContent, \
-    Update
-from telegram.ext import InlineQueryHandler, CallbackContext
+from telethon.events import InlineQuery, StopPropagation
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
 from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
@@ -14,119 +14,163 @@ logger = logging.getLogger(__name__)
 
 
 class InlineFunctionality(BotFunctionality):
+    INLINE_MAX = 20
 
     def __init__(self, api: FAExportAPI):
-        super().__init__(InlineQueryHandler)
+        super().__init__(InlineQuery())
         self.api = api
 
-    def call(self, update: Update, context: CallbackContext):
-        query = update.inline_query.query
+    async def call(self, event: InlineQuery.Event):
+        query = event.query.query
         query_clean = query.strip().lower()
-        offset = update.inline_query.offset
+        offset = event.query.offset
         logger.info("Got an inline query, page=%s", offset)
         if query_clean == "":
-            context.bot.answer_inline_query(update.inline_query.id, [])
-            return
+            await event.answer([])
+            raise StopPropagation
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
             usage_logger.info("Inline favourites")
             _, username = query_clean.split(":", 1)
-            results, next_offset = self._favs_query_results(username, offset)
+            results, next_offset = await self._favs_query_results(event.builder, username, offset)
         else:
             gallery_query = self._parse_folder_and_username(query_clean)
             if gallery_query:
                 usage_logger.info("Inline gallery")
                 folder, username = gallery_query
-                results, next_offset = self._gallery_query_results(folder, username, offset)
+                results, next_offset = await self._gallery_query_results(event.builder, folder, username, offset)
             else:
                 usage_logger.info("Inline search")
-                results, next_offset = self._search_query_results(query, offset)
+                results, next_offset = await self._search_query_results(event.builder, query, offset)
+        # Await results while ignoring exceptions
+        results = list(filter(
+            lambda x: not isinstance(x, Exception),
+            await asyncio.gather(*results, return_exceptions=True)
+        ))
+        logger.info(f"There are {len(results)} results.")
         # Send results
-        context.bot.answer_inline_query(update.inline_query.id, results, next_offset=next_offset)
+        await event.answer(
+            results,
+            next_offset=str(next_offset) if next_offset else None
+        )
+        raise StopPropagation
 
-    def _favs_query_results(self, username: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
+    async def _favs_query_results(
+            self,
+            builder: InlineBuilder,
+            username: str,
+            offset: str
+    ) -> Tuple[
+        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
+        Optional[str]
+    ]:
+        # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None
         try:
-            submissions = self.api.get_user_favs(username, offset)[:48]
+            submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
-            return self._user_not_found(username), ""
+            return self._user_not_found(builder, username), None
         # If no results, send error
-        if len(submissions) > 0:
-            next_offset = submissions[-1].fav_id
-            if next_offset == offset:
-                submissions = []
-                next_offset = ""
-        else:
-            next_offset = ""
+        if len(submissions) == 0:
             if offset is None:
-                return self._empty_user_favs(username), ""
-        results = [x.to_inline_query_result() for x in submissions]
+                return self._empty_user_favs(builder, username), None
+            return [], None
+        next_offset = str(submissions[-1].fav_id)
+        if next_offset == offset:
+            return [], None
+        results = [x.to_inline_query_result(builder) for x in submissions]
         return results, next_offset
 
-    def _gallery_query_results(self, folder: str, username: str, offset: str) \
-            -> Tuple[List[InlineQueryResult], Union[int, str]]:
+    async def _gallery_query_results(
+            self,
+            builder: InlineBuilder,
+            folder: str,
+            username: str,
+            offset: str
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
+        page, skip = self._parse_offset(offset)
+        # Try and get results
+        try:
+            results = await self._create_user_folder_results(builder, username, folder, page)
+        except PageNotFound:
+            logger.warning("User not found for inline gallery query")
+            return self._user_not_found(builder, username), ""
+        # If no results, send error
+        if len(results) == 0:
+            if page == 1:
+                return self._empty_user_folder(builder, username, folder), None
+            return [], None
+        # Handle paging of big result lists
+        return self._page_results(results, page, skip)
+
+    def _parse_offset(self, offset: str) -> Tuple[int, int]:
         if offset == "":
             page, skip = 1, None
         elif ":" in offset:
             page, skip = (int(x) for x in offset.split(":", 1))
         else:
             page, skip = int(offset), None
-        # Default next offset
-        next_offset = page + 1
-        # Try and get results
-        try:
-            results = self._create_user_folder_results(username, folder, page)
-        except PageNotFound:
-            logger.warning("User not found for inline gallery query")
-            return self._user_not_found(username), ""
-        # If no results, send error
-        if len(results) == 0:
-            next_offset = ""
-            if page == 1:
-                return self._empty_user_folder(username, folder), ""
-        # Handle paging of big result lists
+        return page, skip
+
+    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
+        next_offset = str(page + 1)
         if skip:
             results = results[skip:]
-        if len(results) > 48:
-            results = results[:48]
+        if len(results) > self.INLINE_MAX:
+            results = results[:self.INLINE_MAX]
             if skip:
-                skip += 48
+                skip += self.INLINE_MAX
             else:
-                skip = 48
+                skip = self.INLINE_MAX
             next_offset = f"{page}:{skip}"
         return results, next_offset
 
-    def _search_query_results(self, query: str, offset: str) -> Tuple[List[InlineQueryResult], Union[int, str]]:
-        page = self._page_from_offset(offset)
+    async def _search_query_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            offset: str
+    ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
+        page, skip = self._parse_offset(offset)
         query_clean = query.strip().lower()
-        next_offset = page + 1
-        results = self._create_inline_search_results(query_clean, page)
+        results = await self._create_inline_search_results(builder, query_clean, page)
         if len(results) == 0:
-            next_offset = ""
             if page == 1:
-                results = self._no_search_results_found(query)
-        return results, next_offset
+                return self._no_search_results_found(builder, query), None
+            return [], None
+        return self._page_results(results, page, skip)
 
     def _page_from_offset(self, offset: str) -> int:
         if offset == "":
             offset = 1
         return int(offset)
 
-    def _create_user_folder_results(self, username: str, folder: str, page: int) -> List[InlineQueryResultPhoto]:
+    async def _create_user_folder_results(
+            self,
+            builder: InlineBuilder,
+            username: str,
+            folder: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         return [
-            x.to_inline_query_result()
+            x.to_inline_query_result(builder)
             for x
-            in self.api.get_user_folder(username, folder, page)
+            in await self.api.get_user_folder(username, folder, page)
         ]
 
-    def _create_inline_search_results(self, query_clean: str, page: int) -> List[InlineQueryResultPhoto]:
+    async def _create_inline_search_results(
+            self,
+            builder: InlineBuilder,
+            query_clean: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         return [
-            x.to_inline_query_result()
+            x.to_inline_query_result(builder)
             for x
-            in self.api.get_search_results(query_clean, page)
+            in await self.api.get_search_results(query_clean, page)
         ]
 
     def _parse_folder_and_username(self, query_clean: str) -> Optional[Tuple[str, str]]:
@@ -136,46 +180,55 @@ class InlineFunctionality(BotFunctionality):
         else:
             return None
 
-    def _empty_user_folder(self, username: str, folder: str) -> List[InlineQueryResultArticle]:
+    def _empty_user_folder(
+            self,
+            builder: InlineBuilder,
+            username: str,
+            folder: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"There are no submissions in {folder} for user \"{username}\"."
         return [
-            InlineQueryResultArticle(
-                id=uuid.uuid4(),
+            builder.article(
                 title=f"Nothing in {folder}.",
-                input_message_content=InputTextMessageContent(
-                    message_text=f"There are no submissions in {folder} for user \"{username}\"."
-                )
+                description=msg,
             )
         ]
 
-    def _empty_user_favs(self, username: str) -> List[InlineQueryResultArticle]:
+    def _empty_user_favs(
+            self,
+            builder: InlineBuilder,
+            username: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"There are no favourites for user \"{username}\"."
         return [
-            InlineQueryResultArticle(
-                id=uuid.uuid4(),
+            builder.article(
                 title=f"Nothing in favourites.",
-                input_message_content=InputTextMessageContent(
-                    message_text=f"There are no favourites for user \"{username}\"."
-                )
+                description=msg,
             )
         ]
 
-    def _no_search_results_found(self, query: str) -> List[InlineQueryResultArticle]:
+    def _no_search_results_found(
+            self,
+            builder: InlineBuilder,
+            query: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"No results for search \"{query}\"."
         return [
-            InlineQueryResultArticle(
-                id=uuid.uuid4(),
+            builder.article(
                 title="No results found.",
-                input_message_content=InputTextMessageContent(
-                    message_text=f"No results for search \"{query}\"."
-                )
+                description=msg,
             )
         ]
 
-    def _user_not_found(self, username: str) -> List[InlineQueryResultArticle]:
+    def _user_not_found(
+            self,
+            builder: InlineBuilder,
+            username: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"FurAffinity user does not exist by the name: \"{username}\"."
         return [
-            InlineQueryResultArticle(
-                id=uuid.uuid4(),
+            builder.article(
                 title="User does not exist.",
-                input_message_content=InputTextMessageContent(
-                    message_text=f"FurAffinity user does not exist by the name: \"{username}\"."
-                )
+                description=msg,
             )
         ]

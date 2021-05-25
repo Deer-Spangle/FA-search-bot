@@ -27,11 +27,12 @@ async def test_neaten_gif(controller: BotController):
     assert response.messages[-1].animation
 
 
+@pytest.mark.asyncio
 async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot):
     # - send link, get pretty gif from cache
     submission_id = "27408045"
     # Populate cache
-    submission = bot.api.get_full_submission(submission_id)
+    submission = await bot.api.get_full_submission(submission_id)
     filename = submission._get_gif_from_cache()
     if filename is None:
         output_path = submission._convert_gif(submission.download_url)

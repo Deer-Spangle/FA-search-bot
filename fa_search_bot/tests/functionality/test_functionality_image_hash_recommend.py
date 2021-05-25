@@ -1,30 +1,33 @@
-from telegram import Chat
+import pytest
+from telethon.events import StopPropagation
 
 from fa_search_bot.bot import ImageHashRecommendFunctionality
-from fa_search_bot.tests.util.mock_telegram_update import MockTelegramUpdate
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, ChatType
 
 
-def test_sends_recommendation(context):
-    update = MockTelegramUpdate.with_message(text=None).with_photo()
+@pytest.mark.asyncio
+async def test_sends_recommendation(mock_client):
+    event = MockTelegramEvent.with_message(text=None).with_photo()
     func = ImageHashRecommendFunctionality()
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    message_text = context.bot.send_message.call_args[1]['text']
+    event.reply.assert_called()
+    message_text = event.reply.call_args[0][0]
     assert "@FindFurryPicBot" in message_text
     assert "@FoxBot" in message_text
     assert "@reverseSearchBot" in message_text
 
 
-def test_no_reply_in_group(context):
-    update = MockTelegramUpdate.with_message(
+@pytest.mark.asyncio
+async def test_no_reply_in_group(mock_client):
+    event = MockTelegramEvent.with_message(
         text=None,
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     ).with_photo()
     func = ImageHashRecommendFunctionality()
 
-    func.call(update, context)
+    await func.call(event)
 
-    context.bot.send_message.assert_not_called()
+    event.reply.assert_not_called()

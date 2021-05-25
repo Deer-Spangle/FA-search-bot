@@ -1,32 +1,27 @@
-from telegram import Message
-from telegram.ext import Filters, BaseFilter
+import re
+
+from telethon.events import NewMessage
 
 
-class FilterRegex(Filters.regex):
-
-    def filter(self, message: Message) -> bool:
-        text = message.text_markdown_urled or message.caption_markdown_urled
-        if text and self.pattern.search(text):
-            return True
-        buttons = [[]]
-        if message.reply_markup and message.reply_markup.inline_keyboard:
-            buttons = message.reply_markup.inline_keyboard
-        for button_row in buttons:
+def filter_regex(event: NewMessage.Event, pattern: re.Pattern) -> bool:
+    text = event.message.text
+    if text and pattern.search(text):
+        return True
+    if event.message.buttons:
+        for button_row in event.message.buttons:
             for button in button_row:
-                if button.text and self.pattern.search(button.text):
+                if button.text and pattern.search(button.text):
                     return True
-                if button.url and self.pattern.search(button.url):
+                if button.url and pattern.search(button.url):
                     return True
-        return False
+    return False
 
 
-class FilterImageNoCaption(BaseFilter):
-
-    def filter(self, message: Message) -> bool:
-        keyboard = message.reply_markup and message.reply_markup.inline_keyboard
-        has_buttons = False
-        if keyboard:
-            has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
-        text = message.text_markdown_urled or message.caption_markdown_urled
-        media = message.photo or message.document
-        return not (text or has_buttons) and media
+def filter_image_no_caption(event: NewMessage.Event) -> bool:
+    keyboard = event.message.buttons
+    has_buttons = False
+    if keyboard:
+        has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
+    text = event.message.text
+    media = event.message.photo or event.message.document
+    return not (text or has_buttons) and media

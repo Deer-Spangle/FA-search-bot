@@ -1,7 +1,6 @@
 import logging
 
-from telegram import Update
-from telegram.ext import CommandHandler, CallbackContext
+from telethon import events
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
@@ -12,9 +11,10 @@ logger = logging.getLogger(__name__)
 class BeepFunctionality(BotFunctionality):
 
     def __init__(self):
-        super().__init__(CommandHandler, command='beep')
+        super().__init__(events.NewMessage(pattern="/beep", incoming=True))
 
-    def call(self, update: Update, context: CallbackContext):
+    async def call(self, event: events.NewMessage.Event) -> None:
         logger.info("Beep")
         usage_logger.info("Beep function")
-        context.bot.send_message(chat_id=update.message.chat_id, text="boop")
+        await event.respond("boop")
+        raise events.StopPropagation

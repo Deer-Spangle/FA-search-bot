@@ -2,16 +2,21 @@ import logging
 import re
 from typing import Optional, List
 
-from telegram import Chat, Update
-from telegram.ext import MessageHandler, CallbackContext
+from telethon.events import NewMessage, StopPropagation
 
-from fa_search_bot.filters import FilterRegex
 from fa_search_bot.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.fa_submission import FASubmissionFull, CantSendFileType, FASubmissionShort
+from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
+
+
+async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) -> None:
+    # Only send an error message in private message
+    if event.is_private:
+        await event.reply(error_message)
 
 
 class NeatenFunctionality(BotFunctionality):
@@ -24,49 +29,50 @@ class NeatenFunctionality(BotFunctionality):
     FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})")
 
     def __init__(self, api):
-        super().__init__(MessageHandler, filters=FilterRegex(self.FA_LINKS))
+        super().__init__(NewMessage(func=lambda e: filter_regex(e, self.FA_LINKS), incoming=True))
         self.api = api
 
-    def call(self, update: Update, context: CallbackContext):
+    async def call(self, event: NewMessage.Event):
         # Only deal with messages, not channel posts
-        if not update.message:
+        if event.is_channel:
             return
         # Get links from message
-        matches = self._find_links_in_message(update)
+        matches = self._find_links_in_message(event)
         if not matches:
             return
         submission_ids = []
-        with in_progress_msg(update, context, "Neatening image link"):
+        async with in_progress_msg(event, "Neatening image link"):
             logger.info("Neatening links")
             for match in matches:
-                submission_id = self._get_submission_id_from_link(context.bot, update, match)
+                submission_id = await self._get_submission_id_from_link(event, match)
                 if submission_id:
                     submission_ids.append(submission_id)
             # Remove duplicates, preserving order
             submission_ids = list(dict.fromkeys(submission_ids))
             # Handle each submission
             for submission_id in submission_ids:
-                self._handle_fa_submission_link(context.bot, update, submission_id)
+                await self._handle_fa_submission_link(event, submission_id)
+        raise StopPropagation
 
-    def _find_links_in_message(self, update) -> Optional[List[str]]:
+    def _find_links_in_message(self, event: NewMessage.Event) -> Optional[List[str]]:
         link_matches = []
         # Get links from text
-        message = update.message.text_markdown_urled
+        message = event.message.text
         # Only use image caption in private chats
-        if not message and update.message.chat.type == Chat.PRIVATE:
-            message = update.message.caption_markdown_urled
+        if not event.is_private and event.message.photo:
+            message = None
         if message is not None:
             link_matches += [match[0] for match in self.FA_LINKS.findall(message)]
         # Get links from buttons
-        if update.message.reply_markup and update.message.reply_markup.inline_keyboard:
-            for button_row in update.message.reply_markup.inline_keyboard:
+        if event.message.buttons:
+            for button_row in event.message.buttons:
                 for button in button_row:
                     button_matches = self.FA_LINKS.findall(button.url)
                     if button_matches:
                         link_matches += [match[0] for match in button_matches]
         return link_matches
 
-    def _get_submission_id_from_link(self, bot, update, link: str) -> Optional[int]:
+    async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[int]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
@@ -81,62 +87,51 @@ class NeatenFunctionality(BotFunctionality):
         direct_match = self.FA_DIRECT_LINK.match(link)
         username = direct_match.group(1)
         image_id = int(direct_match.group(2))
-        submission_id = self._find_submission(username, image_id)
+        submission_id = await self._find_submission(username, image_id)
         if not submission_id:
             logger.warning("Couldn't find submission by username: %s with image id: %s", username, image_id)
-            self._return_error_in_privmsg(
-                bot, update,
+            await _return_error_in_privmsg(
+                event,
                 f"Could not locate the image by {username} with image id {image_id}."
             )
         usage_logger.info("Neaten link: direct image link")
         return submission_id
 
-    def _handle_fa_submission_link(self, bot, update, submission_id: int):
+    async def _handle_fa_submission_link(self, event: NewMessage.Event, submission_id: int):
         logger.info("Found a link, ID: %s", submission_id)
         try:
-            submission = self.api.get_full_submission(str(submission_id))
-            self._send_neat_fa_response(bot, update, submission)
+            submission = await self.api.get_full_submission(str(submission_id))
+            await self._send_neat_fa_response(event, submission)
         except PageNotFound:
             logger.warning("Submission invalid or deleted. Submission ID: %s", submission_id)
-            self._return_error_in_privmsg(
-                bot,
-                update,
+            await _return_error_in_privmsg(
+                event,
                 "This doesn't seem to be a valid FA submission: "
                 "https://www.furaffinity.net/view/{}/".format(submission_id)
             )
         except CloudflareError:
             logger.warning("Cloudflare error")
-            self._return_error_in_privmsg(
-                bot,
-                update,
-                "Furaffinity is currently under cloudflare protection, so I cannot neaten links."
+            await _return_error_in_privmsg(
+                event,
+                "Furaffinity returned a cloudflare error, so I cannot neaten links."
             )
 
-    def _send_neat_fa_response(self, bot, update, submission: FASubmissionFull):
+    async def _send_neat_fa_response(self, event: NewMessage.Event, submission: FASubmissionFull):
         try:
-            submission.send_message(bot, update.message.chat_id, update.message.message_id)
+            await submission.send_message(event.client, event.input_chat, reply_to=event.message.id)
         except CantSendFileType as e:
-            self._return_error_in_privmsg(bot, update, str(e))
+            await _return_error_in_privmsg(event, str(e))
 
-    def _return_error_in_privmsg(self, bot, update, error_message: str):
-        # Only send an error message in private message
-        if update.message.chat.type == Chat.PRIVATE:
-            bot.send_message(
-                chat_id=update.message.chat_id,
-                text=error_message,
-                reply_to_message_id=update.message.message_id
-            )
-
-    def _find_submission(self, username: str, image_id: int) -> Optional[int]:
+    async def _find_submission(self, username: str, image_id: int) -> Optional[int]:
         folders = ["gallery", "scraps"]
         for folder in folders:
-            submission_id = self._find_submission_in_folder(username, image_id, folder)
+            submission_id = await self._find_submission_in_folder(username, image_id, folder)
             if submission_id:
                 return submission_id
         return None
 
-    def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
-        page_listing = self._find_correct_page(username, image_id, folder)
+    async def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
+        page_listing = await self._find_correct_page(username, image_id, folder)
         if not page_listing:
             # No page is valid.
             return None
@@ -151,10 +146,10 @@ class NeatenFunctionality(BotFunctionality):
                 return None
         return None
 
-    def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
+    async def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
         page = 1
         while True:
-            listing = self.api.get_user_folder(username, folder, page)
+            listing = await self.api.get_user_folder(username, folder, page)
             if len(listing) == 0:
                 return None
             last_submission = listing[-1]
