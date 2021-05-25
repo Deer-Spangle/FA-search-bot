@@ -52,8 +52,9 @@ def bot() -> FASearchBot:
 
 @pytest.fixture
 async def controller(client, bot) -> BotController:
+    bot_user = await bot.client.get_me()
     controller = BotController(
-        peer=bot.bot.username,
+        peer=bot_user.username,
         client=client
     )
     await controller.initialize(start_client=False)
@@ -62,6 +63,7 @@ async def controller(client, bot) -> BotController:
 
 @pytest.fixture(scope="session")
 async def group_chat(client, bot) -> Chat:
-    group = await client.create_group("Automated test group", [bot.bot.username])
+    bot_user = await bot.client.get_me()
+    group = await client.create_group("Automated test group", [bot_user.username])
     yield group
     await client.leave_chat(group.id, delete=True)
