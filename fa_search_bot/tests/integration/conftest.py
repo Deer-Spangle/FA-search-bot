@@ -1,8 +1,6 @@
 import asyncio
 import os
 import sys
-import time
-from threading import Thread
 
 import pytest
 from pyrogram import Client
@@ -44,13 +42,12 @@ def bot() -> FASearchBot:
         bot.config.telegram.api_id = os.getenv("CLIENT_API_ID")
     if os.getenv("CLIENT_API_HASH"):
         bot.config.telegram.api_hash = os.getenv("CLIENT_API_HASH")
-    bot_thread = Thread(target=bot.start)
-    bot_thread.start()
+    bot_task = asyncio.get_event_loop().create_task(bot.start())
     while not bot.alive:
         asyncio.sleep(0.1)
     yield bot
     bot.alive = False
-    bot_thread.join()
+    asyncio.get_event_loop().run_until_complete(bot_task)
 
 
 @pytest.fixture
