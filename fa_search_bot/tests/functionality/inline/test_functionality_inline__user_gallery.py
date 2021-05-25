@@ -240,12 +240,14 @@ async def test_username_with_colon(context, requests_mock):
 
 
 @pytest.mark.asyncio
-async def test_over_48_submissions(mock_client):
+async def test_over_max_submissions(mock_client):
     username = "citrinelle"
-    post_ids = list(range(123456, 123456 + 72))
+    mock_api = MockExportAPI()
+    inline = InlineFunctionality(mock_api)
+    posts = inline.INLINE_MAX + 30
+    post_ids = list(range(123456, 123456 + posts))
     submissions = [MockSubmission(x) for x in post_ids]
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", submissions)
+    mock_api.with_user_folder(username, "gallery", submissions)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
 
     with pytest.raises(StopPropagation):
@@ -253,12 +255,12 @@ async def test_over_48_submissions(mock_client):
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "1:48"
+    assert event.answer.call_args[1]['next_offset'] == f"1:{inline.INLINE_MAX}"
     assert isinstance(args[0], list)
-    assert len(args[0]) == 48
+    assert len(args[0]) == inline.INLINE_MAX
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(48):
+    for x in range(inline.INLINE_MAX):
         assert args[0][x].kwargs == {
             "id": str(post_ids[x]),
             "file": submissions[x].thumbnail_url,
@@ -267,13 +269,44 @@ async def test_over_48_submissions(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_over_48_submissions_continue(mock_client):
+async def test_over_max_submissions_continue(mock_client):
     username = "citrinelle"
-    post_ids = list(range(123456, 123456 + 72))
-    submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
+    posts = 3 * inline.INLINE_MAX
+    post_ids = list(range(123456, 123456 + posts))
+    submissions = [MockSubmission(x) for x in post_ids]
     inline.api.with_user_folder(username, "gallery", submissions)
-    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset="1:48")
+    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{inline.INLINE_MAX}")
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == f"1:{2 * inline.INLINE_MAX}"
+    assert isinstance(args[0], list)
+    assert len(args[0]) == inline.INLINE_MAX
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
+    for x in range(inline.INLINE_MAX):
+        assert args[0][x].kwargs == {
+            "id": str(post_ids[x + inline.INLINE_MAX]),
+            "file": submissions[x + inline.INLINE_MAX].thumbnail_url,
+            "text": submissions[x + inline.INLINE_MAX].link,
+        }
+
+
+@pytest.mark.asyncio
+async def test_over_max_submissions_continue_end(mock_client):
+    username = "citrinelle"
+    posts = 72
+    post_ids = list(range(123456, 123456 + posts))
+    submissions = [MockSubmission(x) for x in post_ids]
+    mock_api = MockExportAPI()
+    mock_api.with_user_folder(username, "gallery", submissions)
+    inline = InlineFunctionality(mock_api)
+    skip = posts - inline.INLINE_MAX + 3
+    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -282,22 +315,23 @@ async def test_over_48_submissions_continue(mock_client):
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
     assert isinstance(args[0], list)
-    assert len(args[0]) == 72 - 48
+    assert len(args[0]) == inline.INLINE_MAX - 3
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(72 - 48):
+    for x in range(inline.INLINE_MAX - 3):
         assert args[0][x].kwargs == {
-            "id": str(post_ids[x + 48]),
-            "file": submissions[x + 48].thumbnail_url,
-            "text": submissions[x + 48].link,
+            "id": str(post_ids[x + skip]),
+            "file": submissions[x + skip].thumbnail_url,
+            "text": submissions[x + skip].link,
         }
 
 
 @pytest.mark.asyncio
-async def test_over_48_submissions_continue_weird(mock_client):
+async def test_over_max_submissions_continue_over_page(mock_client):
     username = "citrinelle"
-    post_ids = list(range(123456, 123456 + 72))
-    skip = 37
+    posts = 72
+    post_ids = list(range(123456, 123456 + posts))
+    skip = posts + 5
     submissions = [MockSubmission(x) for x in post_ids]
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_user_folder(username, "gallery", submissions)
@@ -310,42 +344,7 @@ async def test_over_48_submissions_continue_weird(mock_client):
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
     assert isinstance(args[0], list)
-    assert len(args[0]) == 72 - skip
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(72 - skip):
-        assert args[0][x].kwargs == {
-            "id": str(post_ids[x + skip]),
-            "file": submissions[x + skip].thumbnail_url,
-            "text": submissions[x + skip].link,
-        }
-
-
-@pytest.mark.asyncio
-async def test_double_48_submissions_continue(mock_client):
-    username = "citrinelle"
-    post_ids = list(range(123456, 123456 + 150))
-    submissions = [MockSubmission(x) for x in post_ids]
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", submissions)
-    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset="1:48")
-
-    with pytest.raises(StopPropagation):
-        await inline.call(event)
-
-    event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "1:96"
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 48
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(48):
-        assert args[0][x].kwargs == {
-            "id": str(post_ids[x + 48]),
-            "file": submissions[x + 48].thumbnail_url,
-            "text": submissions[x + 48].link,
-        }
+    assert len(args[0]) == 0
 
 
 @pytest.mark.asyncio

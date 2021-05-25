@@ -245,7 +245,7 @@ async def test_username_with_colon(context, requests_mock):
 
 
 @pytest.mark.asyncio
-async def test_over_48_favs(mock_client):
+async def test_over_max_favs(mock_client):
     username = "citrinelle"
     post_ids = list(range(123456, 123456 + 72))
     submissions = [MockSubmission(x) for x in post_ids]
@@ -258,12 +258,12 @@ async def test_over_48_favs(mock_client):
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == submissions[47].fav_id
+    assert event.answer.call_args[1]['next_offset'] == submissions[inline.INLINE_MAX - 1].fav_id
     assert isinstance(args[0], list)
-    assert len(args[0]) == 48
+    assert len(args[0]) == inline.INLINE_MAX
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(48):
+    for x in range(inline.INLINE_MAX):
         assert args[0][x].kwargs == {
             "id": str(post_ids[x]),
             "file": submissions[x].thumbnail_url,

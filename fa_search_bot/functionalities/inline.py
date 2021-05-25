@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class InlineFunctionality(BotFunctionality):
+    INLINE_MAX = 20
 
     def __init__(self, api: FAExportAPI):
         super().__init__(InlineQuery())
@@ -63,23 +64,22 @@ class InlineFunctionality(BotFunctionality):
         List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
         Optional[str]
     ]:
+        # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None
         try:
-            submissions = (await self.api.get_user_favs(username, offset))[:48]
+            submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
-            return self._user_not_found(builder, username), ""
+            return self._user_not_found(builder, username), None
         # If no results, send error
-        if len(submissions) > 0:
-            next_offset = str(submissions[-1].fav_id)
-            if next_offset == offset:
-                submissions = []
-                next_offset = None
-        else:
-            next_offset = None
+        if len(submissions) == 0:
             if offset is None:
-                return self._empty_user_favs(builder, username), ""
+                return self._empty_user_favs(builder, username), None
+            return [], None
+        next_offset = str(submissions[-1].fav_id)
+        if next_offset == offset:
+            return [], None
         results = [x.to_inline_query_result(builder) for x in submissions]
         return results, next_offset
 
@@ -91,14 +91,7 @@ class InlineFunctionality(BotFunctionality):
             offset: str
     ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
-        if offset == "":
-            page, skip = 1, None
-        elif ":" in offset:
-            page, skip = (int(x) for x in offset.split(":", 1))
-        else:
-            page, skip = int(offset), None
-        # Default next offset
-        next_offset = str(page + 1)
+        page, skip = self._parse_offset(offset)
         # Try and get results
         try:
             results = await self._create_user_folder_results(builder, username, folder, page)
@@ -107,18 +100,31 @@ class InlineFunctionality(BotFunctionality):
             return self._user_not_found(builder, username), ""
         # If no results, send error
         if len(results) == 0:
-            next_offset = None
             if page == 1:
-                return self._empty_user_folder(builder, username, folder), ""
+                return self._empty_user_folder(builder, username, folder), None
+            return [], None
         # Handle paging of big result lists
+        return self._page_results(results, page, skip)
+
+    def _parse_offset(self, offset: str) -> Tuple[int, int]:
+        if offset == "":
+            page, skip = 1, None
+        elif ":" in offset:
+            page, skip = (int(x) for x in offset.split(":", 1))
+        else:
+            page, skip = int(offset), None
+        return page, skip
+
+    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
+        next_offset = str(page + 1)
         if skip:
             results = results[skip:]
-        if len(results) > 48:
-            results = results[:48]
+        if len(results) > self.INLINE_MAX:
+            results = results[:self.INLINE_MAX]
             if skip:
-                skip += 48
+                skip += self.INLINE_MAX
             else:
-                skip = 48
+                skip = self.INLINE_MAX
             next_offset = f"{page}:{skip}"
         return results, next_offset
 
@@ -128,15 +134,14 @@ class InlineFunctionality(BotFunctionality):
             query: str,
             offset: str
     ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
-        page = self._page_from_offset(offset)
+        page, skip = self._parse_offset(offset)
         query_clean = query.strip().lower()
-        next_offset = str(page + 1)
         results = await self._create_inline_search_results(builder, query_clean, page)
         if len(results) == 0:
-            next_offset = None
             if page == 1:
-                results = self._no_search_results_found(builder, query)
-        return results, next_offset
+                return self._no_search_results_found(builder, query), None
+            return [], None
+        return self._page_results(results, page, skip)
 
     def _page_from_offset(self, offset: str) -> int:
         if offset == "":

@@ -67,11 +67,11 @@ class MockTelegramEvent:
         )
 
     @classmethod
-    def with_inline_query(cls, query_id=None, query=None, offset=None):
+    def with_inline_query(cls, query_id=None, query: str = None, offset: str = None):
         return _MockTelegramInlineQuery(
             query_id=query_id,
             query=query,
-            offset=offset
+            offset=str(offset) if offset else None
         )
 
     @classmethod
