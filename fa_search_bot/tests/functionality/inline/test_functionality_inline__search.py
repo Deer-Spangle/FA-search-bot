@@ -32,6 +32,7 @@ async def test_simple_search(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) > 0
     for result in args[0]:
@@ -56,12 +57,14 @@ async def test_no_search_results(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is False
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
     assert args[0][0].kwargs == {
         "title": "No results found.",
-        "description": "No results for search \"{}\".".format(search_term)
+        "description": f"No results for search \"{search_term}\".",
+        "text": f"No results for search \"{search_term}\".",
     }
 
 
@@ -105,6 +108,7 @@ async def test_search_with_offset_no_more_results(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 0
 
@@ -126,6 +130,7 @@ async def test_search_with_spaces(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 2
     for result in args[0]:
@@ -157,6 +162,7 @@ async def test_search_with_combo_characters(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -182,6 +188,7 @@ async def test_search_with_field(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)

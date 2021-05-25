@@ -100,8 +100,10 @@ class FASearchBot:
         self.alive = False
         self.subscription_watcher.running = False
         event_loop = asyncio.get_event_loop()
-        event_loop.run_until_complete(self.watcher_task)
-        event_loop.run_until_complete(self.log_task)
+        if self.watcher_task is not None:
+            event_loop.run_until_complete(self.watcher_task)
+        if self.log_task is not None:
+            event_loop.run_until_complete(self.log_task)
 
     async def periodic_log(self):
         while self.alive:

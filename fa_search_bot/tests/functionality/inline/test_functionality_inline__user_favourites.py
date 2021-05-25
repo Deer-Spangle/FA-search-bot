@@ -25,6 +25,7 @@ async def test_user_favourites(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission2.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 2
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -56,6 +57,7 @@ async def test_user_favs(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -81,6 +83,7 @@ async def test_american_spelling(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -107,6 +110,7 @@ async def test_continue_from_fav_id(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -130,12 +134,14 @@ async def test_empty_favs(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is False
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
     assert args[0][0].kwargs == {
         "title": "Nothing in favourites.",
-        "description": f"There are no favourites for user \"{username}\"."
+        "description": f"There are no favourites for user \"{username}\".",
+        "text": f"There are no favourites for user \"{username}\".",
     }
 
 
@@ -154,6 +160,7 @@ async def test_hypens_in_username(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -179,6 +186,7 @@ async def test_weird_characters_in_username(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submission.fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -207,12 +215,14 @@ async def test_no_user_exists(context, requests_mock):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is False
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
     assert args[0][0].kwargs == {
         "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\"."
+        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
+        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
     }
 
 
@@ -235,12 +245,14 @@ async def test_username_with_colon(context, requests_mock):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is False
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
     assert args[0][0].kwargs == {
         "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\"."
+        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
+        "text": f"FurAffinity user does not exist by the name: \"{username}\"."
     }
 
 
@@ -259,6 +271,7 @@ async def test_over_max_favs(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] == submissions[inline.INLINE_MAX - 1].fav_id
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == inline.INLINE_MAX
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
@@ -293,12 +306,14 @@ async def test_no_username_set(context, requests_mock):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is False
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
     assert args[0][0].kwargs == {
         "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\"."
+        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
+        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
     }
 
 
@@ -320,5 +335,6 @@ async def test_user_favourites_last_page(mock_client):
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
     assert event.answer.call_args[1]['next_offset'] is None
+    assert event.answer.call_args[1]['gallery'] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 0

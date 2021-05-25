@@ -3,8 +3,8 @@ from enum import Enum, auto
 from typing import Optional, List, Dict
 from unittest.mock import AsyncMock, Mock
 
-from telegram import Chat
 from telethon import TelegramClient
+from telethon.tl.types import InputBotInlineResultPhoto
 
 
 def generate_key():
@@ -217,8 +217,12 @@ class _MockInlineBuilder:
             self.args = args
             self.kwargs = kwargs
 
-    class _MockInlinePhoto(_MockInlineResult):
-        pass
+    class _MockInlinePhoto(InputBotInlineResultPhoto):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__("0", "photo", kwargs.get("photo"), kwargs.get("send_message"))
+            self.args = args
+            self.kwargs = kwargs
 
     class _MockInlineArticle(_MockInlineResult):
         pass
