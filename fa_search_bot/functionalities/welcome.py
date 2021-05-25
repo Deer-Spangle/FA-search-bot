@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class WelcomeFunctionality(BotFunctionality):
 
     def __init__(self):
-        super().__init__(NewMessage(pattern='/start'))
+        super().__init__(NewMessage(pattern='/start', incoming=True))
 
     async def call(self, event: NewMessage.Event):
         logger.info("Welcome message sent to user")

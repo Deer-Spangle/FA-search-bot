@@ -22,7 +22,7 @@ class SubscriptionFunctionality(BotFunctionality):
     def __init__(self, watcher: SubscriptionWatcher):
         commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
         commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
-        super().__init__(NewMessage(pattern=commands_pattern))
+        super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 
     async def call(self, event: NewMessage.Event):
@@ -144,7 +144,7 @@ class BlocklistFunctionality(BotFunctionality):
     def __init__(self, watcher: SubscriptionWatcher):
         commands = [self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd]
         commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
-        super().__init__(NewMessage(pattern=commands_pattern))
+        super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 
     async def call(self, event: NewMessage.Event):

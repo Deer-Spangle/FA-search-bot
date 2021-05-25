@@ -425,7 +425,7 @@ async def test_result_on_third_page(mock_client):
             MockSubmission(post_id - 2 + (3 - page) * 5, image_id=image_id - 27 + (3 - page) * 56),
             MockSubmission(post_id - 3 + (3 - page) * 5, image_id=image_id - 34 + (3 - page) * 56)
         ], page=page)
-    submission = neaten.api.get_full_submission(str(post_id))
+    submission = await neaten.api.get_full_submission(str(post_id))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)

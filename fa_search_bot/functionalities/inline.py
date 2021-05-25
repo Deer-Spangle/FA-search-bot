@@ -31,16 +31,16 @@ class InlineFunctionality(BotFunctionality):
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
             usage_logger.info("Inline favourites")
             _, username = query_clean.split(":", 1)
-            results, next_offset = self._favs_query_results(event.builder, username, offset)
+            results, next_offset = await self._favs_query_results(event.builder, username, offset)
         else:
             gallery_query = self._parse_folder_and_username(query_clean)
             if gallery_query:
                 usage_logger.info("Inline gallery")
                 folder, username = gallery_query
-                results, next_offset = self._gallery_query_results(event.builder, folder, username, offset)
+                results, next_offset = await self._gallery_query_results(event.builder, folder, username, offset)
             else:
                 usage_logger.info("Inline search")
-                results, next_offset = self._search_query_results(event.builder, query, offset)
+                results, next_offset = await self._search_query_results(event.builder, query, offset)
         # Await results while ignoring exceptions
         results = list(filter(
             lambda x: not isinstance(x, Exception),
@@ -54,7 +54,7 @@ class InlineFunctionality(BotFunctionality):
         )
         raise StopPropagation
 
-    def _favs_query_results(
+    async def _favs_query_results(
             self,
             builder: InlineBuilder,
             username: str,
@@ -66,7 +66,7 @@ class InlineFunctionality(BotFunctionality):
         if offset == "":
             offset = None
         try:
-            submissions = self.api.get_user_favs(username, offset)[:48]
+            submissions = (await self.api.get_user_favs(username, offset))[:48]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
             return self._user_not_found(builder, username), ""
@@ -83,7 +83,7 @@ class InlineFunctionality(BotFunctionality):
         results = [x.to_inline_query_result(builder) for x in submissions]
         return results, next_offset
 
-    def _gallery_query_results(
+    async def _gallery_query_results(
             self,
             builder: InlineBuilder,
             folder: str,
@@ -101,7 +101,7 @@ class InlineFunctionality(BotFunctionality):
         next_offset = str(page + 1)
         # Try and get results
         try:
-            results = self._create_user_folder_results(builder, username, folder, page)
+            results = await self._create_user_folder_results(builder, username, folder, page)
         except PageNotFound:
             logger.warning("User not found for inline gallery query")
             return self._user_not_found(builder, username), ""
@@ -122,7 +122,7 @@ class InlineFunctionality(BotFunctionality):
             next_offset = f"{page}:{skip}"
         return results, next_offset
 
-    def _search_query_results(
+    async def _search_query_results(
             self,
             builder: InlineBuilder,
             query: str,
@@ -131,7 +131,7 @@ class InlineFunctionality(BotFunctionality):
         page = self._page_from_offset(offset)
         query_clean = query.strip().lower()
         next_offset = str(page + 1)
-        results = self._create_inline_search_results(builder, query_clean, page)
+        results = await self._create_inline_search_results(builder, query_clean, page)
         if len(results) == 0:
             next_offset = None
             if page == 1:
@@ -143,7 +143,7 @@ class InlineFunctionality(BotFunctionality):
             offset = 1
         return int(offset)
 
-    def _create_user_folder_results(
+    async def _create_user_folder_results(
             self,
             builder: InlineBuilder,
             username: str,
@@ -153,10 +153,10 @@ class InlineFunctionality(BotFunctionality):
         return [
             x.to_inline_query_result(builder)
             for x
-            in self.api.get_user_folder(username, folder, page)
+            in await self.api.get_user_folder(username, folder, page)
         ]
 
-    def _create_inline_search_results(
+    async def _create_inline_search_results(
             self,
             builder: InlineBuilder,
             query_clean: str,
@@ -165,7 +165,7 @@ class InlineFunctionality(BotFunctionality):
         return [
             x.to_inline_query_result(builder)
             for x
-            in self.api.get_search_results(query_clean, page)
+            in await self.api.get_search_results(query_clean, page)
         ]
 
     def _parse_folder_and_username(self, query_clean: str) -> Optional[Tuple[str, str]]:

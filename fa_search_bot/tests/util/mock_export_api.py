@@ -145,31 +145,31 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
-    def get_full_submission(self, submission_id: str) -> FASubmission:
+    async def get_full_submission(self, submission_id: str) -> FASubmission:
         if submission_id not in self.submissions:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
         return self.submissions[submission_id]
 
-    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
+    async def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
         if user not in self.user_folders:
             return []
         if f"{folder}:{page}" not in self.user_folders[user]:
             return []
         return self.user_folders[user][f"{folder}:{page}"]
 
-    def get_user_favs(self, user: str, next_id: int = 1) -> List[FASubmission]:
+    async def get_user_favs(self, user: str, next_id: int = 1) -> List[FASubmission]:
         if user not in self.user_folders:
             return []
         if f"favs:{next_id}" not in self.user_folders[user]:
             return []
         return self.user_folders[user][f"favs:{next_id}"]
 
-    def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
+    async def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
         if f"{query.lower()}:{page}" not in self.search_results:
             return []
         return self.search_results[f"{query.lower()}:{page}"]
 
-    def get_browse_page(self, page: int = 1) -> List[FASubmission]:
+    async def get_browse_page(self, page: int = 1) -> List[FASubmission]:
         self.browse_count += 1
         if self.browse_count >= self.call_after_x_browse[1]:
             self.call_after_x_browse[0]()

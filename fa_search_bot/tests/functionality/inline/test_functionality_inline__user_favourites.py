@@ -3,7 +3,6 @@ from telegram import InputMessageContent
 from telethon.events import StopPropagation
 
 from fa_search_bot.fa_export_api import FAExportAPI
-from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder

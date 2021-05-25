@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ImageHashRecommendFunctionality(BotFunctionality):
 
     def __init__(self):
-        events = NewMessage(func=filter_image_no_caption)
+        events = NewMessage(func=filter_image_no_caption, incoming=True)
         super().__init__(events)
 
     async def call(self, event: NewMessage.Event):

@@ -57,7 +57,7 @@ class SubscriptionWatcher:
                 count += 1
                 # Try and get the full data
                 try:
-                    full_result = self.api.get_full_submission(result.submission_id)
+                    full_result = await self.api.get_full_submission(result.submission_id)
                     logger.debug("Got full data for submission %s", result.submission_id)
                 except PageNotFound:
                     logger.warning("Submission %s, disappeared before I could check it.", result.submission_id)
@@ -105,7 +105,7 @@ class SubscriptionWatcher:
     async def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         while self.running:
             try:
-                return self.api.get_browse_page(page)
+                return await self.api.get_browse_page(page)
             except ValueError as e:
                 logger.warning("Failed to get browse page, retrying", exc_info=e)
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)

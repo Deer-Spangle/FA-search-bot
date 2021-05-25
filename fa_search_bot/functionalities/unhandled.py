@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class UnhandledMessageFunctionality(BotFunctionality):
 
     def __init__(self):
-        super().__init__(NewMessage())
+        super().__init__(NewMessage(incoming=True))
 
     async def call(self, event: NewMessage.Event):
         if event.text is not None and event.is_private:

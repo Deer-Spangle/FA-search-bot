@@ -29,7 +29,7 @@ class NeatenFunctionality(BotFunctionality):
     FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})")
 
     def __init__(self, api):
-        super().__init__(NewMessage(func=lambda e: filter_regex(e, self.FA_LINKS)))
+        super().__init__(NewMessage(func=lambda e: filter_regex(e, self.FA_LINKS), incoming=True))
         self.api = api
 
     async def call(self, event: NewMessage.Event):
@@ -87,7 +87,7 @@ class NeatenFunctionality(BotFunctionality):
         direct_match = self.FA_DIRECT_LINK.match(link)
         username = direct_match.group(1)
         image_id = int(direct_match.group(2))
-        submission_id = self._find_submission(username, image_id)
+        submission_id = await self._find_submission(username, image_id)
         if not submission_id:
             logger.warning("Couldn't find submission by username: %s with image id: %s", username, image_id)
             await _return_error_in_privmsg(
@@ -100,7 +100,7 @@ class NeatenFunctionality(BotFunctionality):
     async def _handle_fa_submission_link(self, event: NewMessage.Event, submission_id: int):
         logger.info("Found a link, ID: %s", submission_id)
         try:
-            submission = self.api.get_full_submission(str(submission_id))
+            submission = await self.api.get_full_submission(str(submission_id))
             await self._send_neat_fa_response(event, submission)
         except PageNotFound:
             logger.warning("Submission invalid or deleted. Submission ID: %s", submission_id)
@@ -122,16 +122,16 @@ class NeatenFunctionality(BotFunctionality):
         except CantSendFileType as e:
             await _return_error_in_privmsg(event, str(e))
 
-    def _find_submission(self, username: str, image_id: int) -> Optional[int]:
+    async def _find_submission(self, username: str, image_id: int) -> Optional[int]:
         folders = ["gallery", "scraps"]
         for folder in folders:
-            submission_id = self._find_submission_in_folder(username, image_id, folder)
+            submission_id = await self._find_submission_in_folder(username, image_id, folder)
             if submission_id:
                 return submission_id
         return None
 
-    def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
-        page_listing = self._find_correct_page(username, image_id, folder)
+    async def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
+        page_listing = await self._find_correct_page(username, image_id, folder)
         if not page_listing:
             # No page is valid.
             return None
@@ -146,10 +146,10 @@ class NeatenFunctionality(BotFunctionality):
                 return None
         return None
 
-    def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
+    async def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
         page = 1
         while True:
-            listing = self.api.get_user_folder(username, folder, page)
+            listing = await self.api.get_user_folder(username, folder, page)
             if len(listing) == 0:
                 return None
             last_submission = listing[-1]

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import datetime
@@ -38,14 +39,14 @@ class FAExportAPI:
             raise CloudflareError()
         return resp
 
-    def _api_request_with_retry(self, path: str) -> requests.Response:
+    async def _api_request_with_retry(self, path: str) -> requests.Response:
         if self._is_site_slowdown():
-            time.sleep(self.SLOWDOWN_BACKOFF)
+            await asyncio.sleep(self.SLOWDOWN_BACKOFF)
         resp = self._api_request(path)
         for tries in range(self.MAX_RETRIES):
             if str(resp.status_code)[0] != "5":
                 return resp
-            time.sleep(tries ** 2)
+            await asyncio.sleep(tries ** 2)
             resp = self._api_request(path)
         return resp
 
@@ -62,9 +63,9 @@ class FAExportAPI:
             self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
         return self.slow_down_status
 
-    def get_full_submission(self, submission_id: str) -> FASubmissionFull:
+    async def get_full_submission(self, submission_id: str) -> FASubmissionFull:
         logger.debug("Getting full submission for submission ID %s", submission_id)
-        sub_resp = self._api_request_with_retry(f"submission/{submission_id}.json")
+        sub_resp = await self._api_request_with_retry(f"submission/{submission_id}.json")
         # If API returns fine
         if sub_resp.status_code == 200:
             submission = FASubmission.from_full_dict(sub_resp.json())
@@ -72,11 +73,11 @@ class FAExportAPI:
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
-    def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
+    async def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Getting user folder for user %s, folder %s, and page %s", user, folder, page)
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
-        resp = self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1")
+        resp = await self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1")
         if resp.status_code == 200:
             data = resp.json()
             submissions = []
@@ -87,14 +88,14 @@ class FAExportAPI:
             logger.warning("User gallery not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
-    def get_user_favs(self, user: str, next_id: str = None) -> List[FASubmissionShortFav]:
+    async def get_user_favs(self, user: str, next_id: str = None) -> List[FASubmissionShortFav]:
         logger.debug("Getting user favourites for user: %s, next_id: %s", user, next_id)
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         next_str = ""
         if next_id is not None:
             next_str = f"next={next_id}&"
-        resp = self._api_request_with_retry(f"user/{user}/favorites.json?{next_str}full=1")
+        resp = await self._api_request_with_retry(f"user/{user}/favorites.json?{next_str}full=1")
         if resp.status_code == 200:
             data = resp.json()
             submissions = []
@@ -105,18 +106,18 @@ class FAExportAPI:
             logger.warning("User favourites not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
-    def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
+    async def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Searching for query: %s, page: %s", query, page)
-        resp = self._api_request_with_retry(f"search.json?full=1&perpage=48&q={query}&page={page}")
+        resp = await self._api_request_with_retry(f"search.json?full=1&perpage=48&q={query}&page={page}")
         data = resp.json()
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
         return submissions
 
-    def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
+    async def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Getting browse page %s", page)
-        resp = self._api_request_with_retry(f"browse.json?page={page}")
+        resp = await self._api_request_with_retry(f"browse.json?page={page}")
         data = resp.json()
         submissions = []
         for submission_data in data:
