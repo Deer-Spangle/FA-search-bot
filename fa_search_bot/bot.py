@@ -64,6 +64,8 @@ class FASearchBot:
         self.functionalities = []
         self.subscription_watcher = None
         self.subscription_watcher_thread = None
+        self.log_task = None
+        self.watcher_task = None
 
     @property
     def bot_key(self):
@@ -83,18 +85,23 @@ class FASearchBot:
         event_loop = asyncio.get_event_loop()
 
         # Log every couple seconds so we know the bot is still running
-        log_task = event_loop.create_task(self.periodic_log())
+        self.log_task = event_loop.create_task(self.periodic_log())
         # Start the sub watcher
-        watcher_task = event_loop.create_task(self.subscription_watcher.run())
+        self.watcher_task = event_loop.create_task(self.subscription_watcher.run())
 
+    def run(self):
         try:
             self.client.run_until_disconnected()
         finally:
-            # Shut down sub watcher
-            self.alive = False
-            self.subscription_watcher.running = False
-            event_loop.run_until_complete(watcher_task)
-            event_loop.run_until_complete(log_task)
+            self.close()
+
+    def close(self):
+        # Shut down sub watcher
+        self.alive = False
+        self.subscription_watcher.running = False
+        event_loop = asyncio.get_event_loop()
+        event_loop.run_until_complete(self.watcher_task)
+        event_loop.run_until_complete(self.log_task)
 
     async def periodic_log(self):
         while self.alive:

@@ -34,3 +34,4 @@ if __name__ == "__main__":
     setup_logging()
     bot = FASearchBot(os.getenv('CONFIG_FILE', 'config.json'))
     bot.start()
+    bot.run()
