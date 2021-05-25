@@ -409,8 +409,7 @@ async def test_unknown_type_submission_groupchat(mock_client):
 async def test_link_in_markdown(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id),
+        text="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id),
         client=mock_client,
     )
     submission = MockSubmission(post_id)

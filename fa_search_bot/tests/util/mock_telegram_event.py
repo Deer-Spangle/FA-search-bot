@@ -37,7 +37,6 @@ class MockTelegramEvent:
             message_id: Optional[int] = None,
             chat_id: Optional[int] = None,
             text: Optional[str] = None,
-            text_markdown_urled: Optional[str] = None,
             chat_type: ChatType = ChatType.PRIVATE,
             migrate_from_chat_id: Optional[int] = None,
             migrate_to_chat_id: Optional[int] = None,
@@ -47,7 +46,6 @@ class MockTelegramEvent:
             message_id=message_id,
             chat_id=chat_id,
             text=text,
-            text_markdown_urled=text_markdown_urled,
             chat_type=chat_type,
             migrate_from_chat_id=migrate_from_chat_id,
             migrate_to_chat_id=migrate_to_chat_id,
@@ -85,7 +83,6 @@ class _MockTelegramMessage(MockTelegramEvent):
             *,
             message_id: Optional[int] = None,
             text: Optional[str] = None,
-            text_markdown_urled: Optional[str] = None,
             chat_id: Optional[int] = None,
             chat_type: ChatType = ChatType.PRIVATE,
             migrate_from_chat_id: Optional[int] = None,
@@ -98,7 +95,6 @@ class _MockTelegramMessage(MockTelegramEvent):
             message_id=message_id,
             chat_id=chat_id,
             text=text,
-            text_markdown_urled=text_markdown_urled,
             chat_type=chat_type,
             migrate_from_chat_id=migrate_from_chat_id,
             migrate_to_chat_id=migrate_to_chat_id
@@ -106,8 +102,8 @@ class _MockTelegramMessage(MockTelegramEvent):
         if client is not None:
             self.client = client
 
-    def with_photo(self, photo_file_id=None, caption: str = None, caption_markdown_urled: str = None):
-        self.message.set_photo(photo_file_id, caption, caption_markdown_urled)
+    def with_photo(self, photo_file_id=None, caption: str = None):
+        self.message.set_photo(photo_file_id, caption)
         return self
 
     def with_document(self, file_id=None, mime_type=None):
@@ -230,7 +226,6 @@ class _MockMessage:
             *,
             message_id: Optional[int] = None,
             text: Optional[str] = None,
-            text_markdown_urled: Optional[str] = None,
             chat_id: Optional[int] = None,
             chat_type: ChatType = ChatType.PRIVATE,
             migrate_from_chat_id: Optional[int] = None,
@@ -239,7 +234,6 @@ class _MockMessage:
         self.id = message_id
         self.chat_id = chat_id
         self.text = text
-        self.text_markdown_urled = text_markdown_urled or text
         self.input_chat = _MockChat(chat_type=chat_type)
         self.is_private = chat_type == ChatType.PRIVATE
         self.is_group = chat_type == ChatType.GROUP
@@ -248,24 +242,20 @@ class _MockMessage:
         self.migrate_to_chat_id = migrate_to_chat_id
         # Set defaults
         self.photo: PhotoType = []
-        self.caption_markdown_urled: Optional[str] = None
         self.document = None
         self.buttons = None
         if message_id is None:
             self.message_id = generate_key()
         if chat_id is None:
             self.chat_id = generate_key()
-        if text_markdown_urled is None:
-            self.text_markdown_urled = self.text
 
-    def set_photo(self, photo_file_id, caption: str = None, caption_markdown_urled: str = None):
+    def set_photo(self, photo_file_id, caption: str = None):
         # Defaults
         if photo_file_id is None:
             photo_file_id = generate_key()
         # Set values
         self.photo.append({"file_id": photo_file_id})
         self.text = caption
-        self.text_markdown_urled = caption_markdown_urled or caption
 
     def set_document(self, file_id, mime_type):
         self.document = _MockDocument(
@@ -285,20 +275,16 @@ class _MockChannelPost:
             message_id: Optional[int] = None,
             chat_id: Optional[int] = None,
             text: Optional[str] = None,
-            text_markdown_urled: Optional[str] = None
     ):
         self.message_id = message_id
         self.chat_id = chat_id
         self.text = text
-        self.text_markdown_urled = text_markdown_urled or text
         self.chat = _MockChannel()
         # Set defaults
         if message_id is None:
             self.message_id = generate_key()
         if chat_id is None:
             self.chat_id = "-100" + generate_key()
-        if text_markdown_urled is None:
-            self.text_markdown_urled = self.text
 
 
 class _MockChat:
