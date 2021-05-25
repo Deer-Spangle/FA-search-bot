@@ -1,15 +1,10 @@
-import os
 from unittest import mock
-from unittest.mock import patch
-
-import telegram
 
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 
 
-@patch.object(telegram, "Bot")
-def test_load_old_save_new(bot):
+def test_load_old_save_new(mock_client):
     old_data = {
         "latest_ids": [
             "38447607",
@@ -64,7 +59,7 @@ def test_load_old_save_new(bot):
     mock_dump = MockDump()
 
     with mock.patch("json.load", mock_load):
-        watcher = SubscriptionWatcher.load_from_json(api, bot)
+        watcher = SubscriptionWatcher.load_from_json(api, mock_client)
 
     assert len(watcher.subscriptions) == 4
     assert len(watcher.blocklists) == 2

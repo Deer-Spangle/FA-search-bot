@@ -14,7 +14,7 @@ class UnhandledMessageFunctionality(BotFunctionality):
         super().__init__(NewMessage())
 
     async def call(self, event: NewMessage.Event):
-        if event.message is not None and event.is_private:
+        if event.text is not None and event.is_private:
             logger.info("Unhandled message sent to bot")
             usage_logger.info("Unhandled message")
             await event.reply(

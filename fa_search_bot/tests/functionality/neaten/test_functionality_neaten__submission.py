@@ -1,4 +1,6 @@
+import pytest
 from telegram import Chat
+from telethon.events import StopPropagation
 
 from fa_search_bot.fa_export_api import CloudflareError
 from fa_search_bot.fa_submission import FASubmission
@@ -7,302 +9,344 @@ from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmissi
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, MockButton
 
 
-def test_ignore_message(context):
-    update = MockTelegramEvent.with_message(text="hello world")
+@pytest.mark.asyncio
+async def test_ignore_message(mock_client):
+    event = MockTelegramEvent.with_message(text="hello world")
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
+    event.reply.assert_not_called()
 
 
-def test_ignore_link(context):
-    update = MockTelegramEvent.with_message(text="http://example.com")
+@pytest.mark.asyncio
+async def test_ignore_link(mock_client):
+    event = MockTelegramEvent.with_message(text="http://example.com")
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
+    event.reply.assert_not_called()
 
 
-def test_ignore_profile_link(context):
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
+@pytest.mark.asyncio
+async def test_ignore_profile_link(mock_client):
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
+    event.reply.assert_not_called()
 
 
-def test_ignore_journal_link(context):
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
+@pytest.mark.asyncio
+async def test_ignore_journal_link(mock_client):
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
+    event.reply.assert_not_called()
 
 
-def test_ignore_channel_post(context):
+@pytest.mark.asyncio
+async def test_ignore_channel_post(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
+    event = MockTelegramEvent.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    submission.send_message.assert_not_called()
+    submission._send_message.assert_not_called()
 
 
-def test_submission_link(context):
+@pytest.mark.asyncio
+async def test_submission_link(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
-    submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
-
-    neaten.call(update, context)
-
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
-
-
-def test_submission_link_in_caption(context):
-    post_id = 23636984
-    update = MockTelegramEvent.with_message().with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
-    submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
-
-    neaten.call(update, context)
-
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
-
-
-def test_submission_group_chat(context):
-    post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.GROUP
+        client=mock_client,
     )
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_submission_link_in_group_caption(context):
+@pytest.mark.asyncio
+async def test_submission_link_in_caption(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
+        client=mock_client
+    ).with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
+
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
+
+
+@pytest.mark.asyncio
+async def test_submission_group_chat(mock_client):
+    post_id = 23636984
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        chat_type=Chat.GROUP,
+        client=mock_client,
+    )
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
+
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
+
+
+@pytest.mark.asyncio
+async def test_submission_link_in_group_caption(mock_client):
+    post_id = 23636984
+    event = MockTelegramEvent.with_message(
         chat_type=Chat.GROUP
     ).with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    await neaten.call(event)
 
-    submission.send_message.assert_not_called()
+    submission._send_message.assert_not_called()
 
 
-def test_submission_link_no_http(context):
+@pytest.mark.asyncio
+async def test_submission_link_no_http(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
+    event = MockTelegramEvent.with_message(
+        text="furaffinity.net/view/{}".format(post_id),
+        client=mock_client,
+    )
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_two_submission_links(context):
+@pytest.mark.asyncio
+async def test_two_submission_links(mock_client):
     post_id1 = 23636984
     post_id2 = 23636996
-    update = MockTelegramEvent.with_message(
-        text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(post_id1, post_id2)
+    event = MockTelegramEvent.with_message(
+        text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(post_id1, post_id2),
+        client=mock_client,
     )
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submissions([submission1, submission2])
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission1.send_message.assert_called_once()
-    args1, _ = submission1.send_message.call_args
-    assert args1[0] == context.bot
-    assert args1[1] == update.message.chat_id
-    assert args1[2] == update.message.message_id
-    submission2.send_message.assert_called_once()
-    args2, _ = submission2.send_message.call_args
-    assert args2[0] == context.bot
-    assert args2[1] == update.message.chat_id
-    assert args2[2] == update.message.message_id
+    submission1._send_message.assert_called_once()
+    args1, kwargs1 = submission1._send_message.call_args
+    assert args1[0] == mock_client
+    assert args1[1] == event.input_chat
+    assert kwargs1['reply_to'] == event.message.id
+    submission2._send_message.assert_called_once()
+    args2, kwargs2 = submission2._send_message.call_args
+    assert args2[0] == mock_client
+    assert args2[1] == event.input_chat
+    assert kwargs2['reply_to'] == event.message.id
 
 
-def test_duplicate_submission_links(context):
+@pytest.mark.asyncio
+async def test_duplicate_submission_links(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="furaffinity.net/view/{0}\nfuraffinity.net/view/{0}".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_deleted_submission(context):
+@pytest.mark.asyncio
+async def test_deleted_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
+    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        reply_to_message_id=update.message.message_id,
-        text=f"This doesn't seem to be a valid FA submission: https://www.furaffinity.net/view/{post_id}/"
+    event.reply.assert_called_with(
+        f"This doesn't seem to be a valid FA submission: https://www.furaffinity.net/view/{post_id}/"
     )
 
 
-def test_deleted_submission_group_chat(context):
+@pytest.mark.asyncio
+async def test_deleted_submission_group_chat(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
+    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
     neaten = NeatenFunctionality(MockExportAPI())
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="⏳ Neatening image link",
-        reply_to_message_id=update.message.message_id
-    )
-    context.bot.delete_message.assert_called_with(
-        update.message.chat_id,
-        context._sent_message_ids[0]
-    )
+    event.reply.assert_called_with("⏳ Neatening image link")
+    event.reply.return_value.delete.assert_called_once()
 
 
-def test_gif_submission(context):
+@pytest.mark.asyncio
+async def test_gif_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
+    )
     submission = MockSubmission(post_id, file_ext="gif")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_pdf_submission(context):
+@pytest.mark.asyncio
+async def test_pdf_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
+    )
     submission = MockSubmission(post_id, file_ext="pdf")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_mp3_submission(context):
+@pytest.mark.asyncio
+async def test_mp3_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
+    )
     submission = MockSubmission(post_id, file_ext="mp3")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_txt_submission(context):
+@pytest.mark.asyncio
+async def test_txt_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
+    )
     submission = MockSubmission(post_id, file_ext="txt")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_swf_submission(context):
+@pytest.mark.asyncio
+async def test_swf_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.PRIVATE
+        chat_type=Chat.PRIVATE,
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="swf")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_swf_submission_groupchat(context):
+@pytest.mark.asyncio
+async def test_swf_submission_groupchat(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.GROUP
     )
@@ -310,43 +354,41 @@ def test_swf_submission_groupchat(context):
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="⏳ Neatening image link",
-        reply_to_message_id=update.message.message_id
+    event.reply.assert_called_with(
+        "⏳ Neatening image link",
     )
-    context.bot.delete_message.assert_called_with(
-        update.message.chat_id,
-        context._sent_message_ids[0]
-    )
+    event.reply.return_value.delete.assert_called_once()
 
 
-def test_unknown_type_submission(context):
+@pytest.mark.asyncio
+async def test_unknown_type_submission(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.PRIVATE
+        chat_type=Chat.PRIVATE,
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="zzz")
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_unknown_type_submission_groupchat(context):
+@pytest.mark.asyncio
+async def test_unknown_type_submission_groupchat(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         chat_type=Chat.GROUP
     )
@@ -354,44 +396,43 @@ def test_unknown_type_submission_groupchat(context):
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_document.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="⏳ Neatening image link",
-        reply_to_message_id=update.message.message_id
+    event.reply.assert_called_with(
+        "⏳ Neatening image link",
     )
-    context.bot.delete_message.assert_called_with(
-        update.message.chat_id,
-        context._sent_message_ids[0]
-    )
+    event.reply.return_value.delete.assert_called_once()
 
 
-def test_link_in_markdown(context):
+@pytest.mark.asyncio
+async def test_link_in_markdown(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
+    event = MockTelegramEvent.with_message(
         text="Hello",
-        text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id)
+        text_markdown_urled="[Hello](https://www.furaffinity.net/view/{}/)".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_link_in_button(context):
+@pytest.mark.asyncio
+async def test_link_in_button(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello"
+    event = MockTelegramEvent.with_message(
+        text="Hello",
+        client=mock_client,
     ).with_buttons(
         [
             [
@@ -407,127 +448,138 @@ def test_link_in_button(context):
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_image_just_under_size_limit(context):
+@pytest.mark.asyncio
+async def test_image_just_under_size_limit(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_image_just_over_size_limit(context):
+@pytest.mark.asyncio
+async def test_image_just_over_size_limit(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_image_over_document_size_limit(context):
+@pytest.mark.asyncio
+async def test_image_over_document_size_limit(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_auto_doc_just_under_size_limit(context):
+@pytest.mark.asyncio
+async def test_auto_doc_just_under_size_limit(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_auto_doc_just_over_size_limit(context):
+@pytest.mark.asyncio
+async def test_auto_doc_just_over_size_limit(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(
-        text="Hello",
-        text_markdown_urled="https://www.furaffinity.net/view/{}/".format(post_id)
+    event = MockTelegramEvent.with_message(
+        text="https://www.furaffinity.net/view/{}/".format(post_id),
+        client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
     neaten = NeatenFunctionality(MockExportAPI())
     neaten.api.with_submission(submission)
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_called_once()
-    args, _ = submission.send_message.call_args
-    assert args[0] == context.bot
-    assert args[1] == update.message.chat_id
-    assert args[2] == update.message.message_id
+    submission._send_message.assert_called_once()
+    args, kwargs = submission._send_message.call_args
+    assert args[0] == mock_client
+    assert args[1] == event.input_chat
+    assert kwargs['reply_to'] == event.message.id
 
 
-def test_cloudflare_error(context):
+@pytest.mark.asyncio
+async def test_cloudflare_error(mock_client):
     post_id = 23636984
-    update = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     submission = MockSubmission(post_id)
     api = MockExportAPI()
     neaten = NeatenFunctionality(api)
-    
+
     def raise_cloudflare(*args, **kwargs):
         raise CloudflareError()
+
     api.get_full_submission = raise_cloudflare
 
-    neaten.call(update, context)
+    with pytest.raises(StopPropagation):
+        await neaten.call(event)
 
-    submission.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        reply_to_message_id=update.message.message_id,
-        text=f"Furaffinity is currently under cloudflare protection, so I cannot neaten links."
+    submission._send_message.assert_not_called()
+    event.reply.assert_called_with(
+        "Furaffinity returned a cloudflare error, so I cannot neaten links."
     )

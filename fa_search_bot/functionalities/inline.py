@@ -26,7 +26,7 @@ class InlineFunctionality(BotFunctionality):
         logger.info("Got an inline query, page=%s", offset)
         if query_clean == "":
             await event.answer([])
-            return
+            raise StopPropagation
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
             usage_logger.info("Inline favourites")
@@ -59,7 +59,10 @@ class InlineFunctionality(BotFunctionality):
             builder: InlineBuilder,
             username: str,
             offset: str
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Union[int, str]]:
+    ) -> Tuple[
+        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
+        Optional[str]
+    ]:
         if offset == "":
             offset = None
         try:
@@ -69,12 +72,12 @@ class InlineFunctionality(BotFunctionality):
             return self._user_not_found(builder, username), ""
         # If no results, send error
         if len(submissions) > 0:
-            next_offset = submissions[-1].fav_id
+            next_offset = str(submissions[-1].fav_id)
             if next_offset == offset:
                 submissions = []
-                next_offset = ""
+                next_offset = None
         else:
-            next_offset = ""
+            next_offset = None
             if offset is None:
                 return self._empty_user_favs(builder, username), ""
         results = [x.to_inline_query_result(builder) for x in submissions]
@@ -86,7 +89,7 @@ class InlineFunctionality(BotFunctionality):
             folder: str,
             username: str,
             offset: str
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Union[int, str]]:
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
         if offset == "":
             page, skip = 1, None
@@ -95,7 +98,7 @@ class InlineFunctionality(BotFunctionality):
         else:
             page, skip = int(offset), None
         # Default next offset
-        next_offset = page + 1
+        next_offset = str(page + 1)
         # Try and get results
         try:
             results = self._create_user_folder_results(builder, username, folder, page)
@@ -104,7 +107,7 @@ class InlineFunctionality(BotFunctionality):
             return self._user_not_found(builder, username), ""
         # If no results, send error
         if len(results) == 0:
-            next_offset = ""
+            next_offset = None
             if page == 1:
                 return self._empty_user_folder(builder, username, folder), ""
         # Handle paging of big result lists
@@ -124,13 +127,13 @@ class InlineFunctionality(BotFunctionality):
             builder: InlineBuilder,
             query: str,
             offset: str
-    ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Union[int, str]]:
+    ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
         page = self._page_from_offset(offset)
         query_clean = query.strip().lower()
-        next_offset = page + 1
+        next_offset = str(page + 1)
         results = self._create_inline_search_results(builder, query_clean, page)
         if len(results) == 0:
-            next_offset = ""
+            next_offset = None
             if page == 1:
                 results = self._no_search_results_found(builder, query)
         return results, next_offset
@@ -183,7 +186,6 @@ class InlineFunctionality(BotFunctionality):
             builder.article(
                 title=f"Nothing in {folder}.",
                 description=msg,
-                text=msg
             )
         ]
 
@@ -197,7 +199,6 @@ class InlineFunctionality(BotFunctionality):
             builder.article(
                 title=f"Nothing in favourites.",
                 description=msg,
-                text=msg,
             )
         ]
 
@@ -211,7 +212,6 @@ class InlineFunctionality(BotFunctionality):
             builder.article(
                 title="No results found.",
                 description=msg,
-                text=msg,
             )
         ]
 
@@ -225,6 +225,5 @@ class InlineFunctionality(BotFunctionality):
             builder.article(
                 title="User does not exist.",
                 description=msg,
-                text=msg,
             )
         ]

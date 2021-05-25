@@ -6,8 +6,8 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
 @pytest.mark.asyncio
-async def test_beep(context):
-    event = MockTelegramEvent.with_command()
+async def test_beep(mock_client):
+    event = MockTelegramEvent.with_message(text="/beep")
     beep = BeepFunctionality()
 
     with pytest.raises(StopPropagation):

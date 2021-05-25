@@ -1,7 +1,10 @@
 import random
 import string
 from typing import Union, List
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
+
+from telethon import TelegramClient
+from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.fa_submission import FASubmission, FASubmissionFull, FAUser, Rating
@@ -80,7 +83,14 @@ class MockSubmission(FASubmissionFull):
         )
         self.fav_id = fav_id
         self._download_file_size = file_size
-        self.send_message = MagicMock()
+        self._send_message = AsyncMock()
+
+    async def send_message(
+            self,
+            *args,
+            **kwargs
+    ) -> None:
+        self._send_message(*args, **kwargs)
 
 
 class MockExportAPI(FAExportAPI):

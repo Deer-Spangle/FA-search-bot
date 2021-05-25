@@ -1,31 +1,33 @@
-from telegram import Chat
+import pytest
+from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, ChatType
 
 
-def test_unhandled_message(context):
-    update = MockTelegramEvent.with_message(
+@pytest.mark.asyncio
+async def test_unhandled_message(mock_client):
+    event = MockTelegramEvent.with_message(
         text="Hello can I have a picture"
     )
     unhandled = UnhandledMessageFunctionality()
 
-    unhandled.call(update, context)
+    with pytest.raises(StopPropagation):
+        await unhandled.call(event)
 
-    context.bot.send_message.assert_called_with(
-        chat_id=update.message.chat_id,
-        text="Sorry, I'm not sure how to handle that message",
-        reply_to_message_id=update.message.message_id
+    event.reply.assert_called_with(
+        "Sorry, I'm not sure how to handle that message",
     )
 
 
-def test_unhandled_group_message(context):
-    update = MockTelegramEvent.with_message(
+@pytest.mark.asyncio
+async def test_unhandled_group_message(mock_client):
+    event = MockTelegramEvent.with_message(
         text="Hey friendo, how are you?",
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     )
     unhandled = UnhandledMessageFunctionality()
 
-    unhandled.call(update, context)
+    await unhandled.call(event)
 
-    context.bot.send_message.assert_not_called()
+    event.reply.assert_not_called()

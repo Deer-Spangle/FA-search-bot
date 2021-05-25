@@ -1,8 +1,7 @@
 import datetime
 
-from unittest.mock import patch
-
-import telegram
+import pytest
+from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
@@ -11,128 +10,127 @@ from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_add_subscription(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription test")
+@pytest.mark.asyncio
+async def test_call__route_add_subscription(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     add_sub = MockMethod("Added subscription test")
     func._add_sub = add_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert add_sub.called
     assert add_sub.args is not None
     assert add_sub.args[0] == 14358
     assert add_sub.args[1] == "test"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Added subscription test"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Added subscription test"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_add_subscription_with_username(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
+@pytest.mark.asyncio
+async def test_call__route_add_subscription_with_username(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     add_sub = MockMethod("Added subscription test")
     func._add_sub = add_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert add_sub.called
     assert add_sub.args is not None
     assert add_sub.args[0] == 14358
     assert add_sub.args[1] == "test"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Added subscription test"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Added subscription test"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_remove_subscription(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
+@pytest.mark.asyncio
+async def test_call__route_remove_subscription(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     delete_sub = MockMethod("Removed subscription test")
     func._remove_sub = delete_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert delete_sub.called
     assert delete_sub.args is not None
     assert delete_sub.args[0] == 14358
     assert delete_sub.args[1] == "example"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Removed subscription test"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Removed subscription test"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_remove_subscription_with_username(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
+@pytest.mark.asyncio
+async def test_call__route_remove_subscription_with_username(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     delete_sub = MockMethod("Removed subscription test")
     func._remove_sub = delete_sub.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert delete_sub.called
     assert delete_sub.args is not None
     assert delete_sub.args[0] == 14358
     assert delete_sub.args[1] == "example"
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Removed subscription test"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Removed subscription test"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_list_subscriptions(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions")
+@pytest.mark.asyncio
+async def test_call__route_list_subscriptions(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert list_subs.called
     assert list_subs.args is not None
     assert list_subs.args[0] == 14358
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Listing subscriptions"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Listing subscriptions"
 
 
-@patch.object(telegram, "Bot")
-def test_call__route_list_subscriptions_with_username(context):
-    update = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
+@pytest.mark.asyncio
+async def test_call__route_list_subscriptions_with_username(mock_client):
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
 
-    func.call(update, context)
+    with pytest.raises(StopPropagation):
+        await func.call(event)
 
     assert list_subs.called
     assert list_subs.args is not None
     assert list_subs.args[0] == 14358
-    context.bot.send_message.assert_called()
-    assert context.bot.send_message.call_args[1]['chat_id'] == update.message.chat_id
-    assert context.bot.send_message.call_args[1]['text'] == "Listing subscriptions"
+    event.reply.assert_called()
+    assert event.reply.call_args[0][0] == "Listing subscriptions"
 
 
-@patch.object(telegram, "Bot")
-def test_add_sub__no_add_blank(context):
+def test_add_sub__no_add_blank(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._add_sub(18749, "")
@@ -141,10 +139,9 @@ def test_add_sub__no_add_blank(context):
     assert len(watcher.subscriptions) == 0
 
 
-@patch.object(telegram, "Bot")
-def test_add_sub__invalid_query(context):
+def test_add_sub__invalid_query(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._add_sub(18749, "(hello")
@@ -153,10 +150,9 @@ def test_add_sub__invalid_query(context):
     assert len(watcher.subscriptions) == 0
 
 
-@patch.object(telegram, "Bot")
-def test_add_sub__no_add_duplicate(context):
+def test_add_sub__no_add_duplicate(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
 
@@ -166,10 +162,9 @@ def test_add_sub__no_add_duplicate(context):
     assert len(watcher.subscriptions) == 1
 
 
-@patch.object(telegram, "Bot")
-def test_add_sub__no_add_duplicate_case_insensitive(context):
+def test_add_sub__no_add_duplicate_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
 
@@ -179,10 +174,9 @@ def test_add_sub__no_add_duplicate_case_insensitive(context):
     assert len(watcher.subscriptions) == 1
 
 
-@patch.object(telegram, "Bot")
-def test_add_sub__adds_subscription(context):
+def test_add_sub__adds_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
@@ -201,10 +195,9 @@ def test_add_sub__adds_subscription(context):
     assert subscription.latest_update is None
 
 
-@patch.object(telegram, "Bot")
-def test_remove_sub__non_existent_subscription(context):
+def test_remove_sub__non_existent_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     func = SubscriptionFunctionality(watcher)
@@ -215,10 +208,9 @@ def test_remove_sub__non_existent_subscription(context):
     assert len(watcher.subscriptions) == 2
 
 
-@patch.object(telegram, "Bot")
-def test_remove_sub__removes_subscription(context):
+def test_remove_sub__removes_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     new_sub = Subscription("test", 18749)
@@ -247,10 +239,9 @@ def test_remove_sub__removes_subscription(context):
         assert subscriptions[1].destination == 18747
 
 
-@patch.object(telegram, "Bot")
-def test_remove_sub__removes_subscription_case_insensitive(context):
+def test_remove_sub__removes_subscription_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     new_sub = Subscription("test", 18749)
@@ -279,10 +270,9 @@ def test_remove_sub__removes_subscription_case_insensitive(context):
         assert subscriptions[1].destination == 18747
 
 
-@patch.object(telegram, "Bot")
-def test_list_subs(context):
+def test_list_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -296,10 +286,9 @@ def test_list_subs(context):
     assert "- test" not in resp
 
 
-@patch.object(telegram, "Bot")
-def test_list_subs__alphabetical(context):
+def test_list_subs__alphabetical(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -311,10 +300,9 @@ def test_list_subs__alphabetical(context):
     assert "- deer\n- example\n- test" in resp
 
 
-@patch.object(telegram, "Bot")
-def test_list_subs__alphabetical_case_insensitive(context):
+def test_list_subs__alphabetical_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("Example", 18749))
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -326,10 +314,9 @@ def test_list_subs__alphabetical_case_insensitive(context):
     assert "- deer\n- Example\n- test" in resp
 
 
-@patch.object(telegram, "Bot")
-def test_list_subs__some_paused(context):
+def test_list_subs__some_paused(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, context.bot)
+    watcher = SubscriptionWatcher(api, mock_client)
     watcher.subscriptions.add(Subscription("example", 18749))
     sub_paused = Subscription("test", 18749)
     sub_paused.paused = True

@@ -6,7 +6,7 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, Chat
 
 
 @pytest.mark.asyncio
-async def test_sends_recommendation(context):
+async def test_sends_recommendation(mock_client):
     event = MockTelegramEvent.with_message(text=None).with_photo()
     func = ImageHashRecommendFunctionality()
 
@@ -21,7 +21,7 @@ async def test_sends_recommendation(context):
 
 
 @pytest.mark.asyncio
-async def test_no_reply_in_group(context):
+async def test_no_reply_in_group(mock_client):
     event = MockTelegramEvent.with_message(
         text=None,
         chat_type=ChatType.GROUP

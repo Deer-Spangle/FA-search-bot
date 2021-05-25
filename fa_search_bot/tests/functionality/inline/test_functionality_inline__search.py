@@ -1,110 +1,118 @@
-from telegram import InlineQueryResultPhoto, InlineQueryResultArticle, InputMessageContent
+import pytest
+from telethon.events import StopPropagation
 
-from fa_search_bot.fa_submission import FASubmission
 from fa_search_bot.functionalities.inline import InlineFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
-def test_empty_query_no_results(context):
-    update = MockTelegramEvent.with_inline_query(query="")
+@pytest.mark.asyncio
+async def test_empty_query_no_results(mock_client):
+    event = MockTelegramEvent.with_inline_query(query="")
     inline = InlineFunctionality(MockExportAPI())
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.send_message.assert_not_called()
-    context.bot.send_photo.assert_not_called()
-    context.bot.answer_inline_query.assert_called_with(update.inline_query.id, [])
+    event.answer.assert_called_with([])
 
 
-def test_simple_search(context):
+@pytest.mark.asyncio
+async def test_simple_search(mock_client):
     post_id = 234563
     search_term = "YCH"
-    update = MockTelegramEvent.with_inline_query(query=search_term)
+    event = MockTelegramEvent.with_inline_query(query=search_term)
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission])
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == 2
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) > 0
-    for result in args[1]:
-        assert isinstance(result, InlineQueryResultPhoto)
-        assert result.id == str(post_id)
-        assert result.photo_url == submission.thumbnail_url
-        assert result.thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
-        assert result.caption == submission.link
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert isinstance(args[0], list)
+    assert len(args[0]) > 0
+    for result in args[0]:
+        assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
+        assert result.kwargs == {
+            "file": submission.thumbnail_url,
+            "id": str(submission.submission_id),
+            "text": submission.link,
+        }
 
 
-def test_no_search_results(context):
+@pytest.mark.asyncio
+async def test_no_search_results(mock_client):
     search_term = "RareKeyword"
-    update = MockTelegramEvent.with_inline_query(query=search_term)
+    event = MockTelegramEvent.with_inline_query(query=search_term)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [])
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == ""
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) == 1
-    assert isinstance(args[1][0], InlineQueryResultArticle)
-    assert args[1][0].title == "No results found."
-    assert isinstance(args[1][0].input_message_content, InputMessageContent)
-    assert args[1][0].input_message_content.message_text == "No results for search \"{}\".".format(search_term)
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] is None
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
+    assert args[0][0].kwargs == {
+        "title": "No results found.",
+        "description": "No results for search \"{}\".".format(search_term)
+    }
 
 
-def test_search_with_offset(context):
+@pytest.mark.asyncio
+async def test_search_with_offset(mock_client):
     post_id = 234563
     search_term = "YCH"
     offset = 2
-    update = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
+    event = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission], page=offset)
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) > 0
-    for result in args[1]:
-        assert isinstance(result, InlineQueryResultPhoto)
-        assert result.id == str(post_id)
-        assert result.photo_url == submission.thumbnail_url
-        assert result.thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
-        assert result.caption == submission.link
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert isinstance(args[0], list)
+    assert len(args[0]) > 0
+    for result in args[0]:
+        assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
+        assert result.kwargs == {
+            "id": str(post_id),
+            "file": submission.thumbnail_url,
+            "text": submission.link
+        }
 
 
-def test_search_with_offset_no_more_results(context):
+@pytest.mark.asyncio
+async def test_search_with_offset_no_more_results(mock_client):
     search_term = "YCH"
     offset = 2
-    update = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
+    event = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [], page=offset)
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == ""
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) == 0
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] is None
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 0
 
 
-def test_search_with_spaces(context):
+@pytest.mark.asyncio
+async def test_search_with_spaces(mock_client):
     search_term = "deer YCH"
-    update = MockTelegramEvent.with_inline_query(query=search_term)
+    event = MockTelegramEvent.with_inline_query(query=search_term)
     post_id1 = 213231
     post_id2 = 84331
     submission1 = MockSubmission(post_id1)
@@ -112,67 +120,73 @@ def test_search_with_spaces(context):
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission1, submission2])
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == 2
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) == 2
-    for result in args[1]:
-        assert isinstance(result, InlineQueryResultPhoto)
-    assert args[1][0].id == str(post_id1)
-    assert args[1][1].id == str(post_id2)
-    assert args[1][0].photo_url == submission1.thumbnail_url
-    assert args[1][1].photo_url == submission2.thumbnail_url
-    assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission1.thumbnail_url)
-    assert args[1][1].thumb_url == FASubmission.make_thumbnail_smaller(submission2.thumbnail_url)
-    assert args[1][0].caption == submission1.link
-    assert args[1][1].caption == submission2.link
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 2
+    for result in args[0]:
+        assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs == {
+        "id": str(post_id1),
+        "file": submission1.thumbnail_url,
+        "text": submission1.link,
+    }
+    assert args[0][1].kwargs == {
+        "id": str(post_id2),
+        "file": submission2.thumbnail_url,
+        "text": submission2.link,
+    }
 
 
-def test_search_with_combo_characters(context):
+@pytest.mark.asyncio
+async def test_search_with_combo_characters(mock_client):
     search_term = "(deer & !ych) | (dragon & !ych)"
-    update = MockTelegramEvent.with_inline_query(query=search_term)
+    event = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission])
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == 2
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) == 1
-    assert isinstance(args[1][0], InlineQueryResultPhoto)
-    assert args[1][0].id == str(post_id)
-    assert args[1][0].photo_url == submission.thumbnail_url
-    assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
-    assert args[1][0].caption == submission.link
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs == {
+        "id": str(post_id),
+        "file": submission.thumbnail_url,
+        "text": submission.link
+    }
 
 
-def test_search_with_field(context):
+@pytest.mark.asyncio
+async def test_search_with_field(mock_client):
     search_term = "@lower citrinelle"
-    update = MockTelegramEvent.with_inline_query(query=search_term)
+    event = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
     inline = InlineFunctionality(MockExportAPI())
     inline.api.with_search_results(search_term, [submission])
 
-    inline.call(update, context)
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
 
-    context.bot.answer_inline_query.assert_called_once()
-    args = context.bot.answer_inline_query.call_args[0]
-    assert context.bot.answer_inline_query.call_args[1]['next_offset'] == 2
-    assert args[0] == update.inline_query.id
-    assert isinstance(args[1], list)
-    assert len(args[1]) == 1
-    assert isinstance(args[1][0], InlineQueryResultPhoto)
-    assert args[1][0].id == str(post_id)
-    assert args[1][0].photo_url == submission.thumbnail_url
-    assert args[1][0].thumb_url == FASubmission.make_thumbnail_smaller(submission.thumbnail_url)
-    assert args[1][0].caption == submission.link
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs == {
+        "id": str(post_id),
+        "file": submission.thumbnail_url,
+        "text": submission.link,
+    }

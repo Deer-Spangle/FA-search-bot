@@ -13,54 +13,47 @@ class MockObjectsTest(unittest.TestCase):
             pass
 
     def test_can_create_message(self):
-        update = MockTelegramEvent.with_message()
-        assert update.callback_query is None
-        assert update.message is not None
-        assert update.message.message_id is not None
-        assert update.message.chat_id is not None
-        assert isinstance(update.message.photo, list)
-        assert len(update.message.photo) == 0
+        event = MockTelegramEvent.with_message()
+        assert event.callback_query is None
+        assert event.message is not None
+        assert event.message.message_id is not None
+        assert event.message.chat_id is not None
+        assert isinstance(event.message.photo, list)
+        assert len(event.message.photo) == 0
 
     def test_can_create_message_with_photo(self):
-        update = MockTelegramEvent.with_message().with_photo()
-        assert update.callback_query is None
-        assert update.message is not None
-        assert update.message.message_id is not None
-        assert update.message.chat_id is not None
-        assert isinstance(update.message.photo, list)
-        assert len(update.message.photo) == 1
-        assert update.message.photo[0]["file_id"] is not None
+        event = MockTelegramEvent.with_message().with_photo()
+        assert event.callback_query is None
+        assert event.message is not None
+        assert event.message.message_id is not None
+        assert event.message.chat_id is not None
+        assert isinstance(event.message.photo, list)
+        assert len(event.message.photo) == 1
+        assert event.message.photo[0]["file_id"] is not None
 
     def test_can_create_message_with_document(self):
-        update = MockTelegramEvent.with_message().with_document()
-        assert update.callback_query is None
-        assert update.message is not None
-        assert update.message.message_id is not None
-        assert update.message.chat_id is not None
-        assert isinstance(update.message.photo, list)
-        assert len(update.message.photo) == 0
-        assert update.message.document is not None
-        assert isinstance(update.message.document, _MockDocument)
-        assert update.message.document.file_id is not None
-        assert update.message.document.mime_type is None
+        event = MockTelegramEvent.with_message().with_document()
+        assert event.callback_query is None
+        assert event.message is not None
+        assert event.message.message_id is not None
+        assert event.message.chat_id is not None
+        assert isinstance(event.message.photo, list)
+        assert len(event.message.photo) == 0
+        assert event.message.document is not None
+        assert isinstance(event.message.document, _MockDocument)
+        assert event.message.document.file_id is not None
+        assert event.message.document.mime_type is None
 
     def test_can_create_callback(self):
-        update = MockTelegramEvent.with_callback_query()
-        assert update.message is None
-        assert update.callback_query is not None
-        assert update.callback_query.message is None
+        event = MockTelegramEvent.with_callback_query()
+        assert event.message is None
+        assert event.callback_query is not None
+        assert event.callback_query.message is None
 
     def test_can_create_callback_with_message(self):
-        update = MockTelegramEvent.with_callback_query().with_originating_message()
-        assert update.message is None
-        assert update.callback_query is not None
-        assert update.callback_query.message is not None
-        assert update.callback_query.message.message_id is not None
-        assert update.callback_query.message.chat_id is not None
-
-    def test_can_create_command(self):
-        update = MockTelegramEvent.with_command()
-        assert update.callback_query is None
-        assert update.message is not None
-        assert update.message.message_id is not None
-        assert update.message.chat_id is not None
+        event = MockTelegramEvent.with_callback_query().with_originating_message()
+        assert event.message is None
+        assert event.callback_query is not None
+        assert event.callback_query.message is not None
+        assert event.callback_query.message.message_id is not None
+        assert event.callback_query.message.chat_id is not None

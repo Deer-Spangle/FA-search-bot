@@ -384,8 +384,8 @@ async def test_send_updates__sends_message(mock_client):
 
     await watcher._send_updates([subscription], submission)
 
-    assert submission.send_message.asset_called_once()
-    args, kwargs = submission.send_message.call_args
+    assert submission._send_message.asset_called_once()
+    args, kwargs = submission._send_message.call_args
     assert args[0] == mock_client
     assert args[1] == 12345
     assert "update" in kwargs['prefix'].lower()
@@ -404,8 +404,8 @@ async def test_send_updates__gathers_subscriptions(mock_client):
 
     await watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
-    assert submission.send_message.call_count == 2
-    call_list = submission.send_message.call_args_list
+    assert submission._send_message.call_count == 2
+    call_list = submission._send_message.call_args_list
     # Indifferent to call order, so figure out the order here
     call1 = call_list[0]
     call2 = call_list[1]
