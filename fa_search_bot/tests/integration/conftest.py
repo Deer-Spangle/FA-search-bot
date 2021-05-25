@@ -39,7 +39,11 @@ async def client() -> Client:
 def bot() -> FASearchBot:
     bot = FASearchBot(os.getenv('CONFIG_FILE', 'config.json'))
     if os.getenv("BOT_KEY"):
-        bot.bot_key = os.getenv("BOT_KEY")
+        bot.config.telegram.bot_key = os.getenv("BOT_KEY")
+    if os.getenv("CLIENT_API_ID"):
+        bot.config.telegram.api_id = os.getenv("CLIENT_API_ID")
+    if os.getenv("CLIENT_API_HASH"):
+        bot.config.telegram.api_hash = os.getenv("CLIENT_API_HASH")
     bot_thread = Thread(target=bot.start)
     bot_thread.start()
     while not bot.alive:

@@ -58,13 +58,16 @@ class FASearchBot:
     def __init__(self, conf_file):
         with open(conf_file, 'r') as f:
             self.config = Config.from_dict(json.load(f))
-        self.bot_key = self.config.telegram.bot_token
         self.api = FAExportAPI(self.config.fa_api_url)
         self.client = None
         self.alive = False
         self.functionalities = []
         self.subscription_watcher = None
         self.subscription_watcher_thread = None
+
+    @property
+    def bot_key(self):
+        return self.config.telegram.bot_token
 
     def start(self):
         # request = Request(con_pool_size=8)
