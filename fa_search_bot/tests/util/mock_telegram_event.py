@@ -26,7 +26,6 @@ class MockTelegramEvent:
         if self.__class__ == MockTelegramEvent:
             raise NotImplementedError()
         self.message = None
-        self.channel_post = None
         self.callback_query = None
         self.client = Mock(TelegramClient)
         self.respond = AsyncMock()
@@ -73,6 +72,13 @@ class MockTelegramEvent:
             query_id=query_id,
             query=query,
             offset=offset
+        )
+
+    @classmethod
+    def with_migration(cls, old_chat_id: int = None, new_chat_id: int = None):
+        return _MockTelegramMigration(
+            old_chat_id=old_chat_id,
+            new_chat_id=new_chat_id,
         )
 
 
@@ -139,17 +145,6 @@ class _MockTelegramMessage(MockTelegramEvent):
         return self.message.input_chat
 
 
-class _MockTelegramChannelPost(MockTelegramEvent):
-
-    def __init__(self, message_id: Optional[int] = None, chat_id: Optional[int] = None, text: Optional[str] = None):
-        super().__init__()
-        self.channel_post = _MockChannelPost(
-            message_id=message_id,
-            chat_id=chat_id,
-            text=text
-        )
-
-
 class _MockTelegramCallback(MockTelegramEvent):
 
     def __init__(self, *, data=None):
@@ -161,16 +156,6 @@ class _MockTelegramCallback(MockTelegramEvent):
         return self
 
 
-class _MockTelegramCommand(MockTelegramEvent):
-
-    def __init__(self, *, message_id=None, chat_id=None):
-        super().__init__()
-        self.message = _MockMessage(
-            message_id=message_id,
-            chat_id=chat_id
-        )
-
-
 class _MockTelegramInlineQuery(MockTelegramEvent):
 
     def __init__(self, *, query_id=None, query=None, offset=None):
@@ -178,6 +163,26 @@ class _MockTelegramInlineQuery(MockTelegramEvent):
         self.query = _MockInlineQuery(query_id=query_id, query=query, offset=offset)
         self.answer = AsyncMock()
         self.builder = _MockInlineBuilder()
+
+
+class _MockTelegramMigration(MockTelegramEvent):
+
+    def __init__(self, *, old_chat_id: int = None, new_chat_id: int = None):
+        super().__init__()
+        self.message = self._MigrationMessage(old_chat_id=old_chat_id, new_chat_id=new_chat_id)
+
+    class _MigrationMessage:
+        def __init__(self, *, old_chat_id: int = None, new_chat_id: int = None):
+            self.action = self._ChatId(old_chat_id)
+            self.to_id = self._ChannelId(new_chat_id)
+
+        class _ChatId:
+            def __init__(self, chat_id: int):
+                self.chat_id = chat_id
+
+        class _ChannelId:
+            def __init__(self, channel_id: int):
+                self.channel_id = channel_id
 
 
 class _MockInlineQuery:
@@ -267,36 +272,10 @@ class _MockMessage:
         self.buttons = buttons
 
 
-class _MockChannelPost:
-
-    def __init__(
-            self,
-            *,
-            message_id: Optional[int] = None,
-            chat_id: Optional[int] = None,
-            text: Optional[str] = None,
-    ):
-        self.message_id = message_id
-        self.chat_id = chat_id
-        self.text = text
-        self.chat = _MockChannel()
-        # Set defaults
-        if message_id is None:
-            self.message_id = generate_key()
-        if chat_id is None:
-            self.chat_id = "-100" + generate_key()
-
-
 class _MockChat:
 
     def __init__(self, chat_type: ChatType = ChatType.PRIVATE):
         self.type = chat_type
-
-
-class _MockChannel(_MockChat):
-
-    def __init__(self):
-        super().__init__(chat_type=Chat.CHANNEL)
 
 
 class _MockDocument:

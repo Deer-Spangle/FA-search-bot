@@ -24,7 +24,7 @@ class SupergroupUpgradeFunctionality(BotFunctionality):
         super().__init__(events.Raw(types.UpdateNewChannelMessage, func=filter_migration))
         self.watcher = watcher
 
-    def call(self, event: types.UpdateNewChannelMessage):
+    async def call(self, event: types.UpdateNewChannelMessage):
         old_chat_id = -1 * event.message.action.chat_id
         new_chat_id = int('-100' + str(event.message.to_id.channel_id))
         # Log the upgrade
