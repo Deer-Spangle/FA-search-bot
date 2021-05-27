@@ -34,7 +34,7 @@ class NeatenFunctionality(BotFunctionality):
 
     async def call(self, event: NewMessage.Event):
         # Only deal with messages, not channel posts
-        if event.is_channel:
+        if event.is_channel and not event.is_group:
             return
         # Get links from message
         matches = self._find_links_in_message(event)
