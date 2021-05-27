@@ -198,7 +198,7 @@ async def test_weird_characters_in_username(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_no_user_exists(context, requests_mock):
+async def test_no_user_exists(requests_mock):
     username = "fakelad"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
@@ -227,7 +227,7 @@ async def test_no_user_exists(context, requests_mock):
 
 
 @pytest.mark.asyncio
-async def test_username_with_colon(context, requests_mock):
+async def test_username_with_colon(requests_mock):
     # FA doesn't allow usernames to have : in them
     username = "fake:lad"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
@@ -285,7 +285,7 @@ async def test_over_max_favs(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_no_username_set(context, requests_mock):
+async def test_no_username_set(requests_mock):
     username = ""
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     inline = InlineFunctionality(MockExportAPI())
