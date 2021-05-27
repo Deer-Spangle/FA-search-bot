@@ -3,6 +3,9 @@ import re
 from re import Pattern
 from typing import List, Optional
 
+from telethon import TelegramClient
+from telethon.tl.types import TypeInputPeer
+
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_submission import FASubmissionShort
 from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
@@ -91,3 +94,14 @@ class FAHandler(SiteHandler):
             if _get_image_id_from_submission(last_submission) <= image_id:
                 return listing
             page += 1
+
+    async def send_submission(
+            self,
+            submission_id: int,
+            client: TelegramClient,
+            chat: TypeInputPeer,
+            *,
+            reply_to: Optional[int] = None
+    ) -> None:
+        submission = await self.api.get_full_submission(str(submission_id))
+        await submission.send_message(client, chat, reply_to=reply_to)
