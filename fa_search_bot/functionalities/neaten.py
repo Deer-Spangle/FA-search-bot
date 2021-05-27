@@ -4,10 +4,12 @@ from typing import Optional, List
 
 from telethon.events import NewMessage, StopPropagation
 
-from fa_search_bot.fa_export_api import PageNotFound, CloudflareError
-from fa_search_bot.fa_submission import FASubmissionFull, CantSendFileType, FASubmissionShort
+from fa_search_bot.sites.fa_export_api import PageNotFound, CloudflareError
+from fa_search_bot.sites.fa_submission import CantSendFileType
 from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
+from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.site_handler import HandlerException
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
@@ -26,11 +28,11 @@ class NeatenFunctionality(BotFunctionality):
         re.I
     )
     FA_THUMB_LINK = re.compile(r"t2?\.(?:facdn|furaffinity)\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
-    FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})")
 
     def __init__(self, api):
-        super().__init__(NewMessage(func=lambda e: filter_regex(e, self.FA_LINKS), incoming=True))
         self.api = api
+        self.handler = FAHandler(api)
+        super().__init__(NewMessage(func=lambda e: filter_regex(e, self.handler.link_regex), incoming=True))
 
     async def call(self, event: NewMessage.Event):
         # Only deal with messages, not channel posts
@@ -62,46 +64,34 @@ class NeatenFunctionality(BotFunctionality):
         if not event.is_private and event.message.photo:
             message = None
         if message is not None:
-            link_matches += [match[0] for match in self.FA_LINKS.findall(message)]
+            link_matches += self.handler.find_links_in_str(message)
         # Get links from buttons
         if event.message.buttons:
             for button_row in event.message.buttons:
                 for button in button_row:
-                    button_matches = self.FA_LINKS.findall(button.url)
-                    if button_matches:
-                        link_matches += [match[0] for match in button_matches]
+                    if button.url:
+                        link_matches += self.handler.find_links_in_str(button.url)
         return link_matches
 
     async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[int]:
-        # Handle submission page link matches
-        sub_match = self.FA_SUB_LINK.match(link)
-        if sub_match:
-            usage_logger.info("Neaten link: submission link")
-            return int(sub_match.group(1))
-        # Handle thumbnail link matches
-        thumb_match = self.FA_THUMB_LINK.match(link)
-        if thumb_match:
-            usage_logger.info("Neaten link: thumbnail link")
-            return int(thumb_match.group(1))
-        # Handle direct file link matches
-        direct_match = self.FA_DIRECT_LINK.match(link)
-        username = direct_match.group(1)
-        image_id = int(direct_match.group(2))
-        submission_id = await self._find_submission(username, image_id)
-        if not submission_id:
-            logger.warning("Couldn't find submission by username: %s with image id: %s", username, image_id)
+        try:
+            return await self.handler.get_submission_id_from_link(link)
+        except HandlerException as e:
+            logger.warning("Site handler (%s) raised exception:", self.handler.__class__.__name__, exc_info=e)
             await _return_error_in_privmsg(
                 event,
-                f"Could not locate the image by {username} with image id {image_id}."
+                f"Error finding submission: {e}"
             )
-        usage_logger.info("Neaten link: direct image link")
-        return submission_id
+            return None
 
     async def _handle_fa_submission_link(self, event: NewMessage.Event, submission_id: int):
         logger.info("Found a link, ID: %s", submission_id)
         try:
             submission = await self.api.get_full_submission(str(submission_id))
-            await self._send_neat_fa_response(event, submission)
+            await submission.send_message(event.client, event.input_chat, reply_to=event.message.id)
+        except CantSendFileType as e:
+            logger.warning("Can't send file type. Submission ID: %s", submission_id)
+            await _return_error_in_privmsg(event, str(e))
         except PageNotFound:
             logger.warning("Submission invalid or deleted. Submission ID: %s", submission_id)
             await _return_error_in_privmsg(
@@ -115,48 +105,3 @@ class NeatenFunctionality(BotFunctionality):
                 event,
                 "Furaffinity returned a cloudflare error, so I cannot neaten links."
             )
-
-    async def _send_neat_fa_response(self, event: NewMessage.Event, submission: FASubmissionFull):
-        try:
-            await submission.send_message(event.client, event.input_chat, reply_to=event.message.id)
-        except CantSendFileType as e:
-            await _return_error_in_privmsg(event, str(e))
-
-    async def _find_submission(self, username: str, image_id: int) -> Optional[int]:
-        folders = ["gallery", "scraps"]
-        for folder in folders:
-            submission_id = await self._find_submission_in_folder(username, image_id, folder)
-            if submission_id:
-                return submission_id
-        return None
-
-    async def _find_submission_in_folder(self, username: str, image_id: int, folder: str) -> Optional[int]:
-        page_listing = await self._find_correct_page(username, image_id, folder)
-        if not page_listing:
-            # No page is valid.
-            return None
-        return self._find_submission_on_page(image_id, page_listing)
-
-    def _find_submission_on_page(self, image_id: int, page_listing: List[FASubmissionShort]) -> Optional[int]:
-        for submission in page_listing:
-            test_image_id = self._get_image_id_from_submission(submission)
-            if image_id == test_image_id:
-                return int(submission.submission_id)
-            if test_image_id < image_id:
-                return None
-        return None
-
-    async def _find_correct_page(self, username: str, image_id: int, folder: str) -> Optional[List[FASubmissionShort]]:
-        page = 1
-        while True:
-            listing = await self.api.get_user_folder(username, folder, page)
-            if len(listing) == 0:
-                return None
-            last_submission = listing[-1]
-            if self._get_image_id_from_submission(last_submission) <= image_id:
-                return listing
-            page += 1
-
-    def _get_image_id_from_submission(self, submission: FASubmissionShort) -> int:
-        image_id = re.split(r"[-.]", submission.thumbnail_url)[-2]
-        return int(image_id)
