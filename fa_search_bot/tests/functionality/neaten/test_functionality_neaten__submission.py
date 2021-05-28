@@ -1,12 +1,11 @@
 import pytest
-from telegram import Chat
 from telethon.events import StopPropagation
 
-from fa_search_bot.fa_export_api import CloudflareError
-from fa_search_bot.fa_submission import FASubmission
+from fa_search_bot.sites.fa_export_api import CloudflareError
+from fa_search_bot.sites.fa_submission import FASubmission
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, MockButton
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, MockButton, ChatType
 
 
 @pytest.mark.asyncio
@@ -108,7 +107,7 @@ async def test_submission_group_chat(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.GROUP,
+        chat_type=ChatType.GROUP,
         client=mock_client,
     )
     submission = MockSubmission(post_id)
@@ -129,7 +128,7 @@ async def test_submission_group_chat(mock_client):
 async def test_submission_link_in_group_caption(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     ).with_photo(caption=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     neaten = NeatenFunctionality(MockExportAPI())
@@ -227,7 +226,7 @@ async def test_deleted_submission(mock_client):
 @pytest.mark.asyncio
 async def test_deleted_submission_group_chat(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=Chat.GROUP)
+    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=ChatType.GROUP)
     neaten = NeatenFunctionality(MockExportAPI())
 
     with pytest.raises(StopPropagation):
@@ -326,7 +325,7 @@ async def test_swf_submission(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.PRIVATE,
+        chat_type=ChatType.PRIVATE,
         client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="swf")
@@ -348,7 +347,7 @@ async def test_swf_submission_groupchat(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     )
     submission = MockSubmission(post_id, file_ext="swf")
     neaten = NeatenFunctionality(MockExportAPI())
@@ -368,7 +367,7 @@ async def test_unknown_type_submission(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.PRIVATE,
+        chat_type=ChatType.PRIVATE,
         client=mock_client,
     )
     submission = MockSubmission(post_id, file_ext="zzz")
@@ -390,7 +389,7 @@ async def test_unknown_type_submission_groupchat(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         text="https://www.furaffinity.net/view/{}/".format(post_id),
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     )
     submission = MockSubmission(post_id, file_ext="zzz")
     neaten = NeatenFunctionality(MockExportAPI())

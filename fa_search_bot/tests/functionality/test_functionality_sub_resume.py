@@ -1,7 +1,4 @@
-from unittest.mock import patch
-
 import pytest
-import telegram
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality

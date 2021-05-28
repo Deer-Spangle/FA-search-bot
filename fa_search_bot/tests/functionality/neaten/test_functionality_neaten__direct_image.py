@@ -1,10 +1,9 @@
 import pytest
-from telegram import Chat
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, ChatType
 
 
 @pytest.mark.asyncio
@@ -200,7 +199,7 @@ async def test_direct_no_match_groupchat(mock_client):
     post_id = 232347
     event = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id),
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     )
     neaten = NeatenFunctionality(MockExportAPI())
     for folder in ['gallery', 'scraps']:

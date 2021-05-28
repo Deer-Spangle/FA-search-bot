@@ -6,7 +6,6 @@ authors = ["Deer Spangle <deer@spangle.org.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-python-telegram-bot = "12.8"
 requests = "^2.24.0"
 python-dateutil = "^2.8.1"
 simple-heartbeat = "^0.1.2"
