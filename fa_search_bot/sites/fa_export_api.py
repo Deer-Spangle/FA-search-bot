@@ -11,11 +11,15 @@ from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, F
 logger = logging.getLogger(__name__)
 
 
-class PageNotFound(Exception):
+class APIException(Exception):
     pass
 
 
-class CloudflareError(Exception):
+class PageNotFound(APIException):
+    pass
+
+
+class CloudflareError(APIException):
     pass
 
 
