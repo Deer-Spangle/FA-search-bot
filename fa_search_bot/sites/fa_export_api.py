@@ -1,12 +1,11 @@
 import asyncio
 import logging
-import time
 import datetime
 from typing import List
 
 import requests
 
-from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
     FAStatus
 
 logger = logging.getLogger(__name__)

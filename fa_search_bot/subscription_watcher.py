@@ -10,8 +10,8 @@ import dateutil.parser
 import heartbeat
 from telethon import TelegramClient
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
-from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
+from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"

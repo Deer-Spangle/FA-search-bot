@@ -6,7 +6,7 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 usage_logger = logging.getLogger("usage")

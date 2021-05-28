@@ -9,7 +9,7 @@ import json
 from telethon import TelegramClient
 
 from fa_search_bot._version import __VERSION__
-from fa_search_bot.fa_export_api import FAExportAPI
+from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
 from fa_search_bot.functionalities.inline import InlineFunctionality

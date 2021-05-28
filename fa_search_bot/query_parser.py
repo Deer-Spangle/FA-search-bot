@@ -9,7 +9,7 @@ import pyparsing
 from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
     ParseResults, ParseException, ParserElement, CaselessKeyword
 
-from fa_search_bot.fa_submission import FASubmissionFull, Rating
+from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating
 
 logger = logging.getLogger(__name__)
 
