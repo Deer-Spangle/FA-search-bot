@@ -2,8 +2,8 @@ import datetime
 
 import pytest
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
-from fa_search_bot.fa_submission import FASubmissionFull, FASubmissionShort
+from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 

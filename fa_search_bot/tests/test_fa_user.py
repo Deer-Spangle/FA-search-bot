@@ -1,6 +1,6 @@
 import unittest
 
-from fa_search_bot.fa_submission import FAUser
+from fa_search_bot.sites.fa_submission import FAUser
 
 
 class FAUserTest(unittest.TestCase):

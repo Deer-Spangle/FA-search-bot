@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from fa_search_bot.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
+from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder

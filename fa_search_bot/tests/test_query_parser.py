@@ -1,6 +1,6 @@
 import pytest
 
-from fa_search_bot.fa_submission import Rating
+from fa_search_bot.sites.fa_submission import Rating
 from fa_search_bot.query_parser import parse_query, WordQuery, AndQuery, NotQuery, OrQuery, KeywordField, \
     InvalidQueryException, \
     PhraseQuery, TitleField, RatingQuery, DescriptionField, PrefixQuery, SuffixQuery, RegexQuery, ArtistField, \

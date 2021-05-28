@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from telethon.tl.custom import InlineBuilder
 
-from fa_search_bot.fa_submission import FAUser, FASubmissionShort
+from fa_search_bot.sites.fa_submission import FAUser, FASubmissionShort
 
 
 class FASubmissionShortTest(unittest.TestCase):
