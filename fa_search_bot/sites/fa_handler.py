@@ -1,7 +1,7 @@
 import logging
 import re
 from re import Pattern
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from telethon import TelegramClient
 from telethon.tl.types import TypeInputPeer
@@ -31,7 +31,7 @@ class FAHandler(SiteHandler):
         self.api = api
 
     @property
-    def link_regex(self) -> Pattern[str]:
+    def link_regex(self) -> Pattern:
         return self.FA_LINKS
 
     def find_links_in_str(self, haystack: str) -> List[str]:
@@ -105,3 +105,18 @@ class FAHandler(SiteHandler):
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
         await submission.send_message(client, chat, reply_to=reply_to)
+
+    async def submission_as_answer(
+            self,
+            submission_id: Union[int, str],
+            builder
+    ):
+        sub = await self.api.get_full_submission(str(submission_id))
+        return sub.to_inline_query_result(builder)
+
+    def is_valid_submission_id(self, example: str) -> bool:
+        try:
+            int(example)
+            return True
+        except ValueError:
+            return False
