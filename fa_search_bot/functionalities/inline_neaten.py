@@ -31,7 +31,8 @@ class InlineNeatenFunctionality(BotFunctionality):
 
     async def _answer_id_query(self, event: InlineQuery.Event, submission_id: str) -> None:
         try:
-            result = await self.handler.submission_as_answer(submission_id, event.builder)
+            result_future = await self.handler.submission_as_answer(submission_id, event.builder)
+            result = await result_future
             if result:
                 usage_logger.info("Inline submission ID query")
                 await event.answer([result], gallery=isinstance(result, InputBotInlineResultPhoto))
@@ -46,6 +47,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         results = await gather_ignore_exceptions([
             self.handler.submission_as_answer(sub_id, event.builder) for sub_id in submission_ids
         ])
+        results = await gather_ignore_exceptions(results)
         if results:
             usage_logger.info("Inline submission link query")
             await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))

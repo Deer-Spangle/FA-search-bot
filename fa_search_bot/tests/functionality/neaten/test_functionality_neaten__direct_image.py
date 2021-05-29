@@ -188,7 +188,7 @@ async def test_direct_no_match(mock_client):
 
     event.reply.assert_called()
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id)
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -456,7 +456,7 @@ async def test_result_missing_from_first_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -481,7 +481,7 @@ async def test_result_missing_from_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -507,7 +507,7 @@ async def test_result_missing_between_pages(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -591,7 +591,7 @@ async def test_not_on_first_page_empty_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 

@@ -102,16 +102,18 @@ async def test_submission_link__no_result():
 @pytest.mark.asyncio
 async def test_submission_direct_link():
     post_id = 12345
-    sub = MockSubmission(post_id)
+    image_id = 98765434
+    username = "fender"
+    sub = MockSubmission(post_id, username=username, image_id=image_id)
     event = MockTelegramEvent.with_inline_query(query=sub.download_url)
     inline = InlineNeatenFunctionality(
         MockExportAPI().with_user_folder(
-            sub.username,
+            username,
             "gallery",
             [
-                MockSubmission(12344),
+                MockSubmission(12346, image_id=image_id + 50),
                 sub,
-                MockSubmission(12346)
+                MockSubmission(12344, image_id=image_id - 50),
             ]
         )
     )
@@ -136,11 +138,12 @@ async def test_submission_direct_link():
 @pytest.mark.asyncio
 async def test_submission_direct_link__not_found():
     post_id = 12345
-    sub = MockSubmission(post_id)
+    username = "fender"
+    sub = MockSubmission(post_id, username=username)
     event = MockTelegramEvent.with_inline_query(query=sub.download_url)
     inline = InlineNeatenFunctionality(
         MockExportAPI().with_user_folder(
-            sub.username,
+            username,
             "gallery",
             [
                 MockSubmission(12344),
