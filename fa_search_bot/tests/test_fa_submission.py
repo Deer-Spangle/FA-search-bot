@@ -3,7 +3,7 @@ import unittest
 
 import requests_mock
 
-from fa_search_bot.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 

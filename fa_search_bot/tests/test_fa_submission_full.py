@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from fa_search_bot.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
+from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
@@ -73,7 +73,7 @@ async def test_gif_submission(mock_client):
     mock_open = mock.mock_open(read_data=b"data")
     mock_rename = MockMethod()
 
-    with mock.patch("fa_search_bot.fa_submission.open", mock_open):
+    with mock.patch("fa_search_bot.sites.fa_submission.open", mock_open):
         with mock.patch("os.rename", mock_rename.call):
             await submission.send_message(mock_client, chat, reply_to=message_id)
 
@@ -100,7 +100,7 @@ async def test_gif_submission_from_cache(mock_client):
     mock_open = mock.mock_open(read_data=b"data")
     mock_exists = MockMethod(True)
 
-    with mock.patch("fa_search_bot.fa_submission.open", mock_open):
+    with mock.patch("fa_search_bot.sites.fa_submission.open", mock_open):
         with mock.patch("os.path.exists", mock_exists.call):
             await submission.send_message(mock_client, chat, reply_to=message_id)
 

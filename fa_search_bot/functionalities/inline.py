@@ -6,8 +6,9 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
-from fa_search_bot.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+from fa_search_bot.utils import gather_ignore_exceptions
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
@@ -43,10 +44,7 @@ class InlineFunctionality(BotFunctionality):
                 usage_logger.info("Inline search")
                 results, next_offset = await self._search_query_results(event.builder, query, offset)
         # Await results while ignoring exceptions
-        results = list(filter(
-            lambda x: not isinstance(x, Exception),
-            await asyncio.gather(*results, return_exceptions=True)
-        ))
+        results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
         # Figure out whether to display as gallery
         if len(results) == 0:

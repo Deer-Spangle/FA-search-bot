@@ -4,7 +4,7 @@ import pytest
 from tgintegration import BotController
 
 from fa_search_bot.bot import FASearchBot
-from fa_search_bot.fa_submission import FASubmission
+from fa_search_bot.sites.fa_submission import FASubmission
 
 pytestmark = pytest.mark.asyncio
 

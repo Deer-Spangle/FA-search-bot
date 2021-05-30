@@ -1,10 +1,9 @@
 import pytest
-from telegram import Chat
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, ChatType
 
 
 @pytest.mark.asyncio
@@ -189,7 +188,7 @@ async def test_direct_no_match(mock_client):
 
     event.reply.assert_called()
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id)
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -200,7 +199,7 @@ async def test_direct_no_match_groupchat(mock_client):
     post_id = 232347
     event = MockTelegramEvent.with_message(
         text="http://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(username, image_id),
-        chat_type=Chat.GROUP
+        chat_type=ChatType.GROUP
     )
     neaten = NeatenFunctionality(MockExportAPI())
     for folder in ['gallery', 'scraps']:
@@ -457,7 +456,7 @@ async def test_result_missing_from_first_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -482,7 +481,7 @@ async def test_result_missing_from_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -508,7 +507,7 @@ async def test_result_missing_between_pages(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
@@ -592,7 +591,7 @@ async def test_not_on_first_page_empty_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        "Could not locate the image by {} with image id {}.".format(username, image_id),
+        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
     )
 
 
