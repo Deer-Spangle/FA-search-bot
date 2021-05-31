@@ -35,7 +35,7 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
     submission = await bot.api.get_full_submission(submission_id)
     filename = submission._get_gif_from_cache()
     if filename is None:
-        output_path = submission._convert_gif(submission.download_url)
+        output_path = await submission._convert_gif(submission.download_url)
         submission._save_gif_to_cache(output_path)
 
     async with controller.collect(count=2) as response:

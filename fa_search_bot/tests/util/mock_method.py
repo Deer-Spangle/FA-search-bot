@@ -31,3 +31,6 @@ class MockMultiMethod:
         if self.values is None:
             return None
         return self.values[self.calls - 1]
+
+    async def async_call(self, *args, **kwargs):
+        return self.call(*args, **kwargs)
