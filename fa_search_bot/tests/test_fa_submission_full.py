@@ -147,16 +147,18 @@ async def test_convert_gif_two_pass():
     assert output_path.endswith(".mp4")
     assert mock_run.calls == 4
     # Initial ffmpeg call
-    assert mock_run.args[0][1].startswith(f"-i {submission.download_url}")
+    assert mock_run.args[0][1].startswith(f"-i {submission.download_url} ")
     # ffprobe call
-    assert mock_run.args[1][1].startswith("-show_entries format=duration")
+    assert mock_run.args[1][1].startswith("-show_entries format=duration ")
     assert mock_run.kwargs[1]["entrypoint"] == "ffprobe"
     # First ffmpeg two pass call
-    assert mock_run.args[2][1].startswith(f"-i {submission.download_url}")
-    assert mock_run.args[2][1].endswith("-pass 1 -f mp4 /dev/null -y")
+    assert mock_run.args[2][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 1 -f mp4 " in mock_run.args[2][1]
+    assert mock_run.args[2][1].endswith(" /dev/null -y")
     # Second ffmpeg two pass call
-    assert mock_run.args[3][1].startswith(f"-i {submission.download_url}")
-    assert mock_run.args[3][1].endswith(f"-pass 2 {output_path} -y")
+    assert mock_run.args[3][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 2 " in mock_run.args[3][1]
+    assert mock_run.args[3][1].endswith(f" {output_path} -y")
 
 
 @pytest.mark.asyncio
