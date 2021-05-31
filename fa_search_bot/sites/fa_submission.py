@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import os
@@ -288,7 +289,7 @@ class FASubmissionFull(FASubmissionShort):
             filename = self._get_gif_from_cache()
             if filename is None:
                 logger.info("Gif not in cache, converting to video. Submission ID %s", self.submission_id)
-                output_path = self._convert_gif(self.download_url)
+                output_path = await self._convert_gif(self.download_url)
                 filename = self._save_gif_to_cache(output_path)
             await client.send_message(
                 entity=chat,
@@ -320,7 +321,7 @@ class FASubmissionFull(FASubmissionShort):
         os.rename(gif_path, filename)
         return filename
 
-    def _convert_gif(self, gif_url: str) -> str:
+    async def _convert_gif(self, gif_url: str) -> str:
         usage_logger.info("Pretty gif: converting")
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                          "-vf \"scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_" \
@@ -329,7 +330,7 @@ class FASubmissionFull(FASubmissionShort):
         # first pass
         client = docker.from_env()
         output_path = random_sandbox_video_path("mp4")
-        self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
+        await self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
@@ -337,7 +338,7 @@ class FASubmissionFull(FASubmissionShort):
         logger.info("Doing a two pass gif conversion on submission ID %s", self.submission_id)
         two_pass_filename = random_sandbox_video_path("mp4")
         # Get video duration from ffprobe
-        duration_str = self._run_docker(
+        duration_str = await self._run_docker(
             client,
             f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
             entrypoint="ffprobe"
@@ -345,17 +346,18 @@ class FASubmissionFull(FASubmissionShort):
         duration = float(duration_str)
         # 2 pass run
         bitrate = self.SIZE_LIMIT_GIF / duration * 1000000 * 8
-        self._run_docker(
+        log_file = random_sandbox_video_path("")
+        await self._run_docker(
             client,
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 /dev/null -y"
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile {log_file} /dev/null -y"
         )
-        self._run_docker(
+        await self._run_docker(
             client,
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 {two_pass_filename} -y"
+            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
         )
         return two_pass_filename
 
-    def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
+    async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         sandbox_dir = os.getcwd() + "/sandbox"
         logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
         container: Container = client.containers.run(
@@ -373,7 +375,7 @@ class FASubmissionFull(FASubmissionShort):
                 output = container.logs()
                 container.remove(force=True)
                 return output
-            time.sleep(2)
+            await asyncio.sleep(2)
         # Kill container
         logger.warning("Docker timed out, killing container.")
         container.kill()

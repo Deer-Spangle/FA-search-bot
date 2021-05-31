@@ -69,7 +69,7 @@ async def test_gif_submission(mock_client):
     chat = MockChat(-9327622)
     message_id = 2873292
     convert = MockMethod("output.mp4")
-    submission._convert_gif = convert.call
+    submission._convert_gif = convert.async_call
     mock_open = mock.mock_open(read_data=b"data")
     mock_rename = MockMethod()
 
@@ -96,7 +96,7 @@ async def test_gif_submission_from_cache(mock_client):
     chat = MockChat(-9327622)
     message_id = 2873292
     convert = MockMethod("output.mp4")
-    submission._convert_gif = convert.call
+    submission._convert_gif = convert.async_call
     mock_open = mock.mock_open(read_data=b"data")
     mock_exists = MockMethod(True)
 
@@ -116,14 +116,15 @@ async def test_gif_submission_from_cache(mock_client):
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
 
-def test_convert_gif():
+@pytest.mark.asyncio
+async def test_convert_gif():
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     mock_run = MockMethod("Test docker")
     mock_filesize = MockMethod(submission.SIZE_LIMIT_GIF - 10)
-    submission._run_docker = mock_run.call
+    submission._run_docker = mock_run.async_call
 
     with mock.patch("os.path.getsize", mock_filesize.call):
-        output_path = submission._convert_gif(submission.download_url)
+        output_path = await submission._convert_gif(submission.download_url)
 
     assert output_path is not None
     assert output_path.endswith(".mp4")
@@ -132,14 +133,15 @@ def test_convert_gif():
     assert mock_run.args[1].endswith(f" /{output_path}")
 
 
-def test_convert_gif_two_pass():
+@pytest.mark.asyncio
+async def test_convert_gif_two_pass():
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     mock_run = MockMultiMethod(["Test docker", "27.5", "ffmpeg1", "ffmpeg2"])
     mock_filesize = MockMethod(submission.SIZE_LIMIT_GIF + 10)
-    submission._run_docker = mock_run.call
+    submission._run_docker = mock_run.async_call
 
     with mock.patch("os.path.getsize", mock_filesize.call):
-        output_path = submission._convert_gif(submission.download_url)
+        output_path = await submission._convert_gif(submission.download_url)
 
     assert output_path is not None
     assert output_path.endswith(".mp4")
