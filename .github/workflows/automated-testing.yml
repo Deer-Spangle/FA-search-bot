@@ -7,10 +7,31 @@ on:
   pull_request:
 
 jobs:
-  build:
-
+  unit_tests:
     runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+      - name: Unit tests
+        run: poetry run task test
+        env:
+          CONFIG_FILE: "config-test.json"
 
+  telegram_tests:
+    if: |
+      github.event_name == 'schedule'
+      || ( github.event_name == 'push' && github.ref == 'refs/heads/master' )
+      || ( github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master' )
+    runs-on: ubuntu-20.04
+    concurrency: telegram_tests
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.8
@@ -29,11 +50,6 @@ jobs:
       - name: Cleanup subscription config
         run: rm subscriptions.json
       - name: Integration tests
-        if: |
-         github.event_name == 'schedule'
-         || ( github.event_name == 'push' && github.ref == 'refs/heads/master' )
-         || ( github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master' )
-        concurrency: telegram_tests
         run: poetry run task test_integration
         env:
           BOT_KEY: ${{ secrets.BOT_KEY }}
