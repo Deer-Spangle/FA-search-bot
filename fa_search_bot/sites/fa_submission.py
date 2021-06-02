@@ -1,9 +1,9 @@
 import asyncio
 import datetime
+import hashlib
 import logging
 import os
 import re
-import time
 import uuid
 from abc import ABC
 from enum import Enum
@@ -74,6 +74,9 @@ class FASubmission(ABC):
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
+
+    DEFAULT_STORY_ICON_SIZE = 2032
+    DEFAULT_STORY_ICON_MD5 = "a4a6d1c090e7f06b7b97bb2a01865cfa"
 
     GIF_CACHE_DIR = "gif_cache"
     DOCKER_TIMEOUT = 5 * 60
@@ -276,6 +279,21 @@ class FASubmissionFull(FASubmissionShort):
         if ext in FASubmission.EXTENSIONS_ERROR:
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
+
+    def _has_default_story_pic(self):
+        if self.full_image_url is None:
+            return False
+        head = requests.head(self.full_image_url)
+        try:
+            file_size = int(head.headers['content-length'])
+        except ValueError:
+            return False
+        if file_size != self.DEFAULT_STORY_ICON_SIZE:
+            return False
+        data = requests.get(self.full_image_url).content
+        m = hashlib.md5()
+        m.update(data)
+        return m.hexdigest().lower() == self.DEFAULT_STORY_ICON_MD5.lower()
 
     async def _send_gif(
             self,
