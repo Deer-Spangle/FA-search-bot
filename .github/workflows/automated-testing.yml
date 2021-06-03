@@ -24,8 +24,10 @@ jobs:
         run: poetry run task test
         env:
           CONFIG_FILE: "config-test.json"
+      - name: Site integration tests
+        run: poetry run task test_site_integration
 
-  telegram_tests:
+  integration_tests:
     if: |
       github.event_name == 'schedule'
       || ( github.event_name == 'push' && github.ref == 'refs/heads/master' )
@@ -49,8 +51,10 @@ jobs:
           CONFIG_FILE: "config-test.json"
       - name: Cleanup subscription config
         run: rm subscriptions.json
-      - name: Integration tests
-        run: poetry run task test_integration
+      - name: Site integration tests
+        run: poetry run task test_site_integration
+      - name: Telegram integration tests
+        run: poetry run task test_telegram_integration
         env:
           BOT_KEY: ${{ secrets.BOT_KEY }}
           CLIENT_API_HASH: ${{ secrets.CLIENT_API_HASH }}
