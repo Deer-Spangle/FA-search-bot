@@ -1,17 +1,13 @@
 import asyncio
 import datetime
-import hashlib
-import io
 import logging
 import os
 import re
-import string
 import uuid
 from abc import ABC
 from enum import Enum
 from typing import Dict, Union, List, Optional, Coroutine
 
-from PIL import Image, ImageDraw, ImageFont
 import dateutil.parser
 import docker
 import requests
@@ -77,9 +73,6 @@ class FASubmission(ABC):
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
-
-    DEFAULT_STORY_ICON_SIZE = 2032
-    DEFAULT_STORY_ICON_MD5 = "a4a6d1c090e7f06b7b97bb2a01865cfa"
 
     GIF_CACHE_DIR = "gif_cache"
     DOCKER_TIMEOUT = 5 * 60
@@ -245,14 +238,9 @@ class FASubmissionFull(FASubmissionShort):
         # Handle files telegram can't handle
         if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
             # Check if image is the default story icon
-            file = self.full_image_url
-            if self._has_default_story_pic():
-                icon = self._generate_story_icon()
-                if icon:
-                    file = icon
             await client.send_message(
                 entity=chat,
-                file=file,
+                file=self.full_image_url,
                 message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
                 reply_to=reply_to,
                 parse_mode='html'  # Markdown is not safe here, because of the prefix.
@@ -288,40 +276,6 @@ class FASubmissionFull(FASubmissionShort):
         if ext in FASubmission.EXTENSIONS_ERROR:
             raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
         raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
-
-    def _has_default_story_pic_size(self) -> bool:
-        if self.full_image_url is None:
-            return False
-        head = requests.head(self.full_image_url)
-        try:
-            file_size = int(head.headers['content-length'])
-        except ValueError:
-            return False
-        return file_size == self.DEFAULT_STORY_ICON_SIZE
-
-    def _has_default_story_pic(self) -> bool:
-        if not self._has_default_story_pic_size():
-            return False
-        data = requests.get(self.full_image_url).content
-        m = hashlib.md5()
-        m.update(data)
-        return m.hexdigest().lower() == self.DEFAULT_STORY_ICON_MD5.lower()
-
-    def _generate_story_icon(self) -> Optional[bytes]:
-        if not self._has_default_story_pic_size():
-            return None
-        data = requests.get(self.full_image_url).content
-        img = Image.open(io.BytesIO(data))
-        img = img.convert("RGB")
-        img = img.resize((200, 200), Image.ANTIALIAS)
-        draw = ImageDraw.Draw(img)
-        acceptable_chars = set(string.digits + string.ascii_letters + string.punctuation + " ")
-        clean_title = "".join(filter(lambda x: x in set(acceptable_chars), self.title))
-        draw.text((20, 30), clean_title)
-        draw.text((20, 150), f"By: {self.author.name}")
-        byte_arr = io.BytesIO()
-        img.save(byte_arr, format="PNG")
-        return byte_arr.getvalue()
 
     async def _send_gif(
             self,
