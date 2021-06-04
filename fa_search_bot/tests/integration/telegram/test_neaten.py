@@ -107,3 +107,29 @@ async def test_neaten_link_in_button_with_image(controller: BotController, bot: 
     assert response.messages[0].text.startswith("⏳")
     assert "19925704" in response.messages[-1].caption
     assert response.messages[-1].photo
+
+
+async def test_neaten_txt_link(controller: BotController):
+    # - send link, get neatened pic
+    async with controller.collect(count=2) as response:
+        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/572932/")
+
+    assert response.num_messages == 2
+    assert response.messages[0].text.startswith("⏳")
+    assert "572932" in response.messages[-1].caption
+    assert "Kandrel" in response.messages[-1].caption
+    assert "Lunch Break" in response.messages[-1].caption
+    assert response.messages[-1].photo
+
+
+async def test_neaten_pdf_link(controller: BotController):
+    # - send link, get neatened pic
+    async with controller.collect(count=2) as response:
+        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/41734655/")
+
+    assert response.num_messages == 2
+    assert response.messages[0].text.startswith("⏳")
+    assert "41734655" in response.messages[-1].caption
+    assert "Jaystoat" in response.messages[-1].caption
+    assert "Lights In The Sky" in response.messages[-1].caption
+    assert response.messages[-1].photo
