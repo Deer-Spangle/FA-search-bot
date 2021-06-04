@@ -1,17 +1,19 @@
 import asyncio
+import dataclasses
 import datetime
+import io
 import logging
 import os
 import re
-import time
 import uuid
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union, List, Optional, Coroutine
+from typing import Dict, Union, List, Optional, Coroutine, Callable, BinaryIO
 
 import dateutil.parser
 import docker
 import requests
+from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
 from telethon import TelegramClient
@@ -33,9 +35,33 @@ class Rating(Enum):
     ADULT = 3
 
 
+@dataclasses.dataclass
+class CaptionSettings:
+    direct_link: bool = False
+    title: bool = False
+    author: bool = False
+
+
 def random_sandbox_video_path(file_ext: str = "mp4"):
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
+
+
+def _is_animated_gif(file_url: str) -> bool:
+    if file_url not in FASubmission.EXTENSIONS_GIF:
+        return False
+    data = requests.get(file_url).content
+    with Image.open(io.BytesIO(data)) as img:
+        return img.is_animated
+
+
+def _convert_gif_to_png(file_url: str) -> bytes:
+    data = requests.get(file_url).content
+    img = Image.open(io.BytesIO(data))
+    img = img.convert("RGB")
+    byte_arr = io.BytesIO()
+    img.save(byte_arr, format="PNG")
+    return byte_arr.getvalue()
 
 
 class FAUser(ABC):
@@ -195,6 +221,10 @@ class FASubmissionFull(FASubmissionShort):
             self._download_file_size = FASubmission._get_file_size(self.download_url)
         return self._download_file_size
 
+    @property
+    def download_file_ext(self) -> str:
+        return self.download_url.split(".")[-1].lower()
+
     async def send_message(
             self,
             client: TelegramClient,
@@ -203,74 +233,50 @@ class FASubmissionFull(FASubmissionShort):
             reply_to: int = None,
             prefix: str = None
     ) -> None:
-        if prefix is None:
-            prefix = ""
-        else:
-            prefix += "\n"
-        ext = self.download_url.split(".")[-1].lower()
+        settings = CaptionSettings()
+        ext = self.download_file_ext
+
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
+            if isinstance(file, str):
+                if file.split(".")[-1] in self.EXTENSIONS_GIF and not _is_animated_gif(file):
+                    file = _convert_gif_to_png(file)
+            await client.send_message(
+                entity=chat,
+                file=file,
+                message=self.caption(settings, prefix),
+                reply_to=reply_to,
+                force_document=force_doc,
+                parse_mode='html'  # Markdown is not safe here, because of the prefix.
+            )
+            return
+
         # Handle photos
         if ext in FASubmission.EXTENSIONS_PHOTO:
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
-                await client.send_message(
-                    entity=chat,
-                    file=self.thumbnail_url,
-                    message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                    reply_to=reply_to,
-                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
-                )
-                return
+                settings.direct_link = True
+                return await send_partial(self.thumbnail_url)
             try:
-                await client.send_message(
-                    entity=chat,
-                    message=f"{prefix}{self.link}",
-                    file=self.download_url,
-                    reply_to=reply_to,
-                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
-                )
+                return await send_partial(self.download_url)
             except BadRequestError:
-                await client.send_message(
-                    entity=chat,
-                    file=self.thumbnail_url,
-                    message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                    reply_to=reply_to,
-                    parse_mode='html'  # Markdown is not safe here, because of the prefix.
-                )
-            return
-        # Handle files telegram can't handle
-        if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
-            await client.send_message(
-                entity=chat,
-                file=self.full_image_url,
-                message=f"{prefix}{self.link}\n<a href=\"{self.download_url}\">Direct download</a>",
-                reply_to=reply_to,
-                parse_mode='html'  # Markdown is not safe here, because of the prefix.
-            )
-            return
+                settings.direct_link = True
+                return await send_partial(self.thumbnail_url)
         # Handle gifs, which can be made pretty
         if ext in FASubmission.EXTENSIONS_GIF:
-            await self._send_gif(client, chat, reply_to=reply_to, prefix=prefix)
+            await self._send_gif(send_partial)
             return
+        # Everything else is a file, send with title and author
+        settings.title = True
+        settings.author = True
+        # Handle files telegram can't handle
+        if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
+            settings.direct_link = True
+            return await send_partial(self.full_image_url)
         # Handle pdfs, which can be sent as documents
         if ext in FASubmission.EXTENSIONS_AUTO_DOCUMENT:
-            await client.send_message(
-                entity=chat,
-                file=self.download_url,
-                force_document=True,
-                message=f"{prefix}{self.link}",
-                reply_to=reply_to,
-                parse_mode='html'  # Markdown is not safe here, because of the prefix.
-            )
-            return
+            return await send_partial(self.download_url, force_doc=True)
         # Handle audio
         if ext in FASubmission.EXTENSIONS_AUDIO:
-            await client.send_message(
-                entity=chat,
-                file=self.download_url,
-                message=f"{prefix}{self.link}",
-                reply_to=reply_to,
-                parse_mode='html'  # Markdown is not safe here, because of the prefix.
-            )
-            return
+            return await send_partial(self.download_url)
         # Handle known error extensions
         logger.warning("Can't send file for submission ID %s, file extension is .%s", self.submission_id, ext)
         if ext in FASubmission.EXTENSIONS_ERROR:
@@ -279,10 +285,7 @@ class FASubmissionFull(FASubmissionShort):
 
     async def _send_gif(
             self,
-            client: TelegramClient,
-            chat: TypeInputPeer,
-            reply_to: int = None,
-            prefix: str = None
+            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
     ) -> None:
         try:
             logger.info("Sending gif, submission ID %s", self.submission_id)
@@ -291,21 +294,24 @@ class FASubmissionFull(FASubmissionShort):
                 logger.info("Gif not in cache, converting to video. Submission ID %s", self.submission_id)
                 output_path = await self._convert_gif(self.download_url)
                 filename = self._save_gif_to_cache(output_path)
-            await client.send_message(
-                entity=chat,
-                file=open(filename, "rb"),
-                message=f"{prefix}{self.link}",
-                reply_to=reply_to
-            )
+            await send_partial(open(filename, "rb"))
         except Exception as e:
             logger.error("Failed to convert gif to video. Submission ID: %s", self.submission_id, exc_info=e)
-            await client.send_message(
-                entity=chat,
-                file=self.download_url,
-                message=f"{prefix}{self.link}",
-                reply_to=reply_to
-            )
+            await send_partial(self.download_url)
         return
+
+    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
+        lines = []
+        if prefix:
+            lines.append(prefix)
+        if settings.title:
+            lines.append(f"\"{self.title}\"")
+        if settings.author:
+            lines.append(f"By: <a href=\"{self.author.link}\">{self.author.name}</a>")
+        lines.append(self.link)
+        if settings.direct_link:
+            lines.append(f"<a href=\"{self.download_url}\">Direct download</a>")
+        return "\n".join(lines)
 
     def _get_gif_from_cache(self) -> Optional[str]:
         filename = f"{self.GIF_CACHE_DIR}/{self.submission_id}.mp4"
