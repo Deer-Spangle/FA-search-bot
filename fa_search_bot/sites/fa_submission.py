@@ -47,12 +47,21 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
-def _is_animated_gif(file: str) -> bool:
-    if file not in FASubmission.EXTENSIONS_GIF:
+def _is_animated_gif(file_url: str) -> bool:
+    if file_url not in FASubmission.EXTENSIONS_GIF:
         return False
-    data = requests.get(file).content
+    data = requests.get(file_url).content
     with Image.open(io.BytesIO(data)) as img:
         return img.is_animated
+
+
+def _convert_gif_to_png(file_url: str) -> bytes:
+    data = requests.get(file_url).content
+    img = Image.open(io.BytesIO(data))
+    img = img.convert("RGB")
+    byte_arr = io.BytesIO()
+    img.save(byte_arr, format="PNG")
+    return byte_arr.getvalue()
 
 
 class FAUser(ABC):
@@ -228,13 +237,9 @@ class FASubmissionFull(FASubmissionShort):
         ext = self.download_file_ext
 
         async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
-            if isinstance(file, str) and not _is_animated_gif(file):
-                data = requests.get(self.full_image_url).content
-                img = Image.open(io.BytesIO(data))
-                img = img.convert("RGB")
-                byte_arr = io.BytesIO()
-                img.save(byte_arr, format="PNG")
-                file = byte_arr.getvalue()
+            if isinstance(file, str):
+                if file.split(".")[-1] in self.EXTENSIONS_GIF and not _is_animated_gif(file):
+                    file = _convert_gif_to_png(file)
             await client.send_message(
                 entity=chat,
                 file=file,
