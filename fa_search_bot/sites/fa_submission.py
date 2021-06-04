@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 import datetime
+import io
 import logging
 import os
 import re
@@ -12,6 +13,7 @@ from typing import Dict, Union, List, Optional, Coroutine, Callable, BinaryIO
 import dateutil.parser
 import docker
 import requests
+from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
 from telethon import TelegramClient
@@ -43,6 +45,14 @@ class CaptionSettings:
 def random_sandbox_video_path(file_ext: str = "mp4"):
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
+
+
+def _is_animated_gif(file: str) -> bool:
+    if file not in FASubmission.EXTENSIONS_GIF:
+        return False
+    data = requests.get(file).content
+    with Image.open(io.BytesIO(data)) as img:
+        return img.is_animated
 
 
 class FAUser(ABC):
@@ -202,6 +212,10 @@ class FASubmissionFull(FASubmissionShort):
             self._download_file_size = FASubmission._get_file_size(self.download_url)
         return self._download_file_size
 
+    @property
+    def download_file_ext(self) -> str:
+        return self.download_url.split(".")[-1].lower()
+
     async def send_message(
             self,
             client: TelegramClient,
@@ -211,9 +225,16 @@ class FASubmissionFull(FASubmissionShort):
             prefix: str = None
     ) -> None:
         settings = CaptionSettings()
-        ext = self.download_url.split(".")[-1].lower()
+        ext = self.download_file_ext
 
-        async def send_partial(file: str, force_doc: bool = False) -> None:
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
+            if isinstance(file, str) and not _is_animated_gif(file):
+                data = requests.get(self.full_image_url).content
+                img = Image.open(io.BytesIO(data))
+                img = img.convert("RGB")
+                byte_arr = io.BytesIO()
+                img.save(byte_arr, format="PNG")
+                file = byte_arr.getvalue()
             await client.send_message(
                 entity=chat,
                 file=file,
@@ -256,7 +277,7 @@ class FASubmissionFull(FASubmissionShort):
 
     async def _send_gif(
             self,
-            send_partial: Callable[[Union[str, BinaryIO]], Coroutine[None, None, None]],
+            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
     ) -> None:
         try:
             logger.info("Sending gif, submission ID %s", self.submission_id)
