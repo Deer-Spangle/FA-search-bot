@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 
+from fa_search_bot.sites import fa_submission
 from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
@@ -167,19 +168,25 @@ async def test_convert_gif_failure(mock_client):
     chat = MockChat(-9327622)
     message_id = 2873292
     submission._convert_gif = lambda *args: (_ for _ in ()).throw(Exception)
+    mock_bytes = b"hello world"
 
-    await submission.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch.object(fa_submission, "_convert_gif_to_png", return_value=mock_bytes) as mock_convert:
+        await submission.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.send_message.call_args[1]['file'] == mock_bytes
     assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    mock_convert.assert_called_once()
+    assert mock_convert.call_args[0][0] == submission.download_url
 
 
 @pytest.mark.asyncio
 async def test_pdf_submission(mock_client):
-    submission = SubmissionBuilder(file_ext="pdf", file_size=47453).build_full_submission()
+    title = "Example title"
+    author = FAUser("A writer", "awriter")
+    submission = SubmissionBuilder(file_ext="pdf", file_size=47453, title=title, author=author).build_full_submission()
     chat = MockChat(-9327622)
     message_id = 2873292
 
@@ -188,13 +195,19 @@ async def test_pdf_submission(mock_client):
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    sent_message = mock_client.send_message.call_args[1]['message']
+    assert sent_message.endswith(submission.link)
+    assert f"\"{title}\"" in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
 
 
 @pytest.mark.asyncio
 async def test_mp3_submission(mock_client):
-    submission = SubmissionBuilder(file_ext="mp3", file_size=47453).build_full_submission()
+    title = "Example music"
+    author = FAUser("A musician", "amusician")
+    submission = SubmissionBuilder(file_ext="mp3", file_size=47453, title=title, author=author).build_full_submission()
     chat = MockChat(-9327622)
     message_id = 2873292
 
@@ -203,13 +216,19 @@ async def test_mp3_submission(mock_client):
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    sent_message = mock_client.send_message.call_args[1]['message']
+    assert sent_message.endswith(submission.link)
+    assert f"\"{title}\"" in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
 
 
 @pytest.mark.asyncio
 async def test_txt_submission(mock_client):
-    submission = SubmissionBuilder(file_ext="txt").build_full_submission()
+    title = "Example title"
+    author = FAUser("A writer", "awriter")
+    submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_full_submission()
     chat = MockChat(-9327622)
     message_id = 2873292
 
@@ -218,10 +237,13 @@ async def test_txt_submission(mock_client):
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]['message'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
     assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
+    sent_message = mock_client.send_message.call_args[1]['message']
+    assert sent_message.endswith(f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>")
+    assert f"\"{title}\"" in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
 
 
 @pytest.mark.asyncio
@@ -304,8 +326,14 @@ async def test_image_over_document_size_limit(mock_client):
 
 @pytest.mark.asyncio
 async def test_auto_doc_just_under_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1) \
-        .build_full_submission()
+    title = "Example title"
+    author = FAUser("A writer", "awriter")
+    submission = SubmissionBuilder(
+        file_ext="pdf",
+        file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1,
+        title=title,
+        author=author
+    ).build_full_submission()
     chat = MockChat(-9327622)
     message_id = 2873292
 
@@ -314,14 +342,24 @@ async def test_auto_doc_just_under_size_limit(mock_client):
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    sent_message = mock_client.send_message.call_args[1]['message']
+    assert sent_message.endswith(submission.link)
+    assert f"\"{title}\"" in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
 
 
 @pytest.mark.asyncio
 async def test_auto_doc_just_over_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1) \
-        .build_full_submission()
+    title = "Example title"
+    author = FAUser("A writer", "awriter")
+    submission = SubmissionBuilder(
+        file_ext="pdf",
+        file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1,
+        title=title,
+        author=author
+    ).build_full_submission()
     chat = MockChat(-9327622)
     message_id = 2873292
 
@@ -330,10 +368,13 @@ async def test_auto_doc_just_over_size_limit(mock_client):
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]['message'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
     assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
+    sent_message = mock_client.send_message.call_args[1]['message']
+    assert sent_message.endswith(f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>")
+    assert f"\"{title}\"" in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
 
 
 @pytest.mark.asyncio
