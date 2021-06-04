@@ -132,4 +132,4 @@ async def test_neaten_pdf_link(controller: BotController):
     assert "41734655" in response.messages[-1].caption
     assert "Jaystoat" in response.messages[-1].caption
     assert "Lights In The Sky" in response.messages[-1].caption
-    assert response.messages[-1].photo
+    assert response.messages[-1].document
