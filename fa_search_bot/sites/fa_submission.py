@@ -255,14 +255,17 @@ class FASubmissionFull(FASubmissionShort):
             except BadRequestError:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
-        # Handle files telegram can't handle
-        if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
-            settings.direct_link = True
-            return await send_partial(self.full_image_url)
         # Handle gifs, which can be made pretty
         if ext in FASubmission.EXTENSIONS_GIF:
             await self._send_gif(send_partial)
             return
+        # Everything else is a file, send with title and author
+        settings.title = True
+        settings.author = True
+        # Handle files telegram can't handle
+        if ext in FASubmission.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
+            settings.direct_link = True
+            return await send_partial(self.full_image_url)
         # Handle pdfs, which can be sent as documents
         if ext in FASubmission.EXTENSIONS_AUTO_DOCUMENT:
             return await send_partial(self.download_url, force_doc=True)
