@@ -211,6 +211,9 @@ class SubscriptionWatcher:
         logger.debug("Loading subscription config from file")
         try:
             with open(SubscriptionWatcher.FILENAME, "r") as f:
+                raw_data = f.read()
+                if not raw_data:
+                    raise FileNotFoundError
                 data = json.load(f)
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
