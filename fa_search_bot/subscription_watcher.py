@@ -214,7 +214,7 @@ class SubscriptionWatcher:
                 raw_data = f.read()
                 if not raw_data:
                     raise FileNotFoundError
-                data = json.load(f)
+                data = json.loads(raw_data)
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
             return SubscriptionWatcher(api, client)
