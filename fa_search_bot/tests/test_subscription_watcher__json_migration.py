@@ -58,7 +58,7 @@ def test_load_old_save_new(mock_client):
 
     mock_dump = MockDump()
 
-    with mock.patch("json.load", mock_load):
+    with mock.patch("json.loads", mock_load):
         watcher = SubscriptionWatcher.load_from_json(api, mock_client)
 
     assert len(watcher.subscriptions) == 4
