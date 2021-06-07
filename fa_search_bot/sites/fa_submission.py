@@ -16,7 +16,7 @@ import requests
 from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
-from telethon import TelegramClient
+from telethon import TelegramClient, Button
 from telethon.errors import BadRequestError
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
@@ -182,7 +182,9 @@ class FASubmissionShort(FASubmission):
         return builder.photo(
             file=self.thumbnail_url,
             id=self.submission_id,
-            text=self.link
+            text=self.link,
+            # Button is required such that the bot can get a callback with the message id, and edit it later.
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id}")]
         )
 
 
@@ -231,7 +233,8 @@ class FASubmissionFull(FASubmissionShort):
             chat: TypeInputPeer,
             *,
             reply_to: int = None,
-            prefix: str = None
+            prefix: str = None,
+            edit: bool = False
     ) -> None:
         settings = CaptionSettings()
         ext = self.download_file_ext
@@ -240,6 +243,15 @@ class FASubmissionFull(FASubmissionShort):
             if isinstance(file, str):
                 if file.split(".")[-1] in self.EXTENSIONS_GIF and not _is_animated_gif(file):
                     file = _convert_gif_to_png(file)
+            if edit:
+                await client.edit_message(
+                    entity=chat,
+                    file=file,
+                    message=self.caption(settings, prefix),
+                    force_document=force_doc,
+                    parse_mode='html'
+                )
+                return
             await client.send_message(
                 entity=chat,
                 file=file,

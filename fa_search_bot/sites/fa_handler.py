@@ -4,7 +4,7 @@ from re import Pattern
 from typing import List, Optional, Union
 
 from telethon import TelegramClient
-from telethon.tl.types import TypeInputPeer
+from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_submission import FASubmissionShort
@@ -99,12 +99,13 @@ class FAHandler(SiteHandler):
             self,
             submission_id: int,
             client: TelegramClient,
-            chat: TypeInputPeer,
+            chat: Union[TypeInputPeer, InputBotInlineMessageID],
             *,
-            reply_to: Optional[int] = None
+            reply_to: Optional[int] = None,
+            edit: bool = False
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
-        await submission.send_message(client, chat, reply_to=reply_to)
+        await submission.send_message(client, chat, reply_to=reply_to, edit=edit)
 
     async def submission_as_answer(
             self,
