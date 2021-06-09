@@ -1,10 +1,11 @@
+import random
 import uuid
 from enum import Enum, auto
 from typing import Optional, List, Dict
 from unittest.mock import AsyncMock, Mock
 
 from telethon import TelegramClient
-from telethon.tl.types import InputBotInlineResultPhoto
+from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
 
 
 def generate_key():
@@ -61,9 +62,14 @@ class MockTelegramEvent:
         )
 
     @classmethod
-    def with_callback_query(cls, data=None):
+    def with_callback_query(
+            cls,
+            data: bytes,
+            client: Optional[TelegramClient] = None
+    ):
         return _MockTelegramCallback(
-            data=data
+            data=data,
+            client=client
         )
 
     @classmethod
@@ -79,6 +85,15 @@ class MockTelegramEvent:
         return _MockTelegramMigration(
             old_chat_id=old_chat_id,
             new_chat_id=new_chat_id,
+        )
+
+    @classmethod
+    def with_inline_send(cls, result_id: str = None, dc_id: int = None, msg_id: int = None, access_hash: int = None):
+        return _MockTelegramInlineSend(
+            result_id=result_id,
+            dc_id=dc_id,
+            msg_id=msg_id,
+            access_hash=access_hash,
         )
 
 
@@ -147,13 +162,30 @@ class _MockTelegramMessage(MockTelegramEvent):
 
 class _MockTelegramCallback(MockTelegramEvent):
 
-    def __init__(self, *, data=None):
+    def __init__(self, data: bytes, client: Optional[TelegramClient] = None):
         super().__init__()
-        self.callback_query = _MockCallback(data)
+        self.data = data
+        self.client = client
+        self.original_update = None
 
-    def with_originating_message(self, message_id=None, chat_id=None):
-        self.callback_query.set_message(message_id, chat_id)
+    def with_inline_id(self, dc_id: int = None, msg_id: int = None, access_hash: int = None):
+        self.original_update = _MockOriginalUpdate()
+        self.original_update.msg_id = MockInlineMessageId(dc_id, msg_id, access_hash)
         return self
+
+
+class _MockOriginalUpdate:
+    def __init__(self):
+        self.msg_id = None
+
+
+class MockInlineMessageId(InputBotInlineMessageID):
+
+    def __init__(self, dc_id: int = None, msg_id: int = None, access_hash: int = None):
+        dc_id = dc_id or random.randint(1, 10)
+        msg_id = msg_id or random.randint(100, 100_000)
+        access_hash = access_hash or random.randint(1_000_000, 10_000_000)
+        super().__init__(dc_id, msg_id, access_hash)
 
 
 class _MockTelegramInlineQuery(MockTelegramEvent):
@@ -183,6 +215,12 @@ class _MockTelegramMigration(MockTelegramEvent):
         class _ChannelId:
             def __init__(self, channel_id: int):
                 self.channel_id = channel_id
+
+
+class _MockTelegramInlineSend:
+    def __init__(self, result_id: str = None, dc_id: int = None, msg_id: int = None, access_hash: int = None):
+        self.id = result_id
+        self.msg_id = MockInlineMessageId(dc_id, msg_id, access_hash)
 
 
 class _MockInlineQuery:
@@ -290,16 +328,6 @@ class _MockDocument:
         # Set defaults
         if file_id is None:
             self.file_id = generate_key()
-
-
-class _MockCallback:
-
-    def __init__(self, data=None):
-        self.data = data
-        self.message = None
-
-    def set_message(self, message_id, chat_id):
-        self.message = _MockMessage(message_id=message_id, chat_id=chat_id)
 
 
 class MockButton:

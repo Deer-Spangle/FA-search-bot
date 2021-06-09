@@ -29,16 +29,16 @@ async def test_get_user_gallery(mock_client):
     assert len(args[0]) == 2
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs == {
-        "id": str(post_id1),
-        "file": submission1.thumbnail_url,
-        "text": submission1.link,
-    }
-    assert args[0][1].kwargs == {
-        "id": str(post_id2),
-        "file": submission2.thumbnail_url,
-        "text": submission2.link,
-    }
+    assert args[0][0].kwargs['file'] == submission1.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id1)
+    assert args[0][0].kwargs['text'] == submission1.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission1.submission_id}".encode()
+    assert args[0][1].kwargs['file'] == submission2.thumbnail_url
+    assert args[0][1].kwargs['id'] == str(post_id2)
+    assert args[0][1].kwargs['text'] == submission2.link
+    assert len(args[0][1].kwargs['buttons']) == 1
+    assert args[0][1].kwargs['buttons'][0].data == f"neaten_me:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -60,11 +60,11 @@ async def test_user_scraps(mock_client):
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs == {
-        "id": str(post_id),
-        "file": submission.thumbnail_url,
-        "text": submission.link,
-    }
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -86,11 +86,11 @@ async def test_second_page(mock_client):
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs == {
-        "id": str(post_id),
-        "file": submission.thumbnail_url,
-        "text": submission.link,
-    }
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -160,11 +160,11 @@ async def test_hypens_in_username(mock_client):
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs == {
-        "id": str(post_id),
-        "file": submission.thumbnail_url,
-        "text": submission.link,
-    }
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -186,11 +186,11 @@ async def test_weird_characters_in_username(mock_client):
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs == {
-        "id": str(post_id),
-        "file": submission.thumbnail_url,
-        "text": submission.link,
-    }
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -275,11 +275,11 @@ async def test_over_max_submissions(mock_client):
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
     for x in range(inline.INLINE_MAX):
-        assert args[0][x].kwargs == {
-            "id": str(post_ids[x]),
-            "file": submissions[x].thumbnail_url,
-            "text": submissions[x].link,
-        }
+        assert args[0][x].kwargs['file'] == submissions[x].thumbnail_url
+        assert args[0][x].kwargs['id'] == str(post_ids[x])
+        assert args[0][x].kwargs['text'] == submissions[x].link
+        assert len(args[0][x].kwargs['buttons']) == 1
+        assert args[0][x].kwargs['buttons'][0].data == f"neaten_me:{submissions[x].submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -304,11 +304,12 @@ async def test_over_max_submissions_continue(mock_client):
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
     for x in range(inline.INLINE_MAX):
-        assert args[0][x].kwargs == {
-            "id": str(post_ids[x + inline.INLINE_MAX]),
-            "file": submissions[x + inline.INLINE_MAX].thumbnail_url,
-            "text": submissions[x + inline.INLINE_MAX].link,
-        }
+        assert args[0][x].kwargs['file'] == submissions[x + inline.INLINE_MAX].thumbnail_url
+        assert args[0][x].kwargs['id'] == str(post_ids[x + inline.INLINE_MAX])
+        assert args[0][x].kwargs['text'] == submissions[x + inline.INLINE_MAX].link
+        assert len(args[0][x].kwargs['buttons']) == 1
+        assert args[0][x].kwargs['buttons'][
+                   0].data == f"neaten_me:{submissions[x + inline.INLINE_MAX].submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -335,11 +336,11 @@ async def test_over_max_submissions_continue_end(mock_client):
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
     for x in range(inline.INLINE_MAX - 3):
-        assert args[0][x].kwargs == {
-            "id": str(post_ids[x + skip]),
-            "file": submissions[x + skip].thumbnail_url,
-            "text": submissions[x + skip].link,
-        }
+        assert args[0][x].kwargs['file'] == submissions[x + skip].thumbnail_url
+        assert args[0][x].kwargs['id'] == str(post_ids[x + skip])
+        assert args[0][x].kwargs['text'] == submissions[x + skip].link
+        assert len(args[0][x].kwargs['buttons']) == 1
+        assert args[0][x].kwargs['buttons'][0].data == f"neaten_me:{submissions[x + skip].submission_id}".encode()
 
 
 @pytest.mark.asyncio

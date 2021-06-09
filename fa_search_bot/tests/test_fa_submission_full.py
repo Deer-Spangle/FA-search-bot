@@ -6,6 +6,7 @@ from fa_search_bot.sites import fa_submission
 from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
+from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -408,3 +409,21 @@ async def test_send_message__without_prefix(mock_client):
     assert mock_client.send_message.call_args[1]['file'] == submission.download_url
     assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+
+
+@pytest.mark.asyncio
+async def test_edit_message(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg", file_size=FASubmission.SIZE_LIMIT_IMAGE // 2) \
+        .build_full_submission()
+    entity = MockInlineMessageId()
+    message_id = 2873292
+
+    await submission.send_message(mock_client, entity, reply_to=message_id, edit=True)
+
+    mock_client.send_message.assert_not_called()
+    mock_client.edit_message.assert_called_once()
+    assert mock_client.edit_message.call_args[1]['entity'] == entity
+    assert mock_client.edit_message.call_args[1]['file'] == submission.download_url
+    assert mock_client.edit_message.call_args[1]['message'] == submission.link
+    assert mock_client.edit_message.call_args[1]['parse_mode'] == 'html'
+    assert 'reply_to' not in mock_client.edit_message.call_args[1]

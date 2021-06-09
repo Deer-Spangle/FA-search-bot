@@ -37,8 +37,8 @@ class FASubmissionShortTest(unittest.TestCase):
 
         submission.to_inline_query_result(mock_builder)
 
-        mock_builder.photo.assert_called_once_with(
-            file=thumb_url,
-            id=post_id,
-            text=link
-        )
+        assert mock_builder.photo.call_args[1]['file'] == thumb_url
+        assert mock_builder.photo.call_args[1]['id'] == post_id
+        assert mock_builder.photo.call_args[1]['text'] == link
+        assert len(mock_builder.photo.call_args[1]['buttons']) == 1
+        assert mock_builder.photo.call_args[1]['buttons'][0].data == f"neaten_me:{post_id}".encode()

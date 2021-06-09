@@ -45,15 +45,15 @@ class MockObjectsTest(unittest.TestCase):
         assert event.message.document.mime_type is None
 
     def test_can_create_callback(self):
-        event = MockTelegramEvent.with_callback_query()
-        assert event.message is None
-        assert event.callback_query is not None
-        assert event.callback_query.message is None
+        event = MockTelegramEvent.with_callback_query(b"example")
+        assert event.data == b"example"
+        assert event.original_update is None
 
     def test_can_create_callback_with_message(self):
-        event = MockTelegramEvent.with_callback_query().with_originating_message()
-        assert event.message is None
-        assert event.callback_query is not None
-        assert event.callback_query.message is not None
-        assert event.callback_query.message.message_id is not None
-        assert event.callback_query.message.chat_id is not None
+        event = MockTelegramEvent.with_callback_query(b"data").with_inline_id(5, 17, 123)
+        assert event.data == b"data"
+        assert event.original_update is not None
+        assert event.original_update.msg_id is not None
+        assert event.original_update.msg_id.dc_id == 5
+        assert event.original_update.msg_id.id == 17
+        assert event.original_update.msg_id.access_hash == 123

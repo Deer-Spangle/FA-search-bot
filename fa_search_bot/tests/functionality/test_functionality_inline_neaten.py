@@ -29,11 +29,11 @@ async def test_submission_id():
     assert kwargs['gallery'] is True
     result = args[0][0]
     assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-    assert result.kwargs == {
-        "id": str(post_id),
-        "file": sub.thumbnail_url,
-        "text": sub.link
-    }
+    assert result.kwargs['file'] == sub.thumbnail_url
+    assert result.kwargs['id'] == str(post_id)
+    assert result.kwargs['text'] == sub.link
+    assert len(result.kwargs['buttons']) == 1
+    assert result.kwargs['buttons'][0].data == f"neaten_me:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -75,11 +75,11 @@ async def test_submission_link():
     assert kwargs['gallery'] is True
     result = args[0][0]
     assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-    assert result.kwargs == {
-        "id": str(post_id),
-        "file": sub.thumbnail_url,
-        "text": sub.link
-    }
+    assert result.kwargs['file'] == sub.thumbnail_url
+    assert result.kwargs['id'] == str(post_id)
+    assert result.kwargs['text'] == sub.link
+    assert len(result.kwargs['buttons']) == 1
+    assert result.kwargs['buttons'][0].data == f"neaten_me:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -128,11 +128,11 @@ async def test_submission_direct_link():
     assert kwargs['gallery'] is True
     result = args[0][0]
     assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-    assert result.kwargs == {
-        "id": str(post_id),
-        "file": sub.thumbnail_url,
-        "text": sub.link
-    }
+    assert result.kwargs['file'] == sub.thumbnail_url
+    assert result.kwargs['id'] == str(post_id)
+    assert result.kwargs['text'] == sub.link
+    assert len(result.kwargs['buttons']) == 1
+    assert result.kwargs['buttons'][0].data == f"neaten_me:{post_id}".encode()
 
 
 @pytest.mark.asyncio
