@@ -9,7 +9,7 @@ from typing import List, Optional, Deque, Set, Dict
 import dateutil.parser
 import heartbeat
 from telethon import TelegramClient
-from telethon.errors import UserIsBlockedError
+from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
 from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
@@ -153,9 +153,10 @@ class SubscriptionWatcher:
                 logger.info("Sending submission %s to subscription", result.submission_id)
                 usage_logger.info("Submission sent to subscription")
                 await result.send_message(self.client, dest, prefix=prefix)
-            except UserIsBlockedError as e:
-                logger.info("Destination %s is blocked, pausing subscriptions", dest)
-                for sub in subs:
+            except (UserIsBlockedError, InputUserDeactivatedError):
+                logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
+                all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
+                for sub in all_subs:
                     sub.paused = True
             except Exception as e:
                 logger.error("Failed to send submission: %s to %s", result.submission_id, dest, exc_info=e)
