@@ -86,6 +86,7 @@ class NeatenFunctionality(BotFunctionality):
 
     async def _handle_fa_submission_link(self, event: NewMessage.Event, submission_id: int):
         logger.info("Found a link, ID: %s", submission_id)
+        usage_logger.info("Sending neatened submission")
         try:
             await self.handler.send_submission(submission_id, event.client, event.input_chat, reply_to=event.message.id)
         except CantSendFileType as e:

@@ -9,6 +9,7 @@ import json
 from telethon import TelegramClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
@@ -124,6 +125,8 @@ class FASearchBot:
             NeatenFunctionality(self.api),
             InlineNeatenFunctionality(self.api),
             InlineFunctionality(self.api),
+            InlineEditFunctionality(self.api, self.client),
+            InlineEditButtonPress(self.api),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
