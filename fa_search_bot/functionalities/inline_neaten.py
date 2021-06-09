@@ -1,13 +1,16 @@
+import logging
 from typing import List
 
 from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.types import InputBotInlineResultPhoto
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.functionalities.neaten import usage_logger
 from fa_search_bot.utils import gather_ignore_exceptions
 from fa_search_bot.sites.fa_export_api import FAExportAPI, APIException
 from fa_search_bot.sites.fa_handler import FAHandler
+
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger(__name__)
 
 
 class InlineNeatenFunctionality(BotFunctionality):
@@ -35,9 +38,11 @@ class InlineNeatenFunctionality(BotFunctionality):
             result = await result_future
             if result:
                 usage_logger.info("Inline submission ID query")
+                logger.info("Sending inline ID query result")
                 await event.answer([result], gallery=isinstance(result, InputBotInlineResultPhoto))
                 raise StopPropagation
         except APIException:
+            logger.debug("Inline id query could not find result")
             pass
 
     async def _answer_link_query(self, event: InlineQuery.Event, links: List[str]) -> None:
@@ -50,5 +55,6 @@ class InlineNeatenFunctionality(BotFunctionality):
         results = await gather_ignore_exceptions(results)
         if results:
             usage_logger.info("Inline submission link query")
+            logger.info("Sending inline link query results")
             await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
             raise StopPropagation

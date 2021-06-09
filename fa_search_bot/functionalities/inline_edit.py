@@ -20,8 +20,10 @@ class InlineEditFunctionality(BotFunctionality):
         self.client = client
 
     async def call(self, event: UpdateBotInlineSend) -> None:
+        usage_logger.info("Updating inline result")
         sub_id = int(event.id)
         msg_id = event.msg_id
+        logger.debug("Got an inline result send event. sub_id=%s, msg_id=%s", sub_id, msg_id)
         await self.handler.send_submission(sub_id, self.client, msg_id, edit=True)
 
 
@@ -38,4 +40,5 @@ class InlineEditButtonPress(BotFunctionality):
         usage_logger.info("Inline result update button clicked")
         sub_id = data.split(":", 1)[1]
         msg_id = event.original_update.msg_id
+        logger.debug("Optimise button pressed for sub_id=%s msg_id=%s", sub_id, msg_id)
         await self.handler.send_submission(sub_id, event.client, msg_id, edit=True)
