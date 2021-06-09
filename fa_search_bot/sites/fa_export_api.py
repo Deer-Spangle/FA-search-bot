@@ -113,6 +113,8 @@ class FAExportAPI:
         logger.debug("Searching for query: %s, page: %s", query, page)
         resp = await self._api_request_with_retry(f"search.json?full=1&perpage=48&q={query}&page={page}")
         data = resp.json()
+        print(data)
+        logger.debug(data)
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
