@@ -5,6 +5,7 @@ import os
 from typing import List
 
 import pytest
+from telethon.errors import UserIsBlockedError
 
 from fa_search_bot.sites.fa_export_api import CloudflareError
 from fa_search_bot.sites.fa_submission import FASubmissionFull
@@ -438,6 +439,19 @@ async def test_send_updates__updates_latest(mock_client):
     await watcher._send_updates([subscription], submission)
 
     assert subscription.latest_update is not None
+
+
+@pytest.mark.asyncio
+async def test_send_updates__blocked_pauses_subs(mock_client):
+    api = MockExportAPI()
+    watcher = SubscriptionWatcher(api, mock_client)
+    subscription = Subscription("test", 12345)
+    submission = SubmissionBuilder().build_mock_submission()
+    submission.send_message = lambda *args, **kwargs: (_ for _ in ()).throw(UserIsBlockedError(None))
+
+    await watcher._send_updates([subscription], submission)
+
+    assert subscription.paused
 
 
 def test_add_to_blocklist__new_blocklist(mock_client):
