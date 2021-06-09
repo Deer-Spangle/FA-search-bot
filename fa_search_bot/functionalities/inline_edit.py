@@ -1,3 +1,5 @@
+import logging
+
 from telethon import TelegramClient
 from telethon.events import Raw, CallbackQuery
 from telethon.tl.types import UpdateBotInlineSend
@@ -5,6 +7,9 @@ from telethon.tl.types import UpdateBotInlineSend
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_handler import FAHandler
+
+usage_logger = logging.getLogger("usage")
+logger = logging.getLogger(__name__)
 
 
 class InlineEditFunctionality(BotFunctionality):
@@ -27,6 +32,10 @@ class InlineEditButtonPress(BotFunctionality):
         self.handler = FAHandler(api)
 
     async def call(self, event: CallbackQuery) -> None:
-        sub_id = event.data.encode().removeprefix("neaten_me:")
+        data = event.data.decode()
+        if not data.startswith("neaten_me:"):
+            return
+        usage_logger.info("Inline result update button clicked")
+        sub_id = data.split(":", 1)[1]
         msg_id = event.original_update.msg_id
         await self.handler.send_submission(sub_id, event.client, msg_id, edit=True)
