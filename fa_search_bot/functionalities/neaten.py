@@ -61,7 +61,7 @@ class NeatenFunctionality(BotFunctionality):
         # Get links from text
         message = event.message.text
         # Only use image caption in private chats
-        if not event.is_private and event.message.photo:
+        if (event.message.document or event.message.photo) and not event.is_private:
             message = None
         if message is not None:
             link_matches += self.handler.find_links_in_str(message)

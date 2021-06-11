@@ -140,6 +140,22 @@ async def test_submission_link_in_group_caption(mock_client):
 
 
 @pytest.mark.asyncio
+async def test_submission_link_in_group_caption(mock_client):
+    post_id = 23636984
+    event = MockTelegramEvent.with_message(
+        chat_type=ChatType.GROUP,
+        text=f"https://www.furaffinity.net/view/{post_id}/"
+    ).with_document()
+    submission = MockSubmission(post_id)
+    neaten = NeatenFunctionality(MockExportAPI())
+    neaten.api.with_submission(submission)
+
+    await neaten.call(event)
+
+    submission._send_message.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_submission_link_no_http(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
