@@ -5,9 +5,9 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.types import InputBotInlineResultPhoto
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+from fa_search_bot.sites.site_handler import SiteHandler
 from fa_search_bot.utils import gather_ignore_exceptions
-from fa_search_bot.sites.fa_export_api import FAExportAPI, APIException
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.fa_export_api import APIException
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 class InlineNeatenFunctionality(BotFunctionality):
 
-    def __init__(self, api: FAExportAPI) -> None:
+    def __init__(self, handler: SiteHandler) -> None:
         super().__init__(InlineQuery())
-        self.handler = FAHandler(api)
+        self.handler = handler
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query

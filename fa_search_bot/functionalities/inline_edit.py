@@ -5,8 +5,7 @@ from telethon.events import Raw, CallbackQuery
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.site_handler import SiteHandler
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
@@ -14,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class InlineEditFunctionality(BotFunctionality):
 
-    def __init__(self, api: FAExportAPI, client: TelegramClient):
+    def __init__(self, handler: SiteHandler, client: TelegramClient):
         super().__init__(Raw(UpdateBotInlineSend))
-        self.handler = FAHandler(api)
+        self.handler = handler
         self.client = client
 
     async def call(self, event: UpdateBotInlineSend) -> None:
@@ -29,9 +28,9 @@ class InlineEditFunctionality(BotFunctionality):
 
 class InlineEditButtonPress(BotFunctionality):
 
-    def __init__(self, api: FAExportAPI):
+    def __init__(self, handler: SiteHandler):
         super().__init__(CallbackQuery(pattern="^neaten_me:"))
-        self.handler = FAHandler(api)
+        self.handler = handler
 
     async def call(self, event: CallbackQuery) -> None:
         data = event.data.decode()

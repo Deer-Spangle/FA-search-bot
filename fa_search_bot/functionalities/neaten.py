@@ -8,8 +8,7 @@ from fa_search_bot.sites.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.sites.fa_submission import CantSendFileType
 from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
-from fa_search_bot.sites.fa_handler import FAHandler
-from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 
 usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
@@ -29,9 +28,8 @@ class NeatenFunctionality(BotFunctionality):
     )
     FA_THUMB_LINK = re.compile(r"t2?\.(?:facdn|furaffinity)\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg")
 
-    def __init__(self, api):
-        self.api = api
-        self.handler = FAHandler(api)
+    def __init__(self, handler: SiteHandler):
+        self.handler = handler
         super().__init__(NewMessage(func=lambda e: filter_regex(e, self.handler.link_regex), incoming=True))
 
     async def call(self, event: NewMessage.Event):

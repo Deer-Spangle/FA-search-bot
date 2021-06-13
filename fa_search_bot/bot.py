@@ -20,6 +20,7 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
+from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
@@ -118,15 +119,16 @@ class FASearchBot:
         logger.info("Shutting down")
 
     def initialise_functionalities(self):
+        fa_handler = FAHandler(self.api)
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(self.api),
-            InlineNeatenFunctionality(self.api),
+            NeatenFunctionality(fa_handler),
+            InlineNeatenFunctionality(fa_handler),
             InlineFunctionality(self.api),
-            InlineEditFunctionality(self.api, self.client),
-            InlineEditButtonPress(self.api),
+            InlineEditFunctionality(fa_handler, self.client),
+            InlineEditButtonPress(fa_handler),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
