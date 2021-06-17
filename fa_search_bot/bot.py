@@ -7,9 +7,11 @@ import logging
 import json
 
 from telethon import TelegramClient
+from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
+from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
@@ -62,6 +64,8 @@ class FASearchBot:
         with open(conf_file, 'r') as f:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
+        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, "dr-spangle")
+        self.e6_handler = E621Handler(self.e6_api)
         self.client = None
         self.alive = False
         self.functionalities = []
