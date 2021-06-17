@@ -117,7 +117,8 @@ class FAHandler(SiteHandler):
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         sub = await self.api.get_full_submission(str(submission_id))
-        return sub.to_inline_query_result(builder)
+        sendable = SendableFASubmission(sub)
+        return sendable.to_inline_query_result(builder)
 
     def is_valid_submission_id(self, example: str) -> bool:
         try:
@@ -131,6 +132,10 @@ class SendableFASubmission(Sendable):
 
     def __init__(self, submission: FASubmissionFull):
         self.submission = submission
+
+    @property
+    def site_id(self) -> str:
+        return "fa"
 
     @property
     def id(self) -> str:
@@ -155,6 +160,10 @@ class SendableFASubmission(Sendable):
     @property
     def thumbnail_url(self) -> str:
         return self.submission.thumbnail_url
+
+    @property
+    def link(self) -> str:
+        return self.submission.link
 
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
         lines = []

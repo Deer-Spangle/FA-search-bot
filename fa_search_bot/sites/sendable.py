@@ -13,8 +13,9 @@ import requests
 from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
-from telethon import TelegramClient
+from telethon import TelegramClient, Button
 from telethon.errors import BadRequestError
+from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer
 
 logger = logging.getLogger(__name__)
@@ -72,8 +73,17 @@ class Sendable(ABC):
 
     @property
     @abstractmethod
-    def id(self) -> str:
+    def site_id(self) -> str:
         pass
+
+    @property
+    @abstractmethod
+    def id(self) -> str:  # TODO: replace usages with full_id
+        pass
+
+    @property
+    def full_id(self) -> str:
+        return f"{self.site_id}_{self.id}"
 
     @property
     @abstractmethod
@@ -105,6 +115,11 @@ class Sendable(ABC):
         """
         A scaled down thumbnail, of the full image, or of the preview image
         """
+        pass
+
+    @property
+    @abstractmethod
+    def link(self) -> str:
         pass
 
     async def send_message(
@@ -268,3 +283,12 @@ class Sendable(ABC):
         container.kill()
         container.remove(force=True)
         raise TimeoutError("Docker container timed out")
+
+    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+        return builder.photo(
+            file=self.thumbnail_url,
+            id=self.full_id,
+            text=self.link,
+            # Button is required such that the bot can get a callback with the message id, and edit it later.
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.id}")]
+        )
