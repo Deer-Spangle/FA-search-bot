@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from re import Pattern
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Coroutine
 
 from telethon import TelegramClient
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
 
 
 class HandlerException(Exception):
@@ -33,6 +34,7 @@ class SiteHandler(ABC):
             chat: Union[TypeInputPeer, InputBotInlineMessageID],
             *,
             reply_to: Optional[int] = None,
+            prefix: str = None,
             edit: bool = False
     ) -> None:
         pass
@@ -45,6 +47,6 @@ class SiteHandler(ABC):
     async def submission_as_answer(
             self,
             submission_id: Union[int, str],
-            builder
-    ):
+            builder: InlineBuilder
+    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         pass

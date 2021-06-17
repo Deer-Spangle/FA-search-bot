@@ -1,10 +1,11 @@
 import logging
 import re
 from re import Pattern
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Coroutine
 
 from telethon import TelegramClient
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_submission import FASubmissionShort
@@ -102,16 +103,17 @@ class FAHandler(SiteHandler):
             chat: Union[TypeInputPeer, InputBotInlineMessageID],
             *,
             reply_to: Optional[int] = None,
+            prefix: str = None,
             edit: bool = False
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
-        await submission.send_message(client, chat, reply_to=reply_to, edit=edit)
+        await submission.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     async def submission_as_answer(
             self,
             submission_id: Union[int, str],
-            builder
-    ):
+            builder: InlineBuilder
+    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         sub = await self.api.get_full_submission(str(submission_id))
         return sub.to_inline_query_result(builder)
 
