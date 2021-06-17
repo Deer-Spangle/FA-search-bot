@@ -16,7 +16,7 @@ from docker.models.containers import Container
 from telethon import TelegramClient, Button
 from telethon.errors import BadRequestError
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import TypeInputPeer
+from telethon.tl.types import TypeInputPeer, InputBotInlineResultPhoto
 
 logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
