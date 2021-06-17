@@ -161,22 +161,15 @@ class Sendable(ABC):
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
-        # Handle files telegram can't handle
-        if ext in self.EXTENSIONS_DOCUMENT or self.download_file_size > self.SIZE_LIMIT_DOCUMENT:
-            settings.direct_link = True
-            return await send_partial(self.preview_image_url)
         # Handle pdfs, which can be sent as documents
         if ext in self.EXTENSIONS_AUTO_DOCUMENT:
             return await send_partial(self.download_url, force_doc=True)
         # Handle audio
         if ext in self.EXTENSIONS_AUDIO:
             return await send_partial(self.download_url)
-        # Handle known error extensions
-        logger.warning("Can't send file for submission ID %s, file extension is .%s", self.id, ext)
-        if ext in self.EXTENSIONS_ERROR:
-            # TODO:Why not handle like document? sending preview image?
-            raise CantSendFileType(f"I'm sorry, I can't neaten \".{ext}\" files.")
-        raise CantSendFileType(f"I'm sorry, I don't understand that file extension ({ext}).")
+        # Handle files telegram can't handle
+        settings.direct_link = True
+        return await send_partial(self.preview_image_url)
 
     async def _send_gif(
             self,
