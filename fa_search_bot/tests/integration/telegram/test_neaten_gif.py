@@ -33,10 +33,10 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
     submission_id = "27408045"
     # Populate cache
     submission = await bot.api.get_full_submission(submission_id)
-    filename = submission._get_gif_from_cache()
+    filename = submission._get_video_from_cache()
     if filename is None:
         output_path = await submission._convert_gif(submission.download_url)
-        submission._save_gif_to_cache(output_path)
+        submission._save_video_to_cache(output_path)
 
     async with controller.collect(count=2) as response:
         await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/27408045/")

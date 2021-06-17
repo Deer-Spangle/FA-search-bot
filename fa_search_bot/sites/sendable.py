@@ -68,7 +68,7 @@ class Sendable(ABC):
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
 
-    GIF_CACHE_DIR = "gif_cache"
+    CACHE_DIR = "video_cache"
     DOCKER_TIMEOUT = 5 * 60
 
     @property
@@ -192,11 +192,11 @@ class Sendable(ABC):
     ) -> None:
         try:
             logger.info("Sending gif, submission ID %s", self.id)
-            filename = self._get_gif_from_cache()
+            filename = self._get_video_from_cache()
             if filename is None:
                 logger.info("Gif not in cache, converting to video. Submission ID %s", self.id)
                 output_path = await self._convert_gif(self.download_url)
-                filename = self._save_gif_to_cache(output_path)
+                filename = self._save_video_to_cache(output_path)
             await send_partial(open(filename, "rb"))
         except Exception as e:
             logger.error("Failed to convert gif to video. Submission ID: %s", self.id, exc_info=e)
@@ -207,20 +207,20 @@ class Sendable(ABC):
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
         pass
 
-    def _get_gif_from_cache(self) -> Optional[str]:
-        # TODO: support multiple sites
-        filename = f"{self.GIF_CACHE_DIR}/{self.id}.mp4"
+    def _get_video_from_cache(self) -> Optional[str]:
+        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
+        filename = f"{cache_dir}/{self.id}.mp4"
         if os.path.exists(filename):
-            logger.info("Loading gif from cache, submission ID %s", self.id)
-            usage_logger.info("Pretty gif: from cache")
+            logger.info("Loading video from cache, site ID %s, submission ID %s", self.site_id, self.id)
+            usage_logger.info("Pretty video: from cache")
             return filename
         return None
 
-    def _save_gif_to_cache(self, gif_path: str) -> str:
-        # TODO: handle multiple sites
-        filename = f"{self.GIF_CACHE_DIR}/{self.id}.mp4"
-        os.makedirs(self.GIF_CACHE_DIR, exist_ok=True)
-        os.rename(gif_path, filename)
+    def _save_video_to_cache(self, video_path: str) -> str:
+        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
+        filename = f"{cache_dir}/{self.id}.mp4"
+        os.makedirs(cache_dir, exist_ok=True)
+        os.rename(video_path, filename)
         return filename
 
     async def _convert_gif(self, gif_url: str) -> str:
