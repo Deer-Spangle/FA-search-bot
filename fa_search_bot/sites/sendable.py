@@ -288,8 +288,8 @@ class Sendable(ABC):
     def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         return builder.photo(
             file=self.thumbnail_url,
-            id=self.full_id,
+            id=f"{self.site_id}:{self.id}",
             text=self.link,
             # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.id}")]
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.site_id}:{self.id}")]
         )

@@ -124,6 +124,10 @@ class FASearchBot:
 
     def initialise_functionalities(self):
         fa_handler = FAHandler(self.api)
+        handlers = {
+            "fa": fa_handler,
+            "e6": self.e6_handler,
+        }
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
@@ -131,8 +135,8 @@ class FASearchBot:
             NeatenFunctionality(fa_handler),
             InlineNeatenFunctionality(fa_handler),
             InlineFunctionality(self.api),
-            InlineEditFunctionality(fa_handler, self.client),
-            InlineEditButtonPress(fa_handler),
+            InlineEditFunctionality(handlers, self.client),
+            InlineEditButtonPress(handlers),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
