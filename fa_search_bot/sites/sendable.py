@@ -191,7 +191,7 @@ class Sendable(ABC):
             send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
     ) -> None:
         try:
-            logger.info("Sending gif, submission ID %s", self.id)
+            logger.info("Sending gif, site ID %s, submission ID %s", self.site_id, self.id)
             filename = self._get_video_from_cache()
             if filename is None:
                 logger.info("Gif not in cache, converting to video. Submission ID %s", self.id)
@@ -199,7 +199,8 @@ class Sendable(ABC):
                 filename = self._save_video_to_cache(output_path)
             await send_partial(open(filename, "rb"))
         except Exception as e:
-            logger.error("Failed to convert gif to video. Submission ID: %s", self.id, exc_info=e)
+            logger.error("Failed to convert gif to video. Site ID: %s, Submission ID: %s", self.site_id, self.id,
+                         exc_info=e)
             await send_partial(self.download_url)
         return
 
@@ -237,7 +238,7 @@ class Sendable(ABC):
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
         # If it's too big, do a 2 pass run
-        logger.info("Doing a two pass gif conversion on submission ID %s", self.id)
+        logger.info("Doing a two pass gif conversion on site ID %s, submission ID %s", self.site_id, self.id)
         two_pass_filename = random_sandbox_video_path("mp4")
         # Get video duration from ffprobe
         duration_str = await self._run_docker(
