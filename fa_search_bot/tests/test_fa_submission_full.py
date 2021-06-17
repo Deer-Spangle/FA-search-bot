@@ -3,7 +3,8 @@ from unittest import mock
 import pytest
 
 from fa_search_bot.sites import fa_submission
-from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, CantSendFileType, FASubmission
+from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull, FASubmission
+from fa_search_bot.sites.sendable import CantSendFileType
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId

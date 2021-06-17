@@ -8,7 +8,8 @@ from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_submission import FASubmissionShort
+from fa_search_bot.sites.fa_submission import FASubmissionShort, FASubmissionFull
+from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,12 @@ class FAHandler(SiteHandler):
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
-            logger.info("Neaten link: submission link")
+            logger.info("FA link: submission link")
             return int(sub_match.group(1))
         # Handle thumbnail link matches
         thumb_match = self.FA_THUMB_LINK.match(link)
         if thumb_match:
-            logger.info("Neaten link: thumbnail link")
+            logger.info("FA link: thumbnail link")
             return int(thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
@@ -58,7 +59,7 @@ class FAHandler(SiteHandler):
             raise HandlerException(
                 f"Could not locate the image by {username} with image id {image_id}."
             )
-        logger.info("Neaten link: direct image link")
+        logger.info("FA link: direct image link")
         return submission_id
 
     async def _find_submission(self, username: str, image_id: int) -> Optional[int]:
@@ -107,7 +108,8 @@ class FAHandler(SiteHandler):
             edit: bool = False
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
-        await submission.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
+        sendable = SendableFASubmission(submission)
+        await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     async def submission_as_answer(
             self,
@@ -123,3 +125,46 @@ class FAHandler(SiteHandler):
             return True
         except ValueError:
             return False
+
+
+class SendableFASubmission(Sendable):
+
+    def __init__(self, submission: FASubmissionFull):
+        self.submission = submission
+
+    @property
+    def id(self) -> str:
+        return self.submission.submission_id
+
+    @property
+    def download_url(self) -> str:
+        return self.submission.download_url
+
+    @property
+    def download_file_ext(self) -> str:
+        return self.submission.download_file_ext
+
+    @property
+    def download_file_size(self) -> int:
+        return self.submission.download_file_size
+
+    @property
+    def preview_image_url(self) -> str:
+        return self.submission.full_image_url
+
+    @property
+    def thumbnail_url(self) -> str:
+        return self.submission.thumbnail_url
+
+    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
+        lines = []
+        if prefix:
+            lines.append(prefix)
+        if settings.title:
+            lines.append(f"\"{self.submission.title}\"")
+        if settings.author:
+            lines.append(f"By: <a href=\"{self.submission.author.link}\">{self.submission.author.name}</a>")
+        lines.append(self.submission.link)
+        if settings.direct_link:
+            lines.append(f"<a href=\"{self.download_url}\">Direct download</a>")
+        return "\n".join(lines)

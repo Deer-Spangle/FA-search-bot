@@ -12,6 +12,7 @@ from telethon import TelegramClient
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
+from fa_search_bot.sites.fa_handler import SendableFASubmission
 from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
 
@@ -152,7 +153,8 @@ class SubscriptionWatcher:
             try:
                 logger.info("Sending submission %s to subscription", result.submission_id)
                 usage_logger.info("Submission sent to subscription")
-                await result.send_message(self.client, dest, prefix=prefix)
+                sendable = SendableFASubmission(result)
+                await sendable.send_message(self.client, dest, prefix=prefix)
             except (UserIsBlockedError, InputUserDeactivatedError):
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
                 all_subs = [sub for sub in self.subscriptions if sub.destination == dest]

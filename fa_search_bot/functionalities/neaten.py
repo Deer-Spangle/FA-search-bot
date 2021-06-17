@@ -5,7 +5,7 @@ from typing import Optional, List
 from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.sites.fa_export_api import PageNotFound, CloudflareError
-from fa_search_bot.sites.fa_submission import CantSendFileType
+from fa_search_bot.sites.sendable import CantSendFileType
 from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
