@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.types import InputBotInlineResultPhoto
@@ -24,41 +24,50 @@ class InlineNeatenFunctionality(BotFunctionality):
         query_clean = query.strip().lower()
         # Check if it's a submission ID
         if any(handler.is_valid_submission_id(query_clean) for handler in self.handlers.values()):
-            await self._answer_id_query(event, query_clean)
-            raise StopPropagation
+            results = await self._answer_id_query(event, query_clean)
+            if results:
+                usage_logger.info("Inline submission ID query")
+                logger.info("Sending inline ID query result")
+                await event.answer(results, gallery=True)
+                raise StopPropagation
         # Check if it's a link
         for handler in self.handlers.values():
             link_matches = handler.find_links_in_str(query_clean)
             if link_matches:
-                await self._answer_link_query(event, handler, link_matches)
-                raise StopPropagation
+                results = await self._answer_link_query(event, handler, link_matches)
+                if results:
+                    usage_logger.info("Inline submission link query")
+                    logger.info("Sending inline link query results")
+                    await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
+                    raise StopPropagation
         # Otherwise, pass and let inline functionality handle it
         pass
 
-    async def _answer_id_query(self, event: InlineQuery.Event, submission_id: str) -> None:
+    async def _answer_id_query(
+            self,
+            event: InlineQuery.Event,
+            submission_id: str
+    ) -> Optional[List[InputBotInlineResultPhoto]]:
         try:
             result_futures = await gather_ignore_exceptions([
                 handler.submission_as_answer(submission_id, event.builder)
                 for handler in self.handlers.values()
             ])
-            results = await gather_ignore_exceptions(result_futures)
-            if results:
-                usage_logger.info("Inline submission ID query")
-                logger.info("Sending inline ID query result")
-                await event.answer([results], gallery=True)
+            return await gather_ignore_exceptions(result_futures)
         except APIException:
             logger.debug("Inline id query could not find result")
             pass
 
-    async def _answer_link_query(self, event: InlineQuery.Event, handler: SiteHandler, links: List[str]) -> None:
+    async def _answer_link_query(
+            self,
+            event: InlineQuery.Event,
+            handler: SiteHandler,
+            links: List[str]
+    ) -> Optional[List[InputBotInlineResultPhoto]]:
         submission_ids = await gather_ignore_exceptions([
             handler.get_submission_id_from_link(link) for link in links
         ])
         results = await gather_ignore_exceptions([
             handler.submission_as_answer(sub_id, event.builder) for sub_id in submission_ids
         ])
-        results = await gather_ignore_exceptions(results)
-        if results:
-            usage_logger.info("Inline submission link query")
-            logger.info("Sending inline link query results")
-            await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
+        return await gather_ignore_exceptions(results)
