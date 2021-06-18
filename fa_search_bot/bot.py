@@ -125,14 +125,14 @@ class FASearchBot:
     def initialise_functionalities(self):
         fa_handler = FAHandler(self.api)
         handlers = {
-            "fa": fa_handler,
-            "e6": self.e6_handler,
+            fa_handler.site_code: fa_handler,
+            self.e6_handler.site_code: self.e6_handler,
         }
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(fa_handler),
+            NeatenFunctionality(handlers),
             InlineNeatenFunctionality(fa_handler),
             InlineFunctionality(self.api),
             InlineEditFunctionality(handlers, self.client),
