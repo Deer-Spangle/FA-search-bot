@@ -133,7 +133,7 @@ class FASearchBot:
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
             NeatenFunctionality(handlers),
-            InlineNeatenFunctionality(fa_handler),
+            InlineNeatenFunctionality(handlers),
             InlineFunctionality(self.api),
             InlineEditFunctionality(handlers, self.client),
             InlineEditButtonPress(handlers),
