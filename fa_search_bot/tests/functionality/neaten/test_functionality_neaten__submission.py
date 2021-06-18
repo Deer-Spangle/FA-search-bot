@@ -3,8 +3,8 @@ from telethon.events import StopPropagation
 
 from fa_search_bot.sites.fa_export_api import CloudflareError
 from fa_search_bot.sites.fa_handler import FAHandler
-from fa_search_bot.sites.fa_submission import FASubmission
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
+from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, MockButton, ChatType
@@ -493,7 +493,7 @@ async def test_image_just_under_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE - 1)
+    submission = MockSubmission(post_id, file_size=Sendable.SIZE_LIMIT_IMAGE - 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -514,7 +514,7 @@ async def test_image_just_over_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_IMAGE + 1)
+    submission = MockSubmission(post_id, file_size=Sendable.SIZE_LIMIT_IMAGE + 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -535,7 +535,7 @@ async def test_image_over_document_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(post_id, file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
+    submission = MockSubmission(post_id, file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -556,7 +556,7 @@ async def test_auto_doc_just_under_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT - 1)
+    submission = MockSubmission(post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -577,7 +577,7 @@ async def test_auto_doc_just_over_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(post_id, file_ext="pdf", file_size=FASubmission.SIZE_LIMIT_DOCUMENT + 1)
+    submission = MockSubmission(post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
