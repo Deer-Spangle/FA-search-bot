@@ -3,8 +3,8 @@ import unittest
 
 import requests_mock
 
+from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
-from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 loop = asyncio.get_event_loop()
@@ -19,7 +19,7 @@ class FASubmissionTest(unittest.TestCase):
         submission = FASubmission(post_id)
 
         assert submission.submission_id == post_id
-        assert NeatenFunctionality.FA_SUB_LINK.search(submission.link) is not None
+        assert FAHandler.FA_SUB_LINK.search(submission.link) is not None
         assert f"view/{post_id}" in submission.link
 
     def test_create_from_short_dict(self):
