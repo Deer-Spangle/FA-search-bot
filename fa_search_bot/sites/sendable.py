@@ -154,7 +154,7 @@ class Sendable(ABC):
             return
 
         # Handle photos
-        if ext in self.EXTENSIONS_PHOTO:
+        if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_GIF and not _is_animated_gif(self.download_url)):
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
@@ -163,15 +163,11 @@ class Sendable(ABC):
             except BadRequestError:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
-        # Handle gifs, which can be made pretty
-        if ext in self.EXTENSIONS_GIF:
-            await self._send_gif(send_partial)
-            return
-        # TODO: handle apng
-        # Handle videos, which can be embedded, or converted to gifs
-        if ext in self.EXTENSIONS_VIDEO:
+        # Handle animated gifs and videos, which can be made pretty
+        if ext in self.EXTENSIONS_GIF + self.EXTENSIONS_VIDEO:
             await self._send_video(send_partial)
             return
+        # TODO: handle apng
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
@@ -184,28 +180,6 @@ class Sendable(ABC):
         # Handle files telegram can't handle
         settings.direct_link = True
         return await send_partial(self.preview_image_url)
-
-    async def _send_gif(
-            self,
-            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
-    ) -> None:
-        try:
-            logger.info("Sending gif, site ID %s, submission ID %s", self.site_id, self.id)
-            filename = self._get_video_from_cache()
-            if filename is None:
-                logger.info("Gif not in cache, converting to video. Submission ID %s", self.id)
-                output_path = await self._convert_gif(self.download_url)
-                filename = self._save_video_to_cache(output_path)
-            await send_partial(open(filename, "rb"))
-        except Exception as e:
-            logger.error(
-                "Failed to convert gif to video. Site ID: %s, Submission ID: %s",
-                self.site_id,
-                self.id,
-                exc_info=e
-            )
-            await send_partial(self.download_url)
-        return
 
     async def _send_video(
             self,
@@ -263,31 +237,13 @@ class Sendable(ABC):
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             return output_path
         # If it's too big, do a 2 pass run
-        logger.info("Doing a two pass gif conversion on site ID %s, submission ID %s", self.site_id, self.id)
-        two_pass_filename = random_sandbox_video_path("mp4")
-        # Get video duration from ffprobe
-        duration_str = await self._run_docker(
-            client,
-            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
-            entrypoint="ffprobe"
-        )
-        duration = float(duration_str)
-        # 2 pass run
-        bitrate = self.SIZE_LIMIT_GIF / duration * 1000000 * 8
-        log_file = random_sandbox_video_path("")
-        await self._run_docker(
-            client,
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile {log_file} /dev/null -y"
-        )
-        await self._run_docker(
-            client,
-            f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
-        )
-        return two_pass_filename
+        return await self._convert_two_pass(client, output_path, gif_url, ffmpeg_options)
 
     async def _convert_video(self, video_url: str) -> str:
+        # If it's a gif, it has no audio track
+        if video_url.split(".")[-1] in self.EXTENSIONS_GIF:
+            return await self._convert_gif(video_url)
         usage_logger.info("Pretty video: converting")
-        # Check if the video has an audio channel
         ffmpeg_options = "-qscale 0"
         # first pass
         client = docker.from_env()
@@ -300,15 +256,19 @@ class Sendable(ABC):
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
             return output_path
         # If it's too big, do a 2 pass run
+        return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options)
+
+    async def _convert_two_pass(
+            self,
+            client: DockerClient,
+            sandbox_path: str,
+            video_url: str,
+            ffmpeg_options: str
+    ) -> str:
         logger.info("Doing a two pass video conversion on site ID %s, submission ID %s", self.site_id, self.id)
         two_pass_filename = random_sandbox_video_path("mp4")
         # Get video duration from ffprobe
-        duration_str = await self._run_docker(
-            client,
-            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
-            entrypoint="ffprobe"
-        )
-        duration = float(duration_str)
+        duration = await self._video_duration(client, sandbox_path)
         # 2 pass run
         bitrate = self.SIZE_LIMIT_VIDEO / duration * 1000_000 * 8
         log_file = random_sandbox_video_path("")
@@ -322,13 +282,21 @@ class Sendable(ABC):
         )
         return two_pass_filename
 
-    async def _video_has_audio_track(self, client: DockerClient, output_path: str) -> bool:
+    async def _video_has_audio_track(self, client: DockerClient, sandbox_path: str) -> bool:
         audio_track_str = await self._run_docker(
             client,
-            f"-show_streams -select_streams a -loglevel error /{output_path} -v error ",
+            f"-show_streams -select_streams a -loglevel error /{sandbox_path} -v error ",
             entrypoint="ffprobe"
         )
         return bool(len(audio_track_str))
+
+    async def _video_duration(self, client: DockerClient, sandbox_path: str) -> float:
+        duration_str = await self._run_docker(
+            client,
+            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{sandbox_path} -v error ",
+            entrypoint="ffprobe"
+        )
+        return float(duration_str)
 
     async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         sandbox_dir = os.getcwd() + "/sandbox"
