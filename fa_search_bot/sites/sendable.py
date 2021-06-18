@@ -56,16 +56,16 @@ class CantSendFileType(Exception):
 
 
 class Sendable(ABC):
-    EXTENSIONS_DOCUMENT = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
-    EXTENSIONS_GIF = ["gif"]
-    EXTENSIONS_VIDEO = ["webm"]  # TODO
-    EXTENSIONS_AUTO_DOCUMENT = ["pdf"]
-    EXTENSIONS_AUDIO = ["mp3"]
-    EXTENSIONS_PHOTO = ["jpg", "jpeg", "png"]
-    EXTENSIONS_ERROR = ["swf"]
+    EXTENSIONS_GIF = ["gif"]  # These should be converted to mp4
+    EXTENSIONS_VIDEO = ["webm"]  # These should be converted to mp4, with sound
+
+    EXTENSIONS_AUTO_DOCUMENT = ["pdf"]  # Telegram can embed these as documents
+    EXTENSIONS_AUDIO = ["mp3"]  # Telegram can embed these as audio
+    EXTENSIONS_PHOTO = ["jpg", "jpeg", "png"]  # Telegram can embed these as images
 
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
+    SIZE_LIMIT_VIDEO = 10 * 1000 ** 2  # Maximum 10MB video autodownload size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
 
     CACHE_DIR = "video_cache"
@@ -168,7 +168,10 @@ class Sendable(ABC):
             await self._send_gif(send_partial)
             return
         # TODO: handle apng
-        # TODO: handle webm
+        # Handle videos, which can be embedded, or converted to gifs
+        if ext in self.EXTENSIONS_VIDEO:
+            await self._send_video(send_partial)
+            return
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
@@ -195,8 +198,34 @@ class Sendable(ABC):
                 filename = self._save_video_to_cache(output_path)
             await send_partial(open(filename, "rb"))
         except Exception as e:
-            logger.error("Failed to convert gif to video. Site ID: %s, Submission ID: %s", self.site_id, self.id,
-                         exc_info=e)
+            logger.error(
+                "Failed to convert gif to video. Site ID: %s, Submission ID: %s",
+                self.site_id,
+                self.id,
+                exc_info=e
+            )
+            await send_partial(self.download_url)
+        return
+
+    async def _send_video(
+            self,
+            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
+    ) -> None:
+        try:
+            logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
+            filename = self._get_video_from_cache()
+            if filename is None:
+                logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
+                output_path = await self._convert_video(self.download_url)
+                filename = self._save_video_to_cache(output_path)
+            await send_partial(open(filename, "rb"))
+        except Exception as e:
+            logger.error(
+                "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
+                self.site_id,
+                self.id,
+                exc_info=e
+            )
             await send_partial(self.download_url)
         return
 
@@ -255,6 +284,51 @@ class Sendable(ABC):
             f"-i {gif_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
         )
         return two_pass_filename
+
+    async def _convert_video(self, video_url: str) -> str:
+        usage_logger.info("Pretty video: converting")
+        # Check if the video has an audio channel
+        ffmpeg_options = "-qscale 0"
+        # first pass
+        client = docker.from_env()
+        output_path = random_sandbox_video_path("mp4")
+        await self._run_docker(client, f"-i {video_url} {ffmpeg_options} /{output_path}")
+        # If it doesn't have an audio track, handle it as a gif
+        if not await self._video_has_audio_track(client, output_path):
+            return await self._convert_gif(video_url)
+        # Check file size
+        if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
+            return output_path
+        # If it's too big, do a 2 pass run
+        logger.info("Doing a two pass video conversion on site ID %s, submission ID %s", self.site_id, self.id)
+        two_pass_filename = random_sandbox_video_path("mp4")
+        # Get video duration from ffprobe
+        duration_str = await self._run_docker(
+            client,
+            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{output_path} -v error ",
+            entrypoint="ffprobe"
+        )
+        duration = float(duration_str)
+        # 2 pass run
+        bitrate = self.SIZE_LIMIT_VIDEO / duration * 1000_000 * 8
+        log_file = random_sandbox_video_path("")
+        await self._run_docker(
+            client,
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile {log_file} /dev/null -y"
+        )
+        await self._run_docker(
+            client,
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
+        )
+        return two_pass_filename
+
+    async def _video_has_audio_track(self, client: DockerClient, output_path: str) -> bool:
+        audio_track_str = await self._run_docker(
+            client,
+            f"-show_streams -select_streams a -loglevel error /{output_path} -v error ",
+            entrypoint="ffprobe"
+        )
+        return bool(len(audio_track_str))
 
     async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         sandbox_dir = os.getcwd() + "/sandbox"
