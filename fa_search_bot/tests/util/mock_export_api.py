@@ -23,6 +23,9 @@ def _random_rating() -> Rating:
 
 
 class MockSubmission(FASubmissionFull):
+    EXTENSIONS_STORY = ["doc", "docx", "pdf", "rtf", "txt", "odt"]
+    EXTENSIONS_MUSIC = ["mp3", "mid", "wav", "mpeg"]
+    EXTENSIONS_ART = ["gif", "jpg", "jpeg", "png"]
 
     def __init__(
             self,
@@ -50,9 +53,9 @@ class MockSubmission(FASubmissionFull):
         if fav_id is None:
             fav_id = str(_random_image_id(int(submission_id)))
         folder = ""
-        if file_ext in FASubmission.EXTENSIONS_AUDIO:
+        if file_ext in self.EXTENSIONS_MUSIC:
             folder = "music/"
-        if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
+        if file_ext in self.EXTENSIONS_STORY:
             folder = "stories/"
         # Variables for superclass
         if thumbnail_url is None:
@@ -61,7 +64,7 @@ class MockSubmission(FASubmissionFull):
             download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
                 f"{image_id}.{username}_{_random_string()}.{file_ext}"
         if full_image_url is None:
-            if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
+            if file_ext in self.EXTENSIONS_ART:
                 full_image_url = download_url
             else:
                 full_image_url = download_url + ".jpg"

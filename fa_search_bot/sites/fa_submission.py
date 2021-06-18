@@ -81,19 +81,6 @@ class FAUserShort(FAUser):
 
 
 class FASubmission(ABC):
-    EXTENSIONS_DOCUMENT = ["doc", "docx", "rtf", "txt", "odt", "mid", "wav", "mpeg"]
-    EXTENSIONS_GIF = ["gif"]
-    EXTENSIONS_AUTO_DOCUMENT = ["pdf"]
-    EXTENSIONS_AUDIO = ["mp3"]
-    EXTENSIONS_PHOTO = ["jpg", "jpeg", "png"]
-    EXTENSIONS_ERROR = ["swf"]
-
-    SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
-    SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
-    SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
-
-    GIF_CACHE_DIR = "gif_cache"
-    DOCKER_TIMEOUT = 5 * 60
 
     def __init__(self, submission_id: str) -> None:
         self.submission_id = submission_id
