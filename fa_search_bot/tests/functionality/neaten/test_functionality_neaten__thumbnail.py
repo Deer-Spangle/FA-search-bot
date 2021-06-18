@@ -3,6 +3,7 @@ from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
@@ -14,16 +15,16 @@ async def test_thumbnail_link(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -35,16 +36,16 @@ async def test_thumbnail_link__old_cdn(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -56,16 +57,16 @@ async def test_thumbnail_link__newer_cdn(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -77,16 +78,16 @@ async def test_thumbnail_link_not_round(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -98,16 +99,16 @@ async def test_thumbnail_link_big(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -117,7 +118,9 @@ async def test_doesnt_fire_on_avatar(mock_client):
         text="https://a.furaffinity.net/1538326752/geordie79.gif",
         client=mock_client,
     )
-    neaten = NeatenFunctionality(MockExportAPI())
+    api = MockExportAPI()
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     await neaten.call(event)
 
@@ -132,16 +135,16 @@ async def test_thumb_and_submission_link(mock_client):
         client=mock_client,
     )
     submission = MockSubmission(post_id)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submission(submission)
+    api = MockExportAPI().with_submission(submission)
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission._send_message.assert_called_once()
-    args, kwargs = submission._send_message.call_args
-    assert args[0] == mock_client
-    assert args[1] == event.input_chat
+    handler._send_submission.assert_called_once()
+    args, kwargs = handler._send_submission.call_args
+    assert args == (post_id, mock_client, event.input_chat)
     assert kwargs['reply_to'] == event.message.id
 
 
@@ -155,19 +158,18 @@ async def test_thumb_and_different_submission_link(mock_client):
     )
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
-    neaten = NeatenFunctionality(MockExportAPI())
-    neaten.api.with_submissions([submission1, submission2])
+    api = MockExportAPI().with_submissions([submission1, submission2])
+    handler = MockSiteHandler(api)
+    neaten = NeatenFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    submission1._send_message.assert_called_once()
-    args1, kwargs1 = submission1._send_message.call_args
-    assert args1[0] == mock_client
-    assert args1[1] == event.input_chat
+    handler._send_submission.assert_called()
+    call1, call2 = handler._send_submission.call_args_list
+    args1, kwargs1 = call1
+    assert args1 == (post_id1, mock_client, event.input_chat)
     assert kwargs1['reply_to'] == event.message.id
-    submission2._send_message.assert_called_once()
-    args2, kwargs2 = submission2._send_message.call_args
-    assert args2[0] == mock_client
-    assert args2[1] == event.input_chat
+    args2, kwargs2 = call2
+    assert args2 == (post_id2, mock_client, event.input_chat)
     assert kwargs2['reply_to'] == event.message.id
