@@ -15,6 +15,16 @@ class SiteHandler(ABC):
 
     @property
     @abstractmethod
+    def site_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def site_code(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
     def link_regex(self) -> Pattern:
         pass
 
@@ -23,7 +33,11 @@ class SiteHandler(ABC):
         pass
 
     @abstractmethod
-    async def get_submission_id_from_link(self, link: str) -> int:
+    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
+        pass
+
+    @abstractmethod
+    def link_for_submission(self, submission_id: int) -> str:
         pass
 
     @abstractmethod

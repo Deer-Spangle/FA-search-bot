@@ -24,13 +24,21 @@ class E621Handler(SiteHandler):
         self.api = api
 
     @property
+    def site_name(self) -> str:
+        return "e621"
+
+    @property
+    def site_code(self) -> str:
+        return "e6"
+
+    @property
     def link_regex(self) -> Pattern:
         return self.E6_LINKS
 
     def find_links_in_str(self, haystack: str) -> List[str]:
         return [match[0] for match in self.E6_LINKS.findall(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> int:
+    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
         # Handle submission page link matches
         sub_match = self.POST_LINK.match(link)
         if sub_match:
@@ -43,6 +51,8 @@ class E621Handler(SiteHandler):
             return int(thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.DIRECT_LINK.match(link)
+        if not direct_match:
+            return None
         md5_hash = direct_match.group(1)
         post_id = await self._find_post_by_hash(md5_hash)
         if not post_id:
@@ -71,6 +81,9 @@ class E621Handler(SiteHandler):
         post = await self.api.post(submission_id)
         sendable = E621Post(post)
         await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
+
+    def link_for_submission(self, submission_id: int) -> str:
+        return f"https://e621.net/posts/{submission_id}/"
 
     def is_valid_submission_id(self, example: str) -> bool:
         try:

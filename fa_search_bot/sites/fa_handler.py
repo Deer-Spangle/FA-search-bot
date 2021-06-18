@@ -33,13 +33,21 @@ class FAHandler(SiteHandler):
         self.api = api
 
     @property
+    def site_name(self) -> str:
+        return "Furaffinity"
+
+    @property
+    def site_code(self) -> str:
+        return "fa"
+
+    @property
     def link_regex(self) -> Pattern:
         return self.FA_LINKS
 
     def find_links_in_str(self, haystack: str) -> List[str]:
         return [match[0] for match in self.FA_LINKS.findall(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> int:
+    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
@@ -52,6 +60,8 @@ class FAHandler(SiteHandler):
             return int(thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
+        if not direct_match:
+            return None
         username = direct_match.group(1)
         image_id = int(direct_match.group(2))
         submission_id = await self._find_submission(username, image_id)
@@ -96,6 +106,9 @@ class FAHandler(SiteHandler):
             if _get_image_id_from_submission(last_submission) <= image_id:
                 return listing
             page += 1
+
+    def link_for_submission(self, submission_id: int) -> str:
+        return f"https://www.furaffinity.net/view/{submission_id}/"
 
     async def send_submission(
             self,
