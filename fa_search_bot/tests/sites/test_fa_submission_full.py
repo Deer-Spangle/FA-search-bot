@@ -55,3 +55,11 @@ def test_download_file_size(requests_mock):
 
     assert isinstance(file_size2, int)
     assert file_size2 == size
+
+
+def test_download_file_ext():
+    submission = SubmissionBuilder(file_ext="JPEG").build_full_submission()
+
+    ext = submission.download_file_ext
+
+    assert ext == "jpeg"
