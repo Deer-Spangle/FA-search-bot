@@ -78,12 +78,8 @@ class Sendable(ABC):
 
     @property
     @abstractmethod
-    def id(self) -> str:  # TODO: replace usages with full_id
+    def id(self) -> str:
         pass
-
-    @property
-    def full_id(self) -> str:
-        return f"{self.site_id}_{self.id}"
 
     @property
     @abstractmethod
