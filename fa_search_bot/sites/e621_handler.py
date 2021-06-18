@@ -121,7 +121,7 @@ class E621Post(Sendable):
 
     @property
     def download_file_ext(self) -> str:
-        return self.post.file["ext"]
+        return self.post.file["ext"].lower()
 
     @property
     def download_file_size(self) -> int:
