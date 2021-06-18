@@ -35,7 +35,8 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
 
 
 def _is_animated_gif(file_url: str) -> bool:
-    if file_url not in Sendable.EXTENSIONS_GIF:
+    file_ext = file_url.split(".")[-1].lower()
+    if file_ext not in Sendable.EXTENSIONS_GIF:
         return False
     data = requests.get(file_url).content
     with Image.open(io.BytesIO(data)) as img:
@@ -56,12 +57,12 @@ class CantSendFileType(Exception):
 
 
 class Sendable(ABC):
-    EXTENSIONS_GIF = ["gif"]  # These should be converted to mp4
+    EXTENSIONS_GIF = ["gif", "png"]  # These should be converted to mp4, without sound, if they are animated
     EXTENSIONS_VIDEO = ["webm"]  # These should be converted to mp4, with sound
 
     EXTENSIONS_AUTO_DOCUMENT = ["pdf"]  # Telegram can embed these as documents
     EXTENSIONS_AUDIO = ["mp3"]  # Telegram can embed these as audio
-    EXTENSIONS_PHOTO = ["jpg", "jpeg", "png"]  # Telegram can embed these as images
+    EXTENSIONS_PHOTO = ["jpg", "jpeg"]  # Telegram can embed these as images
 
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
@@ -167,7 +168,6 @@ class Sendable(ABC):
         if ext in self.EXTENSIONS_GIF + self.EXTENSIONS_VIDEO:
             await self._send_video(send_partial)
             return
-        # TODO: handle apng
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
@@ -241,7 +241,7 @@ class Sendable(ABC):
 
     async def _convert_video(self, video_url: str) -> str:
         # If it's a gif, it has no audio track
-        if video_url.split(".")[-1] in self.EXTENSIONS_GIF:
+        if video_url.split(".")[-1].lower() in self.EXTENSIONS_GIF:
             return await self._convert_gif(video_url)
         usage_logger.info("Pretty video: converting")
         ffmpeg_options = "-qscale 0"
