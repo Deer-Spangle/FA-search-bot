@@ -47,7 +47,7 @@ class InlineEditButtonPress(BotFunctionality):
             return
         usage_logger.info("Inline result update button clicked")
         data_split = data.split(":")
-        sub_id = data_split[-1]
+        sub_id = int(data_split[-1])
         site_id = "fa"
         if len(data_split) == 3:
             site_id = data_split[-2]
