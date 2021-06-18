@@ -171,12 +171,15 @@ class Sendable(ABC):
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
-        # Handle pdfs, which can be sent as documents
-        if ext in self.EXTENSIONS_AUTO_DOCUMENT:
-            return await send_partial(self.download_url, force_doc=True)
-        # Handle audio
-        if ext in self.EXTENSIONS_AUDIO:
-            return await send_partial(self.download_url)
+        # Special handling, if it's small enough
+        if self.download_file_size < self.SIZE_LIMIT_DOCUMENT:
+            # Handle pdfs, which can be sent as documents
+            if ext in self.EXTENSIONS_AUTO_DOCUMENT:
+                return await send_partial(self.download_url, force_doc=True)
+            # Handle audio
+            if ext in self.EXTENSIONS_AUDIO:
+                # TODO: can we support setting title, performer, thumb?
+                return await send_partial(self.download_url)
         # Handle files telegram can't handle
         settings.direct_link = True
         return await send_partial(self.preview_image_url)
