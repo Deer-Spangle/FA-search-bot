@@ -34,9 +34,9 @@ def random_sandbox_video_path(file_ext: str = "mp4"):
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
-def _is_animated_gif(file_url: str) -> bool:
+def _is_animated(file_url: str) -> bool:
     file_ext = file_url.split(".")[-1].lower()
-    if file_ext not in Sendable.EXTENSIONS_GIF:
+    if file_ext not in Sendable.EXTENSIONS_ANIMATED:
         return False
     data = requests.get(file_url).content
     with Image.open(io.BytesIO(data)) as img:
@@ -57,7 +57,8 @@ class CantSendFileType(Exception):
 
 
 class Sendable(ABC):
-    EXTENSIONS_GIF = ["gif", "png"]  # These should be converted to mp4, without sound, if they are animated
+    EXTENSIONS_GIF = ["gif"]  # These should be converted to png, if not animated
+    EXTENSIONS_ANIMATED = ["gif", "png"]  # These should be converted to mp4, without sound, if they are animated
     EXTENSIONS_VIDEO = ["webm"]  # These should be converted to mp4, with sound
 
     EXTENSIONS_AUTO_DOCUMENT = ["pdf"]  # Telegram can embed these as documents
@@ -133,7 +134,7 @@ class Sendable(ABC):
 
         async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
             if isinstance(file, str):
-                if not _is_animated_gif(file):
+                if ext in self.EXTENSIONS_GIF and not _is_animated(file):
                     file = _convert_gif_to_png(file)
             if edit:
                 await client.edit_message(
@@ -155,7 +156,7 @@ class Sendable(ABC):
             return
 
         # Handle photos
-        if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_GIF and not _is_animated_gif(self.download_url)):
+        if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
@@ -165,9 +166,8 @@ class Sendable(ABC):
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
         # Handle animated gifs and videos, which can be made pretty
-        if ext in self.EXTENSIONS_GIF + self.EXTENSIONS_VIDEO:
-            await self._send_video(send_partial)
-            return
+        if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
+            return await self._send_video(send_partial)
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
@@ -241,7 +241,7 @@ class Sendable(ABC):
 
     async def _convert_video(self, video_url: str) -> str:
         # If it's a gif, it has no audio track
-        if video_url.split(".")[-1].lower() in self.EXTENSIONS_GIF:
+        if video_url.split(".")[-1].lower() in self.EXTENSIONS_ANIMATED:
             return await self._convert_gif(video_url)
         usage_logger.info("Pretty video: converting")
         ffmpeg_options = "-qscale 0"
