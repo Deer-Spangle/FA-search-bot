@@ -83,14 +83,6 @@ class MockSubmission(FASubmissionFull):
         )
         self.fav_id = fav_id
         self._download_file_size = file_size
-        self._send_message = AsyncMock()
-
-    async def send_message(
-            self,
-            *args,
-            **kwargs
-    ) -> None:
-        self._send_message(*args, **kwargs)
 
 
 class MockExportAPI(FAExportAPI):
