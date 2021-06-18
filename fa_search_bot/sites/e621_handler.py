@@ -36,7 +36,7 @@ class E621Handler(SiteHandler):
         return self.E6_LINKS
 
     def find_links_in_str(self, haystack: str) -> List[str]:
-        return [match[0] for match in self.E6_LINKS.findall(haystack)]
+        return [match.group(0) for match in self.E6_LINKS.finditer(haystack)]
 
     async def get_submission_id_from_link(self, link: str) -> Optional[int]:
         # Handle submission page link matches
