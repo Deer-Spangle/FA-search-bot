@@ -12,7 +12,7 @@ from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
 @pytest.mark.asyncio
-async def test_animated_gif_submission(mock_client):
+async def test_send_animated_gif_submission(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
@@ -41,7 +41,7 @@ async def test_animated_gif_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_animated_gif_submission_from_cache(mock_client):
+async def test_send_animated_gif_submission_from_cache(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
@@ -116,7 +116,7 @@ async def test_convert_gif_two_pass():
 
 
 @pytest.mark.asyncio
-async def test_animated_gif_convert_failure(mock_client):
+async def test_send_animated_gif_convert_failure(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
@@ -134,7 +134,7 @@ async def test_animated_gif_convert_failure(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_pdf_submission(mock_client):
+async def test_send_pdf_submission(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
     submission = SubmissionBuilder(file_ext="pdf", file_size=47453, title=title, author=author).build_full_submission()
@@ -157,7 +157,7 @@ async def test_pdf_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_mp3_submission(mock_client):
+async def test_send_mp3_submission(mock_client):
     title = "Example music"
     author = FAUser("A musician", "amusician")
     submission = SubmissionBuilder(file_ext="mp3", file_size=47453, title=title, author=author).build_full_submission()
@@ -179,7 +179,7 @@ async def test_mp3_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_unrecognised_submission(mock_client):
+async def test_send_unrecognised_submission(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
     submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_full_submission()
@@ -202,7 +202,7 @@ async def test_unrecognised_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_image_just_under_size_limit(mock_client):
+async def test_send_image_just_under_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1) \
         .build_full_submission()
     sendable = SendableFASubmission(submission)
@@ -219,7 +219,7 @@ async def test_image_just_under_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_image_just_over_size_limit(mock_client):
+async def test_send_image_just_over_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE + 1) \
         .build_full_submission()
     sendable = SendableFASubmission(submission)
@@ -238,7 +238,7 @@ async def test_image_just_over_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_image_over_document_size_limit(mock_client):
+async def test_send_image_over_document_size_limit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1) \
         .build_full_submission()
     sendable = SendableFASubmission(submission)
@@ -257,7 +257,7 @@ async def test_image_over_document_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_auto_doc_just_under_size_limit(mock_client):
+async def test_send_pdf_just_under_size_limit(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
     submission = SubmissionBuilder(
@@ -284,7 +284,7 @@ async def test_auto_doc_just_under_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_auto_doc_just_over_size_limit(mock_client):
+async def test_send_pdf_just_over_size_limit(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
     submission = SubmissionBuilder(
@@ -347,7 +347,7 @@ async def test_send_message__without_prefix(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_edit_message(mock_client):
+async def test_send_message__edit(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE // 2) \
         .build_full_submission()
     sendable = SendableFASubmission(submission)
