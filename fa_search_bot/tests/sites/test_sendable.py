@@ -1,10 +1,11 @@
 from unittest import mock
 
 import pytest
+from docker import DockerClient
 
 from fa_search_bot.sites.fa_handler import SendableFASubmission
 from fa_search_bot.sites.fa_submission import FAUser
-from fa_search_bot.sites.sendable import Sendable
+from fa_search_bot.sites.sendable import Sendable, random_sandbox_video_path
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
@@ -90,29 +91,53 @@ async def test_convert_gif():
 async def test_convert_gif_two_pass():
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    mock_run = MockMultiMethod(["Test docker", "27.5", "ffmpeg1", "ffmpeg2"])
+    two_pass_output_path = random_sandbox_video_path()
+    mock_run = MockMethod(two_pass_output_path)
     mock_filesize = MockMethod(sendable.SIZE_LIMIT_GIF + 10)
-    sendable._run_docker = mock_run.async_call
+    sendable._convert_two_pass = mock_run.async_call
 
     with mock.patch("os.path.getsize", mock_filesize.call):
         output_path = await sendable._convert_gif(submission.download_url)
 
+    assert output_path == two_pass_output_path
+    assert isinstance(mock_run.args[0], DockerClient)
+    assert isinstance(mock_run.args[1], str)
+    assert mock_run.args[1].endswith(".mp4")
+    assert mock_run.args[2] == submission.download_url
+    assert isinstance(mock_run.args[3], str)
+
+
+@pytest.mark.asyncio
+async def test_two_pass():
+    submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+    sendable = SendableFASubmission(submission)
+    docker_client = DockerClient.from_env()
+    sandbox_path = random_sandbox_video_path()
+    ffmpeg_options = "--just_testing"
+    duration = 27.5
+    mock_run = MockMultiMethod([str(duration), "ffmpeg1", "ffmpeg2"])
+    sendable._run_docker = mock_run.async_call
+    bitrate = sendable.SIZE_LIMIT_VIDEO / 27.5 * 1_000_000 * 8
+
+    output_path = await sendable._convert_two_pass(docker_client, sandbox_path, submission.download_url, ffmpeg_options)
+
     assert output_path is not None
     assert output_path.endswith(".mp4")
-    assert mock_run.calls == 4
-    # Initial ffmpeg call
-    assert mock_run.args[0][1].startswith(f"-i {submission.download_url} ")
+    assert output_path != sandbox_path
+    assert mock_run.calls == 3
     # ffprobe call
-    assert mock_run.args[1][1].startswith("-show_entries format=duration ")
-    assert mock_run.kwargs[1]["entrypoint"] == "ffprobe"
+    assert mock_run.args[0][1].startswith("-show_entries format=duration ")
+    assert mock_run.kwargs[0]["entrypoint"] == "ffprobe"
     # First ffmpeg two pass call
-    assert mock_run.args[2][1].startswith(f"-i {submission.download_url} ")
-    assert " -pass 1 -f mp4 " in mock_run.args[2][1]
-    assert mock_run.args[2][1].endswith(" /dev/null -y")
+    assert mock_run.args[1][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 1 -f mp4 " in mock_run.args[1][1]
+    assert f" -b:v {bitrate} " in mock_run.args[1][1]
+    assert mock_run.args[1][1].endswith(" /dev/null -y")
     # Second ffmpeg two pass call
-    assert mock_run.args[3][1].startswith(f"-i {submission.download_url} ")
-    assert " -pass 2 " in mock_run.args[3][1]
-    assert mock_run.args[3][1].endswith(f" {output_path} -y")
+    assert mock_run.args[2][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 2 " in mock_run.args[2][1]
+    assert f" -b:v {bitrate} " in mock_run.args[2][1]
+    assert mock_run.args[2][1].endswith(f" {output_path} -y")
 
 
 @pytest.mark.asyncio
