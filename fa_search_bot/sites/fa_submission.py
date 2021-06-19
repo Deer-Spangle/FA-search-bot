@@ -4,14 +4,12 @@ import io
 import logging
 import os
 import re
-import uuid
 from abc import ABC
 from enum import Enum
 from typing import Dict, Union, List, Coroutine
 
 import dateutil.parser
 import requests
-from PIL import Image
 from telethon import Button
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto
@@ -24,35 +22,6 @@ class Rating(Enum):
     GENERAL = 1
     MATURE = 2
     ADULT = 3
-
-
-@dataclasses.dataclass
-class CaptionSettings:
-    direct_link: bool = False
-    title: bool = False
-    author: bool = False
-
-
-def random_sandbox_video_path(file_ext: str = "mp4"):
-    os.makedirs("sandbox", exist_ok=True)
-    return f"sandbox/{uuid.uuid4()}.{file_ext}"
-
-
-def _is_animated_gif(file_url: str) -> bool:
-    if file_url not in FASubmission.EXTENSIONS_GIF:
-        return False
-    data = requests.get(file_url).content
-    with Image.open(io.BytesIO(data)) as img:
-        return img.is_animated
-
-
-def _convert_gif_to_png(file_url: str) -> bytes:
-    data = requests.get(file_url).content
-    img = Image.open(io.BytesIO(data))
-    img = img.convert("RGB")
-    byte_arr = io.BytesIO()
-    img.save(byte_arr, format="PNG")
-    return byte_arr.getvalue()
 
 
 class FAUser(ABC):

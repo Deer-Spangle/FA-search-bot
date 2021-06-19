@@ -7,8 +7,7 @@ from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
 from yippi import AsyncYippiClient, Post
 
-from fa_search_bot.sites.fa_submission import CaptionSettings
-from fa_search_bot.sites.sendable import Sendable
+from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
 
 logger = logging.getLogger(__name__)
