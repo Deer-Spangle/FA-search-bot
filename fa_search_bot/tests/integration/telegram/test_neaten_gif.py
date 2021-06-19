@@ -4,7 +4,7 @@ import pytest
 from tgintegration import BotController
 
 from fa_search_bot.bot import FASearchBot
-from fa_search_bot.sites.fa_submission import FASubmission
+from fa_search_bot.sites.sendable import Sendable
 
 pytestmark = pytest.mark.asyncio
 
@@ -13,7 +13,7 @@ async def test_neaten_gif(controller: BotController):
     # - send link, make pretty gif
     submission_id = "27408045"
     # Delete cache
-    filename = f"{FASubmission.GIF_CACHE_DIR}/{submission_id}.mp4"
+    filename = f"{Sendable.CACHE_DIR}/fa/{submission_id}.mp4"
     if os.path.exists(filename):
         os.remove(filename)
 
