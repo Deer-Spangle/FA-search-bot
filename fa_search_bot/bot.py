@@ -111,6 +111,8 @@ class FASearchBot:
             event_loop.run_until_complete(self.watcher_task)
         if self.log_task is not None:
             event_loop.run_until_complete(self.log_task)
+        if self.e6_api is not None:
+            event_loop.run_until_complete(self.e6_api.close())
 
     async def periodic_log(self):
         while self.alive:
