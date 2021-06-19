@@ -16,29 +16,29 @@ class SiteHandler(ABC):
     @property
     @abstractmethod
     def site_name(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def site_code(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def link_regex(self) -> Pattern:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def find_links_in_str(self, haystack: str) -> List[str]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def get_submission_id_from_link(self, link: str) -> Optional[int]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def link_for_submission(self, submission_id: int) -> str:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def send_submission(
@@ -51,11 +51,11 @@ class SiteHandler(ABC):
             prefix: str = None,
             edit: bool = False
     ) -> None:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def is_valid_submission_id(self, example: str) -> bool:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def submission_as_answer(
@@ -63,4 +63,4 @@ class SiteHandler(ABC):
             submission_id: Union[int, str],
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        pass
+        raise NotImplementedError

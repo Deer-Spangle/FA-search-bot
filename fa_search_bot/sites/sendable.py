@@ -76,27 +76,27 @@ class Sendable(ABC):
     @property
     @abstractmethod
     def site_id(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def id(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def download_url(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def download_file_ext(self) -> str:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def download_file_size(self) -> int:
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -105,7 +105,7 @@ class Sendable(ABC):
         For image submissions, the preview image is probably the same as the download url.
         For non-image submissions, the preview image is probably a cover image.
         """
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -113,12 +113,12 @@ class Sendable(ABC):
         """
         A scaled down thumbnail, of the full image, or of the preview image
         """
-        pass
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def link(self) -> str:
-        pass
+        raise NotImplementedError
 
     async def send_message(
             self,
@@ -208,7 +208,7 @@ class Sendable(ABC):
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
-        pass
+        raise NotImplementedError
 
     def _get_video_from_cache(self) -> Optional[str]:
         cache_dir = f"{self.CACHE_DIR}/{self.site_id}"

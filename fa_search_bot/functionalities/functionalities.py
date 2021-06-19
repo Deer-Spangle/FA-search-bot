@@ -34,4 +34,4 @@ class BotFunctionality(ABC):
 
     @abstractmethod
     async def call(self, event: EventCommon) -> None:
-        pass
+        raise NotImplementedError
