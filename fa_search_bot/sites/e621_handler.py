@@ -148,7 +148,7 @@ class E621Post(Sendable):
         lines = []
         if prefix:
             lines.append(prefix)
-        lines.append(f"https://e621.net/posts/{self.post.id}/")
+        lines.append(self.link)
         if settings.direct_link:
             lines.append(f"<a href=\"{self.post.file['url']}\">Direct download</a>")
         return "\n".join(lines)
