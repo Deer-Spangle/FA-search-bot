@@ -52,7 +52,7 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
 @pytest.mark.asyncio
 async def test_neaten_webm(controller: BotController):
     # - send link, make video from webm
-    post_id = "2607421"
+    post_id = "2379470"
     # Delete cache
     filename = f"{Sendable.CACHE_DIR}/e6/{post_id}.mp4"
     if os.path.exists(filename):
