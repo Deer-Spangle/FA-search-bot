@@ -48,15 +48,15 @@ class Field(ABC):
 
     @abstractmethod
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
-        pass
+        raise NotImplementedError
 
     def __eq__(self, other):
         return isinstance(other, self.__class__)
@@ -174,14 +174,14 @@ class Query(ABC):
 
     @abstractmethod
     def matches_submission(self, sub: FASubmissionFull) -> bool:
-        pass
+        raise NotImplementedError
 
 
 class LocationQuery(Query, ABC):
 
     @abstractmethod
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
-        pass
+        raise NotImplementedError
 
 
 class OrQuery(Query):

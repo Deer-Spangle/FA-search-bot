@@ -3,6 +3,7 @@ import datetime
 import json
 import os
 from typing import List
+from unittest import mock
 
 import pytest
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
@@ -383,10 +384,11 @@ async def test_send_updates__sends_message(mock_client):
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
-    await watcher._send_updates([subscription], submission)
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+        await watcher._send_updates([subscription], submission)
 
-    assert submission._send_message.asset_called_once()
-    args, kwargs = submission._send_message.call_args
+    assert m.asset_called_once()
+    args, kwargs = m.call_args
     assert args[0] == mock_client
     assert args[1] == 12345
     assert "update" in kwargs['prefix'].lower()
@@ -403,10 +405,11 @@ async def test_send_updates__gathers_subscriptions(mock_client):
     subscription3 = Subscription("test", 54321)
     submission = SubmissionBuilder().build_mock_submission()
 
-    await watcher._send_updates([subscription1, subscription2, subscription3], submission)
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+        await watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
-    assert submission._send_message.call_count == 2
-    call_list = submission._send_message.call_args_list
+    assert m.call_count == 2
+    call_list = m.call_args_list
     # Indifferent to call order, so figure out the order here
     call1 = call_list[0]
     call2 = call_list[1]
@@ -448,9 +451,12 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
     subscription = Subscription("test", 12345)
     watcher.subscriptions.add(subscription)
     submission = SubmissionBuilder().build_mock_submission()
-    submission.send_message = lambda *args, **kwargs: (_ for _ in ()).throw(UserIsBlockedError(None))
 
-    await watcher._send_updates([subscription], submission)
+    def throw_blocked(*args, **kwargs):
+        raise UserIsBlockedError(None)
+
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_blocked):
+        await watcher._send_updates([subscription], submission)
 
     assert subscription.paused
 
@@ -462,9 +468,12 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
     subscription = Subscription("test", 12345)
     watcher.subscriptions.add(subscription)
     submission = SubmissionBuilder().build_mock_submission()
-    submission.send_message = lambda *args, **kwargs: (_ for _ in ()).throw(InputUserDeactivatedError(None))
 
-    await watcher._send_updates([subscription], submission)
+    def throw_deleted(*args, **kwargs):
+        raise InputUserDeactivatedError(None)
+
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_deleted):
+        await watcher._send_updates([subscription], submission)
 
     assert subscription.paused
 
@@ -478,9 +487,12 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
     subscription3 = Subscription("not me", 54321)
     watcher.subscriptions = {subscription1, subscription2, subscription3}
     submission = SubmissionBuilder().build_mock_submission()
-    submission.send_message = lambda *args, **kwargs: (_ for _ in ()).throw(UserIsBlockedError(None))
 
-    await watcher._send_updates([subscription1], submission)
+    def throw_blocked(*_, **__):
+        raise UserIsBlockedError(None)
+
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_blocked):
+        await watcher._send_updates([subscription1], submission)
 
     assert subscription1.paused
     assert subscription2.paused

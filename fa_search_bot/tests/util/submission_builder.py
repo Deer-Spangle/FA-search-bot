@@ -35,9 +35,9 @@ class SubmissionBuilder:
             else:
                 username = author.profile_name
         folder = ""
-        if file_ext in FASubmission.EXTENSIONS_AUDIO:
+        if file_ext in MockSubmission.EXTENSIONS_MUSIC:
             folder = "music/"
-        if file_ext in FASubmission.EXTENSIONS_DOCUMENT:
+        if file_ext in MockSubmission.EXTENSIONS_STORY:
             folder = "stories/"
         if thumb_size is None:
             thumb_size = 1600
@@ -45,7 +45,7 @@ class SubmissionBuilder:
         thumbnail_url = f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
         download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
-        if file_ext in FASubmission.EXTENSIONS_PHOTO + ["gif"]:
+        if file_ext in MockSubmission.EXTENSIONS_ART:
             full_image_url = download_url
         else:
             full_image_url = download_url + ".jpg"

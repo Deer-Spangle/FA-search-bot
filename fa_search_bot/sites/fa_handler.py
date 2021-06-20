@@ -1,13 +1,15 @@
 import logging
 import re
 from re import Pattern
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Coroutine
 
 from telethon import TelegramClient
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_submission import FASubmissionShort
+from fa_search_bot.sites.fa_submission import FASubmissionShort, FASubmissionFull
+from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
 
 logger = logging.getLogger(__name__)
@@ -31,25 +33,35 @@ class FAHandler(SiteHandler):
         self.api = api
 
     @property
+    def site_name(self) -> str:
+        return "Furaffinity"
+
+    @property
+    def site_code(self) -> str:
+        return "fa"
+
+    @property
     def link_regex(self) -> Pattern:
         return self.FA_LINKS
 
     def find_links_in_str(self, haystack: str) -> List[str]:
-        return [match[0] for match in self.FA_LINKS.findall(haystack)]
+        return [match.group(0) for match in self.FA_LINKS.finditer(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> int:
+    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
-            logger.info("Neaten link: submission link")
+            logger.info("FA link: submission link")
             return int(sub_match.group(1))
         # Handle thumbnail link matches
         thumb_match = self.FA_THUMB_LINK.match(link)
         if thumb_match:
-            logger.info("Neaten link: thumbnail link")
+            logger.info("FA link: thumbnail link")
             return int(thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
+        if not direct_match:
+            return None
         username = direct_match.group(1)
         image_id = int(direct_match.group(2))
         submission_id = await self._find_submission(username, image_id)
@@ -57,7 +69,7 @@ class FAHandler(SiteHandler):
             raise HandlerException(
                 f"Could not locate the image by {username} with image id {image_id}."
             )
-        logger.info("Neaten link: direct image link")
+        logger.info("FA link: direct image link")
         return submission_id
 
     async def _find_submission(self, username: str, image_id: int) -> Optional[int]:
@@ -95,6 +107,9 @@ class FAHandler(SiteHandler):
                 return listing
             page += 1
 
+    def link_for_submission(self, submission_id: int) -> str:
+        return f"https://www.furaffinity.net/view/{submission_id}/"
+
     async def send_submission(
             self,
             submission_id: int,
@@ -102,18 +117,21 @@ class FAHandler(SiteHandler):
             chat: Union[TypeInputPeer, InputBotInlineMessageID],
             *,
             reply_to: Optional[int] = None,
+            prefix: str = None,
             edit: bool = False
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
-        await submission.send_message(client, chat, reply_to=reply_to, edit=edit)
+        sendable = SendableFASubmission(submission)
+        await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     async def submission_as_answer(
             self,
             submission_id: Union[int, str],
-            builder
-    ):
+            builder: InlineBuilder
+    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         sub = await self.api.get_full_submission(str(submission_id))
-        return sub.to_inline_query_result(builder)
+        sendable = SendableFASubmission(sub)
+        return sendable.to_inline_query_result(builder)
 
     def is_valid_submission_id(self, example: str) -> bool:
         try:
@@ -121,3 +139,54 @@ class FAHandler(SiteHandler):
             return True
         except ValueError:
             return False
+
+
+class SendableFASubmission(Sendable):
+
+    def __init__(self, submission: FASubmissionFull):
+        self.submission = submission
+
+    @property
+    def site_id(self) -> str:
+        return "fa"
+
+    @property
+    def id(self) -> str:
+        return self.submission.submission_id
+
+    @property
+    def download_url(self) -> str:
+        return self.submission.download_url
+
+    @property
+    def download_file_ext(self) -> str:
+        return self.submission.download_file_ext
+
+    @property
+    def download_file_size(self) -> int:
+        return self.submission.download_file_size
+
+    @property
+    def preview_image_url(self) -> str:
+        return self.submission.full_image_url
+
+    @property
+    def thumbnail_url(self) -> str:
+        return self.submission.thumbnail_url
+
+    @property
+    def link(self) -> str:
+        return self.submission.link
+
+    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
+        lines = []
+        if prefix:
+            lines.append(prefix)
+        if settings.title:
+            lines.append(f"\"{self.submission.title}\"")
+        if settings.author:
+            lines.append(f"By: <a href=\"{self.submission.author.link}\">{self.submission.author.name}</a>")
+        lines.append(self.submission.link)
+        if settings.direct_link:
+            lines.append(f"<a href=\"{self.download_url}\">Direct download</a>")
+        return "\n".join(lines)

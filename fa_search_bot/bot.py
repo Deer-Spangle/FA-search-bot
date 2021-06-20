@@ -7,9 +7,11 @@ import logging
 import json
 
 from telethon import TelegramClient
+from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
+from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
@@ -20,6 +22,7 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
+from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
@@ -61,6 +64,8 @@ class FASearchBot:
         with open(conf_file, 'r') as f:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
+        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, "dr-spangle")
+        self.e6_handler = E621Handler(self.e6_api)
         self.client = None
         self.alive = False
         self.functionalities = []
@@ -106,6 +111,8 @@ class FASearchBot:
             event_loop.run_until_complete(self.watcher_task)
         if self.log_task is not None:
             event_loop.run_until_complete(self.log_task)
+        if self.e6_api is not None:
+            event_loop.run_until_complete(self.e6_api.close())
 
     async def periodic_log(self):
         while self.alive:
@@ -118,15 +125,20 @@ class FASearchBot:
         logger.info("Shutting down")
 
     def initialise_functionalities(self):
+        fa_handler = FAHandler(self.api)
+        handlers = {
+            fa_handler.site_code: fa_handler,
+            self.e6_handler.site_code: self.e6_handler,
+        }
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(self.api),
-            InlineNeatenFunctionality(self.api),
+            NeatenFunctionality(handlers),
+            InlineNeatenFunctionality(handlers),
             InlineFunctionality(self.api),
-            InlineEditFunctionality(self.api, self.client),
-            InlineEditButtonPress(self.api),
+            InlineEditFunctionality(handlers, self.client),
+            InlineEditButtonPress(handlers),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
