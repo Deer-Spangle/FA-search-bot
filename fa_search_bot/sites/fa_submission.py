@@ -114,7 +114,7 @@ class FASubmission(ABC):
     @staticmethod
     def _get_file_size(url: str) -> int:
         resp = requests.head(url)
-        return int(resp.headers['content-length'])
+        return int(resp.headers.get("content-length", 0))
 
 
 class FASubmissionShort(FASubmission):
