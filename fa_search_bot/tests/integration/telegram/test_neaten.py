@@ -133,3 +133,14 @@ async def test_neaten_pdf_link(controller: BotController):
     assert "Jaystoat" in response.messages[-1].caption
     assert "Lights In The Sky" in response.messages[-1].caption
     assert response.messages[-1].document
+
+
+async def test_neaten_e621_link(controller: BotController):
+    # - send link, get neatened pic
+    async with controller.collect(count=2) as response:
+        await controller.client.send_message(controller.peer_id, "https://e621.net/posts/1092773/")
+
+    assert response.num_messages == 2
+    assert response.messages[0].text.startswith("⏳")
+    assert "1092773" in response.messages[-1].caption
+    assert response.messages[-1].photo
