@@ -274,7 +274,7 @@ class Sendable(ABC):
         # Get video duration from ffprobe
         duration = await self._video_duration(client, sandbox_path)
         # 2 pass run
-        bitrate = (self.SIZE_LIMIT_VIDEO / duration) * 1_000_000 * 8
+        bitrate = (self.SIZE_LIMIT_VIDEO / duration) * 8
         log_file = random_sandbox_video_path("log")
         await self._run_docker(
             client,
