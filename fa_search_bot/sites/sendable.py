@@ -196,7 +196,7 @@ class Sendable(ABC):
                 logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
                 output_path = await self._convert_video(self.download_url)
                 filename = self._save_video_to_cache(output_path)
-            await send_partial(open(filename, "rb"))
+            await send_partial(filename)
         except Exception as e:
             logger.error(
                 "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
@@ -274,15 +274,26 @@ class Sendable(ABC):
         # Get video duration from ffprobe
         duration = await self._video_duration(client, sandbox_path)
         # 2 pass run
-        bitrate = self.SIZE_LIMIT_VIDEO / duration * 1000_000 * 8
-        log_file = random_sandbox_video_path("")
+        bitrate = (self.SIZE_LIMIT_VIDEO / duration) * 8
+        # If it has an audio stream, subtract audio bitrate from total bitrate to get video bitrate
+        if await self._video_has_audio_track(client, sandbox_path):
+            audio_bitrate = await self._video_audio_bitrate(client, sandbox_path)
+            bitrate = bitrate - audio_bitrate
+            if bitrate < 0:
+                logger.error(
+                    "Desired bitrate for submission (site id %s sub id %s) is higher than the audio bitrate alone.",
+                    self.site_id,
+                    self.id
+                )
+                raise ValueError("Bitrate cannot be negative")
+        log_file = random_sandbox_video_path("log")
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile {log_file} /dev/null -y"
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y"
         )
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y"
         )
         return two_pass_filename
 
@@ -293,6 +304,15 @@ class Sendable(ABC):
             entrypoint="ffprobe"
         )
         return bool(len(audio_track_str))
+
+    async def _video_audio_bitrate(self, client: DockerClient, sandbox_path: str) -> float:
+        audio_bitrate_str = await self._run_docker(
+            client,
+            f"-v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "
+            f"/{sandbox_path}",
+            entrypoint="ffprobe"
+        )
+        return float(audio_bitrate_str)
 
     async def _video_duration(self, client: DockerClient, sandbox_path: str) -> float:
         duration_str = await self._run_docker(
