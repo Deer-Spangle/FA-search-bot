@@ -60,29 +60,37 @@ async def test_two_pass():
     sandbox_path = random_sandbox_video_path()
     ffmpeg_options = "--just_testing"
     duration = 27.5
-    mock_run = MockMultiMethod([str(duration), "ffmpeg1", "ffmpeg2"])
+    audio_bitrate = 127000
+    mock_run = MockMultiMethod([str(duration), "audio", "127000", "ffmpeg1", "ffmpeg2"])
     sendable._run_docker = mock_run.async_call
-    bitrate = sendable.SIZE_LIMIT_VIDEO / 27.5 * 1_000_000 * 8
+    video_bitrate = (sendable.SIZE_LIMIT_VIDEO / 27.5 * 8) - audio_bitrate
 
     output_path = await sendable._convert_two_pass(docker_client, sandbox_path, submission.download_url, ffmpeg_options)
 
     assert output_path is not None
     assert output_path.endswith(".mp4")
     assert output_path != sandbox_path
-    assert mock_run.calls == 3
+    assert mock_run.calls == 5
     # ffprobe call
     assert mock_run.args[0][1].startswith("-show_entries format=duration ")
     assert mock_run.kwargs[0]["entrypoint"] == "ffprobe"
+    # audio stream check
+    assert "-show_streams -select_streams a" in mock_run.args[1][1]
+    assert mock_run.kwargs[1]["entrypoint"] == "ffprobe"
+    # audio bitrate call
+    assert "-show_entries stream=bit_rate " in mock_run.args[2][1]
+    assert "-select_streams a " in mock_run.args[2][1]
+    assert mock_run.kwargs[2]["entrypoint"] == "ffprobe"
     # First ffmpeg two pass call
-    assert mock_run.args[1][1].startswith(f"-i {submission.download_url} ")
-    assert " -pass 1 -f mp4 " in mock_run.args[1][1]
-    assert f" -b:v {bitrate} " in mock_run.args[1][1]
-    assert mock_run.args[1][1].endswith(" /dev/null -y")
+    assert mock_run.args[3][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 1 -f mp4 " in mock_run.args[3][1]
+    assert f" -b:v {video_bitrate} " in mock_run.args[3][1]
+    assert mock_run.args[3][1].endswith(" /dev/null -y")
     # Second ffmpeg two pass call
-    assert mock_run.args[2][1].startswith(f"-i {submission.download_url} ")
-    assert " -pass 2 " in mock_run.args[2][1]
-    assert f" -b:v {bitrate} " in mock_run.args[2][1]
-    assert mock_run.args[2][1].endswith(f" {output_path} -y")
+    assert mock_run.args[4][1].startswith(f"-i {submission.download_url} ")
+    assert " -pass 2 " in mock_run.args[4][1]
+    assert f" -b:v {video_bitrate} " in mock_run.args[4][1]
+    assert mock_run.args[4][1].endswith(f" /{output_path} -y")
 
 
 @pytest.mark.asyncio
@@ -231,23 +239,20 @@ async def test_send_animated_gif_submission(mock_client):
     message_id = 2873292
     convert = MockMethod("output.mp4")
     sendable._convert_gif = convert.async_call
-    mock_open = mock.mock_open(read_data=b"data")
     mock_rename = MockMethod()
 
-    with mock.patch("fa_search_bot.sites.sendable.open", mock_open):
-        with mock.patch("os.rename", mock_rename.call):
-            with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-                await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch("os.rename", mock_rename.call):
+        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
+            await sendable.send_message(mock_client, chat, reply_to=message_id)
 
+    cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
     assert convert.called
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_rename.called
     assert mock_rename.args[0] == "output.mp4"
-    assert mock_rename.args[1] == f"{sendable.CACHE_DIR}/{sendable.site_id}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][0] == f"{sendable.CACHE_DIR}/{sendable.site_id}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][1] == "rb"
-    assert mock_client.send_message.call_args[1]['file'] == mock_open.return_value
+    assert mock_rename.args[1] == f"{cache_dir}/{submission.submission_id}.mp4"
+    assert mock_client.send_message.call_args[1]['file'] == f"{cache_dir}/{submission.submission_id}.mp4"
     assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
@@ -260,22 +265,19 @@ async def test_send_animated_gif_submission_from_cache(mock_client):
     message_id = 2873292
     convert = MockMethod("output.mp4")
     sendable._convert_gif = convert.async_call
-    mock_open = mock.mock_open(read_data=b"data")
     mock_exists = MockMethod(True)
 
-    with mock.patch("fa_search_bot.sites.sendable.open", mock_open):
-        with mock.patch("os.path.exists", mock_exists.call):
-            with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-                await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch("os.path.exists", mock_exists.call):
+        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
+            await sendable.send_message(mock_client, chat, reply_to=message_id)
 
+    cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
     assert not convert.called
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]['entity'] == chat
     assert mock_exists.called
-    assert mock_exists.args[0] == f"{sendable.CACHE_DIR}/{sendable.site_id}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][0] == f"{sendable.CACHE_DIR}/{sendable.site_id}/{submission.submission_id}.mp4"
-    assert mock_open.call_args[0][1] == "rb"
-    assert mock_client.send_message.call_args[1]['file'] == mock_open.return_value
+    assert mock_exists.args[0] == f"{cache_dir}/{submission.submission_id}.mp4"
+    assert mock_client.send_message.call_args[1]['file'] == f"{cache_dir}/{submission.submission_id}.mp4"
     assert mock_client.send_message.call_args[1]['message'] == submission.link
     assert mock_client.send_message.call_args[1]['reply_to'] == message_id
 
