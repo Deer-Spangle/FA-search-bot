@@ -278,11 +278,11 @@ class Sendable(ABC):
         log_file = random_sandbox_video_path("log")
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile {log_file} /dev/null -y"
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y"
         )
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile {log_file} {two_pass_filename} -y"
+            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y"
         )
         return two_pass_filename
 
