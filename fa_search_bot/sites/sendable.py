@@ -134,7 +134,8 @@ class Sendable(ABC):
 
         async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
             if isinstance(file, str):
-                if ext in self.EXTENSIONS_GIF and not _is_animated(file):
+                file_ext = file.split(".")[-1].lower()
+                if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
                     file = _convert_gif_to_png(file)
             if edit:
                 await client.edit_message(
