@@ -196,7 +196,7 @@ class Sendable(ABC):
                 logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
                 output_path = await self._convert_video(self.download_url)
                 filename = self._save_video_to_cache(output_path)
-            await send_partial(open(filename, "rb"))
+            await send_partial(filename)
         except Exception as e:
             logger.error(
                 "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
