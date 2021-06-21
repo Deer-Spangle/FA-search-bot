@@ -60,4 +60,6 @@ jobs:
           CLIENT_API_HASH: ${{ secrets.CLIENT_API_HASH }}
           CLIENT_API_ID: ${{ secrets.CLIENT_API_ID }}
           CLIENT_SESSION_STRING: ${{ secrets.CLIENT_SESSION_STRING }}
+          E621_USERNAME: ${{ secrets.E621_USERNAME }}
+          E621_API_KEY: ${{ secrets.E621_API_KEY }}
           CONFIG_FILE: "config-test.json"
