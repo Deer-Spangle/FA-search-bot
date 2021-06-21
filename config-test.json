@@ -4,7 +4,7 @@
   "bot_key": "---",
   "api_url": "https://faexport.spangle.org.uk/",
   "e621": {
-    "username": "---",
-    "api_key": "---"
+    "username": "",
+    "api_key": ""
   }
 }
