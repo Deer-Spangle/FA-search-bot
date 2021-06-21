@@ -82,12 +82,12 @@ async def test_two_pass():
     assert "-select_streams a " in mock_run.args[2][1]
     assert mock_run.kwargs[2]["entrypoint"] == "ffprobe"
     # First ffmpeg two pass call
-    assert mock_run.args[3][1].startswith(f"-i {submission.download_url} ")
+    assert mock_run.args[3][1].strip().startswith(f"-i {submission.download_url} ")
     assert " -pass 1 -f mp4 " in mock_run.args[3][1]
     assert f" -b:v {video_bitrate} " in mock_run.args[3][1]
     assert mock_run.args[3][1].endswith(" /dev/null -y")
     # Second ffmpeg two pass call
-    assert mock_run.args[4][1].startswith(f"-i {submission.download_url} ")
+    assert mock_run.args[4][1].strip().startswith(f"-i {submission.download_url} ")
     assert " -pass 2 " in mock_run.args[4][1]
     assert f" -b:v {video_bitrate} " in mock_run.args[4][1]
     assert mock_run.args[4][1].endswith(f" /{output_path} -y")
@@ -151,27 +151,59 @@ async def test_convert_video_animated_image():
 async def test_convert_video_without_audio():
     submission = SubmissionBuilder(file_ext="webm", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    mock_run = MockMethod("")
-    sendable._run_docker = mock_run.async_call
     mock_audio = MockMethod(False)
     sendable._video_has_audio_track = mock_audio.async_call
+    mock_duration = MockMethod(Sendable.LENGTH_LIMIT_GIF - 3)
+    sendable._video_duration = mock_duration.async_call
     output_gif_path = random_sandbox_video_path()
     mock_gif = MockMethod(output_gif_path)
     sendable._convert_gif = mock_gif.async_call
 
-    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=False):
-        output_path = await sendable._convert_video(submission.download_url)
+    output_path = await sendable._convert_video(submission.download_url)
 
     assert output_path == output_gif_path
-    assert mock_run.called
-    assert isinstance(mock_run.args[0], DockerClient)
-    assert "-qscale 0" in mock_run.args[1]
-    assert submission.download_url in mock_run.args[1]
     assert mock_audio.called
     assert isinstance(mock_audio.args[0], DockerClient)
     assert isinstance(mock_audio.args[1], str)
+    assert mock_duration.called
+    assert isinstance(mock_duration.args[0], DockerClient)
+    assert isinstance(mock_duration.args[1], str)
     assert mock_gif.called
     assert mock_gif.args[0] == submission.download_url
+
+
+@pytest.mark.asyncio
+async def test_convert_video_without_audio_but_long():
+    submission = SubmissionBuilder(file_ext="webm", file_size=47453).build_full_submission()
+    sendable = SendableFASubmission(submission)
+    mock_audio = MockMethod(False)
+    sendable._video_has_audio_track = mock_audio.async_call
+    mock_duration = MockMethod(Sendable.LENGTH_LIMIT_GIF + 3)
+    sendable._video_duration = mock_duration.async_call
+    output_gif_path = random_sandbox_video_path()
+    mock_gif = MockMethod(output_gif_path)
+    sendable._convert_gif = mock_gif.async_call
+    mock_run = MockMethod("")
+    sendable._run_docker = mock_run.async_call
+
+    with mock.patch("os.path.getsize", return_value=sendable.SIZE_LIMIT_VIDEO - 10):
+        output_path = await sendable._convert_video(submission.download_url)
+
+    assert output_path is not None
+    assert output_path != output_gif_path
+    assert output_path.endswith(".mp4")
+    assert mock_audio.called
+    assert isinstance(mock_audio.args[0], DockerClient)
+    assert isinstance(mock_audio.args[1], str)
+    assert mock_duration.called
+    assert isinstance(mock_duration.args[0], DockerClient)
+    assert isinstance(mock_duration.args[1], str)
+    assert not mock_gif.called
+    assert mock_run.called
+    assert isinstance(mock_run.args[0], DockerClient)
+    assert "-f lavfi -i aevalsrc=0" in mock_run.args[1]
+    assert "-qscale:v 0" in mock_run.args[1]
+    assert submission.download_url in mock_run.args[1]
 
 
 @pytest.mark.asyncio
@@ -186,9 +218,8 @@ async def test_convert_video():
     mock_gif = MockMethod(output_gif_path)
     sendable._convert_gif = mock_gif.async_call
 
-    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=False):
-        with mock.patch("os.path.getsize", return_value=sendable.SIZE_LIMIT_VIDEO - 10):
-            output_path = await sendable._convert_video(submission.download_url)
+    with mock.patch("os.path.getsize", return_value=sendable.SIZE_LIMIT_VIDEO - 10):
+        output_path = await sendable._convert_video(submission.download_url)
 
     assert output_path is not None
     assert output_path != output_gif_path
