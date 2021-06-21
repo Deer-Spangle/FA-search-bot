@@ -40,7 +40,8 @@ def _is_animated(file_url: str) -> bool:
         return False
     data = requests.get(file_url).content
     with Image.open(io.BytesIO(data)) as img:
-        return img.is_animated
+        # is_animated attribute might not exist, if file is a jpg named ".png"
+        return getattr(img, "is_animated", False)
 
 
 def _convert_gif_to_png(file_url: str) -> bytes:
