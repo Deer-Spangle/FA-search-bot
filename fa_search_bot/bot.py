@@ -80,7 +80,6 @@ class FASearchBot:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
         self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
-        self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.e6_handler = E621Handler(self.e6_api)
         self.client = None
         self.alive = False
@@ -95,7 +94,7 @@ class FASearchBot:
         return self.config.telegram.bot_token
 
     def start(self):
-        # request = Request(con_pool_size=8)
+        self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
         self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.client)
