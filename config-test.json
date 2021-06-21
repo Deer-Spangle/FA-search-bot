@@ -2,5 +2,9 @@
   "telegram_api_id": 0,
   "telegram_api_hash": "---",
   "bot_key": "---",
-  "api_url": "https://faexport.spangle.org.uk/"
+  "api_url": "https://faexport.spangle.org.uk/",
+  "e621": {
+    "username": "---",
+    "api_key": "---"
+  }
 }

@@ -44,15 +44,30 @@ class TelegramConfig:
 
 
 @dataclasses.dataclass
+class E621Config:
+    username: str
+    api_key: str
+
+    @classmethod
+    def from_dict(cls, conf: Dict) -> 'E621Config':
+        return cls(
+            conf["username"],
+            conf["api_key"]
+        )
+
+
+@dataclasses.dataclass
 class Config:
     fa_api_url: str
     telegram: TelegramConfig
+    e621: E621Config
 
     @classmethod
     def from_dict(cls, conf: Dict) -> 'Config':
         return cls(
             conf["api_url"],
-            TelegramConfig.from_dict(conf)
+            TelegramConfig.from_dict(conf),
+            E621Config.from_dict(conf["e621"])
         )
 
 
@@ -64,7 +79,8 @@ class FASearchBot:
         with open(conf_file, 'r') as f:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
-        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, "dr-spangle")
+        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
+        self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.e6_handler = E621Handler(self.e6_api)
         self.client = None
         self.alive = False
