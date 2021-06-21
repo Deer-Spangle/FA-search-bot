@@ -57,6 +57,9 @@ class SubscriptionWatcher:
             # Check for subscription updates
             for result in new_results:
                 count += 1
+                # If we've been told to stop, stop
+                if not self.running:
+                    break
                 # Try and get the full data
                 try:
                     full_result = await self.api.get_full_submission(result.submission_id)
