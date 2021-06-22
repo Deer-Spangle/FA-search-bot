@@ -40,7 +40,7 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
         output_path = await sendable._convert_gif(submission.download_url)
         sendable._save_video_to_cache(output_path)
 
-    async with controller.collect(count=2) as response:
+    async with controller.collect(count=2, max_wait=300) as response:
         await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/27408045/")
 
     assert response.num_messages == 2
@@ -59,7 +59,7 @@ async def test_neaten_webm(controller: BotController):
         os.remove(filename)
 
     # Send neaten command
-    async with controller.collect(count=2, max_wait=300) as response:
+    async with controller.collect(count=2, max_wait=600) as response:
         await controller.client.send_message(controller.peer_id, f"https://e621.net/posts/{post_id}/")
 
     assert response.num_messages == 2

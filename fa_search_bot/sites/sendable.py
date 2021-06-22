@@ -40,7 +40,8 @@ def _is_animated(file_url: str) -> bool:
         return False
     data = requests.get(file_url).content
     with Image.open(io.BytesIO(data)) as img:
-        return img.is_animated
+        # is_animated attribute might not exist, if file is a jpg named ".png"
+        return getattr(img, "is_animated", False)
 
 
 def _convert_gif_to_png(file_url: str) -> bytes:
@@ -56,6 +57,12 @@ class CantSendFileType(Exception):
     pass
 
 
+def _format_input_path(input_path: str):
+    if input_path.lower().startswith("http"):
+        return f"-i {input_path}"
+    return f"/{input_path}"
+
+
 class Sendable(ABC):
     EXTENSIONS_GIF = ["gif"]  # These should be converted to png, if not animated
     EXTENSIONS_ANIMATED = ["gif", "png"]  # These should be converted to mp4, without sound, if they are animated
@@ -69,6 +76,7 @@ class Sendable(ABC):
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
     SIZE_LIMIT_VIDEO = 10 * 1000 ** 2  # Maximum 10MB video autodownload size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
+    LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
 
     CACHE_DIR = "video_cache"
     DOCKER_TIMEOUT = 5 * 60
@@ -248,26 +256,32 @@ class Sendable(ABC):
         if video_url.split(".")[-1].lower() in self.EXTENSIONS_ANIMATED:
             return await self._convert_gif(video_url)
         usage_logger.info("Pretty video: converting")
-        ffmpeg_options = "-qscale 0"
-        # first pass
         client = docker.from_env()
+        ffmpeg_options = "-qscale 0"
+        ffmpeg_prefix = ""
+        # Check if it has audio
+        has_audio = await self._video_has_audio_track(client, video_url)
+        if not has_audio:
+            ffmpeg_options = "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"
+            ffmpeg_prefix = "-f lavfi -i aevalsrc=0"
+            if await self._video_duration(client, video_url) < self.LENGTH_LIMIT_GIF:
+                return await self._convert_gif(video_url)
+        # first pass
         output_path = random_sandbox_video_path("mp4")
-        await self._run_docker(client, f"-i {video_url} {ffmpeg_options} /{output_path}")
-        # If it doesn't have an audio track, handle it as a gif
-        if not await self._video_has_audio_track(client, output_path):
-            return await self._convert_gif(video_url)
+        await self._run_docker(client, f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
             return output_path
         # If it's too big, do a 2 pass run
-        return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options)
+        return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
             self,
             client: DockerClient,
             sandbox_path: str,
             video_url: str,
-            ffmpeg_options: str
+            ffmpeg_options: str,
+            ffmpeg_prefix: str = ""
     ) -> str:
         logger.info("Doing a two pass video conversion on site ID %s, submission ID %s", self.site_id, self.id)
         two_pass_filename = random_sandbox_video_path("mp4")
@@ -287,37 +301,41 @@ class Sendable(ABC):
                 )
                 raise ValueError("Bitrate cannot be negative")
         log_file = random_sandbox_video_path("log")
+        full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y"
+            f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y"
         )
         await self._run_docker(
             client,
-            f"-i {video_url} {ffmpeg_options} -b:v {bitrate} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y"
+            f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y"
         )
         return two_pass_filename
 
-    async def _video_has_audio_track(self, client: DockerClient, sandbox_path: str) -> bool:
+    async def _video_has_audio_track(self, client: DockerClient, input_path: str) -> bool:
+        input_path = _format_input_path(input_path)
         audio_track_str = await self._run_docker(
             client,
-            f"-show_streams -select_streams a -loglevel error /{sandbox_path} -v error ",
+            f"-show_streams -select_streams a -loglevel error {input_path} -v error ",
             entrypoint="ffprobe"
         )
         return bool(len(audio_track_str))
 
-    async def _video_audio_bitrate(self, client: DockerClient, sandbox_path: str) -> float:
+    async def _video_audio_bitrate(self, client: DockerClient, input_path: str) -> float:
+        input_path = _format_input_path(input_path)
         audio_bitrate_str = await self._run_docker(
             client,
             f"-v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "
-            f"/{sandbox_path}",
+            f"{input_path}",
             entrypoint="ffprobe"
         )
         return float(audio_bitrate_str)
 
-    async def _video_duration(self, client: DockerClient, sandbox_path: str) -> float:
+    async def _video_duration(self, client: DockerClient, input_path: str) -> float:
+        input_path = _format_input_path(input_path)
         duration_str = await self._run_docker(
             client,
-            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -i /{sandbox_path} -v error ",
+            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {input_path} -v error ",
             entrypoint="ffprobe"
         )
         return float(duration_str)

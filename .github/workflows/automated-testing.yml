@@ -24,8 +24,6 @@ jobs:
         run: poetry run task test
         env:
           CONFIG_FILE: "config-test.json"
-      - name: Site integration tests
-        run: poetry run task test_site_integration
 
   integration_tests:
     if: |
@@ -53,6 +51,9 @@ jobs:
         run: rm subscriptions.json
       - name: Site integration tests
         run: poetry run task test_site_integration
+        env:
+          E621_USERNAME: ${{ secrets.E621_USERNAME }}
+          E621_API_KEY: ${{ secrets.E621_API_KEY }}
       - name: Telegram integration tests
         run: poetry run task test_telegram_integration
         env:
@@ -60,4 +61,6 @@ jobs:
           CLIENT_API_HASH: ${{ secrets.CLIENT_API_HASH }}
           CLIENT_API_ID: ${{ secrets.CLIENT_API_ID }}
           CLIENT_SESSION_STRING: ${{ secrets.CLIENT_SESSION_STRING }}
+          E621_USERNAME: ${{ secrets.E621_USERNAME }}
+          E621_API_KEY: ${{ secrets.E621_API_KEY }}
           CONFIG_FILE: "config-test.json"

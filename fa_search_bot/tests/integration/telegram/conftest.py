@@ -43,6 +43,10 @@ def bot() -> FASearchBot:
         bot.config.telegram.api_id = os.getenv("CLIENT_API_ID")
     if os.getenv("CLIENT_API_HASH"):
         bot.config.telegram.api_hash = os.getenv("CLIENT_API_HASH")
+    if os.getenv("E621_USERNAME"):
+        bot.config.e621.username = os.getenv("E621_USERNAME")
+    if os.getenv("E621_API_KEY"):
+        bot.config.e621.api_key = os.getenv("E621_API_KEY")
     bot.api.MAX_RETRIES = 3
     bot.start()
     while not bot.alive:
