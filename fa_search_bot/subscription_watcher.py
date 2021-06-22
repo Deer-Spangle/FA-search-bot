@@ -256,6 +256,7 @@ class SubscriptionWatcher:
                 subscriptions.add(Subscription.from_json_new_format(subscription, dest_id))
             if value["blocks"]:
                 new_watcher.blocklists[dest_id] = set(block["query"] for block in value["blocks"])
+        logger.debug(f"Loaded {len(subscriptions)} subscriptions")
         new_watcher.subscriptions = subscriptions
         return new_watcher
 
