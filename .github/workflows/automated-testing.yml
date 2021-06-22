@@ -53,6 +53,9 @@ jobs:
         run: rm subscriptions.json
       - name: Site integration tests
         run: poetry run task test_site_integration
+        env:
+          E621_USERNAME: ${{ secrets.E621_USERNAME }}
+          E621_API_KEY: ${{ secrets.E621_API_KEY }}
       - name: Telegram integration tests
         run: poetry run task test_telegram_integration
         env:
