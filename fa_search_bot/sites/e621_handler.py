@@ -18,6 +18,7 @@ class E621Handler(SiteHandler):
     OLD_POST_LINK = re.compile(r"e621\.net/post/show/([0-9]+)", re.I)
     DIRECT_LINK = re.compile(r"e621.net/data/[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
     E6_LINKS = re.compile(f"({POST_LINK.pattern}|{OLD_POST_LINK.pattern}|{DIRECT_LINK.pattern})")
+    POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
     def __init__(self, api: AsyncYippiClient):
         self.api = api
@@ -89,14 +90,20 @@ class E621Handler(SiteHandler):
             int(example)
             return True
         except ValueError:
-            return False
+            return bool(self.POST_HASH.match(example))
 
     async def submission_as_answer(
             self,
             submission_id: Union[int, str],
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        post = await self.api.post(submission_id)
+        if self.POST_HASH.match(submission_id):
+            posts = await self.api.posts(f"md5:{submission_id}")
+            if not posts:
+                raise HandlerException(f"No e621 submission matches the hash: {submission_id}")
+            post = posts[0]
+        else:
+            post = await self.api.post(submission_id)
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
