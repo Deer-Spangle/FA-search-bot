@@ -119,6 +119,30 @@ async def test_send_submission(mock_client):
     assert mock_send.call_args.kwargs['edit'] is True
 
 
+async def test_is_valid_submission_id__int():
+    test_str = "654322"
+    api = MockAsyncYippiClient([])
+    handler = E621Handler(api)
+
+    assert handler.is_valid_submission_id(test_str)
+
+
+async def test_is_valid_submission_id__md5():
+    test_str = "f00c4c885c530e82bba55dfc3b5734a4"
+    api = MockAsyncYippiClient([])
+    handler = E621Handler(api)
+
+    assert handler.is_valid_submission_id(test_str)
+
+
+async def test_is_valid_submission_id__str():
+    test_str = "hello world"
+    api = MockAsyncYippiClient([])
+    handler = E621Handler(api)
+
+    assert not handler.is_valid_submission_id(test_str)
+
+
 @pytest.mark.asyncio
 async def test_submission_as_answer(mock_client):
     post_id = 34433
@@ -133,6 +157,29 @@ async def test_submission_as_answer(mock_client):
     ) as mock_inline:
         result = await handler.submission_as_answer(
             post_id,
+            mock_builder
+        )
+
+    assert result == exp_result
+    mock_inline.assert_called_once()
+    assert mock_inline.call_args.args == (mock_builder,)
+
+
+@pytest.mark.asyncio
+async def test_submission_as_answer__md5(mock_client):
+    post_id = 34433
+    post_md5 = "f00c4c885c530e82bba55dfc3b5734a4"
+    post = MockPost(post_id=post_id, md5=post_md5)
+    api = MockAsyncYippiClient([post])
+    handler = E621Handler(api)
+    mock_builder = Mock(InlineBuilder)
+    exp_result = "tgrdsasdfds"
+
+    with mock.patch(
+            "fa_search_bot.sites.sendable.Sendable.to_inline_query_result", return_value=exp_result
+    ) as mock_inline:
+        result = await handler.submission_as_answer(
+            post_md5,
             mock_builder
         )
 
