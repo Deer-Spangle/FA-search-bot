@@ -97,7 +97,7 @@ class E621Handler(SiteHandler):
             submission_id: Union[int, str],
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        if self.POST_HASH.match(submission_id):
+        if self.POST_HASH.match(str(submission_id)):
             posts = await self.api.posts(f"md5:{submission_id}")
             if not posts:
                 raise HandlerException(f"No e621 submission matches the hash: {submission_id}")
