@@ -8,8 +8,10 @@ from typing import List, Optional, Deque, Set, Dict
 
 import dateutil.parser
 import heartbeat
+from prometheus_client.metrics import Counter
 from telethon import TelegramClient
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
+from prometheus_client import Gauge
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
 from fa_search_bot.sites.fa_handler import SendableFASubmission
@@ -21,6 +23,21 @@ heartbeat_app_name = "FASearchBot_sub_thread"
 
 logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
+subs_not_found = Counter("watcher_not_found", "Number of submissions which disappeared before processing")
+subs_cloudflare = Counter("watcher_cloudflare", "Number of submissions which returned cloudflare errors")
+subs_failed = Counter("watcher_failed", "Number of submissions which the sub watcher failed to get data for")
+subs_processed = Counter("watcher_processed", "Number of submissions processed by the subscription watcher")
+sub_matches = Counter("watcher_matches", "Number of submissions which match at least one subscription")
+sub_total_matches = Counter("watcher_total_matches", "Total number of subscriptions matches")
+sub_updates = Counter("watcher_updates_sent", "Number of subscription updates sent")
+sub_blocked = Counter(
+    "watcher_dest_blocked",
+    "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first"
+)
+sub_update_send_failures = Counter(
+    "watcher_updates_failed",
+    "Number of subscription updates which failed for unknown reason"
+)
 
 
 class SubscriptionWatcher:
@@ -39,12 +56,21 @@ class SubscriptionWatcher:
         self.subscriptions = set()  # type: Set[Subscription]
         self.blocklists = dict()  # type: Dict[int, Set[str]]
         self.blocklist_query_cache = dict()  # type: Dict[str, Query]
+        gauge_sub = Gauge("sub_count", "Number of subscriptions")
+        gauge_sub.set_function(lambda: len(self.subscriptions))
+        gauge_subs_active = Gauge("sub_count_active", "Number of active subscriptions")
+        gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
+        gauge_sub_destinations = Gauge("sub_count_dests", "Number of different subscription destinations")
+        gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
+        gauge_sub_blocks = Gauge("sub_count_blocks", "Total number of blocklist queries")
+        gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
 
     async def run(self):
         """
         This method is launched as a task, it reads the browse endpoint for new submissions, and checks if they
         match existing subscriptions
         """
+        gauge_backlog = Gauge("watcher_backlog", "Length of the latest list of new submissions to check")
         self.running = True
         while self.running:
             try:
@@ -53,6 +79,7 @@ class SubscriptionWatcher:
                 logger.error("Failed to get new results", exc_info=e)
                 continue
             count = 0
+            gauge_backlog.set(len(new_results))
             heartbeat.update_heartbeat(heartbeat_app_name)
             # Check for subscription updates
             for result in new_results:
@@ -66,10 +93,17 @@ class SubscriptionWatcher:
                     logger.debug("Got full data for submission %s", result.submission_id)
                 except PageNotFound:
                     logger.warning("Submission %s, disappeared before I could check it.", result.submission_id)
+                    subs_not_found.inc()
+                    continue
+                except CloudflareError:
+                    logger.warning("Submission %s, returned a cloudflare error", result.submission_id)
+                    subs_cloudflare.inc()
                     continue
                 except Exception as e:
                     logger.error("Failed to get submission %s", result.submission_id, exc_info=e)
+                    subs_failed.inc()
                     continue
+                subs_processed.inc()
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
@@ -85,6 +119,8 @@ class SubscriptionWatcher:
                     len(matching_subscriptions)
                 )
                 if matching_subscriptions:
+                    sub_matches.inc()
+                    sub_total_matches.inc(len(matching_subscriptions))
                     await self._send_updates(matching_subscriptions, full_result)
                 # Update latest ids with the submission we just checked, and save config
                 self._update_latest_ids([result])
@@ -151,6 +187,7 @@ class SubscriptionWatcher:
             sub.latest_update = datetime.datetime.now()
             destination_map[sub.destination].append(sub)
         for dest, subs in destination_map.items():
+            sub_updates.inc()
             queries = ", ".join([f"\"{sub.query_str}\"" for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             try:
@@ -159,11 +196,13 @@ class SubscriptionWatcher:
                 sendable = SendableFASubmission(result)
                 await sendable.send_message(self.client, dest, prefix=prefix)
             except (UserIsBlockedError, InputUserDeactivatedError):
+                sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
                 all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
                 for sub in all_subs:
                     sub.paused = True
             except Exception as e:
+                sub_update_send_failures.inc()
                 logger.error("Failed to send submission: %s to %s", result.submission_id, dest, exc_info=e)
 
     def _get_blocklist_query(self, blocklist_str: str) -> Query:
