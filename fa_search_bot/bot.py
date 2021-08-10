@@ -6,6 +6,7 @@ from typing import Dict
 import logging
 import json
 
+from prometheus_client import start_http_server
 from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
@@ -94,6 +95,7 @@ class FASearchBot:
         return self.config.telegram.bot_token
 
     def start(self):
+        start_http_server(7065)
         self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
@@ -133,7 +135,7 @@ class FASearchBot:
         while self.alive:
             logger.info("Main thread alive")
             try:
-                await asyncio.sleep(2)
+                await asyncio.sleep(20)
             except KeyboardInterrupt:
                 logger.info("Received keyboard interrupt")
                 self.alive = False
