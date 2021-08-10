@@ -22,7 +22,6 @@ heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
 
 logger = logging.getLogger(__name__)
-usage_logger = logging.getLogger("usage")
 subs_not_found = Counter("watcher_not_found", "Number of submissions which disappeared before processing")
 subs_cloudflare = Counter("watcher_cloudflare", "Number of submissions which returned cloudflare errors")
 subs_failed = Counter("watcher_failed", "Number of submissions which the sub watcher failed to get data for")
@@ -187,12 +186,11 @@ class SubscriptionWatcher:
             sub.latest_update = datetime.datetime.now()
             destination_map[sub.destination].append(sub)
         for dest, subs in destination_map.items():
-            sub_updates.inc()
             queries = ", ".join([f"\"{sub.query_str}\"" for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             try:
                 logger.info("Sending submission %s to subscription", result.submission_id)
-                usage_logger.info("Submission sent to subscription")
+                sub_updates.inc()
                 sendable = SendableFASubmission(result)
                 await sendable.send_message(self.client, dest, prefix=prefix)
             except (UserIsBlockedError, InputUserDeactivatedError):
