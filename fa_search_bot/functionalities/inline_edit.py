@@ -8,7 +8,6 @@ from telethon.tl.types import UpdateBotInlineSend
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.sites.site_handler import SiteHandler
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +19,7 @@ class InlineEditFunctionality(BotFunctionality):
         self.client = client
 
     async def call(self, event: UpdateBotInlineSend) -> None:
-        usage_logger.info("Updating inline result")
+        self.usage_counter.inc()
         id_split = event.id.split(":")
         site_id = "fa"
         if len(id_split) == 2:
@@ -45,7 +44,7 @@ class InlineEditButtonPress(BotFunctionality):
         data = event.data.decode()
         if not data.startswith("neaten_me:"):
             return
-        usage_logger.info("Inline result update button clicked")
+        self.usage_counter.inc()
         data_split = data.split(":")
         sub_id = int(data_split[-1])
         site_id = "fa"

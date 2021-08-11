@@ -4,7 +4,6 @@ from telethon import events
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +14,6 @@ class BeepFunctionality(BotFunctionality):
 
     async def call(self, event: events.NewMessage.Event) -> None:
         logger.info("Beep")
-        usage_logger.info("Beep function")
+        self.usage_counter.inc()
         await event.respond("boop")
         raise events.StopPropagation

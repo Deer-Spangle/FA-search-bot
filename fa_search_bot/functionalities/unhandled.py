@@ -4,7 +4,6 @@ from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +15,7 @@ class UnhandledMessageFunctionality(BotFunctionality):
     async def call(self, event: NewMessage.Event):
         if event.text is not None and event.is_private:
             logger.info("Unhandled message sent to bot")
-            usage_logger.info("Unhandled message")
+            self.usage_counter.inc()
             await event.reply(
                 "Sorry, I'm not sure how to handle that message",
             )

@@ -8,7 +8,6 @@ from telethon.tl.types import UpdateNewChannelMessage
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -29,7 +28,7 @@ class SupergroupUpgradeFunctionality(BotFunctionality):
         new_chat_id = int('-100' + str(event.message.to_id.channel_id))
         # Log the upgrade
         logger.info("Migration from chat ID: %s to chat ID: %s", old_chat_id, new_chat_id)
-        usage_logger.info("Supergroup migration")
+        self.usage_counter.inc()
         # Upgrade subscriptions and block queries
         self.watcher.migrate_chat(old_chat_id, new_chat_id)
         raise StopPropagation

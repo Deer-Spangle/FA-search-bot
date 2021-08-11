@@ -9,15 +9,19 @@ from fa_search_bot.sites.site_handler import SiteHandler
 from fa_search_bot.utils import gather_ignore_exceptions
 from fa_search_bot.sites.fa_export_api import APIException
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
 class InlineNeatenFunctionality(BotFunctionality):
+    USE_CASE_ID = "id"
+    USE_CASE_LINK = "link"
 
     def __init__(self, handlers: Dict[str, SiteHandler]) -> None:
         super().__init__(InlineQuery())
         self.handlers = handlers
+        self.usage_counter.labels(use_case=self.USE_CASE_ID)
+        for handler in self.handlers.values():
+            self.usage_counter.labels(use_case=self.USE_CASE_LINK, site_code=handler.site_code)
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -26,7 +30,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         if any(handler.is_valid_submission_id(query_clean) for handler in self.handlers.values()):
             results = await self._answer_id_query(event, query_clean)
             if results:
-                usage_logger.info("Inline submission ID query")
+                self.usage_counter.labels(use_case=self.USE_CASE_ID).inc()
                 logger.info("Sending inline ID query result")
                 await event.answer(results, gallery=True)
                 raise StopPropagation
@@ -36,7 +40,7 @@ class InlineNeatenFunctionality(BotFunctionality):
             if link_matches:
                 results = await self._answer_link_query(event, handler, link_matches)
                 if results:
-                    usage_logger.info("Inline submission link query")
+                    self.usage_counter.labels(use_case=self.USE_CASE_LINK, site_code=handler.site_code).inc()
                     logger.info("Sending inline link query results")
                     await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
                     raise StopPropagation

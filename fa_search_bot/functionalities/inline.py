@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Tuple, List, Union, Optional, Coroutine
 
@@ -10,16 +9,21 @@ from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.utils import gather_ignore_exceptions
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
 class InlineFunctionality(BotFunctionality):
     INLINE_MAX = 20
+    USE_CASE_FAVS = "favourites"
+    USE_CASE_GALLERY = "gallery"
+    USE_CASE_SEARCH = "search"
 
     def __init__(self, api: FAExportAPI):
         super().__init__(InlineQuery())
         self.api = api
+        self.usage_counter.labels(use_case=self.USE_CASE_FAVS)
+        self.usage_counter.labels(use_case=self.USE_CASE_GALLERY)
+        self.usage_counter.labels(use_case=self.USE_CASE_SEARCH)
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -31,17 +35,17 @@ class InlineFunctionality(BotFunctionality):
             raise StopPropagation
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
-            usage_logger.info("Inline favourites")
+            self.usage_counter.labels(use_case=self.USE_CASE_FAVS).inc()
             _, username = query_clean.split(":", 1)
             results, next_offset = await self._favs_query_results(event.builder, username, offset)
         else:
             gallery_query = self._parse_folder_and_username(query_clean)
             if gallery_query:
-                usage_logger.info("Inline gallery")
+                self.usage_counter.labels(use_case=self.USE_CASE_GALLERY).inc()
                 folder, username = gallery_query
                 results, next_offset = await self._gallery_query_results(event.builder, folder, username, offset)
             else:
-                usage_logger.info("Inline search")
+                self.usage_counter.labels(use_case=self.USE_CASE_SEARCH).inc()
                 results, next_offset = await self._search_query_results(event.builder, query, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
