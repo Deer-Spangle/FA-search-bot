@@ -6,7 +6,7 @@ from typing import Dict
 import logging
 import json
 
-from prometheus_client import start_http_server
+from prometheus_client import start_http_server, Info, Gauge
 from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
@@ -27,6 +27,8 @@ from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
+info = Info("fasearchbot_info", "Information about the FASearchBot instance")
+start_time = Gauge("fasearchbot_startup_unixtime", "Last time FASearchBot was started")
 
 
 @dataclasses.dataclass
@@ -96,6 +98,10 @@ class FASearchBot:
 
     def start(self):
         start_http_server(7065)
+        info.info({
+            "version": __VERSION__,
+        })
+        start_time.set_to_current_time()
         self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
