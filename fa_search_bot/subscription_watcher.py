@@ -22,20 +22,49 @@ heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
 
 logger = logging.getLogger(__name__)
-subs_not_found = Counter("watcher_not_found", "Number of submissions which disappeared before processing")
-subs_cloudflare = Counter("watcher_cloudflare", "Number of submissions which returned cloudflare errors")
-subs_failed = Counter("watcher_failed", "Number of submissions which the sub watcher failed to get data for")
-subs_processed = Counter("watcher_processed", "Number of submissions processed by the subscription watcher")
-sub_matches = Counter("watcher_matches", "Number of submissions which match at least one subscription")
-sub_total_matches = Counter("watcher_total_matches", "Total number of subscriptions matches")
-sub_updates = Counter("watcher_updates_sent", "Number of subscription updates sent")
+subs_processed = Counter(
+    "fasearchbot_fasubwatcher_submissions_total",
+    "Total number of submissions processed by the subscription watcher"
+)
+subs_failed = Counter(
+    "fasearchbot_fasubwatcher_other_failed_total",
+    "Number of submissions for which the sub watcher failed to get data, for any reason"
+)
+subs_not_found = Counter(
+    "fasearchbot_fasubwatcher_not_found_total",
+    "Number of submissions which disappeared before processing"
+)
+subs_cloudflare = Counter(
+    "fasearchbot_fasubwatcher_cloudflare_errors_total",
+    "Number of submissions which returned cloudflare errors"
+)
+subs_other_failed = Counter(
+    "fasearchbot_fasubwatcher_failed_total",
+    "Number of submissions for which the sub watcher failed to get data, for reasons other than 404 or cloudflare"
+)
+sub_matches = Counter(
+    "fasearchbot_fasubwatcher_subs_which_match_total",
+    "Number of submissions which match at least one subscription"
+)
+sub_total_matches = Counter(
+    "fasearchbot_fasubwatcher_sub_matches_total",
+    "Total number of subscriptions matches"
+)
+sub_updates = Counter(
+    "fasearchbot_fasubwatcher_updates_sent_total",
+    "Number of subscription updates sent"
+)
 sub_blocked = Counter(
-    "watcher_dest_blocked",
+    "fasearchbot_fasubwatcher_dest_blocked_total",
     "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first"
 )
 sub_update_send_failures = Counter(
-    "watcher_updates_failed",
+    "fasearchbot_fasubwatcher_updates_failed",
     "Number of subscription updates which failed for unknown reason"
+)
+latest_sub_processed = Gauge(
+    "fasearchbot_fasubwatcher_latest_processed_unixtime",
+    "Time that the latest submission was processed"
 )
 
 
@@ -87,22 +116,26 @@ class SubscriptionWatcher:
                 if not self.running:
                     break
                 # Try and get the full data
+                subs_processed.inc()
+                latest_sub_processed.set_to_current_time()
                 try:
                     full_result = await self.api.get_full_submission(result.submission_id)
                     logger.debug("Got full data for submission %s", result.submission_id)
                 except PageNotFound:
                     logger.warning("Submission %s, disappeared before I could check it.", result.submission_id)
                     subs_not_found.inc()
+                    subs_failed.inc()
                     continue
                 except CloudflareError:
                     logger.warning("Submission %s, returned a cloudflare error", result.submission_id)
                     subs_cloudflare.inc()
+                    subs_failed.inc()
                     continue
                 except Exception as e:
                     logger.error("Failed to get submission %s", result.submission_id, exc_info=e)
+                    subs_other_failed.inc()
                     subs_failed.inc()
                     continue
-                subs_processed.inc()
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
