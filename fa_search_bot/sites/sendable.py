@@ -1,25 +1,142 @@
 import asyncio
 import dataclasses
 import datetime
+import enum
 import io
 import logging
 import os
 import uuid
 from abc import ABC, abstractmethod
-from typing import Union, BinaryIO, Coroutine, Optional, Callable
+from typing import Union, BinaryIO, Coroutine, Optional, Callable, List
 
 import docker
 import requests
 from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
+from prometheus_client import Counter
+from prometheus_client.metrics import Histogram
 from telethon import TelegramClient, Button
 from telethon.errors import BadRequestError
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineResultPhoto
 
+from fa_search_bot.sites.site_handler import SiteHandler
+
 logger = logging.getLogger(__name__)
 usage_logger = logging.getLogger("usage")
+
+sendable_sent = Counter(
+    "fasearchbot_sendable_sent_message_total",
+    "Number of submissions sent or edited, labelled by site"
+)
+sendable_gif_to_png = Counter(
+    "fasearchbot_sendable_convert_gif_to_png_total",
+    "Number of images which were converted from static gif to png"
+)
+sendable_edit = Counter(
+    "fasearchbot_sendable_edit_total",
+    "Number of submissions which were sent as an edit"
+)
+sendable_failure = Counter(
+    "fasearchbot_sendable_exception_total",
+    "Number of sendable attempts which raised an exception"
+)
+sendable_image = Counter(
+    "fasearchbot_sendable_image_total",
+    "Number of static images which were sent"
+)
+sendable_animated = Counter(
+    "fasearchbot_sendable_animated_total",
+    "Number of animated images and videos which were sent"
+)
+sendable_animated_cached = Counter(
+    "fasearchbot_sendable_animated_cached_total",
+    "Number of animated images and videos which were sent from file cache"
+)
+sendable_auto_doc = Counter(
+    "fasearchbot_sendable_auto_document_total",
+    "Number of documents sent which telegram can automatically handle"
+)
+sendable_audio = Counter(
+    "fasearchbot_sendable_audio_total",
+    "Number of audio files which were sent"
+)
+sendable_other = Counter(
+    "fasearchbot_sendable_other_files_total",
+    "Number of files sent which had no special handling"
+)
+
+convert_video_total = Counter(
+    "fasearchbot_convert_video_total",
+    "Number of animated images or videos which we tried to process"
+)
+convert_video_failures = Counter(
+    "fasearchbot_convert_video_exception_total",
+    "Number of video conversions which raised an exception"
+)
+convert_video_animated = Counter(
+    "fasearchbot_convert_video_animated_total",
+    "Number of animated images which we tried to convert to a video"
+)
+convert_video_no_audio = Counter(
+    "fasearchbot_convert_video_no_audio_total",
+    "Number of videos without audio which we tried to convert"
+)
+convert_video_no_audio_gif = Counter(
+    "fasearchbot_convert_video_no_audio_gif_total",
+    "Number of videos without audio which we tried to convert to a telegram gif"
+)
+convert_video_to_video = Counter(
+    "fasearchbot_convert_video_to_video_total",
+    "Number of videos which we tried to convert into a video with audio"
+)
+convert_video_only_one_attempt = Counter(
+    "fasearchbot_convert_video_only_one_attempt_total",
+    "Number of videos which we converted with a one-pass conversion attempt"
+)
+convert_video_two_pass = Counter(
+    "fasearchbot_convert_video_two_pass_total",
+    "Number of videos which required a two-pass conversion to fit within telegram limits"
+)
+
+convert_gif_total = Counter(
+    "fasearchbot_convert_gif_total",
+    "Number of animated images or short silent videos we tried to convert into telegram gifs"
+)
+convert_gif_failures = Counter(
+    "fasearchbot_convert_gif_exception_total",
+    "Number of telegram gif conversions which raised an exception"
+)
+convert_gif_only_one_attempt = Counter(
+    "fasearchbot_convert_gif_only_one_attempt_total",
+    "Number of telegram gifs which required only one-pass conversion"
+)
+convert_gif_two_pass = Counter(
+    "fasearchbot_convert_gif_two_pass_total",
+    "Number of telegram gifs which required two-pass conversion to fit within telegram limits"
+)
+
+video_length = Histogram(
+    "fasearchbot_video_length_seconds",
+    "Length of the videos processed by the bot, in seconds",
+    buckets=[1, 2, 5, 10, 30, 60, 120, 300, 600, 1200, float("inf")]
+)
+
+docker_run_time = Histogram(
+    "fasearchbot_docker_runtime_seconds",
+    "Time the docker image took to run and return, in seconds",
+    buckets=[0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600, float("inf")]
+)
+docker_failures = Counter(
+    "fasearchbot_docker_failure_total",
+    "Number of times an exception was raised while running a docker image"
+)
+
+inline_results = Counter(
+    "fasearchbot_sendable_inline_result_total",
+    "Total number of inline results sent"
+)
 
 
 @dataclasses.dataclass
@@ -29,7 +146,38 @@ class CaptionSettings:
     author: bool = False
 
 
-def random_sandbox_video_path(file_ext: str = "mp4"):
+def initialise_metrics_labels(handlers: List[SiteHandler]) -> None:
+    for handler in handlers:
+        sendable_sent.labels(site_code=handler.site_code)
+        sendable_gif_to_png.labels(site_code=handler.site_code)
+        sendable_edit.labels(site_code=handler.site_code)
+        sendable_failure.labels(site_code=handler.site_code)
+        sendable_image.labels(site_code=handler.site_code)
+        sendable_animated.labels(site_code=handler.site_code)
+        sendable_auto_doc.labels(site_code=handler.site_code)
+        sendable_audio.labels(site_code=handler.site_code)
+        sendable_other.labels(site_code=handler.site_code)
+        sendable_animated_cached.labels(site_code=handler.site_code)
+        convert_video_total.labels(site_code=handler.site_code)
+        convert_video_failures.labels(site_code=handler.site_code)
+        convert_video_animated.labels(site_code=handler.site_code)
+        convert_video_no_audio.labels(site_code=handler.site_code)
+        convert_video_no_audio_gif.labels(site_code=handler.site_code)
+        convert_video_to_video.labels(site_code=handler.site_code)
+        convert_video_only_one_attempt.labels(site_code=handler.site_code)
+        convert_video_two_pass.labels(site_code=handler.site_code)
+        convert_gif_total.labels(site_code=handler.site_code)
+        convert_gif_failures.labels(site_code=handler.site_code)
+        convert_gif_only_one_attempt.labels(site_code=handler.site_code)
+        convert_gif_two_pass.labels(site_code=handler.site_code)
+        video_length.labels(site_code=handler.site_code)
+        for entrypoint in DockerEntrypoint:
+            docker_run_time.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
+            docker_failures.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
+        inline_results.labels(site_code=handler.site_code)
+
+
+def random_sandbox_video_path(file_ext: str = "mp4") -> str:
     os.makedirs("sandbox", exist_ok=True)
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
@@ -53,6 +201,32 @@ def _convert_gif_to_png(file_url: str) -> bytes:
     return byte_arr.getvalue()
 
 
+def _count_exceptions_with_labels(counter: Counter):
+    def _count_exceptions(f):
+        def wrapper(*args):
+            self = args[0]
+            with counter.labels(site_code=self.site_id).count_exceptions():
+                return f(*args)
+
+        return wrapper
+
+    return _count_exceptions
+
+
+class DockerEntrypoint(enum.Enum):
+    FFMPEG = "ffmpeg"
+    FFPROBE = "ffprobe"
+    OTHER = "other"
+
+    @classmethod
+    def from_string(cls, entrypoint_string: Optional[str]):
+        if entrypoint_string is None:
+            return cls.FFMPEG
+        if entrypoint_string == "ffprobe":
+            return cls.FFPROBE
+        return cls.OTHER
+
+
 class CantSendFileType(Exception):
     pass
 
@@ -71,6 +245,7 @@ class Sendable(ABC):
     EXTENSIONS_AUTO_DOCUMENT = ["pdf"]  # Telegram can embed these as documents
     EXTENSIONS_AUDIO = ["mp3"]  # Telegram can embed these as audio
     EXTENSIONS_PHOTO = ["jpg", "jpeg"]  # Telegram can embed these as images
+    # Maybe use these for labels
 
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
@@ -128,6 +303,7 @@ class Sendable(ABC):
     def link(self) -> str:
         raise NotImplementedError
 
+    @_count_exceptions_with_labels(sendable_failure)
     async def send_message(
             self,
             client: TelegramClient,
@@ -137,6 +313,7 @@ class Sendable(ABC):
             prefix: str = None,
             edit: bool = False
     ) -> None:
+        sendable_sent.labels(site_code=self.site_id).inc()
         settings = CaptionSettings()
         ext = self.download_file_ext
 
@@ -144,8 +321,10 @@ class Sendable(ABC):
             if isinstance(file, str):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
+                    sendable_gif_to_png.labels(site_code=self.site_id).inc()
                     file = _convert_gif_to_png(file)
             if edit:
+                sendable_edit.labels(site_code=self.site_id).inc()
                 await client.edit_message(
                     entity=chat,
                     file=file,
@@ -166,6 +345,7 @@ class Sendable(ABC):
 
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
+            sendable_image.labels(site_code=self.site_id).inc()
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
@@ -176,6 +356,7 @@ class Sendable(ABC):
                 return await send_partial(self.thumbnail_url)
         # Handle animated gifs and videos, which can be made pretty
         if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
+            sendable_animated.labels(site_code=self.site_id).inc()
             return await self._send_video(send_partial)
         # Everything else is a file, send with title and author
         settings.title = True
@@ -184,12 +365,15 @@ class Sendable(ABC):
         if self.download_file_size < self.SIZE_LIMIT_DOCUMENT:
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:
+                sendable_auto_doc.labels(site_code=self.site_id).inc()
                 return await send_partial(self.download_url, force_doc=True)
             # Handle audio
             if ext in self.EXTENSIONS_AUDIO:
+                sendable_audio.labels(site_code=self.site_id).inc()
                 # TODO: can we support setting title, performer, thumb?
                 return await send_partial(self.download_url)
         # Handle files telegram can't handle
+        sendable_other.labels(site_code=self.site_id).inc()
         settings.direct_link = True
         return await send_partial(self.preview_image_url)
 
@@ -204,6 +388,8 @@ class Sendable(ABC):
                 logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
                 output_path = await self._convert_video(self.download_url)
                 filename = self._save_video_to_cache(output_path)
+            else:
+                sendable_animated_cached.labels(site_code=self.site_id).inc()
             await send_partial(filename)
         except Exception as e:
             logger.error(
@@ -235,7 +421,9 @@ class Sendable(ABC):
         os.rename(video_path, filename)
         return filename
 
+    @_count_exceptions_with_labels(convert_gif_failures)
     async def _convert_gif(self, gif_url: str) -> str:
+        convert_gif_total.labels(site_code=self.site_id).inc()
         usage_logger.info("Pretty gif: converting")
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                          "-vf \"scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_" \
@@ -247,13 +435,18 @@ class Sendable(ABC):
         await self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
+            convert_gif_only_one_attempt.labels(site_code=self.site_id).inc()
             return output_path
         # If it's too big, do a 2 pass run
+        convert_gif_two_pass.labels(site_code=self.site_id).inc()
         return await self._convert_two_pass(client, output_path, gif_url, ffmpeg_options)
 
+    @_count_exceptions_with_labels(convert_video_failures)
     async def _convert_video(self, video_url: str) -> str:
+        convert_video_total.labels(site_code=self.site_id).inc()
         # If it's a gif, it has no audio track
         if video_url.split(".")[-1].lower() in self.EXTENSIONS_ANIMATED:
+            convert_video_animated.labels(site_code=self.site_id).inc()
             return await self._convert_gif(video_url)
         usage_logger.info("Pretty video: converting")
         client = docker.from_env()
@@ -262,17 +455,22 @@ class Sendable(ABC):
         # Check if it has audio
         has_audio = await self._video_has_audio_track(client, video_url)
         if not has_audio:
+            convert_video_no_audio.labels(site_code=self.site_id).inc()
             ffmpeg_options = "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"
             ffmpeg_prefix = "-f lavfi -i aevalsrc=0"
             if await self._video_duration(client, video_url) < self.LENGTH_LIMIT_GIF:
+                convert_video_no_audio_gif.labels(site_code=self.site_id).inc()
                 return await self._convert_gif(video_url)
         # first pass
+        convert_video_to_video.labels(site_code=self.site_id).inc()
         output_path = random_sandbox_video_path("mp4")
         await self._run_docker(client, f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
+            convert_video_only_one_attempt.labels(site_code=self.site_id).inc()
             return output_path
         # If it's too big, do a 2 pass run
+        convert_video_two_pass.labels(site_code=self.site_id).inc()
         return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
@@ -338,34 +536,43 @@ class Sendable(ABC):
             f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {input_path} -v error ",
             entrypoint="ffprobe"
         )
-        return float(duration_str)
+        duration = float(duration_str)
+        video_length.labels(site_code=self.site_id).observe(duration)
+        return duration
 
     async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
-        sandbox_dir = os.getcwd() + "/sandbox"
-        logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
-        container: Container = client.containers.run(
-            "jrottenberg/ffmpeg:alpine",
-            args,
-            entrypoint=entrypoint,
-            volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
-            working_dir="/sandbox",
-            detach=True
-        )
-        start_time = datetime.datetime.now()
-        while (datetime.datetime.now() - start_time).total_seconds() < self.DOCKER_TIMEOUT:
-            container.reload()
-            if container.status == "exited":
-                output = container.logs()
+        labels = {
+            "site_code": self.site_id,
+            "entrypoint": DockerEntrypoint.from_string(entrypoint).value
+        }
+        with docker_run_time.labels(labels).time():
+            with docker_failures.labels(labels).count_exception():
+                sandbox_dir = os.getcwd() + "/sandbox"
+                logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
+                container: Container = client.containers.run(
+                    "jrottenberg/ffmpeg:alpine",
+                    args,
+                    entrypoint=entrypoint,
+                    volumes={sandbox_dir: {"bind": "/sandbox", "mode": "rw"}},
+                    working_dir="/sandbox",
+                    detach=True
+                )
+                start_time = datetime.datetime.now()
+                while (datetime.datetime.now() - start_time).total_seconds() < self.DOCKER_TIMEOUT:
+                    container.reload()
+                    if container.status == "exited":
+                        output = container.logs()
+                        container.remove(force=True)
+                        return output
+                    await asyncio.sleep(2)
+                # Kill container
+                logger.warning("Docker timed out, killing container.")
+                container.kill()
                 container.remove(force=True)
-                return output
-            await asyncio.sleep(2)
-        # Kill container
-        logger.warning("Docker timed out, killing container.")
-        container.kill()
-        container.remove(force=True)
-        raise TimeoutError("Docker container timed out")
+                raise TimeoutError("Docker container timed out")
 
     def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+        inline_results.labels(site_code=self.site_id).inc()
         return builder.photo(
             file=self.thumbnail_url,
             id=f"{self.site_id}:{self.id}",
