@@ -1,7 +1,7 @@
 import asyncio
 import dataclasses
 
-from typing import Dict
+from typing import Dict, Optional
 
 import logging
 import json
@@ -65,13 +65,15 @@ class Config:
     fa_api_url: str
     telegram: TelegramConfig
     e621: E621Config
+    prometheus_port: Optional[int]
 
     @classmethod
     def from_dict(cls, conf: Dict) -> 'Config':
         return cls(
             conf["api_url"],
             TelegramConfig.from_dict(conf),
-            E621Config.from_dict(conf["e621"])
+            E621Config.from_dict(conf["e621"]),
+            conf.get("prometheus_port", 7065)
         )
 
 
@@ -98,7 +100,7 @@ class FASearchBot:
         return self.config.telegram.bot_token
 
     def start(self):
-        start_http_server(7065)
+        start_http_server(self.config.prometheus_port)
         info.info({
             "version": __VERSION__,
         })
