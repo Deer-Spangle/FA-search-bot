@@ -1,7 +1,9 @@
+import enum
 import logging
 import re
 from typing import Union, Optional, List, Pattern, Coroutine
 
+from prometheus_client.metrics import Histogram
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
@@ -11,6 +13,16 @@ from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
 
 logger = logging.getLogger(__name__)
+
+api_request_times = Histogram(
+    "fasearchbot_e6handler_request_time_seconds",
+    "Request times of the e621 API, in seconds"
+)
+
+
+class Endpoint(enum.Enum):
+    SEARCH_MD5 = "search_md5"
+    SUBMISSION = "submission"
 
 
 class E621Handler(SiteHandler):
@@ -63,7 +75,8 @@ class E621Handler(SiteHandler):
         return post_id
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[int]:
-        posts = await self.api.posts(f"md5:{md5_hash}")
+        with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
+            posts = await self.api.posts(f"md5:{md5_hash}")
         if not posts:
             return None
         return posts[0].id
@@ -78,7 +91,8 @@ class E621Handler(SiteHandler):
             prefix: str = None,
             edit: bool = False
     ) -> None:
-        post = await self.api.post(submission_id)
+        with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
+            post = await self.api.post(submission_id)
         sendable = E621Post(post)
         await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
@@ -98,12 +112,14 @@ class E621Handler(SiteHandler):
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         if self.POST_HASH.match(str(submission_id)):
-            posts = await self.api.posts(f"md5:{submission_id}")
+            with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
+                posts = await self.api.posts(f"md5:{submission_id}")
             if not posts:
                 raise HandlerException(f"No e621 submission matches the hash: {submission_id}")
             post = posts[0]
         else:
-            post = await self.api.post(submission_id)
+            with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
+                post = await self.api.post(submission_id)
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
