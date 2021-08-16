@@ -24,7 +24,6 @@ from telethon.tl.types import TypeInputPeer, InputBotInlineResultPhoto
 from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
-usage_logger = logging.getLogger("usage")
 
 sendable_sent = Counter(
     "fasearchbot_sendable_sent_message_total",
@@ -410,7 +409,6 @@ class Sendable(ABC):
         filename = f"{cache_dir}/{self.id}.mp4"
         if os.path.exists(filename):
             logger.info("Loading video from cache, site ID %s, submission ID %s", self.site_id, self.id)
-            usage_logger.info("Pretty video: from cache")
             return filename
         return None
 
@@ -424,7 +422,6 @@ class Sendable(ABC):
     @_count_exceptions_with_labels(convert_gif_failures)
     async def _convert_gif(self, gif_url: str) -> str:
         convert_gif_total.labels(site_code=self.site_id).inc()
-        usage_logger.info("Pretty gif: converting")
         ffmpeg_options = " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p " \
                          "-vf \"scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_" \
                          "ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2\" -profile:v baseline -level 3.0 -vsync vfr"
@@ -448,7 +445,6 @@ class Sendable(ABC):
         if video_url.split(".")[-1].lower() in self.EXTENSIONS_ANIMATED:
             convert_video_animated.labels(site_code=self.site_id).inc()
             return await self._convert_gif(video_url)
-        usage_logger.info("Pretty video: converting")
         client = docker.from_env()
         ffmpeg_options = "-qscale 0"
         ffmpeg_prefix = ""
