@@ -24,6 +24,7 @@ from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFu
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
@@ -153,6 +154,7 @@ class FASearchBot:
             fa_handler.site_code: fa_handler,
             self.e6_handler.site_code: self.e6_handler,
         }
+        initialise_metrics_labels(list(handlers.values()))
         return [
             BeepFunctionality(),
             WelcomeFunctionality(),
