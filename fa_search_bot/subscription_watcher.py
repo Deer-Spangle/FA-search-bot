@@ -82,6 +82,10 @@ gauge_sub_blocks = Gauge(
     "fasearchbot_fasubwatcher_subscription_block_query_count",
     "Total number of blocklist queries"
 )
+gauge_backlog = Gauge(
+    "fasearchbot_fasubwatcher_backlog",
+    "Length of the latest list of new submissions to check"
+)
 
 
 class SubscriptionWatcher:
@@ -110,7 +114,6 @@ class SubscriptionWatcher:
         This method is launched as a task, it reads the browse endpoint for new submissions, and checks if they
         match existing subscriptions
         """
-        gauge_backlog = Gauge("watcher_backlog", "Length of the latest list of new submissions to check")
         self.running = True
         while self.running:
             try:
