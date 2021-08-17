@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Union, Optional, List, Pattern, Coroutine
 
-from prometheus_client.metrics import Histogram
+from prometheus_client.metrics import Histogram, Counter
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 api_request_times = Histogram(
     "fasearchbot_e6handler_request_time_seconds",
     "Request times of the e621 API, in seconds"
+)
+api_failures = Counter(
+    "fasearchbot_e6handler_exceptions_total",
+    "Total number of exceptions raised while querying the e621 API"
 )
 
 
@@ -34,6 +38,9 @@ class E621Handler(SiteHandler):
 
     def __init__(self, api: AsyncYippiClient):
         self.api = api
+        for endpoint in Endpoint:
+            api_request_times.labels(endpoint=endpoint.value)
+            api_failures.labels(endpoint=endpoint.value)
 
     @property
     def site_name(self) -> str:
@@ -66,7 +73,7 @@ class E621Handler(SiteHandler):
         if not direct_match:
             return None
         md5_hash = direct_match.group(1)
-        post_id = await self._find_post_by_hash(md5_hash)
+        post_id = (await self._find_post_by_hash(md5_hash)).id
         if not post_id:
             raise HandlerException(
                 f"Could not locate the post with hash {md5_hash}."
@@ -74,12 +81,18 @@ class E621Handler(SiteHandler):
         logger.info("e621 link: direct image link")
         return post_id
 
-    async def _find_post_by_hash(self, md5_hash: str) -> Optional[int]:
+    async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
-            posts = await self.api.posts(f"md5:{md5_hash}")
+            with api_failures.labels(endpoint=Endpoint.SEARCH_MD5.value).count_exceptions():
+                posts = await self.api.posts(f"md5:{md5_hash}")
         if not posts:
             return None
-        return posts[0].id
+        return posts[0]
+
+    async def _get_post_by_id(self, post_id: Union[int, str]) -> Optional[Post]:
+        with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
+            with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
+                return await self.api.post(post_id)
 
     async def send_submission(
             self,
@@ -91,8 +104,7 @@ class E621Handler(SiteHandler):
             prefix: str = None,
             edit: bool = False
     ) -> None:
-        with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
-            post = await self.api.post(submission_id)
+        post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
         await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
@@ -112,14 +124,11 @@ class E621Handler(SiteHandler):
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         if self.POST_HASH.match(str(submission_id)):
-            with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
-                posts = await self.api.posts(f"md5:{submission_id}")
-            if not posts:
+            post = await self._find_post_by_hash(submission_id)
+            if post is None:
                 raise HandlerException(f"No e621 submission matches the hash: {submission_id}")
-            post = posts[0]
         else:
-            with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
-                post = await self.api.post(submission_id)
+            post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
