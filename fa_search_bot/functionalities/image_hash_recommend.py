@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from telethon.events import NewMessage, StopPropagation
 
@@ -16,10 +17,14 @@ class ImageHashRecommendFunctionality(BotFunctionality):
 
     async def call(self, event: NewMessage.Event):
         if event.is_private:
-            self.usage_counter.inc()
+            self.usage_counter.labels(function="image_hash_recommend").inc()
             logger.info("Recommending image hash bots")
             await event.reply(
                 "I can't find an image without a link, try using @FindFurryPicBot or @FoxBot. "
                 "For gifs, try @reverseSearchBot."
             )
             raise StopPropagation
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return ["image_hash_recommend"]

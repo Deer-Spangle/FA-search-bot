@@ -11,6 +11,7 @@ from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.functionalities.functionalities import usage_counter
 from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
 from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
@@ -157,7 +158,7 @@ class FASearchBot:
             self.e6_handler.site_code: self.e6_handler,
         }
         initialise_metrics_labels(list(handlers.values()))
-        return [
+        functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
@@ -171,3 +172,7 @@ class FASearchBot:
             SupergroupUpgradeFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]
+        for functionality in functionalities:
+            for label in functionality.usage_labels:
+                usage_counter.labels(function=label)
+        return functionalities

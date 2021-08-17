@@ -1,6 +1,7 @@
 import html
 import logging
 import re
+from typing import List
 
 from telethon.events import NewMessage, StopPropagation
 
@@ -17,26 +18,31 @@ class SubscriptionFunctionality(BotFunctionality):
     list_sub_cmd = "list_subscriptions"
     pause_cmds = ["pause", "suspend"]
     resume_cmds = ["unpause", "resume"]
-    USE_CASE_ADD = "add subscription"
-    USE_CASE_REMOVE = "remove subscription"
-    USE_CASE_LIST = "list subscriptions"
-    USE_CASE_PAUSE_DEST = "pause destination"
-    USE_CASE_PAUSE_SUB = "pause subscription"
-    USE_CASE_RESUME_DEST = "resume destination"
-    USE_CASE_RESUME_SUB = "resume subscription"
+    USE_CASE_ADD = "subscription_add"
+    USE_CASE_REMOVE = "subscription_remove"
+    USE_CASE_LIST = "subscription_list"
+    USE_CASE_PAUSE_DEST = "subscription_dest_pause"
+    USE_CASE_PAUSE_SUB = "subscription_pause"
+    USE_CASE_RESUME_DEST = "subscription_dest_resume"
+    USE_CASE_RESUME_SUB = "subscription_resume"
 
     def __init__(self, watcher: SubscriptionWatcher):
         commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
         commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
-        self.usage_counter.labels(use_case=self.USE_CASE_ADD)
-        self.usage_counter.labels(use_case=self.USE_CASE_REMOVE)
-        self.usage_counter.labels(use_case=self.USE_CASE_LIST)
-        self.usage_counter.labels(use_case=self.USE_CASE_PAUSE_DEST)
-        self.usage_counter.labels(use_case=self.USE_CASE_PAUSE_SUB)
-        self.usage_counter.labels(use_case=self.USE_CASE_RESUME_DEST)
-        self.usage_counter.labels(use_case=self.USE_CASE_RESUME_SUB)
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [
+            self.USE_CASE_ADD,
+            self.USE_CASE_REMOVE,
+            self.USE_CASE_LIST,
+            self.USE_CASE_PAUSE_DEST,
+            self.USE_CASE_PAUSE_SUB,
+            self.USE_CASE_RESUME_DEST,
+            self.USE_CASE_RESUME_SUB
+        ]
 
     async def call(self, event: NewMessage.Event):
         message_text = event.text
@@ -67,7 +73,7 @@ class SubscriptionFunctionality(BotFunctionality):
             return "I do not understand."
 
     def _add_sub(self, destination: int, query: str):
-        self.usage_counter.labels(use_case=self.USE_CASE_ADD).inc()
+        self.usage_counter.labels(function=self.USE_CASE_ADD).inc()
         if query == "":
             return f"Please specify the subscription query you wish to add."
         try:
@@ -81,7 +87,7 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Added subscription: \"{html.escape(query)}\".\n{self._list_subs(destination)}"
 
     def _remove_sub(self, destination: int, query: str):
-        self.usage_counter.labels(use_case=self.USE_CASE_REMOVE).inc()
+        self.usage_counter.labels(function=self.USE_CASE_REMOVE).inc()
         old_sub = Subscription(query, destination)
         try:
             self.watcher.subscriptions.remove(old_sub)
@@ -90,7 +96,7 @@ class SubscriptionFunctionality(BotFunctionality):
             return f"There is not a subscription for \"{html.escape(query)}\" in this chat."
 
     def _list_subs(self, destination: int):
-        self.usage_counter.labels(use_case=self.USE_CASE_LIST).inc()
+        self.usage_counter.labels(function=self.USE_CASE_LIST).inc()
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs.sort(key=lambda sub: sub.query_str.casefold())
         sub_list_entries = []
@@ -103,7 +109,7 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Current subscriptions in this chat:\n{subs_list}"
 
     def _pause_destination(self, chat_id: int):
-        self.usage_counter.labels(use_case=self.USE_CASE_PAUSE_DEST).inc()
+        self.usage_counter.labels(function=self.USE_CASE_PAUSE_DEST).inc()
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat_id]
         if not subs:
             return "There are no subscriptions posting here to pause."
@@ -115,7 +121,7 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Paused all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _pause_subscription(self, chat_id: int, sub_name: str):
-        self.usage_counter.labels(use_case=self.USE_CASE_PAUSE_SUB).inc()
+        self.usage_counter.labels(function=self.USE_CASE_PAUSE_SUB).inc()
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
             return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
@@ -126,7 +132,7 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Paused subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
 
     def _resume_destination(self, chat_id: int) -> str:
-        self.usage_counter.labels(use_case=self.USE_CASE_RESUME_DEST).inc()
+        self.usage_counter.labels(function=self.USE_CASE_RESUME_DEST).inc()
         subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat_id]
         if not subs:
             return "There are no subscriptions posting here to resume."
@@ -138,7 +144,7 @@ class SubscriptionFunctionality(BotFunctionality):
         return f"Resumed all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _resume_subscription(self, chat_id: int, sub_name: str) -> str:
-        self.usage_counter.labels(use_case=self.USE_CASE_RESUME_SUB).inc()
+        self.usage_counter.labels(function=self.USE_CASE_RESUME_SUB).inc()
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
             return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
@@ -153,18 +159,23 @@ class BlocklistFunctionality(BotFunctionality):
     add_block_tag_cmd = "add_blocklisted_tag"
     remove_block_tag_cmd = "remove_blocklisted_tag"
     list_block_tag_cmd = "list_blocklisted_tags"
-    USE_CASE_ADD = "add block"
-    USE_CASE_REMOVE = "remove block"
-    USE_CASE_LIST = "list blocks"
+    USE_CASE_ADD = "block_add"
+    USE_CASE_REMOVE = "block_remove"
+    USE_CASE_LIST = "block_list"
 
     def __init__(self, watcher: SubscriptionWatcher):
         commands = [self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd]
         commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
-        self.usage_counter.labels(use_case=self.USE_CASE_ADD)
-        self.usage_counter.labels(use_case=self.USE_CASE_REMOVE)
-        self.usage_counter.labels(use_case=self.USE_CASE_LIST)
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [
+            self.USE_CASE_ADD,
+            self.USE_CASE_REMOVE,
+            self.USE_CASE_LIST
+        ]
 
     async def call(self, event: NewMessage.Event):
         message_text = event.text
@@ -190,7 +201,7 @@ class BlocklistFunctionality(BotFunctionality):
         raise StopPropagation
 
     def _add_to_blocklist(self, destination: int, query: str):
-        self.usage_counter.labels(use_case=self.USE_CASE_ADD).inc()
+        self.usage_counter.labels(function=self.USE_CASE_ADD).inc()
         if query == "":
             return f"Please specify the tag you wish to add to blocklist."
         try:
@@ -200,7 +211,7 @@ class BlocklistFunctionality(BotFunctionality):
         return f"Added tag to blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
 
     def _remove_from_blocklist(self, destination: int, query: str):
-        self.usage_counter.labels(use_case=self.USE_CASE_REMOVE).inc()
+        self.usage_counter.labels(function=self.USE_CASE_REMOVE).inc()
         try:
             self.watcher.blocklists.get(destination, []).remove(query)
             return f"Removed tag from blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
@@ -208,7 +219,7 @@ class BlocklistFunctionality(BotFunctionality):
             return f"The tag \"{query}\" is not on the blocklist for this chat."
 
     def _list_blocklisted_tags(self, destination: int):
-        self.usage_counter.labels(use_case=self.USE_CASE_LIST).inc()
+        self.usage_counter.labels(function=self.USE_CASE_LIST).inc()
         blocklist = self.watcher.blocklists.get(destination, [])
         tags_list = "\n".join([f"- {tag}" for tag in blocklist])
         return f"Current blocklist for this chat:\n{tags_list}"

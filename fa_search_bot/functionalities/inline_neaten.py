@@ -13,15 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 class InlineNeatenFunctionality(BotFunctionality):
-    USE_CASE_ID = "id"
-    USE_CASE_LINK = "link"
+    USE_CASE_ID = "inline_neaten_id"
+    USE_CASE_LINK = "inline_neaten_link"
 
     def __init__(self, handlers: Dict[str, SiteHandler]) -> None:
         super().__init__(InlineQuery())
         self.handlers = handlers
-        self.usage_counter.labels(use_case=self.USE_CASE_ID)
-        for handler in self.handlers.values():
-            self.usage_counter.labels(use_case=self.USE_CASE_LINK, site_code=handler.site_code)
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [self.USE_CASE_ID] + [
+            f"{self.USE_CASE_LINK}_{handler.site_code}" for handler in self.handlers.values()
+        ]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -30,7 +33,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         if any(handler.is_valid_submission_id(query_clean) for handler in self.handlers.values()):
             results = await self._answer_id_query(event, query_clean)
             if results:
-                self.usage_counter.labels(use_case=self.USE_CASE_ID).inc()
+                self.usage_counter.labels(function=f"{self.USE_CASE_ID}").inc()
                 logger.info("Sending inline ID query result")
                 await event.answer(results, gallery=True)
                 raise StopPropagation
@@ -40,7 +43,7 @@ class InlineNeatenFunctionality(BotFunctionality):
             if link_matches:
                 results = await self._answer_link_query(event, handler, link_matches)
                 if results:
-                    self.usage_counter.labels(use_case=self.USE_CASE_LINK, site_code=handler.site_code).inc()
+                    self.usage_counter.labels(function=f"{self.USE_CASE_LINK}_{handler.site_code}").inc()
                     logger.info("Sending inline link query results")
                     await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
                     raise StopPropagation

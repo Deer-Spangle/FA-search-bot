@@ -14,16 +14,17 @@ logger = logging.getLogger(__name__)
 
 class InlineFunctionality(BotFunctionality):
     INLINE_MAX = 20
-    USE_CASE_FAVS = "favourites"
-    USE_CASE_GALLERY = "gallery"
-    USE_CASE_SEARCH = "search"
+    USE_CASE_FAVS = "inline_favourites"
+    USE_CASE_GALLERY = "inline_gallery"
+    USE_CASE_SEARCH = "inline_search"
 
     def __init__(self, api: FAExportAPI):
         super().__init__(InlineQuery())
         self.api = api
-        self.usage_counter.labels(use_case=self.USE_CASE_FAVS)
-        self.usage_counter.labels(use_case=self.USE_CASE_GALLERY)
-        self.usage_counter.labels(use_case=self.USE_CASE_SEARCH)
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [self.USE_CASE_FAVS, self.USE_CASE_GALLERY, self.USE_CASE_SEARCH]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -35,17 +36,17 @@ class InlineFunctionality(BotFunctionality):
             raise StopPropagation
         # Get results and next offset
         if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
-            self.usage_counter.labels(use_case=self.USE_CASE_FAVS).inc()
+            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
             _, username = query_clean.split(":", 1)
             results, next_offset = await self._favs_query_results(event.builder, username, offset)
         else:
             gallery_query = self._parse_folder_and_username(query_clean)
             if gallery_query:
-                self.usage_counter.labels(use_case=self.USE_CASE_GALLERY).inc()
+                self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
                 folder, username = gallery_query
                 results, next_offset = await self._gallery_query_results(event.builder, folder, username, offset)
             else:
-                self.usage_counter.labels(use_case=self.USE_CASE_SEARCH).inc()
+                self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
                 results, next_offset = await self._search_query_results(event.builder, query, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)

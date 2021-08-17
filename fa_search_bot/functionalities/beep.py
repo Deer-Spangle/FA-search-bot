@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from telethon import events
 
@@ -14,6 +15,10 @@ class BeepFunctionality(BotFunctionality):
 
     async def call(self, event: events.NewMessage.Event) -> None:
         logger.info("Beep")
-        self.usage_counter.inc()
+        self.usage_counter.labels(function="beep").inc()
         await event.respond("boop")
         raise events.StopPropagation
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return ["beep"]

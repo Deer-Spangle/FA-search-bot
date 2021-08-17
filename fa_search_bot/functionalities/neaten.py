@@ -35,8 +35,10 @@ class NeatenFunctionality(BotFunctionality):
             re.IGNORECASE
         )
         super().__init__(NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True))
-        for handler in handlers.values():
-            self.usage_counter.labels(site_id=handler.site_code)
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [f"neaten_{handler.site_code}" for handler in self.handlers.values()]
 
     async def call(self, event: NewMessage.Event):
         # Only deal with messages, not channel posts
@@ -95,7 +97,7 @@ class NeatenFunctionality(BotFunctionality):
 
     async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID):
         logger.info("Found a link, ID: %s", sub_id)
-        self.usage_counter.labels(site_id=sub_id.site_id).inc()
+        self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
         handler = self.handlers.get(sub_id.site_id)
         if handler is None:
             return

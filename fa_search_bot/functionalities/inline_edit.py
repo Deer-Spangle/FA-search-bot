@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from telethon import TelegramClient
 from telethon.events import Raw, CallbackQuery
@@ -18,8 +18,12 @@ class InlineEditFunctionality(BotFunctionality):
         self.handlers = handlers
         self.client = client
 
+    @property
+    def usage_labels(self) -> List[str]:
+        return ["inline_edit"]
+
     async def call(self, event: UpdateBotInlineSend) -> None:
-        self.usage_counter.inc()
+        self.usage_counter.labels(function="inline_edit").inc()
         id_split = event.id.split(":")
         site_id = "fa"
         if len(id_split) == 2:
@@ -40,11 +44,15 @@ class InlineEditButtonPress(BotFunctionality):
         super().__init__(CallbackQuery(pattern="^neaten_me:"))
         self.handlers = handlers
 
+    @property
+    def usage_labels(self) -> List[str]:
+        return ["inline_edit_button"]
+
     async def call(self, event: CallbackQuery) -> None:
         data = event.data.decode()
         if not data.startswith("neaten_me:"):
             return
-        self.usage_counter.inc()
+        self.usage_counter.labels(function="inline_edit_button").inc()
         data_split = data.split(":")
         sub_id = int(data_split[-1])
         site_id = "fa"
