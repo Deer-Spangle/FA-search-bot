@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
+from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError, Endpoint
 from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -25,7 +25,7 @@ def test_api_request(requests_mock):
         json=test_obj
     )
 
-    resp = api._api_request(path)
+    resp = api._api_request(path, Endpoint.BROWSE)
 
     assert resp.json() == test_obj
 
@@ -44,7 +44,7 @@ def test_api_request__detects_cloudflare(requests_mock):
     )
 
     try:
-        api._api_request(path)
+        api._api_request(path, Endpoint.BROWSE)
         assert False, "Should have thrown cloudflare error"
     except CloudflareError as e:
         pass
@@ -60,12 +60,12 @@ async def test_api_request_with_retry__does_not_retry_200(requests_mock):
         "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
-            {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
+            {"text": "500 Error. Something broke.", "status_code": 500},
         ]
     )
 
     start_time = datetime.datetime.now()
-    resp = await api._api_request_with_retry(path)
+    resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
     end_time = datetime.datetime.now()
 
     time_waited = end_time - start_time
@@ -83,12 +83,12 @@ async def test_api_request_with_retry__does_not_retry_400_error(requests_mock):
         "https://example.com/resources/400",
         [
             {"text": "400 error, you messed up.", "status_code": 400},
-            {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
+            {"text": "500 Error. Something broke.", "status_code": 500},
         ]
     )
 
     start_time = datetime.datetime.now()
-    resp = await api._api_request_with_retry(path)
+    resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
     end_time = datetime.datetime.now()
 
     time_waited = end_time - start_time
@@ -106,14 +106,14 @@ async def test_api_request_with_retry__retries_500_error(requests_mock):
     requests_mock.get(
         "https://example.com/resources/500",
         [
-            {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
-            {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
+            {"text": "500 Error. Something broke.", "status_code": 500},
+            {"text": "500 Error. Something broke.", "status_code": 500},
             {"json": test_obj, "status_code": 200}
         ]
     )
 
     start_time = datetime.datetime.now()
-    resp = await api._api_request_with_retry(path)
+    resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
     end_time = datetime.datetime.now()
 
     time_waited = end_time - start_time
@@ -441,7 +441,6 @@ async def test_get_browse_page_specify_page(requests_mock):
 
 @pytest.mark.asyncio
 async def test_get_browse_page_no_results(requests_mock):
-    post_id = "32342"
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/browse.json?page=5",
@@ -512,7 +511,7 @@ async def test_get_status_api_retry(requests_mock):
         ]
     )
 
-    resp = await api._api_request_with_retry(path)
+    resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
 
     assert api.last_status_check is not None
     assert api.slow_down_status is False
@@ -546,7 +545,7 @@ async def test_get_status_turns_on_slowdown(requests_mock):
     )
 
     start_time = datetime.datetime.now()
-    resp = await api._api_request_with_retry(path)
+    resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
     end_time = datetime.datetime.now()
 
     assert api.last_status_check is not None
