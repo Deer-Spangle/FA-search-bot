@@ -16,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 api_request_times = Histogram(
     "fasearchbot_e6handler_request_time_seconds",
-    "Request times of the e621 API, in seconds"
+    "Request times of the e621 API, in seconds",
+    labelnames=["endpoint"]
 )
 api_failures = Counter(
     "fasearchbot_e6handler_exceptions_total",
-    "Total number of exceptions raised while querying the e621 API"
+    "Total number of exceptions raised while querying the e621 API",
+    labelnames=["endpoint"]
 )
 
 
