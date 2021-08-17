@@ -228,10 +228,10 @@ def _convert_gif_to_png(file_url: str) -> bytes:
 
 def _count_exceptions_with_labels(counter: Counter):
     def _count_exceptions(f):
-        def wrapper(*args):
+        async def wrapper(*args, **kwargs):
             self = args[0]
             with counter.labels(site_code=self.site_id).count_exceptions():
-                return f(*args)
+                return await f(*args, **kwargs)
 
         return wrapper
 
