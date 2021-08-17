@@ -71,7 +71,7 @@ class FAExportAPI:
 
     def _api_request(self, path: str, endpoint_label: Endpoint) -> requests.Response:
         path = path.lstrip("/")
-        with api_request_times.labels(endpoint=endpoint_label.value):
+        with api_request_times.labels(endpoint=endpoint_label.value).time():
             resp = requests.get(f"{self.base_url}/{path}")
         if resp.status_code == 503:
             cloudflare_errors.labels(endpoint=endpoint_label).inc()
