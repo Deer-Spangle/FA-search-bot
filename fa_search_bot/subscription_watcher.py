@@ -66,6 +66,22 @@ latest_sub_processed = Gauge(
     "fasearchbot_fasubwatcher_latest_processed_unixtime",
     "Time that the latest submission was processed"
 )
+gauge_sub = Gauge(
+    "fasearchbot_fasubwatcher_subscription_count",
+    "Total number of subscriptions"
+)
+gauge_subs_active = Gauge(
+    "fasearchbot_fasubwatcher_subscription_count_active",
+    "Number of active subscriptions"
+)
+gauge_sub_destinations = Gauge(
+    "fasearchbot_fasubwatcher_subscription_destination_count",
+    "Number of different subscription destinations"
+)
+gauge_sub_blocks = Gauge(
+    "fasearchbot_fasubwatcher_subscription_block_query_count",
+    "Total number of blocklist queries"
+)
 
 
 class SubscriptionWatcher:
@@ -84,13 +100,9 @@ class SubscriptionWatcher:
         self.subscriptions = set()  # type: Set[Subscription]
         self.blocklists = dict()  # type: Dict[int, Set[str]]
         self.blocklist_query_cache = dict()  # type: Dict[str, Query]
-        gauge_sub = Gauge("sub_count", "Number of subscriptions")
         gauge_sub.set_function(lambda: len(self.subscriptions))
-        gauge_subs_active = Gauge("sub_count_active", "Number of active subscriptions")
         gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
-        gauge_sub_destinations = Gauge("sub_count_dests", "Number of different subscription destinations")
         gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
-        gauge_sub_blocks = Gauge("sub_count_blocks", "Total number of blocklist queries")
         gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
 
     async def run(self):
