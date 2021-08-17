@@ -8,20 +8,20 @@ from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
 def test_constructor():
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
 
     api = FAExportAPI(api_url, ignore_status=True)
 
-    assert api.base_url == "http://example.com"
+    assert api.base_url == "https://example.com"
 
 
 def test_api_request(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/123"
     api = FAExportAPI(api_url, ignore_status=True)
     test_obj = {"key": "value"}
     requests_mock.get(
-        "http://example.com/resources/123",
+        "https://example.com/resources/123",
         json=test_obj
     )
 
@@ -31,11 +31,11 @@ def test_api_request(requests_mock):
 
 
 def test_api_request__detects_cloudflare(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/123"
     api = FAExportAPI(api_url, ignore_status=True)
     requests_mock.get(
-        "http://example.com/resources/123",
+        "https://example.com/resources/123",
         status_code=503,
         json={
             "error": "Cannot access FA, https://www.furaffinity.net/ as cloudflare protection is up",
@@ -52,12 +52,12 @@ def test_api_request__detects_cloudflare(requests_mock):
 
 @pytest.mark.asyncio
 async def test_api_request_with_retry__does_not_retry_200(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/200"
     api = FAExportAPI(api_url, ignore_status=True)
     test_obj = {"key": "value"}
     requests_mock.get(
-        "http://example.com/resources/200",
+        "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
             {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
@@ -76,11 +76,11 @@ async def test_api_request_with_retry__does_not_retry_200(requests_mock):
 
 @pytest.mark.asyncio
 async def test_api_request_with_retry__does_not_retry_400_error(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/400"
     api = FAExportAPI(api_url, ignore_status=True)
     requests_mock.get(
-        "http://example.com/resources/400",
+        "https://example.com/resources/400",
         [
             {"text": "400 error, you messed up.", "status_code": 400},
             {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
@@ -99,12 +99,12 @@ async def test_api_request_with_retry__does_not_retry_400_error(requests_mock):
 
 @pytest.mark.asyncio
 async def test_api_request_with_retry__retries_500_error(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/500"
     api = FAExportAPI(api_url, ignore_status=True)
     test_obj = {"key": "value"}
     requests_mock.get(
-        "http://example.com/resources/500",
+        "https://example.com/resources/500",
         [
             {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
             {"text": "500 Errorequests_mock. Something broke.", "status_code": 500},
@@ -125,9 +125,9 @@ async def test_api_request_with_retry__retries_500_error(requests_mock):
 @pytest.mark.asyncio
 async def test_get_full_submission(requests_mock):
     builder = SubmissionBuilder(thumb_size=300)
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/submission/{builder.submission_id}.json",
+        f"https://example.com/submission/{builder.submission_id}.json",
         json=builder.build_submission_json()
     )
 
@@ -144,9 +144,9 @@ async def test_get_full_submission(requests_mock):
 @pytest.mark.asyncio
 async def test_get_full_submission_fails(requests_mock):
     post_id = "45282"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/submission/{post_id}.json",
+        f"https://example.com/submission/{post_id}.json",
         status_code=404
     )
 
@@ -164,9 +164,9 @@ async def test_get_user_folder(requests_mock):
     builder1 = SubmissionBuilder(submission_id=post_id1)
     builder2 = SubmissionBuilder(submission_id=post_id2)
     username = "fender"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         json=[
             builder1.build_search_json(),
             builder2.build_search_json()
@@ -190,9 +190,9 @@ async def test_get_user_folder(requests_mock):
 async def test_get_user_folder_scraps(requests_mock):
     builder = SubmissionBuilder()
     username = "citrinelle"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/scraps.json?page=1&full=1",
+        f"https://example.com/user/{username}/scraps.json?page=1&full=1",
         json=[
             builder.build_search_json()
         ]
@@ -212,9 +212,9 @@ async def test_get_user_folder_awkward_characters(requests_mock):
     builder = SubmissionBuilder()
     username = "l[i]s"
     safe_username = "l%5Bi%5Ds"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{safe_username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{safe_username}/gallery.json?page=1&full=1",
         json=[
             builder.build_search_json()
         ]
@@ -233,9 +233,9 @@ async def test_get_user_folder_awkward_characters(requests_mock):
 async def test_get_user_folder_specified_page(requests_mock):
     builder = SubmissionBuilder()
     username = "citrinelle"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=2&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=2&full=1",
         json=[
             builder.build_search_json()
         ]
@@ -253,9 +253,9 @@ async def test_get_user_folder_specified_page(requests_mock):
 @pytest.mark.asyncio
 async def test_get_user_folder_empty(requests_mock):
     username = "fender"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         json=[]
     )
 
@@ -267,9 +267,9 @@ async def test_get_user_folder_empty(requests_mock):
 @pytest.mark.asyncio
 async def test_get_user_folder_does_not_exist(requests_mock):
     username = "dont-real"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         status_code=404
     )
 
@@ -283,9 +283,9 @@ async def test_get_user_folder_does_not_exist(requests_mock):
 @pytest.mark.asyncio
 async def test_get_user_folder_blank_username(requests_mock):
     username = ""
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         json={
             "id": None,
             "name": "gallery",
@@ -307,9 +307,9 @@ async def test_get_search_results(requests_mock):
     builder1 = SubmissionBuilder(submission_id=post_id1)
     builder2 = SubmissionBuilder(submission_id=post_id2)
     search = "deer"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
+        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1",
         json=[
             builder1.build_search_json(),
             builder2.build_search_json()
@@ -334,9 +334,9 @@ async def test_get_search_results_with_space(requests_mock):
     builder = SubmissionBuilder()
     search = "deer lion"
     search_safe = "deer%20lion"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
+        f"https://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
         json=[
             builder.build_search_json()
         ]
@@ -354,9 +354,9 @@ async def test_get_search_results_with_extended_modifiers(requests_mock):
     builder = SubmissionBuilder()
     search = "(deer & !lion) | (goat & !tiger)"
     search_safe = "(deer%20&%20!lion)%20%7C%20(goat%20&%20!tiger)"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
+        f"https://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
         json=[
             builder.build_search_json()
         ]
@@ -373,9 +373,9 @@ async def test_get_search_results_with_extended_modifiers(requests_mock):
 async def test_get_search_results_specified_page(requests_mock):
     builder = SubmissionBuilder()
     search = "deer"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/search.json?full=1&perpage=48&q={search}&page=2",
+        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=2",
         json=[
             builder.build_search_json()
         ]
@@ -391,9 +391,9 @@ async def test_get_search_results_specified_page(requests_mock):
 @pytest.mark.asyncio
 async def test_get_search_results_no_results(requests_mock):
     search = "chital_deer"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/search.json?full=1&perpage=48&q={search}&page=1",
+        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1",
         json=[
         ]
     )
@@ -406,9 +406,9 @@ async def test_get_search_results_no_results(requests_mock):
 @pytest.mark.asyncio
 async def test_get_browse_page_default_1(requests_mock):
     builder = SubmissionBuilder()
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/browse.json?page=1",
+        f"https://example.com/browse.json?page=1",
         json=[
             builder.build_search_json()
         ]
@@ -424,9 +424,9 @@ async def test_get_browse_page_default_1(requests_mock):
 @pytest.mark.asyncio
 async def test_get_browse_page_specify_page(requests_mock):
     builder = SubmissionBuilder()
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/browse.json?page=5",
+        f"https://example.com/browse.json?page=5",
         json=[
             builder.build_search_json()
         ]
@@ -442,9 +442,9 @@ async def test_get_browse_page_specify_page(requests_mock):
 @pytest.mark.asyncio
 async def test_get_browse_page_no_results(requests_mock):
     post_id = "32342"
-    api = FAExportAPI("http://example.com/", ignore_status=True)
+    api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"http://example.com/browse.json?page=5",
+        f"https://example.com/browse.json?page=5",
         json=[
         ]
     )
@@ -457,9 +457,9 @@ async def test_get_browse_page_no_results(requests_mock):
 @pytest.mark.asyncio
 async def test_get_status_before_submission(requests_mock):
     builder = SubmissionBuilder(thumb_size=300)
-    api = FAExportAPI("http://example.com/")
+    api = FAExportAPI("https://example.com/")
     requests_mock.get(
-        "http://example.com/status.json",
+        "https://example.com/status.json",
         json={
             "online": {
                 "guests": 17,
@@ -471,7 +471,7 @@ async def test_get_status_before_submission(requests_mock):
         }
     )
     requests_mock.get(
-        f"http://example.com/submission/{builder.submission_id}.json",
+        f"https://example.com/submission/{builder.submission_id}.json",
         json=builder.build_submission_json()
     )
 
@@ -489,12 +489,12 @@ async def test_get_status_before_submission(requests_mock):
 
 @pytest.mark.asyncio
 async def test_get_status_api_retry(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/200"
     api = FAExportAPI(api_url)
     test_obj = {"key": "value"}
     requests_mock.get(
-        "http://example.com/status.json",
+        "https://example.com/status.json",
         json={
             "online": {
                 "guests": 17,
@@ -506,7 +506,7 @@ async def test_get_status_api_retry(requests_mock):
         }
     )
     requests_mock.get(
-        "http://example.com/resources/200",
+        "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
         ]
@@ -522,12 +522,12 @@ async def test_get_status_api_retry(requests_mock):
 
 @pytest.mark.asyncio
 async def test_get_status_turns_on_slowdown(requests_mock):
-    api_url = "http://example.com/"
+    api_url = "https://example.com/"
     path = "/resources/200"
     api = FAExportAPI(api_url)
     test_obj = {"key": "value"}
     requests_mock.get(
-        "http://example.com/status.json",
+        "https://example.com/status.json",
         json={
             "online": {
                 "guests": 17,
@@ -539,7 +539,7 @@ async def test_get_status_turns_on_slowdown(requests_mock):
         }
     )
     requests_mock.get(
-        "http://example.com/resources/200",
+        "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
         ]
