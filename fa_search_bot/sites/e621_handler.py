@@ -75,13 +75,13 @@ class E621Handler(SiteHandler):
         if not direct_match:
             return None
         md5_hash = direct_match.group(1)
-        post_id = (await self._find_post_by_hash(md5_hash)).id
-        if not post_id:
+        post = await self._find_post_by_hash(md5_hash)
+        if not post:
             raise HandlerException(
                 f"Could not locate the post with hash {md5_hash}."
             )
         logger.info("e621 link: direct image link")
-        return post_id
+        return post.id
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
