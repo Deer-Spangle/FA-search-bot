@@ -19,16 +19,19 @@ site_slowdown = Enum(
 )
 cloudflare_errors = Counter(
     "fasearchbot_faapi_cloudflare_errors_total",
-    "Number of cloudflare errors received by the FA API"
+    "Number of cloudflare errors received by the FA API",
+    labelnames=["endpoint"]
 )
 api_request_times = Histogram(
     "fasearchbot_faapi_request_time_seconds",
-    "Request times of the FA API, in seconds"
+    "Request times of the FA API, in seconds",
+    labelnames=["endpoint"]
 )
 api_retry_counts = Histogram(
     "fasearchbot_faapi_retry_counts",
     "Retry counts of the FA API",
-    buckets=list(range(10))
+    buckets=list(range(10)),
+    labelnames=["endpoint"]
 )
 
 

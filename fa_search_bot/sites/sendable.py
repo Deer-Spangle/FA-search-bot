@@ -27,114 +27,140 @@ logger = logging.getLogger(__name__)
 
 sendable_sent = Counter(
     "fasearchbot_sendable_sent_message_total",
-    "Number of submissions sent or edited, labelled by site"
+    "Number of submissions sent or edited, labelled by site",
+    labelnames=["site_code"]
 )
 sendable_gif_to_png = Counter(
     "fasearchbot_sendable_convert_gif_to_png_total",
-    "Number of images which were converted from static gif to png"
+    "Number of images which were converted from static gif to png",
+    labelnames=["site_code"]
 )
 sendable_edit = Counter(
     "fasearchbot_sendable_edit_total",
-    "Number of submissions which were sent as an edit"
+    "Number of submissions which were sent as an edit",
+    labelnames=["site_code"]
 )
 sendable_failure = Counter(
     "fasearchbot_sendable_exception_total",
-    "Number of sendable attempts which raised an exception"
+    "Number of sendable attempts which raised an exception",
+    labelnames=["site_code"]
 )
 sendable_image = Counter(
     "fasearchbot_sendable_image_total",
-    "Number of static images which were sent"
+    "Number of static images which were sent",
+    labelnames=["site_code"]
 )
 sendable_animated = Counter(
     "fasearchbot_sendable_animated_total",
-    "Number of animated images and videos which were sent"
+    "Number of animated images and videos which were sent",
+    labelnames=["site_code"]
 )
 sendable_animated_cached = Counter(
     "fasearchbot_sendable_animated_cached_total",
-    "Number of animated images and videos which were sent from file cache"
+    "Number of animated images and videos which were sent from file cache",
+    labelnames=["site_code"]
 )
 sendable_auto_doc = Counter(
     "fasearchbot_sendable_auto_document_total",
-    "Number of documents sent which telegram can automatically handle"
+    "Number of documents sent which telegram can automatically handle",
+    labelnames=["site_code"]
 )
 sendable_audio = Counter(
     "fasearchbot_sendable_audio_total",
-    "Number of audio files which were sent"
+    "Number of audio files which were sent",
+    labelnames=["site_code"]
 )
 sendable_other = Counter(
     "fasearchbot_sendable_other_files_total",
-    "Number of files sent which had no special handling"
+    "Number of files sent which had no special handling",
+    labelnames=["site_code"]
 )
 
 convert_video_total = Counter(
     "fasearchbot_convert_video_total",
-    "Number of animated images or videos which we tried to process"
+    "Number of animated images or videos which we tried to process",
+    labelnames=["site_code"]
 )
 convert_video_failures = Counter(
     "fasearchbot_convert_video_exception_total",
-    "Number of video conversions which raised an exception"
+    "Number of video conversions which raised an exception",
+    labelnames=["site_code"]
 )
 convert_video_animated = Counter(
     "fasearchbot_convert_video_animated_total",
-    "Number of animated images which we tried to convert to a video"
+    "Number of animated images which we tried to convert to a video",
+    labelnames=["site_code"]
 )
 convert_video_no_audio = Counter(
     "fasearchbot_convert_video_no_audio_total",
-    "Number of videos without audio which we tried to convert"
+    "Number of videos without audio which we tried to convert",
+    labelnames=["site_code"]
 )
 convert_video_no_audio_gif = Counter(
     "fasearchbot_convert_video_no_audio_gif_total",
-    "Number of videos without audio which we tried to convert to a telegram gif"
+    "Number of videos without audio which we tried to convert to a telegram gif",
+    labelnames=["site_code"]
 )
 convert_video_to_video = Counter(
     "fasearchbot_convert_video_to_video_total",
-    "Number of videos which we tried to convert into a video with audio"
+    "Number of videos which we tried to convert into a video with audio",
+    labelnames=["site_code"]
 )
 convert_video_only_one_attempt = Counter(
     "fasearchbot_convert_video_only_one_attempt_total",
-    "Number of videos which we converted with a one-pass conversion attempt"
+    "Number of videos which we converted with a one-pass conversion attempt",
+    labelnames=["site_code"]
 )
 convert_video_two_pass = Counter(
     "fasearchbot_convert_video_two_pass_total",
-    "Number of videos which required a two-pass conversion to fit within telegram limits"
+    "Number of videos which required a two-pass conversion to fit within telegram limits",
+    labelnames=["site_code"]
 )
 
 convert_gif_total = Counter(
     "fasearchbot_convert_gif_total",
-    "Number of animated images or short silent videos we tried to convert into telegram gifs"
+    "Number of animated images or short silent videos we tried to convert into telegram gifs",
+    labelnames=["site_code"]
 )
 convert_gif_failures = Counter(
     "fasearchbot_convert_gif_exception_total",
-    "Number of telegram gif conversions which raised an exception"
+    "Number of telegram gif conversions which raised an exception",
+    labelnames=["site_code"]
 )
 convert_gif_only_one_attempt = Counter(
     "fasearchbot_convert_gif_only_one_attempt_total",
-    "Number of telegram gifs which required only one-pass conversion"
+    "Number of telegram gifs which required only one-pass conversion",
+    labelnames=["site_code"]
 )
 convert_gif_two_pass = Counter(
     "fasearchbot_convert_gif_two_pass_total",
-    "Number of telegram gifs which required two-pass conversion to fit within telegram limits"
+    "Number of telegram gifs which required two-pass conversion to fit within telegram limits",
+    labelnames=["site_code"]
 )
 
 video_length = Histogram(
     "fasearchbot_video_length_seconds",
     "Length of the videos processed by the bot, in seconds",
-    buckets=[1, 2, 5, 10, 30, 60, 120, 300, 600, 1200, float("inf")]
+    buckets=[1, 2, 5, 10, 30, 60, 120, 300, 600, 1200, float("inf")],
+    labelnames=["site_code"]
 )
 
 docker_run_time = Histogram(
     "fasearchbot_docker_runtime_seconds",
     "Time the docker image took to run and return, in seconds",
-    buckets=[0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600, float("inf")]
+    buckets=[0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600, float("inf")],
+    labelnames=["site_code", "entrypoint"]
 )
 docker_failures = Counter(
     "fasearchbot_docker_failure_total",
-    "Number of times an exception was raised while running a docker image"
+    "Number of times an exception was raised while running a docker image",
+    labelnames=["site_code", "entrypoint"]
 )
 
 inline_results = Counter(
     "fasearchbot_sendable_inline_result_total",
-    "Total number of inline results sent"
+    "Total number of inline results sent",
+    labelnames=["site_code"]
 )
 
 
