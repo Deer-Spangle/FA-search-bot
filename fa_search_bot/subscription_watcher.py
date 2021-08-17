@@ -27,7 +27,7 @@ subs_processed = Counter(
     "Total number of submissions processed by the subscription watcher"
 )
 subs_failed = Counter(
-    "fasearchbot_fasubwatcher_other_failed_total",
+    "fasearchbot_fasubwatcher_submissions_failed_total",
     "Number of submissions for which the sub watcher failed to get data, for any reason"
 )
 subs_not_found = Counter(
