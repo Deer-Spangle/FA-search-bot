@@ -119,7 +119,7 @@ async def test_send_submission(mock_client):
     assert mock_send.call_args.kwargs['edit'] is True
 
 
-async def test_is_valid_submission_id__int():
+def test_is_valid_submission_id__int():
     test_str = "654322"
     api = MockAsyncYippiClient([])
     handler = E621Handler(api)
@@ -127,7 +127,7 @@ async def test_is_valid_submission_id__int():
     assert handler.is_valid_submission_id(test_str)
 
 
-async def test_is_valid_submission_id__md5():
+def test_is_valid_submission_id__md5():
     test_str = "f00c4c885c530e82bba55dfc3b5734a4"
     api = MockAsyncYippiClient([])
     handler = E621Handler(api)
@@ -135,7 +135,7 @@ async def test_is_valid_submission_id__md5():
     assert handler.is_valid_submission_id(test_str)
 
 
-async def test_is_valid_submission_id__str():
+def test_is_valid_submission_id__str():
     test_str = "hello world"
     api = MockAsyncYippiClient([])
     handler = E621Handler(api)
