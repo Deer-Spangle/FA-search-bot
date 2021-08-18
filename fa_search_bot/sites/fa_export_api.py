@@ -77,7 +77,7 @@ class FAExportAPI:
         with api_request_times.labels(endpoint=endpoint_label.value).time():
             resp = requests.get(f"{self.base_url}/{path}")
         if resp.status_code == 503:
-            cloudflare_errors.labels(endpoint=endpoint_label).inc()
+            cloudflare_errors.labels(endpoint=endpoint_label.value).inc()
             raise CloudflareError()
         return resp
 
