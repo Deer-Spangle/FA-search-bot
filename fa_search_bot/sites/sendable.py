@@ -568,7 +568,7 @@ class Sendable(ABC):
             "entrypoint": DockerEntrypoint.from_string(entrypoint).value
         }
         with docker_run_time.labels(**labels).time():
-            with docker_failures.labels(**labels).count_exception():
+            with docker_failures.labels(**labels).count_exceptions():
                 sandbox_dir = os.getcwd() + "/sandbox"
                 logger.debug("Running docker container with args %s and entrypoint %s", args, entrypoint)
                 container: Container = client.containers.run(
