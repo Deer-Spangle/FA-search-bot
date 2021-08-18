@@ -22,13 +22,6 @@ def setup_logging() -> None:
     file_handler.setFormatter(formatter)
     fa_logger.addHandler(file_handler)
 
-    # Set up feature usage logger. Anonymous information on how often features are used
-    usage_logger = logging.getLogger("usage")
-    usage_logger.setLevel(logging.DEBUG)
-    usage_file = logging.FileHandler("logs/usage.log")
-    usage_file.setFormatter(formatter)
-    usage_logger.addHandler(usage_file)
-
 
 if __name__ == "__main__":
     setup_logging()

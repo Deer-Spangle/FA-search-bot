@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from telethon.events import NewMessage, StopPropagation
 from telethon.extensions import markdown
@@ -6,7 +7,6 @@ from telethon.extensions import markdown
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +17,7 @@ class WelcomeFunctionality(BotFunctionality):
 
     async def call(self, event: NewMessage.Event):
         logger.info("Welcome message sent to user")
-        usage_logger.info("Welcome message")
+        self.usage_counter.labels(function="welcome").inc()
         await event.respond(
             "Hello, I'm a bot to interface with furaffinity through telegram. I can do a few things, "
             "but there's still more for me to learn.\n"
@@ -35,3 +35,7 @@ class WelcomeFunctionality(BotFunctionality):
             parse_mode=markdown
         )
         raise StopPropagation
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return ["welcome"]

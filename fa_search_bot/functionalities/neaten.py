@@ -11,7 +11,6 @@ from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 
-usage_logger = logging.getLogger("usage")
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +35,10 @@ class NeatenFunctionality(BotFunctionality):
             re.IGNORECASE
         )
         super().__init__(NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True))
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [f"neaten_{handler.site_code}" for handler in self.handlers.values()]
 
     async def call(self, event: NewMessage.Event):
         # Only deal with messages, not channel posts
@@ -94,7 +97,7 @@ class NeatenFunctionality(BotFunctionality):
 
     async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID):
         logger.info("Found a link, ID: %s", sub_id)
-        usage_logger.info("Sending neatened submission")
+        self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
         handler = self.handlers.get(sub_id.site_id)
         if handler is None:
             return

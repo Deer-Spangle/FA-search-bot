@@ -1,8 +1,5 @@
-import dataclasses
 import datetime
-import io
 import logging
-import os
 import re
 from abc import ABC
 from enum import Enum
@@ -15,7 +12,6 @@ from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto
 
 logger = logging.getLogger(__name__)
-usage_logger = logging.getLogger("usage")
 
 
 class Rating(Enum):

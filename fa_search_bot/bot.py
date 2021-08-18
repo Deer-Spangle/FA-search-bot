@@ -1,15 +1,17 @@
 import asyncio
 import dataclasses
 
-from typing import Dict
+from typing import Dict, Optional
 
 import logging
 import json
 
+from prometheus_client import start_http_server, Info, Gauge
 from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.functionalities.functionalities import usage_counter
 from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
 from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
@@ -23,9 +25,12 @@ from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFu
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
+info = Info("fasearchbot_info", "Information about the FASearchBot instance")
+start_time = Gauge("fasearchbot_startup_unixtime", "Last time FASearchBot was started")
 
 
 @dataclasses.dataclass
@@ -61,13 +66,15 @@ class Config:
     fa_api_url: str
     telegram: TelegramConfig
     e621: E621Config
+    prometheus_port: Optional[int]
 
     @classmethod
     def from_dict(cls, conf: Dict) -> 'Config':
         return cls(
             conf["api_url"],
             TelegramConfig.from_dict(conf),
-            E621Config.from_dict(conf["e621"])
+            E621Config.from_dict(conf["e621"]),
+            conf.get("prometheus_port", 7065)
         )
 
 
@@ -94,6 +101,11 @@ class FASearchBot:
         return self.config.telegram.bot_token
 
     def start(self):
+        start_http_server(self.config.prometheus_port)
+        info.info({
+            "version": __VERSION__,
+        })
+        start_time.set_to_current_time()
         self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
         self.client.start(bot_token=self.config.telegram.bot_token)
@@ -133,7 +145,7 @@ class FASearchBot:
         while self.alive:
             logger.info("Main thread alive")
             try:
-                await asyncio.sleep(2)
+                await asyncio.sleep(20)
             except KeyboardInterrupt:
                 logger.info("Received keyboard interrupt")
                 self.alive = False
@@ -145,7 +157,8 @@ class FASearchBot:
             fa_handler.site_code: fa_handler,
             self.e6_handler.site_code: self.e6_handler,
         }
-        return [
+        initialise_metrics_labels(list(handlers.values()))
+        functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
@@ -159,3 +172,7 @@ class FASearchBot:
             SupergroupUpgradeFunctionality(self.subscription_watcher),
             UnhandledMessageFunctionality(),
         ]
+        for functionality in functionalities:
+            for label in functionality.usage_labels:
+                usage_counter.labels(function=label)
+        return functionalities
