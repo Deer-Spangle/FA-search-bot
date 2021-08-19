@@ -59,7 +59,7 @@ sub_blocked = Counter(
     "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first"
 )
 sub_update_send_failures = Counter(
-    "fasearchbot_fasubwatcher_updates_failed",
+    "fasearchbot_fasubwatcher_updates_failed_total",
     "Number of subscription updates which failed for unknown reason"
 )
 latest_sub_processed = Gauge(
