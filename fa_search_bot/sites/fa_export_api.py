@@ -17,6 +17,10 @@ site_slowdown = Enum(
     "Whether the FA API is in a slow state due to high number of registered users on FA",
     states=["slow", "not_slow"]
 )
+site_latest_id = Enum(
+    "fasearchbot_faapi_latest_id",
+    "Latest FA submission ID the bot has seen"
+)
 cloudflare_errors = Counter(
     "fasearchbot_faapi_cloudflare_errors_total",
     "Number of cloudflare errors received by the FA API",
@@ -171,6 +175,7 @@ class FAExportAPI:
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
+        site_latest_id.set(submissions[0].submission_id)
         return submissions
 
     def status(self) -> FAStatus:
