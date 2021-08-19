@@ -5,7 +5,7 @@ import datetime
 from typing import List
 
 import requests
-from prometheus_client import Counter, Enum, Histogram
+from prometheus_client import Counter, Enum, Histogram, Gauge
 
 from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
     FAStatus
@@ -17,7 +17,7 @@ site_slowdown = Enum(
     "Whether the FA API is in a slow state due to high number of registered users on FA",
     states=["slow", "not_slow"]
 )
-site_latest_id = Enum(
+site_latest_id = Gauge(
     "fasearchbot_faapi_latest_id",
     "Latest FA submission ID the bot has seen"
 )
