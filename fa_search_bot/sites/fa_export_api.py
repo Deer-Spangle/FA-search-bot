@@ -175,7 +175,8 @@ class FAExportAPI:
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
-        site_latest_id.set(submissions[0].submission_id)
+        if submissions:
+            site_latest_id.set(submissions[0].submission_id)
         return submissions
 
     def status(self) -> FAStatus:
