@@ -171,6 +171,8 @@ class SubscriptionWatcher:
                     await self._send_updates(matching_subscriptions, full_result)
                 # Update latest ids with the submission we just checked, and save config
                 self._update_latest_ids([result])
+                # Lower the backlog remaining count
+                gauge_backlog.dec(1)
                 # If we've done ten, update heartbeat
                 if count % self.UPDATE_PER_HEARTBEAT == 0:
                     heartbeat.update_heartbeat(heartbeat_app_name)
