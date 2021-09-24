@@ -87,6 +87,10 @@ class MockSubmission(FASubmissionFull):
         self.fav_id = fav_id
         self._download_file_size = file_size
 
+    @property
+    def download_file_size(self) -> int:
+        return self._download_file_size
+
 
 class MockExportAPI(FAExportAPI):
 
