@@ -68,7 +68,7 @@ class Field(ABC):
 class KeywordField(Field):
 
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        return sub.keywords
+        return _clean_word_list(sub.keywords)
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
         return sub.keywords
@@ -121,19 +121,27 @@ class ArtistField(Field):
 
 class AnyField(Field):
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
-        words = _split_text_to_cleaned_words(sub.title) + \
-               _split_text_to_cleaned_words(sub.description) + \
-               _clean_word_list(sub.keywords)
-        return words
+        return [
+            *TitleField().get_field_words(sub),
+            *DescriptionField().get_field_words(sub),
+            *KeywordField().get_field_words(sub),
+            *ArtistField().get_field_words(sub)
+        ]
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
-        return [sub.title, sub.description] + sub.keywords
+        return [
+            *TitleField().get_texts(sub),
+            *DescriptionField().get_texts(sub),
+            *KeywordField().get_texts(sub),
+            *ArtistField().get_texts(sub)
+        ]
 
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
         return {
             **TitleField().get_texts_dict(sub),
             **DescriptionField().get_texts_dict(sub),
-            **KeywordField().get_texts_dict(sub)
+            **KeywordField().get_texts_dict(sub),
+            **ArtistField().get_texts_dict(sub)
         }
 
 

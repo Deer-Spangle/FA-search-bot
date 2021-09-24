@@ -482,7 +482,11 @@ def test_word_query__punctuation_description():
     assert query.matches_submission(submission)
 
 
-def test_word_query__not_artist():
+def test_word_query__includes_artist():
+    """
+    Previously, this tested that word queries would not include the artist, but this is not how users understood the
+    subscription system to work, so word queries now include the artist.
+    """
     submission = SubmissionBuilder(
         title="test",
         description="hello world",
@@ -491,7 +495,7 @@ def test_word_query__not_artist():
     ).build_full_submission()
     query = WordQuery("testing")
 
-    assert not query.matches_submission(submission)
+    assert query.matches_submission(submission)
 
 
 def test_word_query__keyword_non_concat():
