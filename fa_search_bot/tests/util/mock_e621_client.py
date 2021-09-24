@@ -1,6 +1,6 @@
 import random
 import uuid
-from typing import List, Union
+from typing import List, Union, Optional
 
 from yippi import Post, AsyncYippiClient
 
@@ -42,6 +42,12 @@ class MockAsyncYippiClient(AsyncYippiClient):
     def __init__(self, mock_posts: List[MockPost] = None, *args, **kwargs):
         self._posts = mock_posts or []
         super().__init__("MockYippiClient", 0.1, "dr-spangle", *args, **kwargs)
+
+    async def post(
+            self,
+            post_id: int
+    ) -> Optional[Post]:
+        return next(filter(lambda post: post.id == post_id, self._posts), None)
 
     async def posts(
             self,
