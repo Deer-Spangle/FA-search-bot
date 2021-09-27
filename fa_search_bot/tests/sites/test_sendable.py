@@ -426,7 +426,7 @@ async def test_send_mp3_submission(mock_client):
 async def test_send_unrecognised_submission(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_full_submission()
+    submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_mock_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
