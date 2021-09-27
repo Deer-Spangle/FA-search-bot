@@ -37,19 +37,21 @@ async def test_convert_gif_two_pass():
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
     two_pass_output_path = random_sandbox_video_path()
-    mock_run = MockMethod(two_pass_output_path)
+    mock_two_pass = MockMethod(two_pass_output_path)
+    mock_run = MockMethod()
     mock_filesize = MockMethod(sendable.SIZE_LIMIT_GIF + 10)
-    sendable._convert_two_pass = mock_run.async_call
+    sendable._convert_two_pass = mock_two_pass.async_call
+    sendable._run_docker = mock_run.async_call
 
     with mock.patch("os.path.getsize", mock_filesize.call):
         output_path = await sendable._convert_gif(submission.download_url)
 
     assert output_path == two_pass_output_path
-    assert isinstance(mock_run.args[0], DockerClient)
-    assert isinstance(mock_run.args[1], str)
-    assert mock_run.args[1].endswith(".mp4")
-    assert mock_run.args[2] == submission.download_url
-    assert isinstance(mock_run.args[3], str)
+    assert isinstance(mock_two_pass.args[0], DockerClient)
+    assert isinstance(mock_two_pass.args[1], str)
+    assert mock_two_pass.args[1].endswith(".mp4")
+    assert mock_two_pass.args[2] == submission.download_url
+    assert isinstance(mock_two_pass.args[3], str)
 
 
 @pytest.mark.asyncio
