@@ -29,12 +29,24 @@ class MockPost(Post):
         return f"https://e621.net/posts/{self.id}/"
 
     @property
+    def _post_link_safe(self):
+        return f"https:/e926.net/posts/{self.id}/"
+
+    @property
     def _post_link_old(self):
         return f"https://e621.net/post/show/{self.id}/"
 
     @property
+    def _post_link_old_safe(self):
+        return f"https://e926.net/post/show/{self.id}/"
+
+    @property
     def _direct_link(self):
         return f"https://static.e621.net/data/{self.md5[:2]}/{self.md5[2:4]}/{self.md5}.{self._ext}"
+
+    @property
+    def _direct_link_safe(self):
+        return f"https://static.e926.net/data/{self.md5[:2]}/{self.md5[2:4]}/{self.md5}.{self._ext}"
 
 
 class MockAsyncYippiClient(AsyncYippiClient):
