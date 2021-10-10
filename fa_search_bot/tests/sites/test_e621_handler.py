@@ -32,6 +32,20 @@ def test_find_links_in_str():
     assert any(result in post._direct_link for result in results)
 
 
+def test_find_safe_links_in_str():
+    post_id = 164532
+    post = MockPost(post_id=post_id)
+    handler = E621Handler(MockAsyncYippiClient())
+    haystack = f"Hello there\n{post._post_link_safe}, thing {post._post_link_old_safe} oh and {post._direct_link_safe}"
+
+    results = handler.find_links_in_str(haystack)
+
+    assert len(results) == 3
+    assert any(result in post._post_link for result in results)
+    assert any(result in post._post_link_old for result in results)
+    assert any(result in post._direct_link for result in results)
+
+
 @pytest.mark.asyncio
 async def test_get_submission_id_from_link__post_link():
     post_id = 34433
