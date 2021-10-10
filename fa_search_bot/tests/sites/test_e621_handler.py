@@ -41,9 +41,9 @@ def test_find_safe_links_in_str():
     results = handler.find_links_in_str(haystack)
 
     assert len(results) == 3
-    assert any(result in post._post_link for result in results)
-    assert any(result in post._post_link_old for result in results)
-    assert any(result in post._direct_link for result in results)
+    assert any(result in post._post_link_safe for result in results)
+    assert any(result in post._post_link_old_safe for result in results)
+    assert any(result in post._direct_link_safe for result in results)
 
 
 @pytest.mark.asyncio
