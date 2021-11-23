@@ -16,7 +16,11 @@ class InlineFunctionality(BotFunctionality):
     INLINE_MAX = 20
     USE_CASE_FAVS = "inline_favourites"
     USE_CASE_GALLERY = "inline_gallery"
+    USE_CASE_SCRAPS = "inline_scraps"
     USE_CASE_SEARCH = "inline_search"
+    PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
+    PREFIX_GALLERY = ["gallery", "g"]
+    PREFIX_SCRAPS = ["scraps"]
 
     def __init__(self, api: FAExportAPI):
         super().__init__(InlineQuery())
@@ -24,30 +28,17 @@ class InlineFunctionality(BotFunctionality):
 
     @property
     def usage_labels(self) -> List[str]:
-        return [self.USE_CASE_FAVS, self.USE_CASE_GALLERY, self.USE_CASE_SEARCH]
+        return [self.USE_CASE_FAVS, self.USE_CASE_GALLERY, self.USE_CASE_SCRAPS, self.USE_CASE_SEARCH]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
-        query_clean = query.strip().lower()
         offset = event.query.offset
         logger.info("Got an inline query, page=%s", offset)
-        if query_clean == "":
+        if query.strip() == "":
             await event.answer([])
             raise StopPropagation
         # Get results and next offset
-        if any(query_clean.startswith(x) for x in ["favourites:", "favs:", "favorites:"]):
-            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
-            _, username = query_clean.split(":", 1)
-            results, next_offset = await self._favs_query_results(event.builder, username, offset)
-        else:
-            gallery_query = self._parse_folder_and_username(query_clean)
-            if gallery_query:
-                self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
-                folder, username = gallery_query
-                results, next_offset = await self._gallery_query_results(event.builder, folder, username, offset)
-            else:
-                self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
-                results, next_offset = await self._search_query_results(event.builder, query, offset)
+        results, next_offset = await self._find_query_results(event.builder, query, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
@@ -63,6 +54,33 @@ class InlineFunctionality(BotFunctionality):
             gallery=gallery,
         )
         raise StopPropagation
+
+    async def _find_query_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            offset: str
+    ) -> Tuple[
+        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
+        Optional[str]
+    ]:
+        query_clean = query.strip().lower()
+        if ":" not in query_clean:
+            self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
+            return await self._search_query_results(builder, query, offset)
+        # Try splitting query
+        prefix, rest = query_clean.split(":", 1)
+        if prefix in self.PREFIX_FAVS:
+            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
+            return await self._favs_query_results(builder, rest, offset)
+        if prefix in self.PREFIX_GALLERY:
+            self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
+            return await self._gallery_query_results(builder, "gallery", rest, offset)
+        if prefix in self.PREFIX_SCRAPS:
+            self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
+            return await self._gallery_query_results(builder, "scraps", rest, offset)
+        self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
+        return await self._search_query_results(builder, query, offset)
 
     async def _favs_query_results(
             self,
@@ -181,13 +199,6 @@ class InlineFunctionality(BotFunctionality):
             for x
             in await self.api.get_search_results(query_clean, page)
         ]
-
-    def _parse_folder_and_username(self, query_clean: str) -> Optional[Tuple[str, str]]:
-        if query_clean.startswith("gallery:") or query_clean.startswith("scraps:"):
-            folder, username = query_clean.split(":", 1)
-            return folder, username
-        else:
-            return None
 
     def _empty_user_folder(
             self,

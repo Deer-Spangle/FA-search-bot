@@ -8,11 +8,45 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _Moc
 
 
 @pytest.mark.asyncio
-async def test_get_user_gallery(mock_client):
+async def test_user_gallery(mock_client):
     post_id1 = 234563
     post_id2 = 393282
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
+    submission1 = MockSubmission(post_id1)
+    submission2 = MockSubmission(post_id2)
+    inline = InlineFunctionality(MockExportAPI())
+    inline.api.with_user_folder(username, "gallery", [submission1, submission2])
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 2
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission1.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id1)
+    assert args[0][0].kwargs['text'] == submission1.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission1.submission_id}".encode()
+    assert args[0][1].kwargs['file'] == submission2.thumbnail_url
+    assert args[0][1].kwargs['id'] == str(post_id2)
+    assert args[0][1].kwargs['text'] == submission2.link
+    assert len(args[0][1].kwargs['buttons']) == 1
+    assert args[0][1].kwargs['buttons'][0].data == f"neaten_me:{submission2.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_user_gallery_short(mock_client):
+    post_id1 = 234563
+    post_id2 = 393282
+    username = "fender"
+    event = MockTelegramEvent.with_inline_query(query=f"g:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     inline = InlineFunctionality(MockExportAPI())
