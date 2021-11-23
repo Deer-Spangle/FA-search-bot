@@ -34,7 +34,7 @@ class Endpoint(enum.Enum):
 class E621Handler(SiteHandler):
     POST_LINK = re.compile(r"e(?:621|926)\.net/posts/([0-9]+)", re.I)
     OLD_POST_LINK = re.compile(r"e(?:621|926)\.net/post/show/([0-9]+)", re.I)
-    DIRECT_LINK = re.compile(r"e(?:621|926).net/data/[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
+    DIRECT_LINK = re.compile(r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
     E6_LINKS = re.compile(f"({POST_LINK.pattern}|{OLD_POST_LINK.pattern}|{DIRECT_LINK.pattern})")
     POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
