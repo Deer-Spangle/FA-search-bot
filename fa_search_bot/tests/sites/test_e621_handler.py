@@ -112,6 +112,19 @@ async def test_get_submission_id_from_link__direct_link():
 
 
 @pytest.mark.asyncio
+async def test_get_submission_id_from_link__thumb_link():
+    post_id = 34433
+    post = MockPost(post_id=post_id)
+    api = MockAsyncYippiClient([post])
+    handler = E621Handler(api)
+    link = handler.find_links_in_str(post._direct_thumb_link)[0]
+
+    result = await handler.get_submission_id_from_link(link)
+
+    assert result == post_id
+
+
+@pytest.mark.asyncio
 async def test_get_submission_id_from_link__direct_link_safe():
     post_id = 34433
     post = MockPost(post_id=post_id)
