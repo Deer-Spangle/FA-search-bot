@@ -45,6 +45,10 @@ class MockPost(Post):
         return f"https://static.e621.net/data/{self.md5[:2]}/{self.md5[2:4]}/{self.md5}.{self._ext}"
 
     @property
+    def _direct_thumb_link(self):
+        return f"https://static.e621.net/data/sample/{self.md5[:2]}/{self.md5[2:4]}/{self.md5}.{self._ext}"
+
+    @property
     def _direct_link_safe(self):
         return f"https://static.e926.net/data/{self.md5[:2]}/{self.md5[2:4]}/{self.md5}.{self._ext}"
 
