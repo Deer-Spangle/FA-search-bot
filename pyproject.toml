@@ -10,7 +10,7 @@ requests = "^2.24.0"
 python-dateutil = "^2.8.1"
 simple-heartbeat = "^0.1.2"
 docker = "^5.0.3"
-pyparsing = "3.0.0a2"
+pyparsing = "^3.0.6"
 tomlkit = "^0.7.0"
 Telethon = "^1.21.1"
 Pillow = "^8.3.2"
@@ -20,7 +20,7 @@ prometheus-client = "^0.11.0"
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
 requests-mock = "^1.7.0"
-pyparsing = {version = "3.0.0a2", extras = ["diagrams"]}
+pyparsing = { extras = ["diagrams"], version = "^3.0.6" }
 taskipy = "^1.4.0"
 Pyrogram = "^1.0.7"
 tgintegration = "^1.1.0"
