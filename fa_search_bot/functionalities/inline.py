@@ -12,6 +12,20 @@ from fa_search_bot.utils import gather_ignore_exceptions
 logger = logging.getLogger(__name__)
 
 
+def inline_error(
+    builder: InlineBuilder,
+    title: str,
+    description: str
+) -> List[Coroutine[None, None, InputBotInlineResult]]:
+    return [
+        builder.article(
+            title="User does not exist.",
+            description=msg,
+            text=msg,
+        )
+    ]
+
+
 class InlineFunctionality(BotFunctionality):
     INLINE_MAX = 20
     USE_CASE_FAVS = "inline_favourites"
@@ -207,13 +221,7 @@ class InlineFunctionality(BotFunctionality):
             folder: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"There are no submissions in {folder} for user \"{username}\"."
-        return [
-            builder.article(
-                title=f"Nothing in {folder}.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, f"Nothing in {folder}.", msg)
 
     def _empty_user_favs(
             self,
@@ -221,13 +229,7 @@ class InlineFunctionality(BotFunctionality):
             username: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"There are no favourites for user \"{username}\"."
-        return [
-            builder.article(
-                title=f"Nothing in favourites.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, "Nothing in favourites.", msg)
 
     def _no_search_results_found(
             self,
@@ -235,13 +237,7 @@ class InlineFunctionality(BotFunctionality):
             query: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"No results for search \"{query}\"."
-        return [
-            builder.article(
-                title="No results found.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, "No results found.", msg)
 
     def _user_not_found(
             self,
@@ -249,13 +245,7 @@ class InlineFunctionality(BotFunctionality):
             username: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"FurAffinity user does not exist by the name: \"{username}\"."
-        return [
-            builder.article(
-                title="User does not exist.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, "User does not exist.", msg)
 
     
 class InlineFavsFunctionality(BotFunctionality):
@@ -265,7 +255,7 @@ class InlineFavsFunctionality(BotFunctionality):
 
     def __init__(self, api: FAExportAPI):
         prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + ")")
-        super().__init__(InlineQuery(pattern=prefix_pattern)
+        super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
 
     @property
@@ -334,13 +324,7 @@ class InlineFavsFunctionality(BotFunctionality):
             username: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"There are no favourites for user \"{username}\"."
-        return [
-            builder.article(
-                title=f"Nothing in favourites.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, "Nothing in favourites.", msg)
 
     def _user_not_found(
             self,
@@ -348,10 +332,4 @@ class InlineFavsFunctionality(BotFunctionality):
             username: str
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"FurAffinity user does not exist by the name: \"{username}\"."
-        return [
-            builder.article(
-                title="User does not exist.",
-                description=msg,
-                text=msg,
-            )
-        ]
+        return inline_error(builder, "User does not exist.", msg)
