@@ -200,5 +200,3 @@ class InlineFunctionality(BotFunctionality):
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"FurAffinity user does not exist by the name: \"{username}\"."
         return inline_error(builder, "User does not exist.", msg)
-
-    
