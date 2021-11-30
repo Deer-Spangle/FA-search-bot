@@ -275,12 +275,15 @@ class InlineFavsFunctionality(BotFunctionality):
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
         offset = event.query.offset
-        logger.info("Got an inline query, page=%s", offset)
+        logger.info("Got an inline favs query, page=%s", offset)
         if query.strip() == "":
-            await event.answer([])
-            raise StopPropagation
+            return
         # Get results and next offset
-        results, next_offset = await self._find_query_results(event.builder, query, offset)
+        prefix, rest = query.split(":", 1)
+        if prefix not in self.PREFIX_FAVS:
+            return
+        self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
+        results, next_offset = await self._favs_query_results(builder, rest, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
@@ -296,23 +299,6 @@ class InlineFavsFunctionality(BotFunctionality):
             gallery=gallery,
         )
         raise StopPropagation
-
-    async def _find_query_results(
-            self,
-            builder: InlineBuilder,
-            query: str,
-            offset: str
-    ) -> Tuple[
-        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
-        Optional[str]
-    ]:
-        query_clean = query.strip().lower()
-        # Try splitting query
-        prefix, rest = query_clean.split(":", 1)
-        if prefix in self.PREFIX_FAVS:
-            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
-            return await self._favs_query_results(builder, rest, offset)
-        pass
 
     async def _favs_query_results(
             self,
@@ -341,33 +327,6 @@ class InlineFavsFunctionality(BotFunctionality):
             return [], None
         results = [x.to_inline_query_result(builder) for x in submissions]
         return results, next_offset
-
-    def _parse_offset(self, offset: str) -> Tuple[int, int]:
-        if offset == "":
-            page, skip = 1, None
-        elif ":" in offset:
-            page, skip = (int(x) for x in offset.split(":", 1))
-        else:
-            page, skip = int(offset), None
-        return page, skip
-
-    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
-        next_offset = str(page + 1)
-        if skip:
-            results = results[skip:]
-        if len(results) > self.INLINE_MAX:
-            results = results[:self.INLINE_MAX]
-            if skip:
-                skip += self.INLINE_MAX
-            else:
-                skip = self.INLINE_MAX
-            next_offset = f"{page}:{skip}"
-        return results, next_offset
-
-    def _page_from_offset(self, offset: str) -> int:
-        if offset == "":
-            offset = 1
-        return int(offset)
 
     def _empty_user_favs(
             self,
