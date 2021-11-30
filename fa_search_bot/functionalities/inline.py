@@ -256,3 +256,143 @@ class InlineFunctionality(BotFunctionality):
                 text=msg,
             )
         ]
+
+    
+class InlineFavsFunctionality(BotFunctionality):
+    INLINE_MAX = 20
+    USE_CASE_FAVS = "inline_favourites"
+    PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
+
+    def __init__(self, api: FAExportAPI):
+        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + ")")
+        super().__init__(InlineQuery(pattern=prefix_pattern)
+        self.api = api
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [self.USE_CASE_FAVS]
+
+    async def call(self, event: InlineQuery.Event):
+        query = event.query.query
+        offset = event.query.offset
+        logger.info("Got an inline query, page=%s", offset)
+        if query.strip() == "":
+            await event.answer([])
+            raise StopPropagation
+        # Get results and next offset
+        results, next_offset = await self._find_query_results(event.builder, query, offset)
+        # Await results while ignoring exceptions
+        results = await gather_ignore_exceptions(results)
+        logger.info(f"There are {len(results)} results.")
+        # Figure out whether to display as gallery
+        if len(results) == 0:
+            gallery = bool(offset)
+        else:
+            gallery = isinstance(results[0], InputBotInlineResultPhoto)
+        # Send results
+        await event.answer(
+            results,
+            next_offset=str(next_offset) if next_offset else None,
+            gallery=gallery,
+        )
+        raise StopPropagation
+
+    async def _find_query_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            offset: str
+    ) -> Tuple[
+        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
+        Optional[str]
+    ]:
+        query_clean = query.strip().lower()
+        # Try splitting query
+        prefix, rest = query_clean.split(":", 1)
+        if prefix in self.PREFIX_FAVS:
+            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
+            return await self._favs_query_results(builder, rest, offset)
+        pass
+
+    async def _favs_query_results(
+            self,
+            builder: InlineBuilder,
+            username: str,
+            offset: str
+    ) -> Tuple[
+        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
+        Optional[str]
+    ]:
+        # For fav listings, the offset can be the last ID
+        if offset == "":
+            offset = None
+        try:
+            submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
+        except PageNotFound:
+            logger.warning("User not found for inline favourites query")
+            return self._user_not_found(builder, username), None
+        # If no results, send error
+        if len(submissions) == 0:
+            if offset is None:
+                return self._empty_user_favs(builder, username), None
+            return [], None
+        next_offset = str(submissions[-1].fav_id)
+        if next_offset == offset:
+            return [], None
+        results = [x.to_inline_query_result(builder) for x in submissions]
+        return results, next_offset
+
+    def _parse_offset(self, offset: str) -> Tuple[int, int]:
+        if offset == "":
+            page, skip = 1, None
+        elif ":" in offset:
+            page, skip = (int(x) for x in offset.split(":", 1))
+        else:
+            page, skip = int(offset), None
+        return page, skip
+
+    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
+        next_offset = str(page + 1)
+        if skip:
+            results = results[skip:]
+        if len(results) > self.INLINE_MAX:
+            results = results[:self.INLINE_MAX]
+            if skip:
+                skip += self.INLINE_MAX
+            else:
+                skip = self.INLINE_MAX
+            next_offset = f"{page}:{skip}"
+        return results, next_offset
+
+    def _page_from_offset(self, offset: str) -> int:
+        if offset == "":
+            offset = 1
+        return int(offset)
+
+    def _empty_user_favs(
+            self,
+            builder: InlineBuilder,
+            username: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"There are no favourites for user \"{username}\"."
+        return [
+            builder.article(
+                title=f"Nothing in favourites.",
+                description=msg,
+                text=msg,
+            )
+        ]
+
+    def _user_not_found(
+            self,
+            builder: InlineBuilder,
+            username: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"FurAffinity user does not exist by the name: \"{username}\"."
+        return [
+            builder.article(
+                title="User does not exist.",
+                description=msg,
+                text=msg,
+            )
+        ]
