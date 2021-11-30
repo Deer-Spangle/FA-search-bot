@@ -5,6 +5,7 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
+from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.utils import gather_ignore_exceptions
@@ -18,13 +19,16 @@ class InlineFunctionality(BotFunctionality):
     USE_CASE_GALLERY = "inline_gallery"
     USE_CASE_SCRAPS = "inline_scraps"
     USE_CASE_SEARCH = "inline_search"
+    USE_CASE_E621 = "inline_e621"
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
     PREFIX_GALLERY = ["gallery", "g"]
     PREFIX_SCRAPS = ["scraps"]
+    PREFIX_E621 = ["e621", "e6", "e"]
 
-    def __init__(self, api: FAExportAPI):
+    def __init__(self, api: FAExportAPI, e621: E621Handler):
         super().__init__(InlineQuery())
         self.api = api
+        self.e621 = e621
 
     @property
     def usage_labels(self) -> List[str]:
@@ -79,6 +83,9 @@ class InlineFunctionality(BotFunctionality):
         if prefix in self.PREFIX_SCRAPS:
             self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
             return await self._gallery_query_results(builder, "scraps", rest, offset)
+        if prefix in self.PREFIX_E621:
+            self.usage_counter.labels(function=self.USE_CASE_E621).inc()
+            return await self._e621_query_results(builder, rest, offset)
         self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
         return await self._search_query_results(builder, query, offset)
 
@@ -129,6 +136,25 @@ class InlineFunctionality(BotFunctionality):
         if len(results) == 0:
             if page == 1:
                 return self._empty_user_folder(builder, username, folder), None
+            return [], None
+        # Handle paging of big result lists
+        return self._page_results(results, page, skip)
+
+    async def _e621_query_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            offset: str
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
+        # Parse offset to page and skip
+        page, skip = self._parse_offset(offset)
+        query_clean = query.strip().lower()
+        # Try and get results
+        results = await self._create_e621_search_results(builder, query_clean, page)
+        # If no results, send error
+        if len(results) == 0:
+            if page == 1:
+                return self._no_e621_results(builder, query), None
             return [], None
         # Handle paging of big result lists
         return self._page_results(results, page, skip)
@@ -200,6 +226,18 @@ class InlineFunctionality(BotFunctionality):
             in await self.api.get_search_results(query_clean, page)
         ]
 
+    async def _create_e621_search_results(
+            self,
+            builder: InlineBuilder,
+            query_clean: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+        return [
+            x.to_inline_query_result(builder)
+            for x
+            in await self.e621.get_search_results(query_clean, page)
+        ]
+
     def _empty_user_folder(
             self,
             builder: InlineBuilder,
@@ -252,6 +290,20 @@ class InlineFunctionality(BotFunctionality):
         return [
             builder.article(
                 title="User does not exist.",
+                description=msg,
+                text=msg,
+            )
+        ]
+
+    def _no_e621_results(
+            self,
+            builder: InlineBuilder,
+            query: str
+    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
+        msg = f"No e621 results were found for the query: \"{query}\"."
+        return [
+            builder.article(
+                title="No e621 results",
                 description=msg,
                 text=msg,
             )

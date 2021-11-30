@@ -5,6 +5,7 @@ import enum
 import io
 import logging
 import os
+import typing
 import uuid
 from abc import ABC, abstractmethod
 from typing import Union, BinaryIO, Coroutine, Optional, Callable, List
@@ -21,7 +22,8 @@ from telethon.errors import BadRequestError
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineResultPhoto
 
-from fa_search_bot.sites.site_handler import SiteHandler
+if typing.TYPE_CHECKING:
+    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +173,7 @@ class CaptionSettings:
     author: bool = False
 
 
-def initialise_metrics_labels(handlers: List[SiteHandler]) -> None:
+def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
     for handler in handlers:
         sendable_sent.labels(site_code=handler.site_code)
         sendable_gif_to_png.labels(site_code=handler.site_code)
