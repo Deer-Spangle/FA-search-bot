@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Tuple, List, Union, Optional, Coroutine
 
 from telethon.events import InlineQuery, StopPropagation
@@ -24,6 +25,23 @@ def inline_error(
             text=msg,
         )
     ]
+
+
+async def answer_error(
+        event: InlineQuery.Event,
+        title: str,
+        msg: str
+) -> None:
+    await event.answer(
+        results=[
+            await event.builder.article(
+                title=title,
+                description=msg,
+                text=msg,
+            )
+        ],
+        gallery=False
+    )
 
 
 class InlineFunctionality(BotFunctionality):
@@ -254,7 +272,7 @@ class InlineFavsFunctionality(BotFunctionality):
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
 
     def __init__(self, api: FAExportAPI):
-        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + ")")
+        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
 
@@ -263,36 +281,29 @@ class InlineFavsFunctionality(BotFunctionality):
         return [self.USE_CASE_FAVS]
 
     async def call(self, event: InlineQuery.Event):
-        query = event.query.query
+        query_split = event.query.query.split(":", 1)
         offset = event.query.offset
         logger.info("Got an inline favs query, page=%s", offset)
-        if query.strip() == "":
-            return
-        # Get results and next offset
-        prefix, rest = query.split(":", 1)
-        if prefix not in self.PREFIX_FAVS:
+        if len(query_split) != 2 or query_split[0].lower() not in self.PREFIX_FAVS:
             return
         self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
-        results, next_offset = await self._favs_query_results(builder, rest, offset)
+        username = query_split[1]
+        # Get results and next offset
+        results, next_offset = await self._favs_query_results(event.builder, username, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
-        # Figure out whether to display as gallery
-        if len(results) == 0:
-            gallery = bool(offset)
-        else:
-            gallery = isinstance(results[0], InputBotInlineResultPhoto)
         # Send results
         await event.answer(
             results,
             next_offset=str(next_offset) if next_offset else None,
-            gallery=gallery,
+            gallery=True,
         )
         raise StopPropagation
 
     async def _favs_query_results(
             self,
-            builder: InlineBuilder,
+            event: InlineQuery.Event,
             username: str,
             offset: str
     ) -> Tuple[
@@ -306,30 +317,18 @@ class InlineFavsFunctionality(BotFunctionality):
             submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
-            return self._user_not_found(builder, username), None
+            msg = f"FurAffinity user does not exist by the name: \"{username}\"."
+            await answer_error(event, "User does not exist.", msg)
+            raise StopPropagation
         # If no results, send error
         if len(submissions) == 0:
             if offset is None:
-                return self._empty_user_favs(builder, username), None
+                msg = f"There are no favourites for user \"{username}\"."
+                await answer_error(event, "Nothing in favourites.", msg)
+                raise StopPropagation
             return [], None
         next_offset = str(submissions[-1].fav_id)
         if next_offset == offset:
             return [], None
-        results = [x.to_inline_query_result(builder) for x in submissions]
+        results = [x.to_inline_query_result(event.builder) for x in submissions]
         return results, next_offset
-
-    def _empty_user_favs(
-            self,
-            builder: InlineBuilder,
-            username: str
-    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
-        msg = f"There are no favourites for user \"{username}\"."
-        return inline_error(builder, "Nothing in favourites.", msg)
-
-    def _user_not_found(
-            self,
-            builder: InlineBuilder,
-            username: str
-    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
-        msg = f"FurAffinity user does not exist by the name: \"{username}\"."
-        return inline_error(builder, "User does not exist.", msg)
