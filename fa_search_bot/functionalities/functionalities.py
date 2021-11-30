@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from prometheus_client import Counter
 from telethon import TelegramClient
-from telethon.events import NewMessage, StopPropagation
+from telethon.events import NewMessage, StopPropagation, InlineQuery
 from telethon.events.common import EventCommon, EventBuilder
 
 usage_counter = Counter(
@@ -29,6 +29,23 @@ async def in_progress_msg(event: NewMessage.Event, text: Optional[str]):
         raise StopPropagation
     finally:
         await msg.delete()
+
+
+async def answer_with_error(
+        event: InlineQuery.Event,
+        title: str,
+        msg: str
+) -> None:
+    await event.answer(
+        results=[
+            await event.builder.article(
+                title=title,
+                description=msg,
+                text=msg,
+            )
+        ],
+        gallery=False
+    )
 
 
 class BotFunctionality(ABC):
