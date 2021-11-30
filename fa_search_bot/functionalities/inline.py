@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def inline_error(
     builder: InlineBuilder,
     title: str,
-    description: str
+    msg: str
 ) -> List[Coroutine[None, None, InputBotInlineResult]]:
     return [
         builder.article(
