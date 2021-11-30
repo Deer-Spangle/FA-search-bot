@@ -164,7 +164,7 @@ class FASearchBot:
             ImageHashRecommendFunctionality(),
             NeatenFunctionality(handlers),
             InlineNeatenFunctionality(handlers),
-            InlineFunctionality(self.api),
+            InlineFunctionality(self.api, self.e6_handler),
             InlineEditFunctionality(handlers, self.client),
             InlineEditButtonPress(handlers),
             SubscriptionFunctionality(self.subscription_watcher),
