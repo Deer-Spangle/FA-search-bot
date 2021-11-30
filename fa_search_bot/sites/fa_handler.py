@@ -140,6 +140,17 @@ class FAHandler(SiteHandler):
         except ValueError:
             return False
 
+    async def get_search_results(
+            self,
+            query: str,
+            page: int
+    ) -> List[Sendable]:
+        posts = await self.api.get_search_results(query, page)
+        return [
+            SendableFASubmission(await self.api.get_full_submission(submission.submission_id))
+            for submission in posts
+        ]
+
 
 class SendableFASubmission(Sendable):
 
