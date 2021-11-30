@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def inline_error(
-    builder: InlineBuilder,
-    title: str,
-    msg: str
+        builder: InlineBuilder,
+        title: str,
+        msg: str
 ) -> List[Coroutine[None, None, InputBotInlineResult]]:
     return [
         builder.article(
@@ -46,11 +46,9 @@ async def answer_error(
 
 class InlineFunctionality(BotFunctionality):
     INLINE_MAX = 20
-    USE_CASE_FAVS = "inline_favourites"
     USE_CASE_GALLERY = "inline_gallery"
     USE_CASE_SCRAPS = "inline_scraps"
     USE_CASE_SEARCH = "inline_search"
-    PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
     PREFIX_GALLERY = ["gallery", "g"]
     PREFIX_SCRAPS = ["scraps"]
 
@@ -60,7 +58,7 @@ class InlineFunctionality(BotFunctionality):
 
     @property
     def usage_labels(self) -> List[str]:
-        return [self.USE_CASE_FAVS, self.USE_CASE_GALLERY, self.USE_CASE_SCRAPS, self.USE_CASE_SEARCH]
+        return [self.USE_CASE_GALLERY, self.USE_CASE_SCRAPS, self.USE_CASE_SEARCH]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -102,9 +100,6 @@ class InlineFunctionality(BotFunctionality):
             return await self._search_query_results(builder, query, offset)
         # Try splitting query
         prefix, rest = query_clean.split(":", 1)
-        if prefix in self.PREFIX_FAVS:
-            self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
-            return await self._favs_query_results(builder, rest, offset)
         if prefix in self.PREFIX_GALLERY:
             self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
             return await self._gallery_query_results(builder, "gallery", rest, offset)
@@ -113,34 +108,6 @@ class InlineFunctionality(BotFunctionality):
             return await self._gallery_query_results(builder, "scraps", rest, offset)
         self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
         return await self._search_query_results(builder, query, offset)
-
-    async def _favs_query_results(
-            self,
-            builder: InlineBuilder,
-            username: str,
-            offset: str
-    ) -> Tuple[
-        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
-        Optional[str]
-    ]:
-        # For fav listings, the offset can be the last ID
-        if offset == "":
-            offset = None
-        try:
-            submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
-        except PageNotFound:
-            logger.warning("User not found for inline favourites query")
-            return self._user_not_found(builder, username), None
-        # If no results, send error
-        if len(submissions) == 0:
-            if offset is None:
-                return self._empty_user_favs(builder, username), None
-            return [], None
-        next_offset = str(submissions[-1].fav_id)
-        if next_offset == offset:
-            return [], None
-        results = [x.to_inline_query_result(builder) for x in submissions]
-        return results, next_offset
 
     async def _gallery_query_results(
             self,
@@ -202,11 +169,6 @@ class InlineFunctionality(BotFunctionality):
             return [], None
         return self._page_results(results, page, skip)
 
-    def _page_from_offset(self, offset: str) -> int:
-        if offset == "":
-            offset = 1
-        return int(offset)
-
     async def _create_user_folder_results(
             self,
             builder: InlineBuilder,
@@ -240,14 +202,6 @@ class InlineFunctionality(BotFunctionality):
     ) -> List[Coroutine[None, None, InputBotInlineResult]]:
         msg = f"There are no submissions in {folder} for user \"{username}\"."
         return inline_error(builder, f"Nothing in {folder}.", msg)
-
-    def _empty_user_favs(
-            self,
-            builder: InlineBuilder,
-            username: str
-    ) -> List[Coroutine[None, None, InputBotInlineResult]]:
-        msg = f"There are no favourites for user \"{username}\"."
-        return inline_error(builder, "Nothing in favourites.", msg)
 
     def _no_search_results_found(
             self,
