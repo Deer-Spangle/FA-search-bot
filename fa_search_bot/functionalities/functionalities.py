@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from prometheus_client import Counter
 from telethon import TelegramClient
@@ -65,3 +65,13 @@ class BotFunctionality(ABC):
     @abstractmethod
     def usage_labels(self) -> List[str]:
         raise NotImplementedError
+
+
+def _parse_inline_offset(offset: str) -> Tuple[int, int]:
+    if offset == "":
+        page, skip = 1, None
+    elif ":" in offset:
+        page, skip = (int(x) for x in offset.split(":", 1))
+    else:
+        page, skip = int(offset), None
+    return page, skip

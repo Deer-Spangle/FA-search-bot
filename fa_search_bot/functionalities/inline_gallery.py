@@ -6,7 +6,7 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
+from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error, _parse_inline_offset
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 
@@ -64,7 +64,7 @@ class InlineGalleryFunctionality(BotFunctionality):
             offset: str
     ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
-        page, skip = self._parse_offset(offset)
+        page, skip = _parse_inline_offset(offset)
         # Try and get results
         try:
             results = await self._create_user_folder_results(event.builder, username, folder, page)
@@ -88,15 +88,6 @@ class InlineGalleryFunctionality(BotFunctionality):
             raise StopPropagation
         # Handle paging of big result lists
         return self._page_results(results, page, skip)
-
-    def _parse_offset(self, offset: str) -> Tuple[int, int]:
-        if offset == "":
-            page, skip = 1, None
-        elif ":" in offset:
-            page, skip = (int(x) for x in offset.split(":", 1))
-        else:
-            page, skip = int(offset), None
-        return page, skip
 
     def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
         next_offset = str(page + 1)
