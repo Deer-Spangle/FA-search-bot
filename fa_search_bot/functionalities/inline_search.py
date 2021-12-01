@@ -37,7 +37,7 @@ class InlineSearchFunctionality(BotFunctionality):
             raise StopPropagation
         # Get results and next offset
         self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
-        results, next_offset = await self._search_query_results(event.builder, query, offset)
+        results, next_offset = await self._search_query_results(event, query, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
@@ -89,5 +89,5 @@ class InlineSearchFunctionality(BotFunctionality):
         prefix_clean = prefix.strip().lower()
         for handler in self.handlers.values():
             if prefix_clean in handler.search_prefixes:
-                return handler, query
-        return self.default_handler, query
+                return handler, rest
+        return self.default_handler, rest
