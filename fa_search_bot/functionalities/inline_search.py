@@ -41,16 +41,11 @@ class InlineSearchFunctionality(BotFunctionality):
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
-        # Figure out whether to display as gallery
-        if len(results) == 0:
-            gallery = bool(offset)
-        else:
-            gallery = isinstance(results[0], InputBotInlineResultPhoto)
         # Send results
         await event.answer(
             results,
             next_offset=str(next_offset) if next_offset else None,
-            gallery=gallery,
+            gallery=True,
         )
         raise StopPropagation
 
