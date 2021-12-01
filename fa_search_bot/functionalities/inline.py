@@ -5,6 +5,7 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
 
+from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
 from fa_search_bot.utils import gather_ignore_exceptions
@@ -15,14 +16,17 @@ logger = logging.getLogger(__name__)
 class InlineSearchFunctionality(BotFunctionality):
     INLINE_MAX = 20
     USE_CASE_SEARCH = "inline_search"
+    USE_CASE_E621 = "inline_e621"
+    PREFIX_E621 = ["e621", "e6", "e"]
 
-    def __init__(self, api: FAExportAPI):
+    def __init__(self, api: FAExportAPI, e621: E621Handler):
         super().__init__(InlineQuery())
         self.api = api
+        self.e621 = e621
 
     @property
     def usage_labels(self) -> List[str]:
-        return [self.USE_CASE_SEARCH]
+        return [self.USE_CASE_SEARCH, self.USE_CASE_E621]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
@@ -99,4 +103,16 @@ class InlineSearchFunctionality(BotFunctionality):
             x.to_inline_query_result(builder)
             for x
             in await self.api.get_search_results(query_clean, page)
+        ]
+
+    async def _create_e621_search_results(
+            self,
+            builder: InlineBuilder,
+            query_clean: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+        return [
+            x.to_inline_query_result(builder)
+            for x
+            in await self.e621.get_search_results(query_clean, page)
         ]
