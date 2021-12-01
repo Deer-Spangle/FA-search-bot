@@ -140,14 +140,18 @@ class FAHandler(SiteHandler):
         except ValueError:
             return False
 
+    def search_prefixes(self) -> List[str]:
+        return ["fa", "furaffinity"]
+
     async def get_search_results(
             self,
+            builder: InlineBuilder,
             query: str,
             page: int
-    ) -> List[Sendable]:
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         posts = await self.api.get_search_results(query, page)
         return [
-            SendableFASubmission(await self.api.get_full_submission(submission.submission_id))
+            submission.to_inline_query_result(builder)
             for submission in posts
         ]
 

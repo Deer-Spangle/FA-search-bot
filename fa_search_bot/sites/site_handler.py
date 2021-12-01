@@ -1,15 +1,10 @@
-import typing
 from abc import ABC, abstractmethod
 from re import Pattern
-import typing
 from typing import List, Union, Optional, Coroutine
 
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
-
-if typing.TYPE_CHECKING:
-    from fa_search_bot.sites.sendable import Sendable
 
 
 class HandlerException(Exception):
@@ -70,10 +65,16 @@ class SiteHandler(ABC):
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def search_prefixes(self) -> List[str]:
+        raise NotImplementedError
+
     @abstractmethod
     async def get_search_results(
             self,
+            builder: InlineBuilder,
             query: str,
             page: int
-    ) -> List["Sendable"]:
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         raise NotImplementedError

@@ -135,16 +135,20 @@ class E621Handler(SiteHandler):
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
+    def search_prefixes(self) -> List[str]:
+        return ["e621", "e6", "e"]
+
     async def get_search_results(
             self,
+            builder: InlineBuilder,
             query: str,
             page: int
-    ) -> List[Sendable]:
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
                 posts = await self.api.posts(query, page=page)
         return [
-            E621Post(post)
+            E621Post(post).to_inline_query_result(builder)
             for post in posts
         ]
 
