@@ -45,7 +45,7 @@ class InlineNeatenFunctionality(BotFunctionality):
                 if results:
                     self.usage_counter.labels(function=f"{self.USE_CASE_LINK}_{handler.site_code}").inc()
                     logger.info("Sending inline link query results")
-                    await event.answer(results, gallery=isinstance(results[0], InputBotInlineResultPhoto))
+                    await event.answer(results, gallery=True)
                     raise StopPropagation
         # Otherwise, pass and let inline functionality handle it
         pass
