@@ -19,7 +19,7 @@ class InlineSearchFunctionality(BotFunctionality):
     USE_CASE_E621 = "inline_e621"
     PREFIX_E621 = ["e621", "e6", "e"]
 
-    def __init__(self, handlers: Dict[str, SiteHandler]):
+    def __init__(self, handlers: Dict[str, "SiteHandler"]):
         super().__init__(InlineQuery())
         self.handlers = handlers
         self.default_handler = list(handlers.values())[0]
