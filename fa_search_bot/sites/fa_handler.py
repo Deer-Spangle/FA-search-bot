@@ -140,6 +140,7 @@ class FAHandler(SiteHandler):
         except ValueError:
             return False
 
+    @property
     def search_prefixes(self) -> List[str]:
         return ["fa", "furaffinity"]
 

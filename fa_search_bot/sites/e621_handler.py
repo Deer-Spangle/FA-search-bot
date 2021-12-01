@@ -135,6 +135,7 @@ class E621Handler(SiteHandler):
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
+    @property
     def search_prefixes(self) -> List[str]:
         return ["e621", "e6", "e"]
 
