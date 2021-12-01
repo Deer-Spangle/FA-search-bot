@@ -1,14 +1,14 @@
 import logging
-from typing import Tuple, List, Optional, Coroutine
+from typing import Tuple, List, Optional, Coroutine, Dict, TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
+from telethon.tl.types import InputBotInlineResult
 
-from fa_search_bot.sites.e621_handler import E621Handler
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
+from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error, _parse_inline_offset
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +19,10 @@ class InlineSearchFunctionality(BotFunctionality):
     USE_CASE_E621 = "inline_e621"
     PREFIX_E621 = ["e621", "e6", "e"]
 
-    def __init__(self, api: FAExportAPI, e621: E621Handler):
+    def __init__(self, handlers: Dict[str, SiteHandler]):
         super().__init__(InlineQuery())
-        self.api = api
-        self.e621 = e621
+        self.handlers = handlers
+        self.default_handler = list(handlers.values())[0]
 
     @property
     def usage_labels(self) -> List[str]:
@@ -49,15 +49,6 @@ class InlineSearchFunctionality(BotFunctionality):
         )
         raise StopPropagation
 
-    def _parse_offset(self, offset: str) -> Tuple[int, int]:
-        if offset == "":
-            page, skip = 1, None
-        elif ":" in offset:
-            page, skip = (int(x) for x in offset.split(":", 1))
-        else:
-            page, skip = int(offset), None
-        return page, skip
-
     def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
         next_offset = str(page + 1)
         if skip:
@@ -77,9 +68,9 @@ class InlineSearchFunctionality(BotFunctionality):
             query: str,
             offset: str
     ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
-        page, skip = self._parse_offset(offset)
-        query_clean = query.strip().lower()
-        results = await self._create_inline_search_results(event.builder, query_clean, page)
+        page, skip = _parse_inline_offset(offset)
+        handler, query = self._parse_site_prefix(query)
+        results = await handler.get_search_results(event.builder, query.strip(), page)
         if len(results) == 0:
             if offset:
                 return [], None
@@ -88,26 +79,15 @@ class InlineSearchFunctionality(BotFunctionality):
             raise StopPropagation
         return self._page_results(results, page, skip)
 
-    async def _create_inline_search_results(
+    def _parse_site_prefix(
             self,
-            builder: InlineBuilder,
-            query_clean: str,
-            page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
-        return [
-            x.to_inline_query_result(builder)
-            for x
-            in await self.api.get_search_results(query_clean, page)
-        ]
-
-    async def _create_e621_search_results(
-            self,
-            builder: InlineBuilder,
-            query_clean: str,
-            page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
-        return [
-            x.to_inline_query_result(builder)
-            for x
-            in await self.e621.get_search_results(query_clean, page)
-        ]
+            query: str
+    ) -> Tuple["SiteHandler", str]:
+        if ":" not in query:
+            return self.default_handler, query
+        prefix, rest = query.split(":", 1)
+        prefix_clean = prefix.strip().lower()
+        for handler in self.handlers.values():
+            if prefix_clean in handler.search_prefixes:
+                return handler, query
+        return self.default_handler, query

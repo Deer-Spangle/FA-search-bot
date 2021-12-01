@@ -18,7 +18,7 @@ from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
-from fa_search_bot.functionalities.inline import InlineSearchFunctionality
+from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
 from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
@@ -168,7 +168,7 @@ class FASearchBot:
             InlineFavsFunctionality(self.api),
             InlineGalleryFunctionality(self.api),
             InlineNeatenFunctionality(handlers),
-            InlineSearchFunctionality(self.api, self.e6_handler),
+            InlineSearchFunctionality(handlers),
             InlineEditFunctionality(handlers, self.client),
             InlineEditButtonPress(handlers),
             SubscriptionFunctionality(self.subscription_watcher),
