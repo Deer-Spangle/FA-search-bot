@@ -23,7 +23,8 @@ class MockPost(Post):
                 "md5": md5,
                 "url": self._direct_link
             },
-            "tags": self.tags
+            "tags": self.tags,
+            "sample": self._direct_thumb_link
         })
 
     @property
