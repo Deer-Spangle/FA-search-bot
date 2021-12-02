@@ -9,6 +9,16 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.0] - 2021-12-02
+
+### Added
+
+- Ability to do inline e621 searches
+
+### Changed
+
+- Split apart inline functionality classes, for easier modification of gallery, search, and favourite inline queries
+
 ## [1.11.10] - 2021-11-27
 
 ### Security
