@@ -9,6 +9,8 @@ class MockPost(Post):
 
     def __init__(self, *, post_id: int = None, md5: str = None, ext: str = "jpg", tags: List[str] = None):
         file_w, file_h = random.randint(100, 10_000), random.randint(100, 10_000)
+        sample_w = file_w / (max(file_w, file_h) / 850)
+        sample_h = file_h / (max(file_w, file_h) / 850)
         file_size = random.randint(200_000, 10_000_000)
         self._ext = ext
         self.md5 = md5 or uuid.uuid4().hex
@@ -24,24 +26,30 @@ class MockPost(Post):
                 "url": self._direct_link
             },
             "tags": self.tags,
-            "sample": self._direct_thumb_link
+            "sample": {
+                "has": True,
+                "height": sample_h,
+                "width": sample_w,
+                "url": self._direct_thumb_link,
+                "alternatives": {}
+            }
         })
 
     @property
     def _post_link(self):
-        return f"https://e621.net/posts/{self.id}/"
+        return f"https://e621.net/posts/{self.id}"
 
     @property
     def _post_link_safe(self):
-        return f"https:/e926.net/posts/{self.id}/"
+        return f"https:/e926.net/posts/{self.id}"
 
     @property
     def _post_link_old(self):
-        return f"https://e621.net/post/show/{self.id}/"
+        return f"https://e621.net/post/show/{self.id}"
 
     @property
     def _post_link_old_safe(self):
-        return f"https://e926.net/post/show/{self.id}/"
+        return f"https://e926.net/post/show/{self.id}"
 
     @property
     def _direct_link(self):
