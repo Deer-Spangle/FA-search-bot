@@ -64,3 +64,16 @@ class SiteHandler(ABC):
             builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         raise NotImplementedError
+
+    @property
+    def search_prefixes(self) -> List[str]:
+        return [self.site_name[0].lower(), self.site_code.lower(), self.site_name.lower()]
+
+    @abstractmethod
+    async def get_search_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+        raise NotImplementedError

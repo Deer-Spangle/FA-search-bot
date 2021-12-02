@@ -3,7 +3,7 @@ import logging
 import re
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union, List, Coroutine
+from typing import Dict, Union, List, Coroutine, Optional
 
 import dateutil.parser
 import requests
@@ -121,13 +121,20 @@ class FASubmissionShort(FASubmission):
         self.title = title
         self.author = author
 
-    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    def to_inline_query_result(
+            self,
+            builder: InlineBuilder,
+            site_code: Optional[str] = None
+    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+        inline_id = f"{self.submission_id}"
+        if site_code:
+            inline_id = f"{site_code}:{self.submission_id}"
         return builder.photo(
             file=self.thumbnail_url,
-            id=self.submission_id,
+            id=inline_id,
             text=self.link,
             # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id}")]
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{inline_id}")]
         )
 
 

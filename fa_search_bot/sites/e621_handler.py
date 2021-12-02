@@ -27,6 +27,7 @@ api_failures = Counter(
 
 
 class Endpoint(enum.Enum):
+    SEARCH = "search"
     SEARCH_MD5 = "search_md5"
     SUBMISSION = "submission"
 
@@ -133,6 +134,20 @@ class E621Handler(SiteHandler):
             post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
+
+    async def get_search_results(
+            self,
+            builder: InlineBuilder,
+            query: str,
+            page: int
+    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+        with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
+            with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
+                posts = await self.api.posts(query, page=page)
+        return [
+            E621Post(post).to_inline_query_result(builder)
+            for post in posts
+        ]
 
 
 class E621Post(Sendable):

@@ -7,11 +7,14 @@ from yippi import Post, AsyncYippiClient
 
 class MockPost(Post):
 
-    def __init__(self, *, post_id: int = None, md5: str = None, ext: str = "jpg"):
+    def __init__(self, *, post_id: int = None, md5: str = None, ext: str = "jpg", tags: List[str] = None):
         file_w, file_h = random.randint(100, 10_000), random.randint(100, 10_000)
+        sample_w = file_w / (max(file_w, file_h) / 850)
+        sample_h = file_h / (max(file_w, file_h) / 850)
         file_size = random.randint(200_000, 10_000_000)
         self._ext = ext
         self.md5 = md5 or uuid.uuid4().hex
+        self.tags = tags or []
         super().__init__({
             "id": post_id or random.randint(100_000, 999_999),
             "file": {
@@ -21,24 +24,32 @@ class MockPost(Post):
                 "size": file_size,
                 "md5": md5,
                 "url": self._direct_link
+            },
+            "tags": self.tags,
+            "sample": {
+                "has": True,
+                "height": sample_h,
+                "width": sample_w,
+                "url": self._direct_thumb_link,
+                "alternatives": {}
             }
         })
 
     @property
     def _post_link(self):
-        return f"https://e621.net/posts/{self.id}/"
+        return f"https://e621.net/posts/{self.id}"
 
     @property
     def _post_link_safe(self):
-        return f"https:/e926.net/posts/{self.id}/"
+        return f"https:/e926.net/posts/{self.id}"
 
     @property
     def _post_link_old(self):
-        return f"https://e621.net/post/show/{self.id}/"
+        return f"https://e621.net/post/show/{self.id}"
 
     @property
     def _post_link_old_safe(self):
-        return f"https://e926.net/post/show/{self.id}/"
+        return f"https://e926.net/post/show/{self.id}"
 
     @property
     def _direct_link(self):
@@ -82,5 +93,5 @@ class MockAsyncYippiClient(AsyncYippiClient):
                 md5 = tag.split(":")[1]
                 filters.append(lambda post: post.md5 == md5)
                 continue
-            raise NotImplementedError
+            filters.append(lambda post: tag in post.tags)
         return list(filter(lambda post: all(f(post) for f in filters), self._posts))

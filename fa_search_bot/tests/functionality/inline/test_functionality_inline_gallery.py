@@ -1,8 +1,9 @@
 import pytest
 from telethon.events import StopPropagation
 
+from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
 from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.functionalities.inline import InlineFunctionality
+from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
@@ -15,8 +16,8 @@ async def test_user_gallery(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", [submission1, submission2])
+    api = MockExportAPI().with_user_folder(username, "gallery", [submission1, submission2])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -49,8 +50,8 @@ async def test_user_gallery_short(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"g:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", [submission1, submission2])
+    api = MockExportAPI().with_user_folder(username, "gallery", [submission1, submission2])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -81,8 +82,8 @@ async def test_user_scraps(mock_client):
     username = "citrinelle"
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "scraps", [submission])
+    api = MockExportAPI().with_user_folder(username, "scraps", [submission])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -107,8 +108,8 @@ async def test_second_page(mock_client):
     username = "citrinelle"
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}", offset="2")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "scraps", [submission], page=2)
+    api = MockExportAPI().with_user_folder(username, "scraps", [submission], page=2)
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -131,48 +132,36 @@ async def test_second_page(mock_client):
 async def test_empty_gallery(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", [])
+    api = MockExportAPI().with_user_folder(username, "gallery", [])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "Nothing in gallery.",
-        "description": f"There are no submissions in gallery for user \"{username}\".",
-        "text": f"There are no submissions in gallery for user \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "Nothing in gallery.",
+        f"There are no submissions in gallery for user \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
 async def test_empty_scraps(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "scraps", [])
+    api = MockExportAPI().with_user_folder(username, "scraps", [])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "Nothing in scraps.",
-        "description": f"There are no submissions in scraps for user \"{username}\".",
-        "text": f"There are no submissions in scraps for user \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "Nothing in scraps.",
+        f"There are no submissions in scraps for user \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -181,8 +170,8 @@ async def test_hypens_in_username(mock_client):
     username = "dr-spangle"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", [submission])
+    api = MockExportAPI().with_user_folder(username, "gallery", [submission])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -207,8 +196,8 @@ async def test_weird_characters_in_username(mock_client):
     username = "l[i]s"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", [submission])
+    api = MockExportAPI().with_user_folder(username, "gallery", [submission])
+    inline = InlineGalleryFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -231,11 +220,11 @@ async def test_weird_characters_in_username(mock_client):
 async def test_no_user_exists(requests_mock):
     username = "fakelad"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineGalleryFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json",
+        f"https://example.com/user/{username}/gallery.json",
         status_code=404
     )
 
@@ -243,17 +232,11 @@ async def test_no_user_exists(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\"."
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -261,11 +244,11 @@ async def test_username_with_colon(requests_mock):
     # FA doesn't allow usernames to have : in them
     username = "fake:lad"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineGalleryFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json",
+        f"https://example.com/user/{username}/gallery.json",
         status_code=404
     )
 
@@ -273,24 +256,18 @@ async def test_username_with_colon(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
 async def test_over_max_submissions(mock_client):
     username = "citrinelle"
     mock_api = MockExportAPI()
-    inline = InlineFunctionality(mock_api)
+    inline = InlineGalleryFunctionality(mock_api)
     posts = inline.INLINE_MAX + 30
     post_ids = list(range(123456, 123456 + posts))
     submissions = [MockSubmission(x) for x in post_ids]
@@ -319,11 +296,11 @@ async def test_over_max_submissions(mock_client):
 @pytest.mark.asyncio
 async def test_over_max_submissions_continue(mock_client):
     username = "citrinelle"
-    inline = InlineFunctionality(MockExportAPI())
-    posts = 3 * inline.INLINE_MAX
+    posts = 3 * InlineGalleryFunctionality.INLINE_MAX
     post_ids = list(range(123456, 123456 + posts))
     submissions = [MockSubmission(x) for x in post_ids]
-    inline.api.with_user_folder(username, "gallery", submissions)
+    api = MockExportAPI().with_user_folder(username, "gallery", submissions)
+    inline = InlineGalleryFunctionality(api)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{inline.INLINE_MAX}")
 
     with pytest.raises(StopPropagation):
@@ -354,7 +331,7 @@ async def test_over_max_submissions_continue_end(mock_client):
     submissions = [MockSubmission(x) for x in post_ids]
     mock_api = MockExportAPI()
     mock_api.with_user_folder(username, "gallery", submissions)
-    inline = InlineFunctionality(mock_api)
+    inline = InlineGalleryFunctionality(mock_api)
     skip = posts - inline.INLINE_MAX + 3
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
@@ -384,8 +361,8 @@ async def test_over_max_submissions_continue_over_page(mock_client):
     post_ids = list(range(123456, 123456 + posts))
     skip = posts + 5
     submissions = [MockSubmission(x) for x in post_ids]
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_folder(username, "gallery", submissions)
+    api = MockExportAPI().with_user_folder(username, "gallery", submissions)
+    inline = InlineGalleryFunctionality(api)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
     with pytest.raises(StopPropagation):
@@ -403,11 +380,11 @@ async def test_over_max_submissions_continue_over_page(mock_client):
 async def test_no_username_set(requests_mock):
     username = ""
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineGalleryFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/gallery.json?page=1&full=1",
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         json={
             "id": None,
             "name": "gallery",
@@ -419,14 +396,8 @@ async def test_no_username_set(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
