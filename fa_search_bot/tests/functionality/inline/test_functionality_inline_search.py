@@ -49,10 +49,10 @@ async def test_simple_search(mock_client):
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
         assert result.kwargs['file'] == submission.thumbnail_url
-        assert result.kwargs['id'] == submission.submission_id
+        assert result.kwargs['id'] == f"{handler.site_code}:{post_id}"
         assert result.kwargs['text'] == submission.link
         assert len(result.kwargs['buttons']) == 1
-        assert result.kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+        assert result.kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -99,10 +99,10 @@ async def test_search_with_offset(mock_client):
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
         assert result.kwargs['file'] == submission.thumbnail_url
-        assert result.kwargs['id'] == str(post_id)
+        assert result.kwargs['id'] == f"{handler.site_code}:{post_id}"
         assert result.kwargs['text'] == submission.link
         assert len(result.kwargs['buttons']) == 1
-        assert result.kwargs['buttons'][0].data == f"neaten_me:{post_id}".encode()
+        assert result.kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -153,15 +153,15 @@ async def test_search_with_spaces(mock_client):
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission1.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id1)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission1.submission_id}"
     assert args[0][0].kwargs['text'] == submission1.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission1.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission1.submission_id}".encode()
     assert args[0][1].kwargs['file'] == submission2.thumbnail_url
-    assert args[0][1].kwargs['id'] == str(post_id2)
+    assert args[0][1].kwargs['id'] == f"{handler.site_code}:{submission2.submission_id}"
     assert args[0][1].kwargs['text'] == submission2.link
     assert len(args[0][1].kwargs['buttons']) == 1
-    assert args[0][1].kwargs['buttons'][0].data == f"neaten_me:{submission2.submission_id}".encode()
+    assert args[0][1].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -187,10 +187,10 @@ async def test_search_with_combo_characters(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -216,10 +216,10 @@ async def test_search_with_field(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -248,10 +248,10 @@ async def test_search_site_prefix__letter(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -279,10 +279,10 @@ async def test_search_site_prefix__code(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -310,10 +310,10 @@ async def test_search_site_prefix__name(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{post_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -341,10 +341,10 @@ async def test_search_site_prefix__name_lower(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -370,11 +370,11 @@ async def test_search_site_prefix_e621(mock_client):
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == post._direct_link
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['file'] == post._direct_thumb_link
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{post_id}"
     assert args[0][0].kwargs['text'] == post._post_link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{post.id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -401,7 +401,7 @@ async def test_search_site_prefix_fa(mock_client):
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
     assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs['text'] == submission.link
     assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()

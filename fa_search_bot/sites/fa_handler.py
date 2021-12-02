@@ -148,7 +148,7 @@ class FAHandler(SiteHandler):
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         posts = await self.api.get_search_results(query, page)
         return [
-            submission.to_inline_query_result(builder)
+            submission.to_inline_query_result(builder, self.site_code)
             for submission in posts
         ]
 
