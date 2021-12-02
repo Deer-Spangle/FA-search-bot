@@ -140,10 +140,6 @@ class FAHandler(SiteHandler):
         except ValueError:
             return False
 
-    @property
-    def search_prefixes(self) -> List[str]:
-        return ["fa", "furaffinity"]
-
     async def get_search_results(
             self,
             builder: InlineBuilder,

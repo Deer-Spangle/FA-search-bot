@@ -68,7 +68,7 @@ class SiteHandler(ABC):
     @property
     @abstractmethod
     def search_prefixes(self) -> List[str]:
-        raise NotImplementedError
+        return [self.site_name[0].lower(), self.site_code.lower(), self.site_name.lower()]
 
     @abstractmethod
     async def get_search_results(
