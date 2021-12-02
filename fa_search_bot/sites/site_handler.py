@@ -66,7 +66,6 @@ class SiteHandler(ABC):
         raise NotImplementedError
 
     @property
-    @abstractmethod
     def search_prefixes(self) -> List[str]:
         return [self.site_name[0].lower(), self.site_code.lower(), self.site_name.lower()]
 
