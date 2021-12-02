@@ -2,9 +2,12 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
+from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
+from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
@@ -194,6 +197,191 @@ async def test_search_with_combo_characters(mock_client):
 async def test_search_with_field(mock_client):
     search_term = "@lower citrinelle"
     event = MockTelegramEvent.with_inline_query(query=search_term)
+    post_id = 213231
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix__letter(mock_client):
+    site_letter = "m"
+    site_name = "MockSite"
+    search_term = "YCH"
+    search_query = f"{site_letter}:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
+    post_id = 213231
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = MockSiteHandler(api, site_name=site_name)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix__code(mock_client):
+    site_code = "ms"
+    search_term = "YCH"
+    search_query = f"{site_code}:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
+    post_id = 213231
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = MockSiteHandler(api, site_code=site_code)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix__name(mock_client):
+    site_name = "MockSite"
+    search_term = "YCH"
+    search_query = f"{site_name}:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
+    post_id = 213231
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = MockSiteHandler(api, site_name=site_name)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix__name_lower(mock_client):
+    site_name = "MockSite"
+    search_term = "YCH"
+    search_query = f"{site_name.lower()}:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
+    post_id = 213231
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = MockSiteHandler(api, site_name=site_name)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == submission.thumbnail_url
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == submission.link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{submission.submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix_e621(mock_client):
+    search_term = "citrinelle"
+    search_query = f"e621:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
+    post_id = 213231
+    post = MockPost(post_id=post_id, tags=["citrinelle"])
+    api = MockAsyncYippiClient([post])
+    handler = E621Handler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    args = event.answer.call_args[0]
+    assert event.answer.call_args[1]['next_offset'] == "2"
+    assert event.answer.call_args[1]['gallery'] is True
+    assert isinstance(args[0], list)
+    assert len(args[0]) == 1
+    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
+    assert args[0][0].kwargs['file'] == post._direct_link
+    assert args[0][0].kwargs['id'] == str(post_id)
+    assert args[0][0].kwargs['text'] == post._post_link
+    assert len(args[0][0].kwargs['buttons']) == 1
+    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{post.id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_search_site_prefix_fa(mock_client):
+    search_term = "citrinelle"
+    search_query = f"fa:{search_term}"
+    event = MockTelegramEvent.with_inline_query(query=search_query)
     post_id = 213231
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
