@@ -1,7 +1,9 @@
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.inline import InlineFunctionality
+from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
+from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
@@ -9,7 +11,10 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _Moc
 @pytest.mark.asyncio
 async def test_empty_query_no_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query="")
-    inline = InlineFunctionality(MockExportAPI())
+    handler = FAHandler(MockExportAPI())
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -23,8 +28,11 @@ async def test_simple_search(mock_client):
     search_term = "YCH"
     event = MockTelegramEvent.with_inline_query(query=search_term)
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [submission])
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -48,24 +56,21 @@ async def test_simple_search(mock_client):
 async def test_no_search_results(mock_client):
     search_term = "RareKeyword"
     event = MockTelegramEvent.with_inline_query(query=search_term)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [])
+    api = MockExportAPI().with_search_results(search_term, [])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "No results found.",
-        "description": f"No results for search \"{search_term}\".",
-        "text": f"No results for search \"{search_term}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "No results found.",
+        f"No results for search \"{search_term}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -73,10 +78,13 @@ async def test_search_with_offset(mock_client):
     post_id = 234563
     search_term = "YCH"
     offset = 2
-    event = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
+    event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [submission], page=offset)
+    api = MockExportAPI().with_search_results(search_term, [submission], page=offset)
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -98,9 +106,12 @@ async def test_search_with_offset(mock_client):
 async def test_search_with_offset_no_more_results(mock_client):
     search_term = "YCH"
     offset = 2
-    event = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [], page=offset)
+    event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
+    api = MockExportAPI().with_search_results(search_term, [], page=offset)
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -121,8 +132,11 @@ async def test_search_with_spaces(mock_client):
     post_id2 = 84331
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [submission1, submission2])
+    api = MockExportAPI().with_search_results(search_term, [submission1, submission2])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -153,8 +167,11 @@ async def test_search_with_combo_characters(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [submission])
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -179,8 +196,11 @@ async def test_search_with_field(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term)
     post_id = 213231
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_search_results(search_term, [submission])
+    api = MockExportAPI().with_search_results(search_term, [submission])
+    handler = FAHandler(api)
+    inline = InlineSearchFunctionality({
+        handler.site_code: handler
+    })
 
     with pytest.raises(StopPropagation):
         await inline.call(event)

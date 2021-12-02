@@ -44,7 +44,8 @@ async def answer_with_error(
                 text=msg,
             )
         ],
-        gallery=False
+        gallery=False,
+        next_offset=None
     )
 
 

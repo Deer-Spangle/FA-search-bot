@@ -1,8 +1,9 @@
 import pytest
 from telethon.events import StopPropagation
 
+from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
 from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.functionalities.inline import InlineFunctionality
+from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
@@ -15,8 +16,8 @@ async def test_user_favourites(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favourites:{username}")
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission1, submission2])
+    api = MockExportAPI().with_user_favs(username, [submission1, submission2])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -47,8 +48,8 @@ async def test_user_favs(mock_client):
     username = "citrinelle"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission])
+    api = MockExportAPI().with_user_favs(username, [submission])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -73,8 +74,8 @@ async def test_american_spelling(mock_client):
     username = "citrinelle"
     event = MockTelegramEvent.with_inline_query(query=f"favorites:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission])
+    api = MockExportAPI().with_user_favs(username, [submission])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -100,8 +101,8 @@ async def test_continue_from_fav_id(mock_client):
     username = "citrinelle"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}", offset=fav_id)
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission], next_id=fav_id)
+    api = MockExportAPI().with_user_favs(username, [submission], next_id=fav_id)
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -124,24 +125,18 @@ async def test_continue_from_fav_id(mock_client):
 async def test_empty_favs(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [])
+    api = MockExportAPI().with_user_favs(username, [])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "Nothing in favourites.",
-        "description": f"There are no favourites for user \"{username}\".",
-        "text": f"There are no favourites for user \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "Nothing in favourites.",
+        f"There are no favourites for user \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -150,8 +145,8 @@ async def test_hypens_in_username(mock_client):
     username = "dr-spangle"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission])
+    api = MockExportAPI().with_user_favs(username, [submission])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -176,8 +171,8 @@ async def test_weird_characters_in_username(mock_client):
     username = "l[i]s"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission])
+    api = MockExportAPI().with_user_favs(username, [submission])
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -200,11 +195,11 @@ async def test_weird_characters_in_username(mock_client):
 async def test_no_user_exists(requests_mock):
     username = "fakelad"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineFavsFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/favorites.json",
+        f"https://example.com/user/{username}/favorites.json",
         status_code=404
     )
 
@@ -212,17 +207,11 @@ async def test_no_user_exists(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -230,11 +219,11 @@ async def test_username_with_colon(requests_mock):
     # FA doesn't allow usernames to have : in them
     username = "fake:lad"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineFavsFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/favorites.json",
+        f"https://example.com/user/{username}/favorites.json",
         status_code=404
     )
 
@@ -242,17 +231,11 @@ async def test_username_with_colon(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\"."
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -260,8 +243,8 @@ async def test_over_max_favs(mock_client):
     username = "citrinelle"
     post_ids = list(range(123456, 123456 + 72))
     submissions = [MockSubmission(x) for x in post_ids]
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, submissions)
+    api = MockExportAPI().with_user_favs(username, submissions)
+    inline = InlineFavsFunctionality(api)
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
 
     with pytest.raises(StopPropagation):
@@ -287,11 +270,11 @@ async def test_over_max_favs(mock_client):
 async def test_no_username_set(requests_mock):
     username = ""
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
-    inline = InlineFunctionality(MockExportAPI())
     # mock export api doesn't do non-existent users, so mocking with requests
-    inline.api = FAExportAPI("http://example.com", ignore_status=True)
+    api = FAExportAPI("https://example.com", ignore_status=True)
+    inline = InlineFavsFunctionality(api)
     requests_mock.get(
-        f"http://example.com/user/{username}/favorites.json?page=1&full=1",
+        f"https://example.com/user/{username}/favorites.json?page=1&full=1",
         json={
             "id": None,
             "name": "favorites",
@@ -303,17 +286,11 @@ async def test_no_username_set(requests_mock):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is False
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlineArticle)
-    assert args[0][0].kwargs == {
-        "title": "User does not exist.",
-        "description": f"FurAffinity user does not exist by the name: \"{username}\".",
-        "text": f"FurAffinity user does not exist by the name: \"{username}\".",
-    }
+    assert_answer_is_error(
+        event.answer,
+        "User does not exist.",
+        f"FurAffinity user does not exist by the name: \"{username}\"."
+    )
 
 
 @pytest.mark.asyncio
@@ -325,8 +302,8 @@ async def test_user_favourites_last_page(mock_client):
     submission2 = MockSubmission(post_id2)
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"favourites:{username}", offset=submission2.fav_id)
-    inline = InlineFunctionality(MockExportAPI())
-    inline.api.with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
+    api = MockExportAPI().with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
+    inline = InlineFavsFunctionality(api)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)

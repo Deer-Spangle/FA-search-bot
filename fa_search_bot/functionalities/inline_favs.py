@@ -35,7 +35,7 @@ class InlineFavsFunctionality(BotFunctionality):
         self.usage_counter.labels(function=self.USE_CASE_FAVS).inc()
         username = query_split[1]
         # Get results and next offset
-        results, next_offset = await self._favs_query_results(event.builder, username, offset)
+        results, next_offset = await self._favs_query_results(event, username, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
