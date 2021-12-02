@@ -7,11 +7,12 @@ from yippi import Post, AsyncYippiClient
 
 class MockPost(Post):
 
-    def __init__(self, *, post_id: int = None, md5: str = None, ext: str = "jpg"):
+    def __init__(self, *, post_id: int = None, md5: str = None, ext: str = "jpg", tags: List[str] = None):
         file_w, file_h = random.randint(100, 10_000), random.randint(100, 10_000)
         file_size = random.randint(200_000, 10_000_000)
         self._ext = ext
         self.md5 = md5 or uuid.uuid4().hex
+        self.tags = tags or []
         super().__init__({
             "id": post_id or random.randint(100_000, 999_999),
             "file": {
@@ -21,7 +22,8 @@ class MockPost(Post):
                 "size": file_size,
                 "md5": md5,
                 "url": self._direct_link
-            }
+            },
+            "tags": self.tags
         })
 
     @property
@@ -82,5 +84,5 @@ class MockAsyncYippiClient(AsyncYippiClient):
                 md5 = tag.split(":")[1]
                 filters.append(lambda post: post.md5 == md5)
                 continue
-            raise NotImplementedError
+            filters.append(lambda post: tag in post.tags)
         return list(filter(lambda post: all(f(post) for f in filters), self._posts))
