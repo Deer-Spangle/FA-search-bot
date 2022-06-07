@@ -2,7 +2,7 @@ import asyncio
 import dataclasses
 import json
 import logging
-from threading import Thread
+from asyncio import Task
 from typing import Dict, Optional, List
 
 from prometheus_client import Gauge, Info, start_http_server  # type: ignore
@@ -81,26 +81,32 @@ class Config:
             conf.get("prometheus_port", 7065),
         )
 
+    @classmethod
+    def load_from_file(cls, file_name: str) -> "Config":
+        with open(file_name, "r") as f:
+            return cls.from_dict(json.load(f))
+
 
 class FASearchBot:
-
     VERSION = __VERSION__
 
-    def __init__(self, conf_file: str) -> None:
-        with open(conf_file, "r") as f:
-            self.config = Config.from_dict(json.load(f))
+    def __init__(self, config: Config) -> None:
+        self.config = config
         self.api = FAExportAPI(self.config.fa_api_url)
         self.e6_api = AsyncYippiClient(
             "FA-search-bot", __VERSION__, self.config.e621.username
         )
         self.e6_handler = E621Handler(self.e6_api)
-        self.client: TelegramClient = None
+        self.client: TelegramClient = TelegramClient(
+            "fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash
+        )
         self.alive = False
         self.functionalities: List[BotFunctionality] = []
-        self.subscription_watcher: SubscriptionWatcher = None
-        self.subscription_watcher_thread: Thread = None
-        self.log_task = None
-        self.watcher_task = None
+        self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(
+            self.api, self.client
+        )
+        self.log_task: Optional[Task] = None
+        self.watcher_task: Optional[Task] = None
 
     @property
     def bot_key(self) -> str:
@@ -115,13 +121,7 @@ class FASearchBot:
         )
         start_time.set_to_current_time()
         self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
-        self.client = TelegramClient(
-            "fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash
-        )
         self.client.start(bot_token=self.config.telegram.bot_token)
-        self.subscription_watcher = SubscriptionWatcher.load_from_json(
-            self.api, self.client
-        )
 
         self.functionalities = self.initialise_functionalities()
         for func in self.functionalities:
