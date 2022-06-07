@@ -36,7 +36,7 @@ class InlineGalleryFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return [self.USE_CASE_GALLERY, self.USE_CASE_SCRAPS]
 
-    async def call(self, event: InlineQuery.Event):
+    async def call(self, event: InlineQuery.Event) -> None:
         query_split = event.query.query.split(":", 1)
         offset = event.query.offset
         logger.info("Got an inline query, page=%s", offset)

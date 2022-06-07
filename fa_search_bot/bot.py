@@ -2,15 +2,16 @@ import asyncio
 import dataclasses
 import json
 import logging
-from typing import Dict, Optional
+from threading import Thread
+from typing import Dict, Optional, List
 
-from prometheus_client import Gauge, Info, start_http_server
+from prometheus_client import Gauge, Info, start_http_server  # type: ignore
 from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.beep import BeepFunctionality
-from fa_search_bot.functionalities.functionalities import usage_counter
+from fa_search_bot.functionalities.functionalities import usage_counter, BotFunctionality
 from fa_search_bot.functionalities.image_hash_recommend import (
     ImageHashRecommendFunctionality,
 )
@@ -85,7 +86,7 @@ class FASearchBot:
 
     VERSION = __VERSION__
 
-    def __init__(self, conf_file):
+    def __init__(self, conf_file: str) -> None:
         with open(conf_file, "r") as f:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
@@ -93,19 +94,19 @@ class FASearchBot:
             "FA-search-bot", __VERSION__, self.config.e621.username
         )
         self.e6_handler = E621Handler(self.e6_api)
-        self.client = None
+        self.client: TelegramClient = None
         self.alive = False
-        self.functionalities = []
-        self.subscription_watcher = None
-        self.subscription_watcher_thread = None
+        self.functionalities: List[BotFunctionality] = []
+        self.subscription_watcher: SubscriptionWatcher = None
+        self.subscription_watcher_thread: Thread = None
         self.log_task = None
         self.watcher_task = None
 
     @property
-    def bot_key(self):
+    def bot_key(self) -> str:
         return self.config.telegram.bot_token
 
-    def start(self):
+    def start(self) -> None:
         start_http_server(self.config.prometheus_port)
         info.info(
             {
@@ -134,13 +135,13 @@ class FASearchBot:
         # Start the sub watcher
         self.watcher_task = event_loop.create_task(self.subscription_watcher.run())
 
-    def run(self):
+    def run(self) -> None:
         try:
             self.client.run_until_disconnected()
         finally:
             self.close()
 
-    def close(self):
+    def close(self) -> None:
         # Shut down sub watcher
         self.alive = False
         self.subscription_watcher.running = False
@@ -152,7 +153,7 @@ class FASearchBot:
         if self.e6_api is not None:
             event_loop.run_until_complete(self.e6_api.close())
 
-    async def periodic_log(self):
+    async def periodic_log(self) -> None:
         while self.alive:
             logger.info("Main thread alive")
             try:
@@ -162,7 +163,7 @@ class FASearchBot:
                 self.alive = False
         logger.info("Shutting down")
 
-    def initialise_functionalities(self):
+    def initialise_functionalities(self) -> List[BotFunctionality]:
         fa_handler = FAHandler(self.api)
         handlers = {
             fa_handler.site_code: fa_handler,

@@ -27,7 +27,7 @@ class InlineNeatenFunctionality(BotFunctionality):
             for handler in self.handlers.values()
         ]
 
-    async def call(self, event: InlineQuery.Event):
+    async def call(self, event: InlineQuery.Event) -> None:
         query = event.query.query
         query_clean = query.strip().lower()
         # Check if it's a submission ID
@@ -70,6 +70,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         except APIException:
             logger.debug("Inline id query could not find result")
             pass
+        return None
 
     async def _answer_link_query(
             self, event: InlineQuery.Event, handler: SiteHandler, links: List[str]

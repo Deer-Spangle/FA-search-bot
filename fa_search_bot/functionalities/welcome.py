@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class WelcomeFunctionality(BotFunctionality):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(NewMessage(pattern="/start", incoming=True))
 
-    async def call(self, event: NewMessage.Event):
+    async def call(self, event: NewMessage.Event) -> None:
         logger.info("Welcome message sent to user")
         self.usage_counter.labels(function="welcome").inc()
         await event.respond(

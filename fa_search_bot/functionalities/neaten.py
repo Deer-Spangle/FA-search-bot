@@ -46,7 +46,7 @@ class NeatenFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return [f"neaten_{handler.site_code}" for handler in self.handlers.values()]
 
-    async def call(self, event: NewMessage.Event):
+    async def call(self, event: NewMessage.Event) -> None:
         # Only deal with messages, not channel posts
         if event.is_channel and not event.is_group:
             return
@@ -103,10 +103,11 @@ class NeatenFunctionality(BotFunctionality):
                 )
                 await _return_error_in_privmsg(event, f"Error finding submission: {e}")
                 return None
+        return None
 
     async def _handle_submission_link(
             self, event: NewMessage.Event, sub_id: SubmissionID
-    ):
+    ) -> None:
         logger.info("Found a link, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
         handler = self.handlers.get(sub_id.site_id)

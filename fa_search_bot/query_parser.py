@@ -3,7 +3,7 @@ import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import Dict, List, NewType, Optional, Pattern
+from typing import Dict, List, NewType, Optional, Pattern, Any
 
 import pyparsing
 from pyparsing import (
@@ -68,10 +68,10 @@ class Field(ABC):
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
         raise NotImplementedError
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__
 
 
@@ -168,18 +168,18 @@ class MatchLocation:
     def overlaps_any(self, locations: List["MatchLocation"]) -> bool:
         return any(self.overlaps(location) for location in locations)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, MatchLocation)
-            and self.field == other.field
-            and self.start_position == other.start_position
-            and self.end_position == other.end_position
+                isinstance(other, MatchLocation)
+                and self.field == other.field
+                and self.start_position == other.start_position
+                and self.end_position == other.end_position
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.field, self.start_position, self.end_position))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MatchLocation(FieldLocation({self.field}), {self.start_position}, {self.end_position})"
 
 
@@ -202,7 +202,7 @@ class OrQuery(Query):
     def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(q.matches_submission(sub) for q in self.sub_queries)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, OrQuery)
                 and len(self.sub_queries) == len(other.sub_queries)
@@ -212,10 +212,10 @@ class OrQuery(Query):
         )
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "OR(" + ", ".join(repr(q) for q in self.sub_queries) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "(" + " OR ".join(str(q) for q in self.sub_queries) + ")"
 
 
@@ -235,10 +235,10 @@ class AndQuery(Query):
     def __init__(self, sub_queries: List["Query"]):
         self.sub_queries = sub_queries
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return all(q.matches_submission(sub) for q in self.sub_queries)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, AndQuery)
                 and len(self.sub_queries) == len(other.sub_queries)
@@ -248,10 +248,10 @@ class AndQuery(Query):
         )
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AND(" + ", ".join(repr(q) for q in self.sub_queries) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "(" + " AND ".join(str(q) for q in self.sub_queries) + ")"
 
 
@@ -259,16 +259,16 @@ class NotQuery(Query):
     def __init__(self, sub_query: "Query"):
         self.sub_query = sub_query
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return not self.sub_query.matches_submission(sub)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, NotQuery) and self.sub_query == other.sub_query
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"NOT({self.sub_query!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"-{self.sub_query}"
 
 
@@ -276,16 +276,16 @@ class RatingQuery(Query):
     def __init__(self, rating: Rating):
         self.rating = rating
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return sub.rating == self.rating
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, RatingQuery) and self.rating == other.rating
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RATING({self.rating})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"rating:{self.rating}"
 
 
@@ -296,7 +296,7 @@ class WordQuery(LocationQuery):
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return self.word.lower() in self.field.get_field_words(sub)
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
@@ -309,19 +309,19 @@ class WordQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, WordQuery)
                 and self.word == other.word
                 and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"WORD({self.word})"
         return f"WORD({self.word}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.word
         return f"{self.field}:{self.word}"
@@ -334,7 +334,7 @@ class PrefixQuery(LocationQuery):
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(
             word.startswith(self.prefix.lower()) and word != self.prefix.lower()
             for word in self.field.get_field_words(sub)
@@ -354,19 +354,19 @@ class PrefixQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, PrefixQuery)
                 and self.prefix == other.prefix
                 and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"PREFIX({self.prefix})"
         return f"PREFIX({self.prefix}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.prefix + "*"
         return f"{self.field}:{self.prefix}*"
@@ -379,7 +379,7 @@ class SuffixQuery(LocationQuery):
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(
             word.endswith(self.suffix.lower()) and word != self.suffix.lower()
             for word in self.field.get_field_words(sub)
@@ -399,19 +399,19 @@ class SuffixQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, SuffixQuery)
                 and self.suffix == other.suffix
                 and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"SUFFIX({self.suffix})"
         return f"SUFFIX({self.suffix}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return "*" + self.suffix
         return f"{self.field}:*{self.suffix}"
@@ -424,7 +424,7 @@ class RegexQuery(LocationQuery):
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(
             self.pattern.search(word) for word in self.field.get_field_words(sub)
         )
@@ -438,7 +438,7 @@ class RegexQuery(LocationQuery):
 
     @classmethod
     def from_string_with_asterisks(
-            cls, word: string, field: Optional["Field"] = None
+            cls, word: str, field: Optional["Field"] = None
     ) -> "RegexQuery":
         word_split = re.split(r"\*+", word)
         parts = [re.escape(part) for part in word_split]
@@ -450,19 +450,19 @@ class RegexQuery(LocationQuery):
         pattern = re.compile(regex, re.I)
         return RegexQuery(pattern, field)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, RegexQuery)
-            and self.pattern.pattern == other.pattern.pattern
-            and self.field == other.field
+                isinstance(other, RegexQuery)
+                and self.pattern.pattern == other.pattern.pattern
+                and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"REGEX({self.pattern.pattern})"
         return f"REGEX({self.pattern.pattern}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.pattern.pattern
         return f"{self.field}:{self.pattern.pattern}"
@@ -478,7 +478,7 @@ class PhraseQuery(LocationQuery):
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(self.phrase_regex.search(text) for text in self.field.get_texts(sub))
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
@@ -488,19 +488,19 @@ class PhraseQuery(LocationQuery):
             for m in self.phrase_regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, PhraseQuery)
                 and self.phrase == other.phrase
                 and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"PHRASE({self.phrase})"
         return f'PHRASE("{self.phrase}", {self.field})'
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return f'"{self.phrase}"'
         return f'{self.field}:"{self.phrase}"'
@@ -519,17 +519,17 @@ class ExceptionQuery(Query):
             for location in word_locations
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
                 isinstance(other, ExceptionQuery)
                 and self.word == other.word
                 and self.exception == other.exception
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"EXCEPTION({self.word!r}, {self.exception!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.word} EXCEPT {self.exception}"
 
 

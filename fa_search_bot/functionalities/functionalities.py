@@ -13,7 +13,7 @@ usage_counter = Counter(
 
 
 @asynccontextmanager
-async def in_progress_msg(event: NewMessage.Event, text: Optional[str]):
+async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> None:
     if text is None:
         text = f"In progress"
     text = f"⏳ {text}"
@@ -59,7 +59,7 @@ class BotFunctionality(ABC):
         raise NotImplementedError
 
 
-def _parse_inline_offset(offset: str) -> Tuple[int, int]:
+def _parse_inline_offset(offset: str) -> Tuple[int, Optional[int]]:
     if offset == "":
         page, skip = 1, None
     elif ":" in offset:

@@ -250,7 +250,7 @@ class DockerEntrypoint(enum.Enum):
     OTHER = "other"
 
     @classmethod
-    def from_string(cls, entrypoint_string: Optional[str]):
+    def from_string(cls, entrypoint_string: Optional[str]) -> "DockerEntrypoint":
         if entrypoint_string is None:
             return cls.FFMPEG
         if entrypoint_string == "ffprobe":
@@ -262,7 +262,7 @@ class CantSendFileType(Exception):
     pass
 
 
-def _format_input_path(input_path: str):
+def _format_input_path(input_path: str) -> str:
     if input_path.lower().startswith("http"):
         return f"-i {input_path}"
     return f"/{input_path}"
@@ -448,7 +448,7 @@ class Sendable(ABC):
         return
 
     @abstractmethod
-    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
+    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
         raise NotImplementedError
 
     def _get_video_from_cache(self) -> Optional[str]:

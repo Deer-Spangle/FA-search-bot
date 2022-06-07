@@ -29,7 +29,7 @@ class SupergroupUpgradeFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return ["supergroup_upgrade"]
 
-    async def call(self, event: types.UpdateNewChannelMessage):
+    async def call(self, event: types.UpdateNewChannelMessage) -> None:
         old_chat_id = -1 * event.message.action.chat_id
         new_chat_id = int("-100" + str(event.message.to_id.channel_id))
         # Log the upgrade

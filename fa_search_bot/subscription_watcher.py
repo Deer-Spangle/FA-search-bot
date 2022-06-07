@@ -4,7 +4,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Deque, Dict, List, Optional, Set
+from typing import Deque, Dict, List, Optional, Set, Any
 
 import dateutil.parser
 import heartbeat
@@ -117,7 +117,7 @@ class SubscriptionWatcher:
             lambda: sum(len(blocks) for blocks in self.blocklists.values())
         )
 
-    async def run(self):
+    async def run(self) -> None:
         """
         This method is launched as a task, it reads the browse endpoint for new submissions, and checks if they
         match existing subscriptions
@@ -206,11 +206,11 @@ class SubscriptionWatcher:
             await self._wait_while_running(self.BACK_OFF)
         logger.info("Subscription watcher shutting down")
 
-    def stop(self):
+    def stop(self) -> None:
         logger.info("Stopping subscription watcher")
         self.running = False
 
-    async def _wait_while_running(self, seconds):
+    async def _wait_while_running(self, seconds: float) -> None:
         sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
         while datetime.datetime.now() < sleep_end:
             if not self.running:
@@ -229,6 +229,7 @@ class SubscriptionWatcher:
                     "FA is under cloudflare protection, waiting before retry"
                 )
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
+        return []
 
     async def _get_new_results(self) -> List[FASubmission]:
         """
@@ -258,14 +259,14 @@ class SubscriptionWatcher:
         # Return oldest result first
         return new_results[::-1]
 
-    def _update_latest_ids(self, browse_results: List[FASubmission]):
+    def _update_latest_ids(self, browse_results: List[FASubmission]) -> None:
         for result in browse_results:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()
 
     async def _send_updates(
             self, subscriptions: List["Subscription"], result: FASubmissionFull
-    ):
+    ) -> None:
         destination_map = collections.defaultdict(lambda: [])
         for sub in subscriptions:
             sub.latest_update = datetime.datetime.now()
@@ -304,7 +305,7 @@ class SubscriptionWatcher:
             self.blocklist_query_cache[blocklist_str] = parse_query(blocklist_str)
         return self.blocklist_query_cache[blocklist_str]
 
-    def add_to_blocklist(self, destination: int, tag: str):
+    def add_to_blocklist(self, destination: int, tag: str) -> None:
         # Ensure blocklist query can be parsed without error
         self.blocklist_query_cache[tag] = parse_query(tag)
         # Add to blocklists
@@ -331,9 +332,9 @@ class SubscriptionWatcher:
         # Save
         self.save_to_json()
 
-    def save_to_json(self):
+    def save_to_json(self) -> None:
         logger.debug("Saving subscription data in new format")
-        destination_dict = collections.defaultdict(
+        destination_dict: Dict[str, Dict[str, List]] = collections.defaultdict(
             lambda: {"subscriptions": [], "blocks": []}
         )
         for subscription in self.subscriptions.copy():
@@ -418,7 +419,7 @@ class Subscription:
         full_query = AndQuery([self.query, blocklist_query])
         return full_query.matches_submission(result)
 
-    def to_json(self):
+    def to_json(self) -> Dict:
         latest_update_str = None
         if self.latest_update is not None:
             latest_update_str = self.latest_update.isoformat()
@@ -429,7 +430,7 @@ class Subscription:
         }
 
     @staticmethod
-    def from_json_old_format(saved_sub) -> "Subscription":
+    def from_json_old_format(saved_sub: Dict) -> "Subscription":
         query = saved_sub["query"]
         destination = saved_sub["destination"]
         new_sub = Subscription(query, destination)
@@ -449,7 +450,7 @@ class Subscription:
             new_sub.paused = True
         return new_sub
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Subscription):
             return False
         return (
@@ -457,10 +458,10 @@ class Subscription:
                 and self.destination == other.destination
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.query_str.casefold(), self.destination))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Subscription("
             f"destination={self.destination}, "

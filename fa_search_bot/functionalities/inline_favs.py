@@ -31,7 +31,7 @@ class InlineFavsFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return [self.USE_CASE_FAVS]
 
-    async def call(self, event: InlineQuery.Event):
+    async def call(self, event: InlineQuery.Event) -> None:
         query_split = event.query.query.split(":", 1)
         offset = event.query.offset
         logger.info("Got an inline favs query, page=%s", offset)
@@ -53,7 +53,7 @@ class InlineFavsFunctionality(BotFunctionality):
         raise StopPropagation
 
     async def _favs_query_results(
-            self, event: InlineQuery.Event, username: str, offset: str
+            self, event: InlineQuery.Event, username: str, offset: Optional[str]
     ) -> Tuple[
         List[
             Coroutine[

@@ -32,7 +32,7 @@ class InlineSearchFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return [self.USE_CASE_SEARCH, self.USE_CASE_E621]
 
-    async def call(self, event: InlineQuery.Event):
+    async def call(self, event: InlineQuery.Event) -> None:
         query = event.query.query
         offset = event.query.offset
         logger.info("Got an inline query, page=%s", offset)

@@ -202,7 +202,7 @@ class SendableFASubmission(Sendable):
     def link(self) -> str:
         return self.submission.link
 
-    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None):
+    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
         lines = []
         if prefix:
             lines.append(prefix)
