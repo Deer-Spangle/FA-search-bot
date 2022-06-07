@@ -11,16 +11,13 @@ from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
 from fa_search_bot.sites.fa_export_api import CloudflareError
 from fa_search_bot.sites.fa_submission import FASubmissionFull
-from fa_search_bot.subscription_watcher import (Subscription,
-                                                SubscriptionWatcher)
-from fa_search_bot.tests.util.mock_export_api import (MockExportAPI,
-                                                      MockSubmission)
+from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
+from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
 class MockSubscription(Subscription):
-
     def __init__(self, query, destination):
         super().__init__(query, destination)
         self.submissions_checked = []
@@ -241,10 +238,7 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
     method_called = MockMethod([submission])
     watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
-    watcher.blocklists = {
-        156: {"test", "ych"},
-        -200: {"example"}
-    }
+    watcher.blocklists = {156: {"test", "ych"}, -200: {"example"}}
     sub1 = MockSubscription("deer", 156)
     sub2 = MockSubscription("dog", -232)
     watcher.subscriptions = [sub1, sub2]
@@ -258,7 +252,7 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
     assert len(sub1.blocklists) == 1
     assert sub1.blocklists[0] in [
         AndQuery([NotQuery(WordQuery("test")), NotQuery(WordQuery("ych"))]),
-        AndQuery([NotQuery(WordQuery("ych")), NotQuery(WordQuery("test"))])
+        AndQuery([NotQuery(WordQuery("ych")), NotQuery(WordQuery("test"))]),
     ]
     assert submission in sub2.submissions_checked
     assert len(sub2.blocklists) == 1
@@ -269,7 +263,9 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__handles_empty_latest_ids(mock_client):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
+    api.with_browse_results(
+        [MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")]
+    )
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.running = True
 
@@ -285,7 +281,9 @@ async def test_get_new_results__handles_empty_latest_ids(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__returns_new_results(mock_client):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")])
+    api.with_browse_results(
+        [MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")]
+    )
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.latest_ids.append("1220")
     watcher.running = True
@@ -300,7 +298,9 @@ async def test_get_new_results__returns_new_results(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__includes_missing_ids(mock_client):
     api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")])
+    api.with_browse_results(
+        [MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")]
+    )
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.latest_ids.append("1220")
     watcher.running = True
@@ -386,16 +386,18 @@ async def test_send_updates__sends_message(mock_client):
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+    with mock.patch(
+            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message"
+    ) as m:
         await watcher._send_updates([subscription], submission)
 
     assert m.asset_called_once()
     args, kwargs = m.call_args
     assert args[0] == mock_client
     assert args[1] == 12345
-    assert "update" in kwargs['prefix'].lower()
-    assert "\"test\"" in kwargs['prefix']
-    assert "subscription" in kwargs['prefix'].lower()
+    assert "update" in kwargs["prefix"].lower()
+    assert '"test"' in kwargs["prefix"]
+    assert "subscription" in kwargs["prefix"].lower()
 
 
 @pytest.mark.asyncio
@@ -407,8 +409,12 @@ async def test_send_updates__gathers_subscriptions(mock_client):
     subscription3 = Subscription("test", 54321)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
-        await watcher._send_updates([subscription1, subscription2, subscription3], submission)
+    with mock.patch(
+            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message"
+    ) as m:
+        await watcher._send_updates(
+            [subscription1, subscription2, subscription3], submission
+        )
 
     assert m.call_count == 2
     call_list = m.call_args_list
@@ -425,13 +431,13 @@ async def test_send_updates__gathers_subscriptions(mock_client):
     assert args2[0] == mock_client
     assert args1[1] == 12345
     assert args2[1] == 54321
-    assert "update" in kwargs1['prefix'].lower()
-    assert "\"test\", \"test2\"" in kwargs1['prefix']
-    assert "subscriptions:" in kwargs1['prefix'].lower()
+    assert "update" in kwargs1["prefix"].lower()
+    assert '"test", "test2"' in kwargs1["prefix"]
+    assert "subscriptions:" in kwargs1["prefix"].lower()
     # And check the one subscription call
-    assert "update" in kwargs2['prefix'].lower()
-    assert "\"test\"" in kwargs2['prefix']
-    assert "subscription:" in kwargs2['prefix'].lower()
+    assert "update" in kwargs2["prefix"].lower()
+    assert '"test"' in kwargs2["prefix"]
+    assert "subscription:" in kwargs2["prefix"].lower()
 
 
 @pytest.mark.asyncio
@@ -457,7 +463,10 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
     def throw_blocked(*args, **kwargs):
         raise UserIsBlockedError(None)
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_blocked):
+    with mock.patch(
+            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+            throw_blocked,
+    ):
         await watcher._send_updates([subscription], submission)
 
     assert subscription.paused
@@ -474,7 +483,10 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
     def throw_deleted(*args, **kwargs):
         raise InputUserDeactivatedError(None)
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_deleted):
+    with mock.patch(
+            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+            throw_deleted,
+    ):
         await watcher._send_updates([subscription], submission)
 
     assert subscription.paused
@@ -493,7 +505,10 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
     def throw_blocked(*_, **__):
         raise UserIsBlockedError(None)
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message", throw_blocked):
+    with mock.patch(
+            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+            throw_blocked,
+    ):
         await watcher._send_updates([subscription1], submission)
 
     assert subscription1.paused
@@ -609,7 +624,7 @@ def test_save_to_json(mock_client):
     latest_submissions = [
         SubmissionBuilder(submission_id="123243").build_short_submission(),
         SubmissionBuilder(submission_id="123242").build_short_submission(),
-        SubmissionBuilder(submission_id="123240").build_short_submission()
+        SubmissionBuilder(submission_id="123240").build_short_submission(),
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)
@@ -628,10 +643,10 @@ def test_save_to_json(mock_client):
         with open(test_watcher_file, "r") as f:
             data = json.load(f)
         assert data is not None
-        assert len(data['latest_ids']) == 3
-        assert "123240" in data['latest_ids']
-        assert "123242" in data['latest_ids']
-        assert "123243" in data['latest_ids']
+        assert len(data["latest_ids"]) == 3
+        assert "123240" in data["latest_ids"]
+        assert "123242" in data["latest_ids"]
+        assert "123243" in data["latest_ids"]
         assert len(data["destinations"]) == 4
         assert len(data["destinations"]["1234"]["subscriptions"]) == 1
         assert data["destinations"]["1234"]["subscriptions"][0]["query"] == "query"
@@ -643,7 +658,9 @@ def test_save_to_json(mock_client):
 
         assert len(data["destinations"]["3452"]["subscriptions"]) == 0
         assert len(data["destinations"]["3452"]["blocks"]) == 2
-        assert set([block["query"] for block in data["destinations"]["3452"]["blocks"]]) == {"test", "example"}
+        assert set(
+            [block["query"] for block in data["destinations"]["3452"]["blocks"]]
+        ) == {"test", "example"}
 
         assert len(data["destinations"]["1453"]["subscriptions"]) == 0
         assert len(data["destinations"]["1453"]["blocks"]) == 1
@@ -665,18 +682,15 @@ def test_from_json(mock_client):
                 {
                     "query": "test",
                     "destination": 87238,
-                    "latest_update": "2019-10-26T18:57:09"
+                    "latest_update": "2019-10-26T18:57:09",
                 },
                 {
                     "query": "example",
                     "destination": -87023,
-                    "latest_update": "2019-10-25T17:34:08"
-                }
+                    "latest_update": "2019-10-25T17:34:08",
+                },
             ],
-            "blacklists": {
-                "8732": ["example", "ych"],
-                "-123": ["fred"]
-            }
+            "blacklists": {"8732": ["example", "ych"], "-123": ["fred"]},
         }
         with open(test_watcher_file, "w+") as f:
             json.dump(data, f)
@@ -692,17 +706,25 @@ def test_from_json(mock_client):
         list_subs = list(watcher.subscriptions)
         if list_subs[0].query_str == "test":
             assert list_subs[0].destination == 87238
-            assert list_subs[0].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
+            assert list_subs[0].latest_update == datetime.datetime(
+                2019, 10, 26, 18, 57, 9
+            )
             assert list_subs[1].query_str == "example"
             assert list_subs[1].destination == -87023
-            assert list_subs[1].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
+            assert list_subs[1].latest_update == datetime.datetime(
+                2019, 10, 25, 17, 34, 8
+            )
         else:
             assert list_subs[0].query_str == "example"
             assert list_subs[0].destination == -87023
-            assert list_subs[0].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
+            assert list_subs[0].latest_update == datetime.datetime(
+                2019, 10, 25, 17, 34, 8
+            )
             assert list_subs[1].query_str == "test"
             assert list_subs[1].destination == 87238
-            assert list_subs[1].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
+            assert list_subs[1].latest_update == datetime.datetime(
+                2019, 10, 26, 18, 57, 9
+            )
         assert len(watcher.blocklists) == 2
         assert 8732 in watcher.blocklists
         assert len(watcher.blocklists[8732]) == 2
@@ -728,7 +750,7 @@ def test_to_json_and_back(mock_client):
     latest_submissions = [
         SubmissionBuilder(submission_id="123243").build_short_submission(),
         SubmissionBuilder(submission_id="123242").build_short_submission(),
-        SubmissionBuilder(submission_id="123240").build_short_submission()
+        SubmissionBuilder(submission_id="123240").build_short_submission(),
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)

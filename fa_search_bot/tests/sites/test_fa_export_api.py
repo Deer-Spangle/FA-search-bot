@@ -2,10 +2,13 @@ import datetime
 
 import pytest
 
-from fa_search_bot.sites.fa_export_api import (CloudflareError, Endpoint,
-                                               FAExportAPI, PageNotFound)
-from fa_search_bot.sites.fa_submission import (FASubmissionFull,
-                                               FASubmissionShort)
+from fa_search_bot.sites.fa_export_api import (
+    CloudflareError,
+    Endpoint,
+    FAExportAPI,
+    PageNotFound,
+)
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -22,10 +25,7 @@ def test_api_request(requests_mock):
     path = "/resources/123"
     api = FAExportAPI(api_url, ignore_status=True)
     test_obj = {"key": "value"}
-    requests_mock.get(
-        "https://example.com/resources/123",
-        json=test_obj
-    )
+    requests_mock.get("https://example.com/resources/123", json=test_obj)
 
     resp = api._api_request(path, Endpoint.BROWSE)
 
@@ -41,8 +41,8 @@ def test_api_request__detects_cloudflare(requests_mock):
         status_code=503,
         json={
             "error": "Cannot access FA, https://www.furaffinity.net/ as cloudflare protection is up",
-            "url": "https://www.furaffinity.net/"
-        }
+            "url": "https://www.furaffinity.net/",
+        },
     )
 
     try:
@@ -63,7 +63,7 @@ async def test_api_request_with_retry__does_not_retry_200(requests_mock):
         [
             {"json": test_obj, "status_code": 200},
             {"text": "500 Error. Something broke.", "status_code": 500},
-        ]
+        ],
     )
 
     start_time = datetime.datetime.now()
@@ -86,7 +86,7 @@ async def test_api_request_with_retry__does_not_retry_400_error(requests_mock):
         [
             {"text": "400 error, you messed up.", "status_code": 400},
             {"text": "500 Error. Something broke.", "status_code": 500},
-        ]
+        ],
     )
 
     start_time = datetime.datetime.now()
@@ -110,8 +110,8 @@ async def test_api_request_with_retry__retries_500_error(requests_mock):
         [
             {"text": "500 Error. Something broke.", "status_code": 500},
             {"text": "500 Error. Something broke.", "status_code": 500},
-            {"json": test_obj, "status_code": 200}
-        ]
+            {"json": test_obj, "status_code": 200},
+        ],
     )
 
     start_time = datetime.datetime.now()
@@ -130,7 +130,7 @@ async def test_get_full_submission(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/submission/{builder.submission_id}.json",
-        json=builder.build_submission_json()
+        json=builder.build_submission_json(),
     )
 
     submission = await api.get_full_submission(builder.submission_id)
@@ -147,10 +147,7 @@ async def test_get_full_submission(requests_mock):
 async def test_get_full_submission_fails(requests_mock):
     post_id = "45282"
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/submission/{post_id}.json",
-        status_code=404
-    )
+    requests_mock.get(f"https://example.com/submission/{post_id}.json", status_code=404)
 
     try:
         await api.get_full_submission(post_id)
@@ -169,10 +166,7 @@ async def test_get_user_folder(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/user/{username}/gallery.json?page=1&full=1",
-        json=[
-            builder1.build_search_json(),
-            builder2.build_search_json()
-        ]
+        json=[builder1.build_search_json(), builder2.build_search_json()],
     )
 
     results = await api.get_user_folder(username, "gallery")
@@ -195,9 +189,7 @@ async def test_get_user_folder_scraps(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/user/{username}/scraps.json?page=1&full=1",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_user_folder(username, "scraps")
@@ -217,9 +209,7 @@ async def test_get_user_folder_awkward_characters(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/user/{safe_username}/gallery.json?page=1&full=1",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_user_folder(username, "gallery")
@@ -238,9 +228,7 @@ async def test_get_user_folder_specified_page(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/user/{username}/gallery.json?page=2&full=1",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_user_folder(username, "gallery", 2)
@@ -257,8 +245,7 @@ async def test_get_user_folder_empty(requests_mock):
     username = "fender"
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"https://example.com/user/{username}/gallery.json?page=1&full=1",
-        json=[]
+        f"https://example.com/user/{username}/gallery.json?page=1&full=1", json=[]
     )
 
     results = await api.get_user_folder(username, "gallery")
@@ -272,7 +259,7 @@ async def test_get_user_folder_does_not_exist(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/user/{username}/gallery.json?page=1&full=1",
-        status_code=404
+        status_code=404,
     )
 
     try:
@@ -291,8 +278,8 @@ async def test_get_user_folder_blank_username(requests_mock):
         json={
             "id": None,
             "name": "gallery",
-            "profile": "https://www.furaffinity.net/user/gallery/"
-        }
+            "profile": "https://www.furaffinity.net/user/gallery/",
+        },
     )
 
     try:
@@ -312,10 +299,7 @@ async def test_get_search_results(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1",
-        json=[
-            builder1.build_search_json(),
-            builder2.build_search_json()
-        ]
+        json=[builder1.build_search_json(), builder2.build_search_json()],
     )
 
     results = await api.get_search_results(search)
@@ -339,9 +323,7 @@ async def test_get_search_results_with_space(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_search_results(search)
@@ -359,9 +341,7 @@ async def test_get_search_results_with_extended_modifiers(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/search.json?full=1&perpage=48&q={search_safe}&page=1",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_search_results(search)
@@ -378,9 +358,7 @@ async def test_get_search_results_specified_page(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
         f"https://example.com/search.json?full=1&perpage=48&q={search}&page=2",
-        json=[
-            builder.build_search_json()
-        ]
+        json=[builder.build_search_json()],
     )
 
     results = await api.get_search_results(search, 2)
@@ -395,9 +373,7 @@ async def test_get_search_results_no_results(requests_mock):
     search = "chital_deer"
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1",
-        json=[
-        ]
+        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1", json=[]
     )
 
     results = await api.get_search_results(search)
@@ -410,10 +386,7 @@ async def test_get_browse_page_default_1(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"https://example.com/browse.json?page=1",
-        json=[
-            builder.build_search_json()
-        ]
+        f"https://example.com/browse.json?page=1", json=[builder.build_search_json()]
     )
 
     results = await api.get_browse_page()
@@ -428,10 +401,7 @@ async def test_get_browse_page_specify_page(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
     requests_mock.get(
-        f"https://example.com/browse.json?page=5",
-        json=[
-            builder.build_search_json()
-        ]
+        f"https://example.com/browse.json?page=5", json=[builder.build_search_json()]
     )
 
     results = await api.get_browse_page(5)
@@ -444,11 +414,7 @@ async def test_get_browse_page_specify_page(requests_mock):
 @pytest.mark.asyncio
 async def test_get_browse_page_no_results(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/browse.json?page=5",
-        json=[
-        ]
-    )
+    requests_mock.get(f"https://example.com/browse.json?page=5", json=[])
 
     results = await api.get_browse_page(5)
 
@@ -466,14 +432,14 @@ async def test_get_status_before_submission(requests_mock):
                 "guests": 17,
                 "registered": api.STATUS_LIMIT_REGISTERED - 1,
                 "other": 12,
-                "total": api.STATUS_LIMIT_REGISTERED + 28
+                "total": api.STATUS_LIMIT_REGISTERED + 28,
             },
-            "fa_server_time_at": "2020-09-08T00:13:14Z"
-        }
+            "fa_server_time_at": "2020-09-08T00:13:14Z",
+        },
     )
     requests_mock.get(
         f"https://example.com/submission/{builder.submission_id}.json",
-        json=builder.build_submission_json()
+        json=builder.build_submission_json(),
     )
 
     submission = await api.get_full_submission(builder.submission_id)
@@ -501,16 +467,16 @@ async def test_get_status_api_retry(requests_mock):
                 "guests": 17,
                 "registered": api.STATUS_LIMIT_REGISTERED - 1,
                 "other": 12,
-                "total": api.STATUS_LIMIT_REGISTERED + 28
+                "total": api.STATUS_LIMIT_REGISTERED + 28,
             },
-            "fa_server_time_at": "2020-09-08T00:13:14Z"
-        }
+            "fa_server_time_at": "2020-09-08T00:13:14Z",
+        },
     )
     requests_mock.get(
         "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
-        ]
+        ],
     )
 
     resp = await api._api_request_with_retry(path, Endpoint.BROWSE)
@@ -534,16 +500,16 @@ async def test_get_status_turns_on_slowdown(requests_mock):
                 "guests": 17,
                 "registered": api.STATUS_LIMIT_REGISTERED + 1,
                 "other": 12,
-                "total": api.STATUS_LIMIT_REGISTERED + 30
+                "total": api.STATUS_LIMIT_REGISTERED + 30,
             },
-            "fa_server_time_at": "2020-09-08T00:13:14Z"
-        }
+            "fa_server_time_at": "2020-09-08T00:13:14Z",
+        },
     )
     requests_mock.get(
         "https://example.com/resources/200",
         [
             {"json": test_obj, "status_code": 200},
-        ]
+        ],
     )
 
     start_time = datetime.datetime.now()

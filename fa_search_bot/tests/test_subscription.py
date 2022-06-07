@@ -1,7 +1,6 @@
 import datetime
 
-from fa_search_bot.query_parser import (AndQuery, NotQuery, RatingQuery,
-                                        WordQuery)
+from fa_search_bot.query_parser import AndQuery, NotQuery, RatingQuery, WordQuery
 from fa_search_bot.sites.fa_submission import Rating
 from fa_search_bot.subscription_watcher import Subscription
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
@@ -30,7 +29,7 @@ def test_matches_result__one_word_in_title_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -44,7 +43,7 @@ def test_matches_result__one_word_in_description_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -58,7 +57,7 @@ def test_matches_result__one_word_in_keywords_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -72,7 +71,7 @@ def test_matches_result__substring_in_title_no_match():
     submission = SubmissionBuilder(
         title="testing submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -86,7 +85,7 @@ def test_matches_result__substring_in_description_no_match():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -100,7 +99,7 @@ def test_matches_result__substring_in_keywords_no_match():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -114,7 +113,7 @@ def test_matches_result__one_word_no_match():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -128,7 +127,7 @@ def test_matches_result__two_words_in_title_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this is just an example",
-        keywords=["example", "keywords"]
+        keywords=["example", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -142,7 +141,7 @@ def test_matches_result__two_words_in_description_matches():
     submission = SubmissionBuilder(
         title="test",
         description="this submission is just an example",
-        keywords=["example", "keywords"]
+        keywords=["example", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -156,7 +155,7 @@ def test_matches_result__two_matching_keywords():
     submission = SubmissionBuilder(
         title="test",
         description="this is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -170,7 +169,7 @@ def test_matches_result__two_words_in_title_and_description_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -184,7 +183,7 @@ def test_matches_result__two_words_in_title_and_keyword_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -198,7 +197,7 @@ def test_matches_result__two_words_one_matches():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -212,7 +211,7 @@ def test_matches_result__case_insensitive_title():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -226,7 +225,7 @@ def test_matches_result__case_insensitive_description():
     submission = SubmissionBuilder(
         title="test submission",
         description="This submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -240,7 +239,7 @@ def test_matches_result__case_insensitive_keywords():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "KEYWORDS"]
+        keywords=["example", "submission", "KEYWORDS"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -254,7 +253,7 @@ def test_matches_result__case_insensitive_query():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -268,7 +267,7 @@ def test_matches_result__does_not_match_negated_query():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -282,7 +281,7 @@ def test_matches_result__does_not_match_negated_query_exclamation_mark():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -296,7 +295,7 @@ def test_matches_result__does_not_match_negated_query_case_insensitive():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -310,7 +309,7 @@ def test_matches_result__matches_non_applicable_negated_query():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -324,7 +323,7 @@ def test_matches_result__matches_query_with_non_applicable_negated_query():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -338,7 +337,7 @@ def test_matches_result__does_not_match_query_with_applicable_negated_query():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -352,7 +351,7 @@ def test_matches_result__does_not_match_query_with_applicable_negated_query_in_s
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -366,7 +365,7 @@ def test_matches_result__matches_query_with_hyphen():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an-example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -380,7 +379,7 @@ def test_matches_result__doesnt_match_blocklisted_tag():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an-example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, NotQuery(WordQuery("test")))
@@ -389,12 +388,12 @@ def test_matches_result__doesnt_match_blocklisted_tag():
 
 
 def test_matches_result__phrase():
-    query = "\"hello world\""
+    query = '"hello world"'
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission says hello world",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -403,12 +402,12 @@ def test_matches_result__phrase():
 
 
 def test_matches_result__keywords_not_phrase():
-    query = "\"hello world\""
+    query = '"hello world"'
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission says hello to the world",
-        keywords=["example", "hello", "world"]
+        keywords=["example", "hello", "world"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -422,7 +421,7 @@ def test_matches_result__keyword_field():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission has no deer and will not be tagged deer",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -436,7 +435,7 @@ def test_matches_result__doesnt_match_except_clause():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example of a multitude of things",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -450,7 +449,7 @@ def test_matches_result__doesnt_match_except_prefix_clause():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example of some multicoloured things",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -464,7 +463,7 @@ def test_matches_result__doesnt_match_except_bracket_clause():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example of a multitude of multicoloured things",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -478,7 +477,7 @@ def test_matches_result__except_matches_other_match():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is just an example of a multitude of multiple things",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -487,12 +486,12 @@ def test_matches_result__except_matches_other_match():
 
 
 def test_matches_result__doesnt_match_except_quote():
-    query = "taur except \"no taur\""
+    query = 'taur except "no taur"'
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission contains no taur",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -506,7 +505,7 @@ def test_matches_result__doesnt_match_except_field():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is about multiplication but not tagged like that",
-        keywords=["multitude", "multiple", "multicoloured", "multicolors"]
+        keywords=["multitude", "multiple", "multicoloured", "multicolors"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -521,7 +520,7 @@ def test_matches_result__not_when_paused():
     submission = SubmissionBuilder(
         title="test submission",
         description="this submission is just an example",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -534,8 +533,8 @@ def test_matches_word_in_quotes():
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
         title="Test submission",
-        description="this submission is=\"deer\"",
-        keywords=["example", "submission", "keywords"]
+        description='this submission is="deer"',
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -549,7 +548,7 @@ def test_matches_word_in_tag():
     submission = SubmissionBuilder(
         title="Test submission",
         description="this submission is <b>deer</b>",
-        keywords=["example", "submission", "keywords"]
+        keywords=["example", "submission", "keywords"],
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -561,8 +560,7 @@ def test_matches_with_rating():
     query = "deer rating:general"
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
-        title="Deer plays in woods",
-        rating=Rating.GENERAL
+        title="Deer plays in woods", rating=Rating.GENERAL
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -574,8 +572,7 @@ def test_matches_not_rating():
     query = "deer rating:general"
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
-        title="Deer 'plays' in woods",
-        rating=Rating.ADULT
+        title="Deer 'plays' in woods", rating=Rating.ADULT
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -587,8 +584,7 @@ def test_matches_negative_rating():
     query = "deer -rating:general"
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
-        title="Deer 'plays' in woods",
-        rating=Rating.MATURE
+        title="Deer 'plays' in woods", rating=Rating.MATURE
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -600,8 +596,7 @@ def test_matches_not_negative_rating():
     query = "deer -rating:general"
     subscription = Subscription(query, 12432)
     submission = SubmissionBuilder(
-        title="Deer plays in woods",
-        rating=Rating.GENERAL
+        title="Deer plays in woods", rating=Rating.GENERAL
     ).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
@@ -615,8 +610,7 @@ def test_matches_general_rating():
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
     submission = SubmissionBuilder(
-        title="Deer plays in woods",
-        rating=Rating.GENERAL
+        title="Deer plays in woods", rating=Rating.GENERAL
     ).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
@@ -632,8 +626,7 @@ def test_matches_mature_rating():
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
     submission = SubmissionBuilder(
-        title="Deer plays in woods",
-        rating=Rating.MATURE
+        title="Deer plays in woods", rating=Rating.MATURE
     ).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
@@ -649,8 +642,7 @@ def test_matches_explicit_rating():
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
     submission = SubmissionBuilder(
-        title="Deer plays in woods",
-        rating=Rating.ADULT
+        title="Deer plays in woods", rating=Rating.ADULT
     ).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
@@ -667,9 +659,11 @@ def test_matches_result__doesnt_match_blocklisted_rating():
         title="Test submission",
         description="this submission is just an-example",
         keywords=["example", "submission", "keywords"],
-        rating=Rating.ADULT
+        rating=Rating.ADULT,
     ).build_full_submission()
-    blocklist = AndQuery([NotQuery(RatingQuery(Rating.ADULT)), NotQuery(RatingQuery(Rating.MATURE))])
+    blocklist = AndQuery(
+        [NotQuery(RatingQuery(Rating.ADULT)), NotQuery(RatingQuery(Rating.MATURE))]
+    )
 
     match = subscription.matches_result(submission, blocklist)
 
@@ -703,9 +697,7 @@ def test_matches_result__prefix_matches_case_insensitive():
 def test_matches_result__prefix_doesnt_match_term():
     query = "deer*"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="deer plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="deer plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -739,9 +731,7 @@ def test_matches_result__suffix_matches_case_insensitive():
 def test_matches_result__suffix_doesnt_match_term():
     query = "*taur"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="taur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="taur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -804,11 +794,7 @@ def test_to_json__paused():
 
 
 def test_from_json_old_format_no_update():
-    data = {
-        "query": "example query",
-        "destination": 17839,
-        "latest_update": None
-    }
+    data = {"query": "example query", "destination": 17839, "latest_update": None}
 
     sub = Subscription.from_json_old_format(data)
     assert sub.query_str == "example query"
@@ -817,10 +803,7 @@ def test_from_json_old_format_no_update():
 
 
 def test_from_json_new_format_no_update():
-    data = {
-        "query": "example query",
-        "latest_update": None
-    }
+    data = {"query": "example query", "latest_update": None}
 
     sub = Subscription.from_json_new_format(data, 17839)
     assert sub.query_str == "example query"
@@ -832,32 +815,30 @@ def test_from_json_old_format():
     data = {
         "query": "example query",
         "destination": 17839,
-        "latest_update": "2019-09-17T21:14:07Z"
+        "latest_update": "2019-09-17T21:14:07Z",
     }
 
     sub = Subscription.from_json_old_format(data)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
-    assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
+    assert sub.latest_update == datetime.datetime(
+        2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc
+    )
 
 
 def test_from_json_new_format():
-    data = {
-        "query": "example query",
-        "latest_update": "2019-09-17T21:14:07Z"
-    }
+    data = {"query": "example query", "latest_update": "2019-09-17T21:14:07Z"}
 
     sub = Subscription.from_json_new_format(data, 17839)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
-    assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
+    assert sub.latest_update == datetime.datetime(
+        2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc
+    )
 
 
 def test_from_json_paused_unset():
-    data = {
-        "query": "example query",
-        "latest_update": "2020-11-01T22:16:26Z"
-    }
+    data = {"query": "example query", "latest_update": "2020-11-01T22:16:26Z"}
 
     sub = Subscription.from_json_new_format(data, 17839)
     assert sub.paused is False
@@ -867,7 +848,7 @@ def test_from_json_paused_false():
     data = {
         "query": "example query",
         "latest_update": "2020-11-01T22:16:26Z",
-        "paused": False
+        "paused": False,
     }
 
     sub = Subscription.from_json_new_format(data, 17839)
@@ -878,7 +859,7 @@ def test_from_json_paused_true():
     data = {
         "query": "example query",
         "latest_update": "2020-11-01T22:16:26Z",
-        "paused": True
+        "paused": True,
     }
 
     sub = Subscription.from_json_new_format(data, 17839)
@@ -898,7 +879,9 @@ def test_to_json_and_back_no_update():
 
 def test_to_json_and_back():
     sub = Subscription("something", 3223)
-    sub.latest_update = datetime.datetime(2019, 9, 17, 21, 16, 14, tzinfo=datetime.timezone.utc)
+    sub.latest_update = datetime.datetime(
+        2019, 9, 17, 21, 16, 14, tzinfo=datetime.timezone.utc
+    )
 
     data = sub.to_json()
     new_sub = Subscription.from_json_new_format(data, 3223)

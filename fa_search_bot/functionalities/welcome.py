@@ -11,9 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class WelcomeFunctionality(BotFunctionality):
-
     def __init__(self):
-        super().__init__(NewMessage(pattern='/start', incoming=True))
+        super().__init__(NewMessage(pattern="/start", incoming=True))
 
     async def call(self, event: NewMessage.Event):
         logger.info("Welcome message sent to user")
@@ -32,7 +31,7 @@ class WelcomeFunctionality(BotFunctionality):
             "- Store blocklists for those subscriptions\n"
             "You can get more details by reading "
             "[my README on github](https://github.com/Deer-Spangle/FA-search-bot#commands)",
-            parse_mode=markdown
+            parse_mode=markdown,
         )
         raise StopPropagation
 

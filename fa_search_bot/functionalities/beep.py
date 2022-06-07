@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class BeepFunctionality(BotFunctionality):
-
     def __init__(self):
         super().__init__(events.NewMessage(pattern="/beep", incoming=True))
 

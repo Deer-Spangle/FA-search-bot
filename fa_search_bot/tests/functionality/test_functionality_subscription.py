@@ -3,10 +3,8 @@ import datetime
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.subscriptions import \
-    SubscriptionFunctionality
-from fa_search_bot.subscription_watcher import (Subscription,
-                                                SubscriptionWatcher)
+from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
+from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
@@ -34,7 +32,9 @@ async def test_call__route_add_subscription(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_add_subscription_with_username(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/add_subscription@FASearchBot test"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -54,7 +54,9 @@ async def test_call__route_add_subscription_with_username(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_subscription(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/remove_subscription example"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -74,7 +76,9 @@ async def test_call__route_remove_subscription(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_subscription_with_username(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/remove_subscription@FASearchBot example"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -113,7 +117,9 @@ async def test_call__route_list_subscriptions(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_list_subscriptions_with_username(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/list_subscriptions@FASearchBot"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -160,7 +166,7 @@ def test_add_sub__no_add_duplicate(mock_client):
 
     resp = func._add_sub(18749, "test")
 
-    assert resp == "A subscription already exists for \"test\"."
+    assert resp == 'A subscription already exists for "test".'
     assert len(watcher.subscriptions) == 1
 
 
@@ -172,7 +178,7 @@ def test_add_sub__no_add_duplicate_case_insensitive(mock_client):
 
     resp = func._add_sub(18749, "TEST")
 
-    assert resp == "A subscription already exists for \"TEST\"."
+    assert resp == 'A subscription already exists for "TEST".'
     assert len(watcher.subscriptions) == 1
 
 
@@ -186,7 +192,7 @@ def test_add_sub__adds_subscription(mock_client):
     resp = func._add_sub(18749, "test")
 
     assert "Added subscription" in resp
-    assert "\"test\"" in resp
+    assert '"test"' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -206,7 +212,7 @@ def test_remove_sub__non_existent_subscription(mock_client):
 
     resp = func._remove_sub(18749, "test")
 
-    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert resp == 'There is not a subscription for "test" in this chat.'
     assert len(watcher.subscriptions) == 2
 
 
@@ -224,7 +230,7 @@ def test_remove_sub__removes_subscription(mock_client):
 
     resp = func._remove_sub(18749, "test")
 
-    assert "Removed subscription: \"test\"." in resp
+    assert 'Removed subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -255,7 +261,7 @@ def test_remove_sub__removes_subscription_case_insensitive(mock_client):
 
     resp = func._remove_sub(18749, "TEST")
 
-    assert "Removed subscription: \"TEST\"." in resp
+    assert 'Removed subscription: "TEST".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp

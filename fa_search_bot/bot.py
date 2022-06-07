@@ -11,25 +11,26 @@ from yippi import AsyncYippiClient
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.functionalities import usage_counter
-from fa_search_bot.functionalities.image_hash_recommend import \
-    ImageHashRecommendFunctionality
+from fa_search_bot.functionalities.image_hash_recommend import (
+    ImageHashRecommendFunctionality,
+)
 from fa_search_bot.functionalities.inline_edit import (
-    InlineEditButtonPress, InlineEditFunctionality
+    InlineEditButtonPress,
+    InlineEditFunctionality,
 )
 from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
-from fa_search_bot.functionalities.inline_gallery import \
-    InlineGalleryFunctionality
-from fa_search_bot.functionalities.inline_neaten import \
-    InlineNeatenFunctionality
-from fa_search_bot.functionalities.inline_search import \
-    InlineSearchFunctionality
+from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
+from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
+from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
 from fa_search_bot.functionalities.subscriptions import (
-    BlocklistFunctionality, SubscriptionFunctionality)
-from fa_search_bot.functionalities.supergroup_upgrade import \
-    SupergroupUpgradeFunctionality
-from fa_search_bot.functionalities.unhandled import \
-    UnhandledMessageFunctionality
+    BlocklistFunctionality,
+    SubscriptionFunctionality,
+)
+from fa_search_bot.functionalities.supergroup_upgrade import (
+    SupergroupUpgradeFunctionality,
+)
+from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
@@ -49,12 +50,8 @@ class TelegramConfig:
     bot_token: str
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> 'TelegramConfig':
-        return cls(
-            conf["telegram_api_id"],
-            conf["telegram_api_hash"],
-            conf["bot_key"]
-        )
+    def from_dict(cls, conf: Dict) -> "TelegramConfig":
+        return cls(conf["telegram_api_id"], conf["telegram_api_hash"], conf["bot_key"])
 
 
 @dataclasses.dataclass
@@ -63,11 +60,8 @@ class E621Config:
     api_key: str
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> 'E621Config':
-        return cls(
-            conf["username"],
-            conf["api_key"]
-        )
+    def from_dict(cls, conf: Dict) -> "E621Config":
+        return cls(conf["username"], conf["api_key"])
 
 
 @dataclasses.dataclass
@@ -78,12 +72,12 @@ class Config:
     prometheus_port: Optional[int]
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> 'Config':
+    def from_dict(cls, conf: Dict) -> "Config":
         return cls(
             conf["api_url"],
             TelegramConfig.from_dict(conf),
             E621Config.from_dict(conf["e621"]),
-            conf.get("prometheus_port", 7065)
+            conf.get("prometheus_port", 7065),
         )
 
 
@@ -92,10 +86,12 @@ class FASearchBot:
     VERSION = __VERSION__
 
     def __init__(self, conf_file):
-        with open(conf_file, 'r') as f:
+        with open(conf_file, "r") as f:
             self.config = Config.from_dict(json.load(f))
         self.api = FAExportAPI(self.config.fa_api_url)
-        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
+        self.e6_api = AsyncYippiClient(
+            "FA-search-bot", __VERSION__, self.config.e621.username
+        )
         self.e6_handler = E621Handler(self.e6_api)
         self.client = None
         self.alive = False
@@ -111,14 +107,20 @@ class FASearchBot:
 
     def start(self):
         start_http_server(self.config.prometheus_port)
-        info.info({
-            "version": __VERSION__,
-        })
+        info.info(
+            {
+                "version": __VERSION__,
+            }
+        )
         start_time.set_to_current_time()
         self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
-        self.client = TelegramClient("fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash)
+        self.client = TelegramClient(
+            "fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash
+        )
         self.client.start(bot_token=self.config.telegram.bot_token)
-        self.subscription_watcher = SubscriptionWatcher.load_from_json(self.api, self.client)
+        self.subscription_watcher = SubscriptionWatcher.load_from_json(
+            self.api, self.client
+        )
 
         self.functionalities = self.initialise_functionalities()
         for func in self.functionalities:

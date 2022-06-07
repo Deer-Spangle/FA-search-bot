@@ -7,37 +7,39 @@ from typing import List
 import requests
 from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.fa_submission import (FAStatus, FASubmission,
-                                               FASubmissionFull,
-                                               FASubmissionShort,
-                                               FASubmissionShortFav)
+from fa_search_bot.sites.fa_submission import (
+    FAStatus,
+    FASubmission,
+    FASubmissionFull,
+    FASubmissionShort,
+    FASubmissionShortFav,
+)
 
 logger = logging.getLogger(__name__)
 
 site_slowdown = Enum(
     "fasearchbot_faapi_slowdown_state",
     "Whether the FA API is in a slow state due to high number of registered users on FA",
-    states=["slow", "not_slow"]
+    states=["slow", "not_slow"],
 )
 site_latest_id = Gauge(
-    "fasearchbot_faapi_latest_id",
-    "Latest FA submission ID the bot has seen"
+    "fasearchbot_faapi_latest_id", "Latest FA submission ID the bot has seen"
 )
 cloudflare_errors = Counter(
     "fasearchbot_faapi_cloudflare_errors_total",
     "Number of cloudflare errors received by the FA API",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 api_request_times = Histogram(
     "fasearchbot_faapi_request_time_seconds",
     "Request times of the FA API, in seconds",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 api_retry_counts = Histogram(
     "fasearchbot_faapi_retry_counts",
     "Retry counts of the FA API",
     buckets=list(range(10)),
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 
 
@@ -87,7 +89,9 @@ class FAExportAPI:
             raise CloudflareError()
         return resp
 
-    async def _api_request_with_retry(self, path: str, endpoint_label: Endpoint) -> requests.Response:
+    async def _api_request_with_retry(
+            self, path: str, endpoint_label: Endpoint
+    ) -> requests.Response:
         if self._is_site_slowdown():
             await asyncio.sleep(self.SLOWDOWN_BACKOFF)
         resp = self._api_request(path, endpoint_label)
@@ -107,17 +111,25 @@ class FAExportAPI:
         now = datetime.datetime.now()
         if (
                 self.last_status_check is None
-                or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
+                or (
+                self.last_status_check
+                + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)
+        )
+                < now
         ):
             status = self.status()
             self.last_status_check = now
-            self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
+            self.slow_down_status = (
+                    status.online_registered > self.STATUS_LIMIT_REGISTERED
+            )
         site_slowdown.state("slow" if self.slow_down_status else "not_slow")
         return self.slow_down_status
 
     async def get_full_submission(self, submission_id: str) -> FASubmissionFull:
         logger.debug("Getting full submission for submission ID %s", submission_id)
-        sub_resp = await self._api_request_with_retry(f"submission/{submission_id}.json", Endpoint.SUBMISSION)
+        sub_resp = await self._api_request_with_retry(
+            f"submission/{submission_id}.json", Endpoint.SUBMISSION
+        )
         # If API returns fine
         if sub_resp.status_code == 200:
             submission = FASubmission.from_full_dict(sub_resp.json())
@@ -125,11 +137,20 @@ class FAExportAPI:
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
-    async def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
-        logger.debug("Getting user folder for user %s, folder %s, and page %s", user, folder, page)
+    async def get_user_folder(
+            self, user: str, folder: str, page: int = 1
+    ) -> List[FASubmissionShort]:
+        logger.debug(
+            "Getting user folder for user %s, folder %s, and page %s",
+            user,
+            folder,
+            page,
+        )
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
-        resp = await self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1", Endpoint.USER_FOLDER)
+        resp = await self._api_request_with_retry(
+            f"user/{user}/{folder}.json?page={page}&full=1", Endpoint.USER_FOLDER
+        )
         if resp.status_code == 200:
             data = resp.json()
             submissions = []
@@ -140,14 +161,18 @@ class FAExportAPI:
             logger.warning("User gallery not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
-    async def get_user_favs(self, user: str, next_id: str = None) -> List[FASubmissionShortFav]:
+    async def get_user_favs(
+            self, user: str, next_id: str = None
+    ) -> List[FASubmissionShortFav]:
         logger.debug("Getting user favourites for user: %s, next_id: %s", user, next_id)
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         next_str = ""
         if next_id is not None:
             next_str = f"next={next_id}&"
-        resp = await self._api_request_with_retry(f"user/{user}/favorites.json?{next_str}full=1", Endpoint.USER_FAVS)
+        resp = await self._api_request_with_retry(
+            f"user/{user}/favorites.json?{next_str}full=1", Endpoint.USER_FAVS
+        )
         if resp.status_code == 200:
             data = resp.json()
             submissions = []
@@ -158,11 +183,12 @@ class FAExportAPI:
             logger.warning("User favourites not found with name: %s", user)
             raise PageNotFound(f"User not found by name: {user}")
 
-    async def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
+    async def get_search_results(
+            self, query: str, page: int = 1
+    ) -> List[FASubmissionShort]:
         logger.debug("Searching for query: %s, page: %s", query, page)
         resp = await self._api_request_with_retry(
-            f"search.json?full=1&perpage=48&q={query}&page={page}",
-            Endpoint.SEARCH
+            f"search.json?full=1&perpage=48&q={query}&page={page}", Endpoint.SEARCH
         )
         data = resp.json()
         submissions = []
@@ -172,7 +198,9 @@ class FAExportAPI:
 
     async def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Getting browse page %s", page)
-        resp = await self._api_request_with_retry(f"browse.json?page={page}", Endpoint.BROWSE)
+        resp = await self._api_request_with_retry(
+            f"browse.json?page={page}", Endpoint.BROWSE
+        )
         data = resp.json()
         submissions = []
         for submission_data in data:

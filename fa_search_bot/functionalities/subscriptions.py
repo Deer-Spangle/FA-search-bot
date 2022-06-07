@@ -7,8 +7,7 @@ from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
-from fa_search_bot.subscription_watcher import (Subscription,
-                                                SubscriptionWatcher)
+from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +27,14 @@ class SubscriptionFunctionality(BotFunctionality):
     USE_CASE_RESUME_SUB = "subscription_resume"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
-        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
+        commands = (
+                [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd]
+                + self.pause_cmds
+                + self.resume_cmds
+        )
+        commands_pattern = re.compile(
+            r"^/(" + "|".join(re.escape(c) for c in commands) + ")"
+        )
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 
@@ -42,7 +47,7 @@ class SubscriptionFunctionality(BotFunctionality):
             self.USE_CASE_PAUSE_DEST,
             self.USE_CASE_PAUSE_SUB,
             self.USE_CASE_RESUME_DEST,
-            self.USE_CASE_RESUME_SUB
+            self.USE_CASE_RESUME_SUB,
         ]
 
     async def call(self, event: NewMessage.Event):
@@ -50,8 +55,7 @@ class SubscriptionFunctionality(BotFunctionality):
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         await event.reply(
-            self._route_command(event.chat_id, command, args),
-            parse_mode='html'
+            self._route_command(event.chat_id, command, args), parse_mode="html"
         )
         raise StopPropagation
 
@@ -80,25 +84,31 @@ class SubscriptionFunctionality(BotFunctionality):
         try:
             new_sub = Subscription(query, destination)
         except InvalidQueryException as e:
-            logger.error("Failed to parse new subscription query: %s", query, exc_info=e)
+            logger.error(
+                "Failed to parse new subscription query: %s", query, exc_info=e
+            )
             return f"Failed to parse subscription query: {html.escape(str(e))}"
         if new_sub in self.watcher.subscriptions:
-            return f"A subscription already exists for \"{html.escape(query)}\"."
+            return f'A subscription already exists for "{html.escape(query)}".'
         self.watcher.subscriptions.add(new_sub)
-        return f"Added subscription: \"{html.escape(query)}\".\n{self._list_subs(destination)}"
+        return f'Added subscription: "{html.escape(query)}".\n{self._list_subs(destination)}'
 
     def _remove_sub(self, destination: int, query: str):
         self.usage_counter.labels(function=self.USE_CASE_REMOVE).inc()
         old_sub = Subscription(query, destination)
         try:
             self.watcher.subscriptions.remove(old_sub)
-            return f"Removed subscription: \"{html.escape(query)}\".\n{self._list_subs(destination)}"
+            return f'Removed subscription: "{html.escape(query)}".\n{self._list_subs(destination)}'
         except KeyError:
-            return f"There is not a subscription for \"{html.escape(query)}\" in this chat."
+            return (
+                f'There is not a subscription for "{html.escape(query)}" in this chat.'
+            )
 
     def _list_subs(self, destination: int):
         self.usage_counter.labels(function=self.USE_CASE_LIST).inc()
-        subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
+        subs = [
+            sub for sub in self.watcher.subscriptions if sub.destination == destination
+        ]
         subs.sort(key=lambda sub: sub.query_str.casefold())
         sub_list_entries = []
         for sub in subs:
@@ -125,12 +135,12 @@ class SubscriptionFunctionality(BotFunctionality):
         self.usage_counter.labels(function=self.USE_CASE_PAUSE_SUB).inc()
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
-            return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
+            return f'There is not a subscription for "{html.escape(sub_name)}" in this chat.'
         matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
         if matching.paused:
-            return f"Subscription for \"{html.escape(sub_name)}\" is already paused."
+            return f'Subscription for "{html.escape(sub_name)}" is already paused.'
         matching.paused = True
-        return f"Paused subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
+        return f'Paused subscription: "{html.escape(sub_name)}".\n{self._list_subs(chat_id)}'
 
     def _resume_destination(self, chat_id: int) -> str:
         self.usage_counter.labels(function=self.USE_CASE_RESUME_DEST).inc()
@@ -148,12 +158,12 @@ class SubscriptionFunctionality(BotFunctionality):
         self.usage_counter.labels(function=self.USE_CASE_RESUME_SUB).inc()
         pause_sub = Subscription(sub_name, chat_id)
         if pause_sub not in self.watcher.subscriptions:
-            return f"There is not a subscription for \"{html.escape(sub_name)}\" in this chat."
+            return f'There is not a subscription for "{html.escape(sub_name)}" in this chat.'
         matching = [sub for sub in self.watcher.subscriptions if sub == pause_sub][0]
         if not matching.paused:
-            return f"Subscription for \"{html.escape(sub_name)}\" is already running."
+            return f'Subscription for "{html.escape(sub_name)}" is already running.'
         matching.paused = False
-        return f"Resumed subscription: \"{html.escape(sub_name)}\".\n{self._list_subs(chat_id)}"
+        return f'Resumed subscription: "{html.escape(sub_name)}".\n{self._list_subs(chat_id)}'
 
 
 class BlocklistFunctionality(BotFunctionality):
@@ -165,18 +175,20 @@ class BlocklistFunctionality(BotFunctionality):
     USE_CASE_LIST = "block_list"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        commands = [self.add_block_tag_cmd, self.remove_block_tag_cmd, self.list_block_tag_cmd]
-        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
+        commands = [
+            self.add_block_tag_cmd,
+            self.remove_block_tag_cmd,
+            self.list_block_tag_cmd,
+        ]
+        commands_pattern = re.compile(
+            r"^/(" + "|".join(re.escape(c) for c in commands) + ")"
+        )
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 
     @property
     def usage_labels(self) -> List[str]:
-        return [
-            self.USE_CASE_ADD,
-            self.USE_CASE_REMOVE,
-            self.USE_CASE_LIST
-        ]
+        return [self.USE_CASE_ADD, self.USE_CASE_REMOVE, self.USE_CASE_LIST]
 
     async def call(self, event: NewMessage.Event):
         message_text = event.text
@@ -184,21 +196,13 @@ class BlocklistFunctionality(BotFunctionality):
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
         if command.startswith("/" + self.add_block_tag_cmd):
-            await event.reply(
-                self._add_to_blocklist(destination, args)
-            )
+            await event.reply(self._add_to_blocklist(destination, args))
         elif command.startswith("/" + self.remove_block_tag_cmd):
-            await event.reply(
-                self._remove_from_blocklist(destination, args)
-            )
+            await event.reply(self._remove_from_blocklist(destination, args))
         elif command.startswith("/" + self.list_block_tag_cmd):
-            await event.reply(
-                self._list_blocklisted_tags(destination)
-            )
+            await event.reply(self._list_blocklisted_tags(destination))
         else:
-            await event.reply(
-                "I do not understand."
-            )
+            await event.reply("I do not understand.")
         raise StopPropagation
 
     def _add_to_blocklist(self, destination: int, query: str):
@@ -209,15 +213,15 @@ class BlocklistFunctionality(BotFunctionality):
             self.watcher.add_to_blocklist(destination, query)
         except InvalidQueryException as e:
             return f"Failed to parse blocklist query: {e}"
-        return f"Added tag to blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
+        return f'Added tag to blocklist: "{query}".\n{self._list_blocklisted_tags(destination)}'
 
     def _remove_from_blocklist(self, destination: int, query: str):
         self.usage_counter.labels(function=self.USE_CASE_REMOVE).inc()
         try:
             self.watcher.blocklists.get(destination, []).remove(query)
-            return f"Removed tag from blocklist: \"{query}\".\n{self._list_blocklisted_tags(destination)}"
+            return f'Removed tag from blocklist: "{query}".\n{self._list_blocklisted_tags(destination)}'
         except KeyError:
-            return f"The tag \"{query}\" is not on the blocklist for this chat."
+            return f'The tag "{query}" is not on the blocklist for this chat.'
 
     def _list_blocklisted_tags(self, destination: int):
         self.usage_counter.labels(function=self.USE_CASE_LIST).inc()

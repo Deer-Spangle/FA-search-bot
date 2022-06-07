@@ -20,7 +20,9 @@ async def test_neaten_gif(controller: BotController):
 
     # Send neaten command
     async with controller.collect(count=2, max_wait=300) as response:
-        await controller.client.send_message(controller.peer_id, f"https://www.furaffinity.net/view/{submission_id}/")
+        await controller.client.send_message(
+            controller.peer_id, f"https://www.furaffinity.net/view/{submission_id}/"
+        )
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -41,7 +43,9 @@ async def test_neaten_gif_from_cache(controller: BotController, bot: FASearchBot
         sendable._save_video_to_cache(output_path)
 
     async with controller.collect(count=2, max_wait=300) as response:
-        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/27408045/")
+        await controller.client.send_message(
+            controller.peer_id, "https://www.furaffinity.net/view/27408045/"
+        )
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -60,7 +64,9 @@ async def test_neaten_webm(controller: BotController):
 
     # Send neaten command
     async with controller.collect(count=2, max_wait=600) as response:
-        await controller.client.send_message(controller.peer_id, f"https://e621.net/posts/{post_id}/")
+        await controller.client.send_message(
+            controller.peer_id, f"https://e621.net/posts/{post_id}/"
+        )
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")

@@ -1,16 +1,21 @@
 import random
 from typing import List, Union
 
-from fa_search_bot.sites.fa_submission import (FASubmission, FASubmissionFull,
-                                               FASubmissionShort, FAUser,
-                                               Rating)
-from fa_search_bot.tests.util.mock_export_api import (MockSubmission,
-                                                      _random_image_id,
-                                                      _random_string)
+from fa_search_bot.sites.fa_submission import (
+    FASubmission,
+    FASubmissionFull,
+    FASubmissionShort,
+    FAUser,
+    Rating,
+)
+from fa_search_bot.tests.util.mock_export_api import (
+    MockSubmission,
+    _random_image_id,
+    _random_string,
+)
 
 
 class SubmissionBuilder:
-
     def __init__(
             self,
             *,
@@ -25,7 +30,7 @@ class SubmissionBuilder:
             author: FAUser = None,
             description: str = None,
             keywords: List[str] = None,
-            rating: Rating = None
+            rating: Rating = None,
     ):
         if submission_id is None:
             submission_id = random.randint(10_000, 100_000)
@@ -46,9 +51,13 @@ class SubmissionBuilder:
         if thumb_size is None:
             thumb_size = 1600
         # Variables for superclass
-        thumbnail_url = f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
-        download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
+        thumbnail_url = (
+            f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
+        )
+        download_url = (
+            f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/"
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
+        )
         if file_ext in MockSubmission.EXTENSIONS_ART:
             full_image_url = download_url
         else:
@@ -56,7 +65,9 @@ class SubmissionBuilder:
         if title is None:
             title = _random_string()
         if author is None:
-            author = FAUser.from_submission_dict({"name": username.title(), "profile_name": username})
+            author = FAUser.from_submission_dict(
+                {"name": username.title(), "profile_name": username}
+            )
         if description is None:
             description = _random_string() * 5
         if keywords is None:
@@ -89,17 +100,14 @@ class SubmissionBuilder:
             self.author,
             self.description,
             self.keywords,
-            self.rating
+            self.rating,
         )
         sub._download_file_size = self._download_file_size
         return sub
 
     def build_short_submission(self):
         sub = FASubmissionShort(
-            self.submission_id,
-            self.thumbnail_url,
-            self.title,
-            self.author
+            self.submission_id, self.thumbnail_url, self.title, self.author
         )
         return sub
 
@@ -108,7 +116,9 @@ class SubmissionBuilder:
             self.submission_id,
             username=self.author.profile_name,
             image_id=self._image_id,
-            file_size=14852 if self._download_file_size is None else self._download_file_size,
+            file_size=14852
+            if self._download_file_size is None
+            else self._download_file_size,
             file_ext=self._file_ext,
             fav_id=self.fav_id,
             title=self.title,
@@ -136,9 +146,9 @@ class SubmissionBuilder:
             "rating": {
                 Rating.GENERAL: "General",
                 Rating.MATURE: "Mature",
-                Rating.ADULT: "Adult"
+                Rating.ADULT: "Adult",
             }[self.rating],
-            "keywords": self.keywords
+            "keywords": self.keywords,
         }
 
     def build_search_json(self):
@@ -149,5 +159,5 @@ class SubmissionBuilder:
             "link": f"https://www.furaffinity.net/view/{self.submission_id}/",
             "name": self.author.name,
             "profile": self.author.link,
-            "profile_name": self.author.profile_name
+            "profile_name": self.author.profile_name,
         }

@@ -19,9 +19,10 @@ def filter_migration(event: UpdateNewChannelMessage) -> bool:
 
 
 class SupergroupUpgradeFunctionality(BotFunctionality):
-
     def __init__(self, watcher: SubscriptionWatcher):
-        super().__init__(events.Raw(types.UpdateNewChannelMessage, func=filter_migration))
+        super().__init__(
+            events.Raw(types.UpdateNewChannelMessage, func=filter_migration)
+        )
         self.watcher = watcher
 
     @property
@@ -30,9 +31,11 @@ class SupergroupUpgradeFunctionality(BotFunctionality):
 
     async def call(self, event: types.UpdateNewChannelMessage):
         old_chat_id = -1 * event.message.action.chat_id
-        new_chat_id = int('-100' + str(event.message.to_id.channel_id))
+        new_chat_id = int("-100" + str(event.message.to_id.channel_id))
         # Log the upgrade
-        logger.info("Migration from chat ID: %s to chat ID: %s", old_chat_id, new_chat_id)
+        logger.info(
+            "Migration from chat ID: %s to chat ID: %s", old_chat_id, new_chat_id
+        )
         self.usage_counter.labels(function="supergroup_upgrade").inc()
         # Upgrade subscriptions and block queries
         self.watcher.migrate_chat(old_chat_id, new_chat_id)

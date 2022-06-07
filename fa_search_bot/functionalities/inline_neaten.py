@@ -23,14 +23,18 @@ class InlineNeatenFunctionality(BotFunctionality):
     @property
     def usage_labels(self) -> List[str]:
         return [self.USE_CASE_ID] + [
-            f"{self.USE_CASE_LINK}_{handler.site_code}" for handler in self.handlers.values()
+            f"{self.USE_CASE_LINK}_{handler.site_code}"
+            for handler in self.handlers.values()
         ]
 
     async def call(self, event: InlineQuery.Event):
         query = event.query.query
         query_clean = query.strip().lower()
         # Check if it's a submission ID
-        if any(handler.is_valid_submission_id(query_clean) for handler in self.handlers.values()):
+        if any(
+                handler.is_valid_submission_id(query_clean)
+                for handler in self.handlers.values()
+        ):
             results = await self._answer_id_query(event, query_clean)
             if results:
                 self.usage_counter.labels(function=f"{self.USE_CASE_ID}").inc()
@@ -43,7 +47,9 @@ class InlineNeatenFunctionality(BotFunctionality):
             if link_matches:
                 results = await self._answer_link_query(event, handler, link_matches)
                 if results:
-                    self.usage_counter.labels(function=f"{self.USE_CASE_LINK}_{handler.site_code}").inc()
+                    self.usage_counter.labels(
+                        function=f"{self.USE_CASE_LINK}_{handler.site_code}"
+                    ).inc()
                     logger.info("Sending inline link query results")
                     await event.answer(results, gallery=True)
                     raise StopPropagation
@@ -51,30 +57,30 @@ class InlineNeatenFunctionality(BotFunctionality):
         pass
 
     async def _answer_id_query(
-            self,
-            event: InlineQuery.Event,
-            submission_id: str
+            self, event: InlineQuery.Event, submission_id: str
     ) -> Optional[List[InputBotInlineResultPhoto]]:
         try:
-            result_futures = await gather_ignore_exceptions([
-                handler.submission_as_answer(submission_id, event.builder)
-                for handler in self.handlers.values()
-            ])
+            result_futures = await gather_ignore_exceptions(
+                [
+                    handler.submission_as_answer(submission_id, event.builder)
+                    for handler in self.handlers.values()
+                ]
+            )
             return await gather_ignore_exceptions(result_futures)
         except APIException:
             logger.debug("Inline id query could not find result")
             pass
 
     async def _answer_link_query(
-            self,
-            event: InlineQuery.Event,
-            handler: SiteHandler,
-            links: List[str]
+            self, event: InlineQuery.Event, handler: SiteHandler, links: List[str]
     ) -> Optional[List[InputBotInlineResultPhoto]]:
-        submission_ids = await gather_ignore_exceptions([
-            handler.get_submission_id_from_link(link) for link in links
-        ])
-        results = await gather_ignore_exceptions([
-            handler.submission_as_answer(sub_id, event.builder) for sub_id in submission_ids
-        ])
+        submission_ids = await gather_ignore_exceptions(
+            [handler.get_submission_id_from_link(link) for link in links]
+        )
+        results = await gather_ignore_exceptions(
+            [
+                handler.submission_as_answer(sub_id, event.builder)
+                for sub_id in submission_ids
+            ]
+        )
         return await gather_ignore_exceptions(results)

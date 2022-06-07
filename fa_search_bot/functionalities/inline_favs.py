@@ -5,8 +5,10 @@ from typing import Coroutine, List, Optional, Tuple, Union
 from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-from fa_search_bot.functionalities.functionalities import (BotFunctionality,
-                                                           answer_with_error)
+from fa_search_bot.functionalities.functionalities import (
+    BotFunctionality,
+    answer_with_error,
+)
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 
@@ -19,7 +21,9 @@ class InlineFavsFunctionality(BotFunctionality):
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
 
     def __init__(self, api: FAExportAPI):
-        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I)
+        prefix_pattern = re.compile(
+            "^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I
+        )
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
 
@@ -49,29 +53,32 @@ class InlineFavsFunctionality(BotFunctionality):
         raise StopPropagation
 
     async def _favs_query_results(
-            self,
-            event: InlineQuery.Event,
-            username: str,
-            offset: str
+            self, event: InlineQuery.Event, username: str, offset: str
     ) -> Tuple[
-        List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]],
-        Optional[str]
+        List[
+            Coroutine[
+                None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]
+            ]
+        ],
+        Optional[str],
     ]:
         # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None
         try:
-            submissions = (await self.api.get_user_favs(username, offset))[:self.INLINE_MAX]
+            submissions = (await self.api.get_user_favs(username, offset))[
+                          : self.INLINE_MAX
+                          ]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
-            msg = f"FurAffinity user does not exist by the name: \"{username}\"."
+            msg = f'FurAffinity user does not exist by the name: "{username}".'
             await answer_with_error(event, "User does not exist.", msg)
             raise StopPropagation
         # If no results, send error
         if len(submissions) == 0:
             if offset is not None:
                 return [], None
-            msg = f"There are no favourites for user \"{username}\"."
+            msg = f'There are no favourites for user "{username}".'
             await answer_with_error(event, "Nothing in favourites.", msg)
             raise StopPropagation
         next_offset = str(submissions[-1].fav_id)

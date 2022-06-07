@@ -6,8 +6,10 @@ from typing import Dict, List, Optional
 from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.filters import filter_regex
-from fa_search_bot.functionalities.functionalities import (BotFunctionality,
-                                                           in_progress_msg)
+from fa_search_bot.functionalities.functionalities import (
+    BotFunctionality,
+    in_progress_msg,
+)
 from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.sendable import CantSendFileType
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
@@ -28,14 +30,17 @@ class SubmissionID:
 
 
 class NeatenFunctionality(BotFunctionality):
-
     def __init__(self, handlers: Dict[str, SiteHandler]):
         self.handlers = handlers
         link_regex = re.compile(
-            "(" + "|".join(handler.link_regex.pattern for handler in handlers.values()) + ")",
-            re.IGNORECASE
+            "("
+            + "|".join(handler.link_regex.pattern for handler in handlers.values())
+            + ")",
+            re.IGNORECASE,
         )
-        super().__init__(NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True))
+        super().__init__(
+            NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True)
+        )
 
     @property
     def usage_labels(self) -> List[str]:
@@ -82,21 +87,26 @@ class NeatenFunctionality(BotFunctionality):
                             link_matches += handler.find_links_in_str(button.url)
         return link_matches
 
-    async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[SubmissionID]:
+    async def _get_submission_id_from_link(
+            self, event: NewMessage.Event, link: str
+    ) -> Optional[SubmissionID]:
         for site_id, handler in self.handlers.items():
             try:
                 sub_id = await handler.get_submission_id_from_link(link)
                 if sub_id is not None:
                     return SubmissionID(site_id, sub_id)
             except HandlerException as e:
-                logger.warning("Site handler (%s) raised exception:", handler.__class__.__name__, exc_info=e)
-                await _return_error_in_privmsg(
-                    event,
-                    f"Error finding submission: {e}"
+                logger.warning(
+                    "Site handler (%s) raised exception:",
+                    handler.__class__.__name__,
+                    exc_info=e,
                 )
+                await _return_error_in_privmsg(event, f"Error finding submission: {e}")
                 return None
 
-    async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID):
+    async def _handle_submission_link(
+            self, event: NewMessage.Event, sub_id: SubmissionID
+    ):
         logger.info("Found a link, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
         handler = self.handlers.get(sub_id.site_id)
@@ -107,7 +117,7 @@ class NeatenFunctionality(BotFunctionality):
                 sub_id.submission_id,
                 event.client,
                 event.input_chat,
-                reply_to=event.message.id
+                reply_to=event.message.id,
             )
         except CantSendFileType as e:
             logger.warning("Can't send file type. Submission ID: %s", sub_id)
@@ -117,11 +127,11 @@ class NeatenFunctionality(BotFunctionality):
             await _return_error_in_privmsg(
                 event,
                 f"This doesn't seem to be a valid {handler.site_name} submission: "
-                f"{handler.link_for_submission(sub_id.submission_id)}"
+                f"{handler.link_for_submission(sub_id.submission_id)}",
             )
         except CloudflareError:
             logger.warning("Cloudflare error")
             await _return_error_in_privmsg(
                 event,
-                f"{handler.site_name} returned a cloudflare error, so I cannot neaten links."
+                f"{handler.site_name} returned a cloudflare error, so I cannot neaten links.",
             )

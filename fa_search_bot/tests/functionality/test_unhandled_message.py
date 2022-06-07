@@ -1,17 +1,13 @@
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.unhandled import \
-    UnhandledMessageFunctionality
-from fa_search_bot.tests.util.mock_telegram_event import (ChatType,
-                                                          MockTelegramEvent)
+from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
+from fa_search_bot.tests.util.mock_telegram_event import ChatType, MockTelegramEvent
 
 
 @pytest.mark.asyncio
 async def test_unhandled_message(mock_client):
-    event = MockTelegramEvent.with_message(
-        text="Hello can I have a picture"
-    )
+    event = MockTelegramEvent.with_message(text="Hello can I have a picture")
     unhandled = UnhandledMessageFunctionality()
 
     with pytest.raises(StopPropagation):
@@ -25,8 +21,7 @@ async def test_unhandled_message(mock_client):
 @pytest.mark.asyncio
 async def test_unhandled_group_message(mock_client):
     event = MockTelegramEvent.with_message(
-        text="Hey friendo, how are you?",
-        chat_type=ChatType.GROUP
+        text="Hey friendo, how are you?", chat_type=ChatType.GROUP
     )
     unhandled = UnhandledMessageFunctionality()
 

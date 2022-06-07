@@ -5,7 +5,6 @@ from fa_search_bot.sites.fa_handler import FAHandler
 
 
 class MockSiteHandler(FAHandler):
-
     def __init__(
             self,
             api: FAExportAPI,

@@ -8,9 +8,7 @@ from telethon.events import InlineQuery, NewMessage, StopPropagation
 from telethon.events.common import EventBuilder, EventCommon
 
 usage_counter = Counter(
-    "fasearchbot_usage_total",
-    "Total usage of bot features",
-    labelnames=["function"]
+    "fasearchbot_usage_total", "Total usage of bot features", labelnames=["function"]
 )
 
 
@@ -23,19 +21,13 @@ async def in_progress_msg(event: NewMessage.Event, text: Optional[str]):
     try:
         yield
     except Exception:
-        await event.reply(
-            "Command failed. Sorry, I tried but failed to process this."
-        )
+        await event.reply("Command failed. Sorry, I tried but failed to process this.")
         raise StopPropagation
     finally:
         await msg.delete()
 
 
-async def answer_with_error(
-        event: InlineQuery.Event,
-        title: str,
-        msg: str
-) -> None:
+async def answer_with_error(event: InlineQuery.Event, title: str, msg: str) -> None:
     await event.answer(
         results=[
             await event.builder.article(
@@ -45,12 +37,11 @@ async def answer_with_error(
             )
         ],
         gallery=False,
-        next_offset=None
+        next_offset=None,
     )
 
 
 class BotFunctionality(ABC):
-
     def __init__(self, event: EventBuilder):
         self.event = event
         self.usage_counter = usage_counter

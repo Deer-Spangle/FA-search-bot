@@ -1,8 +1,9 @@
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.supergroup_upgrade import \
-    SupergroupUpgradeFunctionality
+from fa_search_bot.functionalities.supergroup_upgrade import (
+    SupergroupUpgradeFunctionality,
+)
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
@@ -13,7 +14,9 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 async def test_supergroup_upgrade(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
-    event = MockTelegramEvent.with_migration(old_chat_id=old_chat_id, new_chat_id=new_chat_id)
+    event = MockTelegramEvent.with_migration(
+        old_chat_id=old_chat_id, new_chat_id=new_chat_id
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SupergroupUpgradeFunctionality(watcher)

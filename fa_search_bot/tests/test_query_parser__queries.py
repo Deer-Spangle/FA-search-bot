@@ -1,10 +1,22 @@
-from fa_search_bot.query_parser import (AndQuery, ArtistField,
-                                        DescriptionField, ExceptionQuery,
-                                        FieldLocation, KeywordField,
-                                        LocationOrQuery, MatchLocation,
-                                        NotQuery, OrQuery, PhraseQuery,
-                                        PrefixQuery, RatingQuery, RegexQuery,
-                                        SuffixQuery, TitleField, WordQuery)
+from fa_search_bot.query_parser import (
+    AndQuery,
+    ArtistField,
+    DescriptionField,
+    ExceptionQuery,
+    FieldLocation,
+    KeywordField,
+    LocationOrQuery,
+    MatchLocation,
+    NotQuery,
+    OrQuery,
+    PhraseQuery,
+    PrefixQuery,
+    RatingQuery,
+    RegexQuery,
+    SuffixQuery,
+    TitleField,
+    WordQuery,
+)
 from fa_search_bot.sites.fa_submission import FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -85,103 +97,87 @@ def test_match_location_overlaps_any__overlaps_only_in_other_fields():
 
 def test_or_query__both():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test"
+        rating=Rating.GENERAL, title="test"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__first():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test"
+        rating=Rating.GENERAL, title="test"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("title", TitleField())
-    ])
+    query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("title", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__second():
     submission = SubmissionBuilder(
-        rating=Rating.ADULT,
-        title="test"
+        rating=Rating.ADULT, title="test"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__neither():
     submission = SubmissionBuilder(
-        rating=Rating.ADULT,
-        title="title"
+        rating=Rating.ADULT, title="title"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_or_query__many():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField()),
-        WordQuery("example"),
-        WordQuery("an"),
-        WordQuery("submission", DescriptionField())
-    ])
+    query = OrQuery(
+        [
+            RatingQuery(Rating.GENERAL),
+            WordQuery("test", TitleField()),
+            WordQuery("example"),
+            WordQuery("an"),
+            WordQuery("submission", DescriptionField()),
+        ]
+    )
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__one_of_many():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.MATURE),
-        WordQuery("dragon", TitleField()),
-        WordQuery("gibberish"),
-        WordQuery("an"),
-        WordQuery("deer", DescriptionField())
-    ])
+    query = OrQuery(
+        [
+            RatingQuery(Rating.MATURE),
+            WordQuery("dragon", TitleField()),
+            WordQuery("gibberish"),
+            WordQuery("an"),
+            WordQuery("deer", DescriptionField()),
+        ]
+    )
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__none_of_many():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = OrQuery([
-        RatingQuery(Rating.MATURE),
-        WordQuery("dragon", TitleField()),
-        WordQuery("gibberish"),
-        WordQuery("ann"),
-        WordQuery("deer", DescriptionField())
-    ])
+    query = OrQuery(
+        [
+            RatingQuery(Rating.MATURE),
+            WordQuery("dragon", TitleField()),
+            WordQuery("gibberish"),
+            WordQuery("ann"),
+            WordQuery("deer", DescriptionField()),
+        ]
+    )
 
     assert not query.matches_submission(submission)
 
@@ -190,13 +186,15 @@ def test_location_or_query__no_matches():
     submission = SubmissionBuilder(
         title="test",
         description="An example submission",
-        keywords=["submission", "test"]
+        keywords=["submission", "test"],
     ).build_full_submission()
-    query = LocationOrQuery([
-        WordQuery("title", TitleField()),
-        WordQuery("example", KeywordField()),
-        WordQuery("deer")
-    ])
+    query = LocationOrQuery(
+        [
+            WordQuery("title", TitleField()),
+            WordQuery("example", KeywordField()),
+            WordQuery("deer"),
+        ]
+    )
 
     locations = query.match_locations(submission)
 
@@ -207,11 +205,13 @@ def test_location_or_query__one_subquery_one_match():
     submission = SubmissionBuilder(
         title="test",
         description="An example submission",
-        keywords=["submission", "test"]
+        keywords=["submission", "test"],
     ).build_full_submission()
-    query = LocationOrQuery([
-        WordQuery("example"),
-    ])
+    query = LocationOrQuery(
+        [
+            WordQuery("example"),
+        ]
+    )
 
     locations = query.match_locations(submission)
 
@@ -223,12 +223,9 @@ def test_location_or_query__two_subqueries_different_matches():
     submission = SubmissionBuilder(
         title="test",
         description="An example submission",
-        keywords=["submission", "deer"]
+        keywords=["submission", "deer"],
     ).build_full_submission()
-    query = LocationOrQuery([
-        WordQuery("example"),
-        WordQuery("deer")
-    ])
+    query = LocationOrQuery([WordQuery("example"), WordQuery("deer")])
 
     locations = query.match_locations(submission)
 
@@ -241,12 +238,9 @@ def test_location_or_query__two_subqueries_overlapping_matches():
     submission = SubmissionBuilder(
         title="test",
         description="An example submission",
-        keywords=["submission", "test"]
+        keywords=["submission", "test"],
     ).build_full_submission()
-    query = LocationOrQuery([
-        PrefixQuery("exam"),
-        PhraseQuery("an example")
-    ])
+    query = LocationOrQuery([PrefixQuery("exam"), PhraseQuery("an example")])
 
     locations = query.match_locations(submission)
 
@@ -259,15 +253,17 @@ def test_location_or_query__many_subqueries_many_matches_not_all_though():
     submission = SubmissionBuilder(
         title="test",
         description="An example submission",
-        keywords=["submission", "test"]
+        keywords=["submission", "test"],
     ).build_full_submission()
-    query = LocationOrQuery([
-        WordQuery("title", TitleField()),
-        WordQuery("example", DescriptionField()),
-        WordQuery("test"),
-        WordQuery("submission", KeywordField()),
-        WordQuery("deer")
-    ])
+    query = LocationOrQuery(
+        [
+            WordQuery("title", TitleField()),
+            WordQuery("example", DescriptionField()),
+            WordQuery("test"),
+            WordQuery("submission", KeywordField()),
+            WordQuery("deer"),
+        ]
+    )
 
     locations = query.match_locations(submission)
 
@@ -280,103 +276,87 @@ def test_location_or_query__many_subqueries_many_matches_not_all_though():
 
 def test_and_query__both():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test"
+        rating=Rating.GENERAL, title="test"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_and_query__first():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test"
+        rating=Rating.GENERAL, title="test"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("title", TitleField())
-    ])
+    query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("title", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__second():
     submission = SubmissionBuilder(
-        rating=Rating.ADULT,
-        title="test"
+        rating=Rating.ADULT, title="test"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__neither():
     submission = SubmissionBuilder(
-        rating=Rating.ADULT,
-        title="title"
+        rating=Rating.ADULT, title="title"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField())
-    ])
+    query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__many():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField()),
-        WordQuery("example"),
-        WordQuery("an"),
-        WordQuery("submission", DescriptionField())
-    ])
+    query = AndQuery(
+        [
+            RatingQuery(Rating.GENERAL),
+            WordQuery("test", TitleField()),
+            WordQuery("example"),
+            WordQuery("an"),
+            WordQuery("submission", DescriptionField()),
+        ]
+    )
 
     assert query.matches_submission(submission)
 
 
 def test_and_query__many_except_one():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.GENERAL),
-        WordQuery("test", TitleField()),
-        WordQuery("example"),
-        WordQuery("ann"),
-        WordQuery("submission", DescriptionField())
-    ])
+    query = AndQuery(
+        [
+            RatingQuery(Rating.GENERAL),
+            WordQuery("test", TitleField()),
+            WordQuery("example"),
+            WordQuery("ann"),
+            WordQuery("submission", DescriptionField()),
+        ]
+    )
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__many_no_match():
     submission = SubmissionBuilder(
-        rating=Rating.GENERAL,
-        title="test",
-        description="An example submission"
+        rating=Rating.GENERAL, title="test", description="An example submission"
     ).build_full_submission()
-    query = AndQuery([
-        RatingQuery(Rating.ADULT),
-        WordQuery("dragon", TitleField()),
-        WordQuery("gibberish"),
-        WordQuery("ann"),
-        WordQuery("deer", DescriptionField())
-    ])
+    query = AndQuery(
+        [
+            RatingQuery(Rating.ADULT),
+            WordQuery("dragon", TitleField()),
+            WordQuery("gibberish"),
+            WordQuery("ann"),
+            WordQuery("deer", DescriptionField()),
+        ]
+    )
 
     assert not query.matches_submission(submission)
 
@@ -411,9 +391,7 @@ def test_rating_query__no_match():
 
 def test_word_query__title():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "example"]
+        title="test", description="hello world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("test")
 
@@ -422,9 +400,7 @@ def test_word_query__title():
 
 def test_word_query__description():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "example"]
+        title="test", description="hello world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("hello")
 
@@ -433,9 +409,7 @@ def test_word_query__description():
 
 def test_word_query__keywords():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "example"]
+        title="test", description="hello world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("query")
 
@@ -444,9 +418,7 @@ def test_word_query__keywords():
 
 def test_word_query__no_match():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "example"]
+        title="test", description="hello world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("testing")
 
@@ -457,7 +429,7 @@ def test_word_query__all_fields():
     submission = SubmissionBuilder(
         title="test",
         description="hello test world",
-        keywords=["query", "example", "test"]
+        keywords=["query", "example", "test"],
     ).build_full_submission()
     query = WordQuery("test")
 
@@ -466,9 +438,7 @@ def test_word_query__all_fields():
 
 def test_word_query__punctuation_title():
     submission = SubmissionBuilder(
-        title="test!",
-        description="hello world",
-        keywords=["query", "example"]
+        title="test!", description="hello world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("test")
 
@@ -477,9 +447,7 @@ def test_word_query__punctuation_title():
 
 def test_word_query__punctuation_description():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello, world",
-        keywords=["query", "example"]
+        title="test", description="hello, world", keywords=["query", "example"]
     ).build_full_submission()
     query = WordQuery("hello")
 
@@ -495,7 +463,7 @@ def test_word_query__includes_artist():
         title="test",
         description="hello world",
         keywords=["query", "example"],
-        author=FAUser("Testing", "testing")
+        author=FAUser("Testing", "testing"),
     ).build_full_submission()
     query = WordQuery("testing")
 
@@ -504,9 +472,7 @@ def test_word_query__includes_artist():
 
 def test_word_query__keyword_non_concat():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["test", "thing"]
+        title="test", description="hello world", keywords=["test", "thing"]
     ).build_full_submission()
     query = WordQuery("testthing")
 
@@ -515,9 +481,7 @@ def test_word_query__keyword_non_concat():
 
 def test_word_query__keyword_punctuation():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["test", "thing!"]
+        title="test", description="hello world", keywords=["test", "thing!"]
     ).build_full_submission()
     query = WordQuery("thing")
 
@@ -526,9 +490,7 @@ def test_word_query__keyword_punctuation():
 
 def test_word_query__hyphenated_match():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello-world",
-        keywords=["test", "thing"]
+        title="test", description="hello-world", keywords=["test", "thing"]
     ).build_full_submission()
     query = WordQuery("hello-world")
 
@@ -537,9 +499,7 @@ def test_word_query__hyphenated_match():
 
 def test_word_query__hyphenated_no_match_part():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello-world",
-        keywords=["test", "thing"]
+        title="test", description="hello-world", keywords=["test", "thing"]
     ).build_full_submission()
     query = WordQuery("hello")
 
@@ -548,9 +508,7 @@ def test_word_query__hyphenated_no_match_part():
 
 def test_word_query__not_word_part():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello-world",
-        keywords=["testing", "things"]
+        title="test", description="hello-world", keywords=["testing", "things"]
     ).build_full_submission()
     query = WordQuery("thing")
 
@@ -559,9 +517,7 @@ def test_word_query__not_word_part():
 
 def test_word_query__title_field():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("test", TitleField())
 
@@ -570,9 +526,7 @@ def test_word_query__title_field():
 
 def test_word_query__title_field_no_match():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("hello", TitleField())
 
@@ -581,9 +535,7 @@ def test_word_query__title_field_no_match():
 
 def test_word_query__description_field():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("hello", DescriptionField())
 
@@ -592,9 +544,7 @@ def test_word_query__description_field():
 
 def test_word_query__description_field_no_match():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("test", DescriptionField())
 
@@ -603,9 +553,7 @@ def test_word_query__description_field_no_match():
 
 def test_word_query__keyword_field():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("query", KeywordField())
 
@@ -614,9 +562,7 @@ def test_word_query__keyword_field():
 
 def test_word_query__keyword_field_no_match():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("hello", KeywordField())
 
@@ -628,7 +574,7 @@ def test_word_query__artist_field():
         title="test",
         description="hello world",
         keywords=["query", "thing"],
-        author=FAUser("TestAccount", "testaccount")
+        author=FAUser("TestAccount", "testaccount"),
     ).build_full_submission()
     query = WordQuery("testaccount", ArtistField())
 
@@ -640,7 +586,7 @@ def test_word_query__artist_field_no_match():
         title="test",
         description="hello world",
         keywords=["query", "thing"],
-        author=FAUser("Abe_E_Seedy", "abeeseedy")
+        author=FAUser("Abe_E_Seedy", "abeeseedy"),
     ).build_full_submission()
     query = WordQuery("hello", ArtistField())
 
@@ -652,7 +598,7 @@ def test_word_query__artist_field_full_name():
         title="test",
         description="hello world",
         keywords=["query", "thing"],
-        author=FAUser("Abe_E_Seedy", "abeeseedy")
+        author=FAUser("Abe_E_Seedy", "abeeseedy"),
     ).build_full_submission()
     query = WordQuery("Abe_E_Seedy", ArtistField())
 
@@ -664,7 +610,7 @@ def test_word_query__artist_field_punctuation():
         title="test",
         description="hello world",
         keywords=["query", "thing"],
-        author=FAUser("-Sebastian-", "-sebastian-")
+        author=FAUser("-Sebastian-", "-sebastian-"),
     ).build_full_submission()
     query = WordQuery("-sebastian-", ArtistField())
 
@@ -673,9 +619,7 @@ def test_word_query__artist_field_punctuation():
 
 def test_word_query__locations_title():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("test")
 
@@ -689,9 +633,7 @@ def test_word_query__locations_title():
 
 def test_word_query__locations_description():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("world")
 
@@ -705,9 +647,7 @@ def test_word_query__locations_description():
 
 def test_word_query__locations_keywords():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "thing"]
+        title="test", description="hello world", keywords=["query", "thing"]
     ).build_full_submission()
     query = WordQuery("thing")
 
@@ -721,9 +661,7 @@ def test_word_query__locations_keywords():
 
 def test_word_query__locations_multiple():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello test",
-        keywords=["query", "test"]
+        title="test", description="hello test", keywords=["query", "test"]
     ).build_full_submission()
     query = WordQuery("test")
 
@@ -737,9 +675,7 @@ def test_word_query__locations_multiple():
 
 def test_word_query__locations_none():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello world",
-        keywords=["query", "word"]
+        title="test", description="hello world", keywords=["query", "word"]
     ).build_full_submission()
     query = WordQuery("fred")
 
@@ -750,9 +686,7 @@ def test_word_query__locations_none():
 
 def test_word_query__locations_no_match_hypenated():
     submission = SubmissionBuilder(
-        title="test",
-        description="hello-world",
-        keywords=["test", "thing"]
+        title="test", description="hello-world", keywords=["test", "thing"]
     ).build_full_submission()
     query = WordQuery("hello")
 
@@ -763,7 +697,7 @@ def test_word_query__locations_no_match_hypenated():
 
 def test_word_query__detects_name_in_link():
     submission = SubmissionBuilder(
-        description="<a href=\"/user/zephyr42\" class=\"linkusername\">zephyr42</a>"
+        description='<a href="/user/zephyr42" class="linkusername">zephyr42</a>'
     ).build_full_submission()
     query = WordQuery("zephyr42")
 
@@ -773,8 +707,8 @@ def test_word_query__detects_name_in_link():
 def test_word_query__detects_name_in_icon():
     submission = SubmissionBuilder(
         description=(
-            "<a href=\"/user/zephyr42\" class=\"iconusername\"><img src=\"//a.furaffinity.net/20210221/zephyr42.gif\" "
-            "align=\"middle\" title=\"zephyr42\" alt=\"zephyr42\"></a>"
+            '<a href="/user/zephyr42" class="iconusername"><img src="//a.furaffinity.net/20210221/zephyr42.gif" '
+            'align="middle" title="zephyr42" alt="zephyr42"></a>'
         )
     ).build_full_submission()
     query = WordQuery("zephyr42")
@@ -785,8 +719,8 @@ def test_word_query__detects_name_in_icon():
 def test_word_query__detects_name_in_icon_with_link():
     submission = SubmissionBuilder(
         description=(
-            "<a href=\"/user/zephyr42\" class=\"iconusername\"><img src=\"//a.furaffinity.net/20210221/zephyr42.gif\" "
-            "align=\"middle\" title=\"zephyr42\" alt=\"zephyr42\"> zephyr42</a>"
+            '<a href="/user/zephyr42" class="iconusername"><img src="//a.furaffinity.net/20210221/zephyr42.gif" '
+            'align="middle" title="zephyr42" alt="zephyr42"> zephyr42</a>'
         )
     ).build_full_submission()
     query = WordQuery("zephyr42")
@@ -798,7 +732,7 @@ def test_prefix_query():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("sub")
 
@@ -809,7 +743,7 @@ def test_prefix_query__no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("deer")
 
@@ -820,7 +754,7 @@ def test_prefix_query__inside_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("miss")
 
@@ -831,7 +765,7 @@ def test_prefix_query__location():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("sub")
 
@@ -845,7 +779,7 @@ def test_prefix_query__location_many_matches():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example testing",
-        keywords=["test", "thing", "tes"]
+        keywords=["test", "thing", "tes"],
     ).build_full_submission()
     query = PrefixQuery("tes")
 
@@ -862,7 +796,7 @@ def test_prefix_query__location_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("miss")
 
@@ -875,7 +809,7 @@ def test_prefix_query__no_match_full_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("deer")
 
@@ -886,7 +820,7 @@ def test_prefix_query__follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("hello")
 
@@ -897,7 +831,7 @@ def test_prefix_query__location_follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("hell")
 
@@ -911,7 +845,7 @@ def test_prefix_query__location_dont_include_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("worl")
 
@@ -925,7 +859,7 @@ def test_prefix_query__dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("hello")
 
@@ -936,7 +870,7 @@ def test_prefix_query__location_dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("hell")
 
@@ -950,7 +884,7 @@ def test_prefix_query__allow_punctuation_before():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("worl")
 
@@ -961,7 +895,7 @@ def test_prefix_query__location_allow_punctuation_before():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("worl")
 
@@ -975,7 +909,7 @@ def test_prefix_query__field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("worl", DescriptionField())
 
@@ -986,7 +920,7 @@ def test_prefix_query__location_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("worl", DescriptionField())
 
@@ -1000,7 +934,7 @@ def test_prefix_query__field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("blah", DescriptionField())
 
@@ -1011,7 +945,7 @@ def test_prefix_query__location_field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("blah", DescriptionField())
 
@@ -1024,7 +958,7 @@ def test_prefix_query__field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("tes", DescriptionField())
 
@@ -1035,7 +969,7 @@ def test_prefix_query__location_field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("tes", DescriptionField())
 
@@ -1048,7 +982,7 @@ def test_prefix_query__field_match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("tes", TitleField())
 
@@ -1059,7 +993,7 @@ def test_prefix_query__location_field_match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PrefixQuery("tes", TitleField())
 
@@ -1074,7 +1008,7 @@ def test_suffix_query():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("ion")
 
@@ -1085,7 +1019,7 @@ def test_suffix_query__no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("deer")
 
@@ -1096,7 +1030,7 @@ def test_suffix_query__inside_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("miss")
 
@@ -1107,7 +1041,7 @@ def test_suffix_query__location():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("ion")
 
@@ -1121,7 +1055,7 @@ def test_suffix_query__location_many_matches():
     submission = SubmissionBuilder(
         title="titling",
         description="hello world, example testing",
-        keywords=["trying", "test", "ing"]
+        keywords=["trying", "test", "ing"],
     ).build_full_submission()
     query = SuffixQuery("ing")
 
@@ -1138,7 +1072,7 @@ def test_suffix_query__location_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("miss")
 
@@ -1151,7 +1085,7 @@ def test_suffix_query__no_match_full_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("deer")
 
@@ -1162,7 +1096,7 @@ def test_suffix_query__follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("world")
 
@@ -1173,7 +1107,7 @@ def test_suffix_query__location_follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("orld")
 
@@ -1187,7 +1121,7 @@ def test_suffix_query__location_dont_include_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello ,world example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("orld")
 
@@ -1201,7 +1135,7 @@ def test_suffix_query__dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("world")
 
@@ -1212,7 +1146,7 @@ def test_suffix_query__location_dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("orld")
 
@@ -1226,7 +1160,7 @@ def test_suffix_query__allow_punctuation_after():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("orld")
 
@@ -1237,7 +1171,7 @@ def test_suffix_query__location_allow_punctuation_after():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example deer submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("orld")
 
@@ -1251,7 +1185,7 @@ def test_suffix_query__field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("blah", DescriptionField())
 
@@ -1262,7 +1196,7 @@ def test_suffix_query__location_field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("blah", DescriptionField())
 
@@ -1275,7 +1209,7 @@ def test_suffix_query__field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("est", DescriptionField())
 
@@ -1286,7 +1220,7 @@ def test_suffix_query__location_field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("est", DescriptionField())
 
@@ -1299,7 +1233,7 @@ def test_suffix_query__field_match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("est", TitleField())
 
@@ -1310,7 +1244,7 @@ def test_suffix_query__location_field_match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = SuffixQuery("est", TitleField())
 
@@ -1325,7 +1259,7 @@ def test_regex_query():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*o")
 
@@ -1336,7 +1270,7 @@ def test_regex_query__location():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*o")
 
@@ -1350,7 +1284,7 @@ def test_regex_query__no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("de*r")
 
@@ -1361,7 +1295,7 @@ def test_regex_query__location_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("de*r")
 
@@ -1374,7 +1308,7 @@ def test_regex_query__inside_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("bm*io")
 
@@ -1385,7 +1319,7 @@ def test_regex_query__location_inside_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("bm*io")
 
@@ -1398,7 +1332,7 @@ def test_regex_query__infix():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*miss*")
 
@@ -1409,7 +1343,7 @@ def test_regex_query__location_infix():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*miss*")
 
@@ -1423,7 +1357,7 @@ def test_regex_query__follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*orld")
 
@@ -1434,7 +1368,7 @@ def test_regex_query__location_follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*orld")
 
@@ -1448,7 +1382,7 @@ def test_regex_query__infix_follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*llo*")
 
@@ -1459,7 +1393,7 @@ def test_regex_query__location_infix_follow_hyphen():
     submission = SubmissionBuilder(
         title="test",
         description="hello-world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*llo*")
 
@@ -1473,7 +1407,7 @@ def test_regex_query__dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*ld")
 
@@ -1484,7 +1418,7 @@ def test_regex_query__location_dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("he*ld")
 
@@ -1497,7 +1431,7 @@ def test_regex_query__infix_dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*llo*")
 
@@ -1508,7 +1442,7 @@ def test_regex_query__location_infix_dont_follow_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello,world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*llo*")
 
@@ -1521,7 +1455,7 @@ def test_regex_query__location_infix_dont_include_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*ll*")
 
@@ -1535,7 +1469,7 @@ def test_regex_query__infix_doesnt_match_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*world*")
 
@@ -1546,7 +1480,7 @@ def test_regex_query__location_infix_doesnt_match_word():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("*world*")
 
@@ -1559,7 +1493,7 @@ def test_regex_query__asterisk_matches_at_least_one_character():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wor*ld")
 
@@ -1570,7 +1504,7 @@ def test_regex_query__location_asterisk_matches_at_least_one_character():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wor*ld")
 
@@ -1583,7 +1517,7 @@ def test_regex_query__double_asterisk_matches_one_character():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wo**ld")
 
@@ -1594,7 +1528,7 @@ def test_regex_query__location_double_asterisk_matches_one_character():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wo**ld")
 
@@ -1608,7 +1542,7 @@ def test_regex_query__field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wo*ld", DescriptionField())
 
@@ -1619,7 +1553,7 @@ def test_regex_query__location_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("wo*ld", DescriptionField())
 
@@ -1633,7 +1567,7 @@ def test_regex_query__field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("de*r", DescriptionField())
 
@@ -1644,7 +1578,7 @@ def test_regex_query__location_field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("de*r", DescriptionField())
 
@@ -1657,7 +1591,7 @@ def test_regex_query__field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("t*t", DescriptionField())
 
@@ -1668,7 +1602,7 @@ def test_regex_query__location_field_only_match_other_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("t*t", DescriptionField())
 
@@ -1681,7 +1615,7 @@ def test_regex_query__match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("t*t", TitleField())
 
@@ -1692,7 +1626,7 @@ def test_regex_query__location_match_ignore_other():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = RegexQuery.from_string_with_asterisks("t*t", TitleField())
 
@@ -1706,7 +1640,7 @@ def test_phrase_query():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello world")
 
@@ -1717,7 +1651,7 @@ def test_phrase_query__location():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello world")
 
@@ -1731,7 +1665,7 @@ def test_phrase_query__no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer")
 
@@ -1742,7 +1676,7 @@ def test_phrase_query__location_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer")
 
@@ -1755,7 +1689,7 @@ def test_phrase_query__dont_match_inside_words():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("ple sub")
 
@@ -1766,7 +1700,7 @@ def test_phrase_query__location_dont_match_inside_words():
     submission = SubmissionBuilder(
         title="test",
         description="hello world, example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("ple sub")
 
@@ -1779,7 +1713,7 @@ def test_phrase_query__include_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.")
 
@@ -1790,7 +1724,7 @@ def test_phrase_query__location_include_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.")
 
@@ -1804,7 +1738,7 @@ def test_phrase_query__require_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello world example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.")
 
@@ -1815,7 +1749,7 @@ def test_phrase_query__location_require_punctuation():
     submission = SubmissionBuilder(
         title="test",
         description="hello world example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.")
 
@@ -1828,7 +1762,7 @@ def test_phrase_query__allow_punctuation_at_ends():
     submission = SubmissionBuilder(
         title="test",
         description=".hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world")
 
@@ -1839,7 +1773,7 @@ def test_phrase_query__location_allow_punctuation_at_ends():
     submission = SubmissionBuilder(
         title="test",
         description=".hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world")
 
@@ -1853,7 +1787,7 @@ def test_phrase_query__field():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.", DescriptionField())
 
@@ -1864,7 +1798,7 @@ def test_phrase_query__location_field():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello, world.", DescriptionField())
 
@@ -1878,7 +1812,7 @@ def test_phrase_query__field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer", DescriptionField())
 
@@ -1889,7 +1823,7 @@ def test_phrase_query__location_field_no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer", DescriptionField())
 
@@ -1902,7 +1836,7 @@ def test_phrase_query__field_match_only_in_other_fields():
     submission = SubmissionBuilder(
         title="love deer",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer", DescriptionField())
 
@@ -1913,7 +1847,7 @@ def test_phrase_query__location_field_match_only_in_other_fields():
     submission = SubmissionBuilder(
         title="love deer",
         description="hello, world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("love deer", DescriptionField())
 
@@ -1926,7 +1860,7 @@ def test_phrase_query__field_match_ignore_other():
     submission = SubmissionBuilder(
         title="hello world",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello world", DescriptionField())
 
@@ -1937,7 +1871,7 @@ def test_phrase_query__location_field_match_ignore_other():
     submission = SubmissionBuilder(
         title="hello world",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = PhraseQuery("hello world", DescriptionField())
 
@@ -1951,7 +1885,7 @@ def test_exception_query__match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("hel"), WordQuery("help"))
 
@@ -1962,7 +1896,7 @@ def test_exception_query__no_match():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("dee"), WordQuery("deer"))
 
@@ -1973,7 +1907,7 @@ def test_exception_query__matches_except():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("hel"), WordQuery("hello"))
 
@@ -1984,7 +1918,7 @@ def test_exception_query__match_many_one_except():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example help submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("hel"), WordQuery("hello"))
 
@@ -1995,7 +1929,7 @@ def test_exception_query__matches_with_superstring_except():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(WordQuery("world"), PhraseQuery("hello world."))
 
@@ -2006,7 +1940,7 @@ def test_exception_query__one_match_many_except():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. examplo submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("hel"), SuffixQuery("lo"))
 
@@ -2017,7 +1951,7 @@ def test_exception_query__one_match_many_except_no_overlap():
     submission = SubmissionBuilder(
         title="test",
         description="hello world. example submission",
-        keywords=["test", "thing"]
+        keywords=["test", "thing"],
     ).build_full_submission()
     query = ExceptionQuery(PrefixQuery("hel"), WordQuery("test"))
 

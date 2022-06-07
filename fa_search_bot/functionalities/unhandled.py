@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class UnhandledMessageFunctionality(BotFunctionality):
-
     def __init__(self):
         super().__init__(NewMessage(incoming=True))
 

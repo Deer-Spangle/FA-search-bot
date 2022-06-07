@@ -10,7 +10,9 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 @pytest.mark.asyncio
 async def test_call__route_add_blocklisted_tag(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_blocklisted_tag test")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/add_blocklisted_tag test"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = BlocklistFunctionality(watcher)
@@ -31,7 +33,9 @@ async def test_call__route_add_blocklisted_tag(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_blocklisted_tag(mock_client):
-    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_blocklisted_tag example")
+    event = MockTelegramEvent.with_message(
+        chat_id=14358, text="/remove_blocklisted_tag example"
+    )
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = BlocklistFunctionality(watcher)
@@ -91,7 +95,7 @@ def test_add_to_blocklist__creates_blocklist_for_channel(mock_client):
     resp = func._add_to_blocklist(18749, "test")
 
     assert "Added tag to blocklist" in resp
-    assert "\"test\"" in resp
+    assert '"test"' in resp
     assert list_tags.called
     assert list_tags.args[0] == 18749
     assert "Listing blocklisted tags" in resp
@@ -112,7 +116,7 @@ def test_add_to_blocklist__add_tag_to_blocklist(mock_client):
     resp = func._add_to_blocklist(18749, "test")
 
     assert "Added tag to blocklist" in resp
-    assert "\"test\"" in resp
+    assert '"test"' in resp
     assert list_tags.called
     assert list_tags.args[0] == 18749
     assert "Listing blocklisted tags" in resp
@@ -131,7 +135,7 @@ def test_remove_from_blocklist__tag_not_in_blocklist(mock_client):
 
     resp = func._remove_from_blocklist(18749, "test")
 
-    assert resp == "The tag \"test\" is not on the blocklist for this chat."
+    assert resp == 'The tag "test" is not on the blocklist for this chat.'
     assert len(watcher.blocklists) == 2
     assert len(watcher.blocklists[18749]) == 1
     assert len(watcher.blocklists[18747]) == 1
@@ -148,7 +152,7 @@ def test_remove_from_blocklist__removes_tag_from_blocklist(mock_client):
 
     resp = func._remove_from_blocklist(18749, "test")
 
-    assert "Removed tag from blocklist: \"test\"." in resp
+    assert 'Removed tag from blocklist: "test".' in resp
     assert list_tags.called
     assert list_tags.args[0] == 18749
     assert "Listing blocklisted tags" in resp

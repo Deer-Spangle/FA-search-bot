@@ -7,7 +7,6 @@ from fa_search_bot.sites.fa_submission import FASubmissionShort, FAUser
 
 
 class FASubmissionShortTest(unittest.TestCase):
-
     def test_constructor(self):
         post_id = "1234"
         image_id = "5324543"
@@ -37,8 +36,11 @@ class FASubmissionShortTest(unittest.TestCase):
 
         submission.to_inline_query_result(mock_builder)
 
-        assert mock_builder.photo.call_args[1]['file'] == thumb_url
-        assert mock_builder.photo.call_args[1]['id'] == post_id
-        assert mock_builder.photo.call_args[1]['text'] == link
-        assert len(mock_builder.photo.call_args[1]['buttons']) == 1
-        assert mock_builder.photo.call_args[1]['buttons'][0].data == f"neaten_me:{post_id}".encode()
+        assert mock_builder.photo.call_args[1]["file"] == thumb_url
+        assert mock_builder.photo.call_args[1]["id"] == post_id
+        assert mock_builder.photo.call_args[1]["text"] == link
+        assert len(mock_builder.photo.call_args[1]["buttons"]) == 1
+        assert (
+                mock_builder.photo.call_args[1]["buttons"][0].data
+                == f"neaten_me:{post_id}".encode()
+        )
