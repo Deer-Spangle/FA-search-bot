@@ -1,11 +1,12 @@
 import random
 import uuid
 from enum import Enum, auto
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, Mock
 
 from telethon import TelegramClient
-from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
+from telethon.tl.types import (InputBotInlineMessageID,
+                               InputBotInlineResultPhoto)
 
 
 def generate_key():

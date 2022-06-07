@@ -1,8 +1,8 @@
 import random
 import uuid
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
-from yippi import Post, AsyncYippiClient
+from yippi import AsyncYippiClient, Post
 
 
 class MockPost(Post):

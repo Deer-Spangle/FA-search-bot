@@ -2,7 +2,8 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
-from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_export_api import (MockExportAPI,
+                                                      MockSubmission)
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 

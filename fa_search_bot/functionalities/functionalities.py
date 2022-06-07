@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from prometheus_client import Counter
 from telethon import TelegramClient
-from telethon.events import NewMessage, StopPropagation, InlineQuery
-from telethon.events.common import EventCommon, EventBuilder
+from telethon.events import InlineQuery, NewMessage, StopPropagation
+from telethon.events.common import EventBuilder, EventCommon
 
 usage_counter = Counter(
     "fasearchbot_usage_total",

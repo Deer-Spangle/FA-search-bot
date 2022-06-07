@@ -1,14 +1,16 @@
 import asyncio
+import datetime
 import enum
 import logging
-import datetime
 from typing import List
 
 import requests
-from prometheus_client import Counter, Enum, Histogram, Gauge
+from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
-    FAStatus
+from fa_search_bot.sites.fa_submission import (FAStatus, FASubmission,
+                                               FASubmissionFull,
+                                               FASubmissionShort,
+                                               FASubmissionShortFav)
 
 logger = logging.getLogger(__name__)
 

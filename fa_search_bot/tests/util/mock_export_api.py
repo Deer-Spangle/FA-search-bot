@@ -1,13 +1,14 @@
 import random
 import string
-from typing import Union, List
-from unittest.mock import MagicMock, AsyncMock
+from typing import List, Union
+from unittest.mock import AsyncMock, MagicMock
 
 from telethon import TelegramClient
 from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FAUser, Rating
+from fa_search_bot.sites.fa_submission import (FASubmission, FASubmissionFull,
+                                               FAUser, Rating)
 
 
 def _random_image_id(submission_id: int) -> int:

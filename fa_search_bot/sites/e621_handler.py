@@ -1,16 +1,17 @@
 import enum
 import logging
 import re
-from typing import Union, Optional, List, Pattern, Coroutine
+from typing import Coroutine, List, Optional, Pattern, Union
 
-from prometheus_client.metrics import Histogram, Counter
+from prometheus_client.metrics import Counter, Histogram
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
+from telethon.tl.types import (InputBotInlineMessageID,
+                               InputBotInlineResultPhoto, TypeInputPeer)
 from yippi import AsyncYippiClient, Post
 
-from fa_search_bot.sites.sendable import Sendable, CaptionSettings
-from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
+from fa_search_bot.sites.sendable import CaptionSettings, Sendable
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 
 logger = logging.getLogger(__name__)
 

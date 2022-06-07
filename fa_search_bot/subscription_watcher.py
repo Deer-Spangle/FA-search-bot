@@ -4,19 +4,21 @@ import datetime
 import json
 import logging
 import os
-from typing import List, Optional, Deque, Set, Dict
+from typing import Deque, Dict, List, Optional, Set
 
 import dateutil.parser
 import heartbeat
+from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
 from telethon import TelegramClient
-from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
-from prometheus_client import Gauge
+from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound, CloudflareError
+from fa_search_bot.query_parser import AndQuery, NotQuery, Query, parse_query
+from fa_search_bot.sites.fa_export_api import (CloudflareError, FAExportAPI,
+                                               PageNotFound)
 from fa_search_bot.sites.fa_handler import SendableFASubmission
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmission
-from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query, Query
+from fa_search_bot.sites.fa_submission import (FASubmission, FASubmissionFull,
+                                               FASubmissionShort)
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
@@ -304,7 +306,7 @@ class SubscriptionWatcher:
             json.dump(data, f, indent=2)
         os.replace(self.FILENAME_TEMP, self.FILENAME)
 
-    @staticmethod
+    @staticmethod  # TODO: make classmethod
     def load_from_json(api: FAExportAPI, client: TelegramClient) -> 'SubscriptionWatcher':
         logger.debug("Loading subscription config from file")
         try:

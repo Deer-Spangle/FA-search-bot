@@ -1,31 +1,38 @@
 import asyncio
 import dataclasses
-
+import json
+import logging
 from typing import Dict, Optional
 
-import logging
-import json
-
-from prometheus_client import start_http_server, Info, Gauge
+from prometheus_client import Gauge, Info, start_http_server
 from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.functionalities import usage_counter
-from fa_search_bot.functionalities.inline_edit import InlineEditFunctionality, InlineEditButtonPress
-from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
+from fa_search_bot.functionalities.image_hash_recommend import \
+    ImageHashRecommendFunctionality
+from fa_search_bot.functionalities.inline_edit import (
+    InlineEditButtonPress, InlineEditFunctionality
+)
+from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
+from fa_search_bot.functionalities.inline_gallery import \
+    InlineGalleryFunctionality
+from fa_search_bot.functionalities.inline_neaten import \
+    InlineNeatenFunctionality
+from fa_search_bot.functionalities.inline_search import \
+    InlineSearchFunctionality
+from fa_search_bot.functionalities.neaten import NeatenFunctionality
+from fa_search_bot.functionalities.subscriptions import (
+    BlocklistFunctionality, SubscriptionFunctionality)
+from fa_search_bot.functionalities.supergroup_upgrade import \
+    SupergroupUpgradeFunctionality
+from fa_search_bot.functionalities.unhandled import \
+    UnhandledMessageFunctionality
+from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.functionalities.beep import BeepFunctionality
-from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
-from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
-from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
-from fa_search_bot.functionalities.neaten import NeatenFunctionality
-from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
-from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality, BlocklistFunctionality
-from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
-from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
-from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.subscription_watcher import SubscriptionWatcher

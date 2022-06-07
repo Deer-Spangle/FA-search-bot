@@ -1,8 +1,10 @@
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, ChatType
+from fa_search_bot.functionalities.unhandled import \
+    UnhandledMessageFunctionality
+from fa_search_bot.tests.util.mock_telegram_event import (ChatType,
+                                                          MockTelegramEvent)
 
 
 @pytest.mark.asyncio

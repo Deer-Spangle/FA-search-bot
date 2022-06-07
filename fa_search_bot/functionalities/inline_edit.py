@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List
 
 from telethon import TelegramClient
-from telethon.events import Raw, CallbackQuery
+from telethon.events import CallbackQuery, Raw
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality

@@ -1,11 +1,12 @@
 import logging
 import re
-from typing import List, Tuple, Coroutine, Union, Optional
+from typing import Coroutine, List, Optional, Tuple, Union
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineResult
+from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
+from fa_search_bot.functionalities.functionalities import (BotFunctionality,
+                                                           answer_with_error)
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 

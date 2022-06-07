@@ -1,5 +1,5 @@
 import asyncio
-from typing import TypeVar, List, Coroutine
+from typing import Coroutine, List, TypeVar
 
 T = TypeVar("T")
 

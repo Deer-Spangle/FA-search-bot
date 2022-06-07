@@ -1,7 +1,11 @@
-from fa_search_bot.sites.fa_submission import Rating, FAUser
-from fa_search_bot.query_parser import MatchLocation, FieldLocation, RatingQuery, WordQuery, TitleField, \
-    DescriptionField, KeywordField, ArtistField, NotQuery, AndQuery, OrQuery, LocationOrQuery, PrefixQuery, PhraseQuery, \
-    SuffixQuery, RegexQuery, ExceptionQuery
+from fa_search_bot.query_parser import (AndQuery, ArtistField,
+                                        DescriptionField, ExceptionQuery,
+                                        FieldLocation, KeywordField,
+                                        LocationOrQuery, MatchLocation,
+                                        NotQuery, OrQuery, PhraseQuery,
+                                        PrefixQuery, RatingQuery, RegexQuery,
+                                        SuffixQuery, TitleField, WordQuery)
+from fa_search_bot.sites.fa_submission import FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 

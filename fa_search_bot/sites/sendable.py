@@ -8,19 +8,19 @@ import os
 import typing
 import uuid
 from abc import ABC, abstractmethod
-from typing import Union, BinaryIO, Coroutine, Optional, Callable, List
+from typing import BinaryIO, Callable, Coroutine, List, Optional, Union
 
 import docker
 import requests
-from PIL import Image
 from docker import DockerClient
 from docker.models.containers import Container
+from PIL import Image
 from prometheus_client import Counter
 from prometheus_client.metrics import Histogram
-from telethon import TelegramClient, Button
+from telethon import Button, TelegramClient
 from telethon.errors import BadRequestError
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import TypeInputPeer, InputBotInlineResultPhoto
+from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
 if typing.TYPE_CHECKING:
     from fa_search_bot.sites.site_handler import SiteHandler

@@ -6,13 +6,15 @@ from typing import List
 from unittest import mock
 
 import pytest
-from telethon.errors import UserIsBlockedError, InputUserDeactivatedError
+from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
+from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
 from fa_search_bot.sites.fa_export_api import CloudflareError
 from fa_search_bot.sites.fa_submission import FASubmissionFull
-from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
-from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
-from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.subscription_watcher import (Subscription,
+                                                SubscriptionWatcher)
+from fa_search_bot.tests.util.mock_export_api import (MockExportAPI,
+                                                      MockSubmission)
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 

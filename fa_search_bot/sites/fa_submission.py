@@ -3,7 +3,7 @@ import logging
 import re
 from abc import ABC
 from enum import Enum
-from typing import Dict, Union, List, Coroutine, Optional
+from typing import Coroutine, Dict, List, Optional, Union
 
 import dateutil.parser
 import requests

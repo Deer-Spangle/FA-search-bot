@@ -1,14 +1,19 @@
 import pytest
 from telethon.events import StopPropagation
 
-from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
+from fa_search_bot.functionalities.inline_search import \
+    InlineSearchFunctionality
 from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_handler import FAHandler
-from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
-from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost
-from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.functionality.inline.utils import \
+    assert_answer_is_error
+from fa_search_bot.tests.util.mock_e621_client import (MockAsyncYippiClient,
+                                                       MockPost)
+from fa_search_bot.tests.util.mock_export_api import (MockExportAPI,
+                                                      MockSubmission)
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
-from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
+from fa_search_bot.tests.util.mock_telegram_event import (MockTelegramEvent,
+                                                          _MockInlineBuilder)
 
 
 @pytest.mark.asyncio

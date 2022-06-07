@@ -7,7 +7,8 @@ from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
-from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
+from fa_search_bot.subscription_watcher import (Subscription,
+                                                SubscriptionWatcher)
 
 logger = logging.getLogger(__name__)
 
