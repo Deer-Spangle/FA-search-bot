@@ -136,11 +136,12 @@ class E621Handler(SiteHandler):
     async def submission_as_answer(
             self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        if self.POST_HASH.match(str(submission_id)):
-            post = await self._find_post_by_hash(submission_id)
+        sub_id_str = str(submission_id)
+        if self.POST_HASH.match(sub_id_str):
+            post = await self._find_post_by_hash(sub_id_str)
             if post is None:
                 raise HandlerException(
-                    f"No e621 submission matches the hash: {submission_id}"
+                    f"No e621 submission matches the hash: {sub_id_str}"
                 )
         else:
             post = await self._get_post_by_id(submission_id)

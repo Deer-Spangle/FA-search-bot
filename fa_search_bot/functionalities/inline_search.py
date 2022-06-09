@@ -53,7 +53,7 @@ class InlineSearchFunctionality(BotFunctionality):
         )
         raise StopPropagation
 
-    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
+    def _page_results(self, results: List, page: int, skip: Optional[int]) -> Tuple[List, str]:
         next_offset = str(page + 1)
         if skip:
             results = results[skip:]

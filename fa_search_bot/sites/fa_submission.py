@@ -57,20 +57,19 @@ class FASubmission(ABC):
         title = short_dict["title"]
         author = FAUser.from_short_dict(short_dict)
         if "fav_id" in short_dict:
-            new_submission = FASubmissionShortFav(
+            return FASubmissionShortFav(
                 submission_id, thumbnail_url, title, author, short_dict["fav_id"]
             )
-        else:
-            new_submission = FASubmissionShort(
-                submission_id, thumbnail_url, title, author
-            )
-        return new_submission
+        return FASubmissionShort(
+            submission_id, thumbnail_url, title, author
+        )
 
     @staticmethod
     def from_full_dict(
             full_dict: Dict[str, Union[str, List[str]]]
     ) -> "FASubmissionFull":
-        submission_id = FASubmission.id_from_link(full_dict["link"])
+        full_link: str = full_dict["link"]
+        submission_id = FASubmission.id_from_link(full_link)
         download_url = full_dict["download"]
         full_image_url = full_dict["full"]
         if full_dict["thumbnail"] is None:
@@ -207,7 +206,7 @@ class FAStatus:
             online_registered: int,
             online_other: int,
             online_total: int,
-            server_time: datetime,
+            server_time: datetime.datetime,
     ):
         self.online_guests = online_guests
         self.online_registered = online_registered

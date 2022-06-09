@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Iterator, AsyncIterator
 
 from prometheus_client import Counter
 from telethon import TelegramClient
@@ -13,7 +13,7 @@ usage_counter = Counter(
 
 
 @asynccontextmanager
-async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> None:
+async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> AsyncIterator[None]:
     if text is None:
         text = f"In progress"
     text = f"⏳ {text}"

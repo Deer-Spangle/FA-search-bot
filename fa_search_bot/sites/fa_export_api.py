@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import enum
 import logging
-from typing import List
+from typing import List, Optional
 
 import requests
 from prometheus_client import Counter, Enum, Gauge, Histogram
@@ -72,7 +72,7 @@ class FAExportAPI:
 
     def __init__(self, base_url: str, ignore_status: bool = False):
         self.base_url = base_url.rstrip("/")
-        self.last_status_check = None
+        self.last_status_check: Optional[datetime.datetime] = None
         self.slow_down_status = False
         self.ignore_status = ignore_status
         for endpoint in Endpoint:

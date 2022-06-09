@@ -4,7 +4,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Deque, Dict, List, Optional, Set, Any
+from typing import Deque, Dict, List, Optional, Set, Any, Sequence
 
 import dateutil.parser
 import heartbeat
@@ -259,7 +259,7 @@ class SubscriptionWatcher:
         # Return oldest result first
         return new_results[::-1]
 
-    def _update_latest_ids(self, browse_results: List[FASubmission]) -> None:
+    def _update_latest_ids(self, browse_results: Sequence[FASubmission]) -> None:
         for result in browse_results:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()

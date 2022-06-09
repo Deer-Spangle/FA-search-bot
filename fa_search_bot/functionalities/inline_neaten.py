@@ -82,6 +82,7 @@ class InlineNeatenFunctionality(BotFunctionality):
             [
                 handler.submission_as_answer(sub_id, event.builder)
                 for sub_id in submission_ids
+                if sub_id is not None
             ]
         )
         return await gather_ignore_exceptions(results)
