@@ -232,10 +232,14 @@ def _convert_gif_to_png(file_url: str) -> bytes:
     return byte_arr.getvalue()
 
 
-def _count_exceptions_with_labels(counter: Counter):
-    def _count_exceptions(f):
-        async def wrapper(*args, **kwargs):
-            self = args[0]
+WrapReturn = typing.TypeVar("WrapReturn", covariant=True)
+WrapFunc = Callable[..., WrapReturn]
+
+
+def _count_exceptions_with_labels(counter: Counter) -> typing.Callable[[WrapFunc], WrapFunc]:
+    def _count_exceptions(f: WrapFunc) -> WrapFunc:
+        async def wrapper(s: "Sendable", *args: typing.Any, **kwargs: typing.Any) -> WrapReturn:
+            self = s
             with counter.labels(site_code=self.site_id).count_exceptions():
                 return await f(*args, **kwargs)
 
@@ -432,7 +436,7 @@ class Sendable(ABC):
                 logger.info(
                     "Video not in cache, converting to mp4. Submission ID %s", self.id
                 )
-                output_path = await self._convert_video(self.download_url)
+                output_path: str = await self._convert_video(self.download_url)
                 filename = self._save_video_to_cache(output_path)
             else:
                 sendable_animated_cached.labels(site_code=self.site_id).inc()
