@@ -64,3 +64,27 @@ jobs:
           E621_USERNAME: ${{ secrets.E621_USERNAME }}
           E621_API_KEY: ${{ secrets.E621_API_KEY }}
           CONFIG_FILE: "config-test.json"
+
+  linting:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+      - name: Flake8 check
+        run: poetry run flake8 fa_search_bot
+      - name: Mypy
+        run: poetry run mypy fa_search_bot
+      - name: Isort
+        run: poetry run isort fa_search_bot --check
+      - name: Unit tests
+        run: poetry run task test
+        env:
+          CONFIG_FILE: "config-test.json"
