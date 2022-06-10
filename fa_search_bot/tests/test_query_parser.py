@@ -1,24 +1,8 @@
 import pytest
 
-from fa_search_bot.query_parser import (
-    AndQuery,
-    ArtistField,
-    DescriptionField,
-    ExceptionQuery,
-    InvalidQueryException,
-    KeywordField,
-    LocationOrQuery,
-    NotQuery,
-    OrQuery,
-    PhraseQuery,
-    PrefixQuery,
-    RatingQuery,
-    RegexQuery,
-    SuffixQuery,
-    TitleField,
-    WordQuery,
-    parse_query,
-)
+from fa_search_bot.query_parser import (AndQuery, ArtistField, DescriptionField, ExceptionQuery, InvalidQueryException,
+                                        KeywordField, LocationOrQuery, NotQuery, OrQuery, PhraseQuery, PrefixQuery,
+                                        RatingQuery, RegexQuery, SuffixQuery, TitleField, WordQuery, parse_query)
 from fa_search_bot.sites.fa_submission import Rating
 
 

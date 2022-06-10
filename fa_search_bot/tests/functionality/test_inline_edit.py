@@ -1,9 +1,6 @@
 import pytest
 
-from fa_search_bot.functionalities.inline_edit import (
-    InlineEditButtonPress,
-    InlineEditFunctionality,
-)
+from fa_search_bot.functionalities.inline_edit import InlineEditButtonPress, InlineEditFunctionality
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent

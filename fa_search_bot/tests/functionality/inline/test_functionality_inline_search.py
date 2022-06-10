@@ -8,10 +8,7 @@ from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_erro
 from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
-from fa_search_bot.tests.util.mock_telegram_event import (
-    MockTelegramEvent,
-    _MockInlineBuilder,
-)
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
 @pytest.mark.asyncio

@@ -6,11 +6,7 @@ from typing import Coroutine, List, Optional, Pattern, Union
 from prometheus_client.metrics import Counter, Histogram
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import (
-    InputBotInlineMessageID,
-    InputBotInlineResultPhoto,
-    TypeInputPeer,
-)
+from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 from yippi import AsyncYippiClient, Post
 
 from fa_search_bot.sites.sendable import CaptionSettings, Sendable

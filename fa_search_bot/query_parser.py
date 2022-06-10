@@ -3,22 +3,11 @@ import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import Dict, List, NewType, Optional, Pattern, Any, Sequence
+from typing import Any, Dict, List, NewType, Optional, Pattern, Sequence
 
 import pyparsing
-from pyparsing import (
-    CaselessKeyword,
-    Forward,
-    Group,
-    Literal,
-    ParseException,
-    ParserElement,
-    ParseResults,
-    QuotedString,
-    Word,
-    ZeroOrMore,
-    printables,
-)
+from pyparsing import (CaselessKeyword, Forward, Group, Literal, ParseException, ParserElement, ParseResults,
+                       QuotedString, Word, ZeroOrMore, printables)
 
 from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating
 

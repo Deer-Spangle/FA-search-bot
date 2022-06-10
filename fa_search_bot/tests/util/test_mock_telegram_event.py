@@ -1,9 +1,6 @@
 import unittest
 
-from fa_search_bot.tests.util.mock_telegram_event import (
-    MockTelegramEvent,
-    _MockDocument,
-)
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockDocument
 
 
 class MockObjectsTest(unittest.TestCase):

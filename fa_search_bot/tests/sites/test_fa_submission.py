@@ -1,11 +1,7 @@
 import asyncio
 
 from fa_search_bot.sites.fa_handler import FAHandler
-from fa_search_bot.sites.fa_submission import (
-    FASubmission,
-    FASubmissionFull,
-    FASubmissionShort,
-)
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 loop = asyncio.get_event_loop()

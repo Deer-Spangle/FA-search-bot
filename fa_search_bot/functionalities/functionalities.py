@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import List, Optional, Tuple, Iterator, AsyncIterator
+from typing import AsyncIterator, Iterator, List, Optional, Tuple
 
 from prometheus_client import Counter
 from telethon import TelegramClient

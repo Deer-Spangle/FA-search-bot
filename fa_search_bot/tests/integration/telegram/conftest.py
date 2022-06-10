@@ -8,7 +8,7 @@ from pyrogram import Client
 from pyrogram.types import Chat
 from tgintegration import BotController
 
-from fa_search_bot.bot import FASearchBot, Config
+from fa_search_bot.bot import Config, FASearchBot
 
 
 @pytest.fixture(scope="session", autouse=True)

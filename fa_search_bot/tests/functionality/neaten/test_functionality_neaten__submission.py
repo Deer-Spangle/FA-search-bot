@@ -7,11 +7,7 @@ from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
-from fa_search_bot.tests.util.mock_telegram_event import (
-    ChatType,
-    MockButton,
-    MockTelegramEvent,
-)
+from fa_search_bot.tests.util.mock_telegram_event import ChatType, MockButton, MockTelegramEvent
 
 
 @pytest.mark.asyncio

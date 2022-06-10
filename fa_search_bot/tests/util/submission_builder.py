@@ -1,18 +1,8 @@
 import random
 from typing import List, Union
 
-from fa_search_bot.sites.fa_submission import (
-    FASubmission,
-    FASubmissionFull,
-    FASubmissionShort,
-    FAUser,
-    Rating,
-)
-from fa_search_bot.tests.util.mock_export_api import (
-    MockSubmission,
-    _random_image_id,
-    _random_string,
-)
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort, FAUser, Rating
+from fa_search_bot.tests.util.mock_export_api import MockSubmission, _random_image_id, _random_string
 
 
 class SubmissionBuilder:

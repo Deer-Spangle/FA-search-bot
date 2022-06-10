@@ -3,7 +3,7 @@ import dataclasses
 import json
 import logging
 from asyncio import Task
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 from prometheus_client import Gauge, Info, start_http_server  # type: ignore
 from telethon import TelegramClient
@@ -11,26 +11,16 @@ from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.beep import BeepFunctionality
-from fa_search_bot.functionalities.functionalities import usage_counter, BotFunctionality
-from fa_search_bot.functionalities.image_hash_recommend import (
-    ImageHashRecommendFunctionality,
-)
-from fa_search_bot.functionalities.inline_edit import (
-    InlineEditButtonPress,
-    InlineEditFunctionality,
-)
+from fa_search_bot.functionalities.functionalities import BotFunctionality, usage_counter
+from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
+from fa_search_bot.functionalities.inline_edit import InlineEditButtonPress, InlineEditFunctionality
 from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
 from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
 from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
 from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
-from fa_search_bot.functionalities.subscriptions import (
-    BlocklistFunctionality,
-    SubscriptionFunctionality,
-)
-from fa_search_bot.functionalities.supergroup_upgrade import (
-    SupergroupUpgradeFunctionality,
-)
+from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality, SubscriptionFunctionality
+from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.e621_handler import E621Handler

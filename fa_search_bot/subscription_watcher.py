@@ -4,7 +4,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Deque, Dict, List, Optional, Set, Any, Sequence
+from typing import Any, Deque, Dict, List, Optional, Sequence, Set
 
 import dateutil.parser
 import heartbeat
@@ -16,11 +16,7 @@ from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 from fa_search_bot.query_parser import AndQuery, NotQuery, Query, parse_query
 from fa_search_bot.sites.fa_export_api import CloudflareError, FAExportAPI, PageNotFound
 from fa_search_bot.sites.fa_handler import SendableFASubmission
-from fa_search_bot.sites.fa_submission import (
-    FASubmission,
-    FASubmissionFull,
-    FASubmissionShort,
-)
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"

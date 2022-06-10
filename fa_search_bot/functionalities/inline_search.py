@@ -4,11 +4,7 @@ from typing import TYPE_CHECKING, Coroutine, Dict, List, Optional, Tuple
 from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.types import InputBotInlineResult
 
-from fa_search_bot.functionalities.functionalities import (
-    BotFunctionality,
-    _parse_inline_offset,
-    answer_with_error,
-)
+from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:

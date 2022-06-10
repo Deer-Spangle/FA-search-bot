@@ -5,10 +5,7 @@ from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctional
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
-from fa_search_bot.tests.util.mock_telegram_event import (
-    MockTelegramEvent,
-    _MockInlineBuilder,
-)
+from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
 @pytest.mark.asyncio

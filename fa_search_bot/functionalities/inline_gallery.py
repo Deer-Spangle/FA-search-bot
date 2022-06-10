@@ -6,11 +6,7 @@ from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-from fa_search_bot.functionalities.functionalities import (
-    BotFunctionality,
-    _parse_inline_offset,
-    answer_with_error,
-)
+from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 

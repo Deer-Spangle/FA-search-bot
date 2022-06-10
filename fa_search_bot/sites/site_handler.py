@@ -4,11 +4,7 @@ from typing import Coroutine, List, Optional, Union
 
 from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import (
-    InputBotInlineMessageID,
-    InputBotInlineResultPhoto,
-    TypeInputPeer,
-)
+from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
 
 class HandlerException(Exception):

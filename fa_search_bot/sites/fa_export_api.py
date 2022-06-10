@@ -7,13 +7,8 @@ from typing import List, Optional
 import requests
 from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.fa_submission import (
-    FAStatus,
-    FASubmission,
-    FASubmissionFull,
-    FASubmissionShort,
-    FASubmissionShortFav,
-)
+from fa_search_bot.sites.fa_submission import (FAStatus, FASubmission, FASubmissionFull, FASubmissionShort,
+                                               FASubmissionShortFav)
 
 logger = logging.getLogger(__name__)
 
