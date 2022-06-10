@@ -122,9 +122,7 @@ async def test_group_migration(controller: BotController, group_chat: Chat):
 
     # Migrate chat to supergroup
     updates = await controller.client.send(MigrateChat(chat_id=abs(group_chat.id)))
-    new_chat_id = int(
-        f"-100{[chat.id for chat in updates.chats if chat.id != abs(group_chat.id)][0]}"
-    )
+    new_chat_id = int(f"-100{[chat.id for chat in updates.chats if chat.id != abs(group_chat.id)][0]}")
     group_chat.id = new_chat_id
 
     # List subscriptions

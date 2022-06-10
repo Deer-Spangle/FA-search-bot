@@ -169,9 +169,7 @@ async def test_send_submission(mock_client):
     prefix = "Some prefix"
 
     with mock.patch("fa_search_bot.sites.sendable.Sendable.send_message") as mock_send:
-        await handler.send_submission(
-            post_id, mock_client, chat, reply_to=reply_to, prefix=prefix, edit=True
-        )
+        await handler.send_submission(post_id, mock_client, chat, reply_to=reply_to, prefix=prefix, edit=True)
 
     mock_send.assert_called_once()
     assert mock_send.call_args.args == (mock_client, chat)

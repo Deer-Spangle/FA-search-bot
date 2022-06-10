@@ -41,9 +41,7 @@ class SubmissionBuilder:
         if thumb_size is None:
             thumb_size = 1600
         # Variables for superclass
-        thumbnail_url = (
-            f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
-        )
+        thumbnail_url = f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
         download_url = (
             f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/"
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
@@ -55,9 +53,7 @@ class SubmissionBuilder:
         if title is None:
             title = _random_string()
         if author is None:
-            author = FAUser.from_submission_dict(
-                {"name": username.title(), "profile_name": username}
-            )
+            author = FAUser.from_submission_dict({"name": username.title(), "profile_name": username})
         if description is None:
             description = _random_string() * 5
         if keywords is None:
@@ -96,9 +92,7 @@ class SubmissionBuilder:
         return sub
 
     def build_short_submission(self):
-        sub = FASubmissionShort(
-            self.submission_id, self.thumbnail_url, self.title, self.author
-        )
+        sub = FASubmissionShort(self.submission_id, self.thumbnail_url, self.title, self.author)
         return sub
 
     def build_mock_submission(self):
@@ -106,9 +100,7 @@ class SubmissionBuilder:
             self.submission_id,
             username=self.author.profile_name,
             image_id=self._image_id,
-            file_size=14852
-            if self._download_file_size is None
-            else self._download_file_size,
+            file_size=14852 if self._download_file_size is None else self._download_file_size,
             file_ext=self._file_ext,
             fav_id=self.fav_id,
             title=self.title,

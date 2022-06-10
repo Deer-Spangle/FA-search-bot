@@ -20,10 +20,13 @@ class Rating(Enum):
     ADULT = 3
 
 
-UserShortResp = TypedDict("UserShortResp", {
-    "name": str,
-    "profile_name": str,
-})
+UserShortResp = TypedDict(
+    "UserShortResp",
+    {
+        "name": str,
+        "profile_name": str,
+    },
+)
 
 
 class SubmissionShortResp(TypedDict, UserShortResp):
@@ -88,41 +91,29 @@ class FASubmission(ABC):
         self.link = f"https://furaffinity.net/view/{submission_id}/"
 
     @staticmethod
-    def from_short_dict(
-            short_dict: SubmissionShortResp
-    ) -> "FASubmissionShort":
+    def from_short_dict(short_dict: SubmissionShortResp) -> "FASubmissionShort":
         submission_id = short_dict["id"]
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict["thumbnail"])
         title = short_dict["title"]
         author = FAUser.from_short_dict(short_dict)
-        return FASubmissionShort(
-            submission_id, thumbnail_url, title, author
-        )
+        return FASubmissionShort(submission_id, thumbnail_url, title, author)
 
     @staticmethod
-    def from_short_fav_dict(
-            short_dict: SubmissionFavShortResp
-    ) -> "FASubmissionShortFav":
+    def from_short_fav_dict(short_dict: SubmissionFavShortResp) -> "FASubmissionShortFav":
         submission_id = short_dict["id"]
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict["thumbnail"])
         title = short_dict["title"]
         author = FAUser.from_short_dict(short_dict)
-        return FASubmissionShortFav(
-            submission_id, thumbnail_url, title, author, short_dict["fav_id"]
-        )
+        return FASubmissionShortFav(submission_id, thumbnail_url, title, author, short_dict["fav_id"])
 
     @staticmethod
-    def from_full_dict(
-            full_dict: SubmissionResp
-    ) -> "FASubmissionFull":
+    def from_full_dict(full_dict: SubmissionResp) -> "FASubmissionFull":
         full_link = full_dict["link"]
         submission_id = FASubmission.id_from_link(full_link)
         download_url = full_dict["download"]
         full_image_url = full_dict["full"]
         if full_dict["thumbnail"] is None:
-            thumbnail_url = FASubmission.construct_thumbnail_url(
-                submission_id, download_url
-            )
+            thumbnail_url = FASubmission.construct_thumbnail_url(submission_id, download_url)
         else:
             thumbnail_url = FASubmission.make_thumbnail_bigger(full_dict["thumbnail"])
         title = full_dict["title"]
@@ -149,9 +140,7 @@ class FASubmission(ABC):
 
     @staticmethod
     def make_thumbnail_bigger(thumbnail_url: str) -> str:
-        return re.sub("@[0-9]+-", "@1600-", thumbnail_url).replace(
-            "facdn", "furaffinity"
-        )
+        return re.sub("@[0-9]+-", "@1600-", thumbnail_url).replace("facdn", "furaffinity")
 
     @staticmethod
     def construct_thumbnail_url(submission_id: str, download_url: str) -> str:
@@ -184,9 +173,7 @@ class FASubmission(ABC):
 
 
 class FASubmissionShort(FASubmission):
-    def __init__(
-            self, submission_id: str, thumbnail_url: str, title: str, author: FAUser
-    ) -> None:
+    def __init__(self, submission_id: str, thumbnail_url: str, title: str, author: FAUser) -> None:
         super().__init__(submission_id)
         self.thumbnail_url = thumbnail_url
         self.title = title
@@ -268,9 +255,7 @@ class FAStatus:
         self.server_time = server_time
 
     @classmethod
-    def from_dict(
-            cls, status_dict: StatusResp
-    ) -> "FAStatus":
+    def from_dict(cls, status_dict: StatusResp) -> "FAStatus":
         return FAStatus(
             status_dict["online"]["guests"],
             status_dict["online"]["registered"],

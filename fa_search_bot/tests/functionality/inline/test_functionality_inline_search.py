@@ -48,10 +48,7 @@ async def test_simple_search(mock_client):
         assert result.kwargs["id"] == f"{handler.site_code}:{post_id}"
         assert result.kwargs["text"] == submission.link
         assert len(result.kwargs["buttons"]) == 1
-        assert (
-                result.kwargs["buttons"][0].data
-                == f"neaten_me:{handler.site_code}:{post_id}".encode()
-        )
+        assert result.kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -66,9 +63,7 @@ async def test_no_search_results(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    assert_answer_is_error(
-        event.answer, "No results found.", f'No results for search "{search_term}".'
-    )
+    assert_answer_is_error(event.answer, "No results found.", f'No results for search "{search_term}".')
 
 
 @pytest.mark.asyncio
@@ -95,10 +90,7 @@ async def test_search_with_offset(mock_client):
         assert result.kwargs["id"] == f"{handler.site_code}:{post_id}"
         assert result.kwargs["text"] == submission.link
         assert len(result.kwargs["buttons"]) == 1
-        assert (
-                result.kwargs["buttons"][0].data
-                == f"neaten_me:{handler.site_code}:{post_id}".encode()
-        )
+        assert result.kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -148,18 +140,12 @@ async def test_search_with_spaces(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission1.submission_id}"
     assert args[0][0].kwargs["text"] == submission1.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission1.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission1.submission_id}".encode()
     assert args[0][1].kwargs["file"] == submission2.thumbnail_url
     assert args[0][1].kwargs["id"] == f"{handler.site_code}:{submission2.submission_id}"
     assert args[0][1].kwargs["text"] == submission2.link
     assert len(args[0][1].kwargs["buttons"]) == 1
-    assert (
-            args[0][1].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission2.submission_id}".encode()
-    )
+    assert args[0][1].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -186,10 +172,7 @@ async def test_search_with_combo_characters(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -216,10 +199,7 @@ async def test_search_with_field(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -249,10 +229,7 @@ async def test_search_site_prefix__letter(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -281,10 +258,7 @@ async def test_search_site_prefix__code(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -313,10 +287,7 @@ async def test_search_site_prefix__name(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{post_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{post_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -345,10 +316,7 @@ async def test_search_site_prefix__name_lower(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -376,10 +344,7 @@ async def test_search_site_prefix_e621(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{post_id}"
     assert args[0][0].kwargs["text"] == post._post_link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{post_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -407,7 +372,4 @@ async def test_search_site_prefix_fa(mock_client):
     assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
     assert args[0][0].kwargs["text"] == submission.link
     assert len(args[0][0].kwargs["buttons"]) == 1
-    assert (
-            args[0][0].kwargs["buttons"][0].data
-            == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
-    )
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()

@@ -31,9 +31,7 @@ async def test_inline_edit_functionality__site_code(mock_client):
     sub = MockSubmission(1234)
     api = MockExportAPI().with_submission(sub)
     handler = MockSiteHandler(api)
-    event = MockTelegramEvent.with_inline_send(
-        result_id=f"{handler.site_code}:{post_id}"
-    )
+    event = MockTelegramEvent.with_inline_send(result_id=f"{handler.site_code}:{post_id}")
     func = InlineEditFunctionality({handler.site_code: handler}, mock_client)
 
     await func.call(event)

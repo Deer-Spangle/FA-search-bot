@@ -70,9 +70,7 @@ class MockTelegramEvent:
 
     @classmethod
     def with_inline_query(cls, query_id=None, query: str = None, offset: str = None):
-        return _MockTelegramInlineQuery(
-            query_id=query_id, query=query, offset=str(offset) if offset else None
-        )
+        return _MockTelegramInlineQuery(query_id=query_id, query=query, offset=str(offset) if offset else None)
 
     @classmethod
     def with_migration(cls, old_chat_id: int = None, new_chat_id: int = None):
@@ -166,9 +164,7 @@ class _MockTelegramCallback(MockTelegramEvent):
         self.client = client
         self.original_update = None
 
-    def with_inline_id(
-            self, dc_id: int = None, msg_id: int = None, access_hash: int = None
-    ):
+    def with_inline_id(self, dc_id: int = None, msg_id: int = None, access_hash: int = None):
         self.original_update = _MockOriginalUpdate()
         self.original_update.msg_id = MockInlineMessageId(dc_id, msg_id, access_hash)
         return self
@@ -198,9 +194,7 @@ class _MockTelegramInlineQuery(MockTelegramEvent):
 class _MockTelegramMigration(MockTelegramEvent):
     def __init__(self, *, old_chat_id: int = None, new_chat_id: int = None):
         super().__init__()
-        self.message = self._MigrationMessage(
-            old_chat_id=old_chat_id, new_chat_id=new_chat_id
-        )
+        self.message = self._MigrationMessage(old_chat_id=old_chat_id, new_chat_id=new_chat_id)
 
     class _MigrationMessage:
         def __init__(self, *, old_chat_id: int = None, new_chat_id: int = None):
@@ -254,9 +248,7 @@ class _MockInlineBuilder:
 
     class _MockInlinePhoto(InputBotInlineResultPhoto):
         def __init__(self, *args, **kwargs):
-            super().__init__(
-                "0", "photo", kwargs.get("photo"), kwargs.get("send_message")
-            )
+            super().__init__("0", "photo", kwargs.get("photo"), kwargs.get("send_message"))
             self.args = args
             self.kwargs = kwargs
 

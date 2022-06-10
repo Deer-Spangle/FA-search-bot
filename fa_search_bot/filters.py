@@ -21,9 +21,7 @@ def filter_image_no_caption(event: NewMessage.Event) -> bool:
     keyboard = event.message.buttons
     has_buttons = False
     if keyboard:
-        has_buttons = any(
-            bool(button.url) for button_row in keyboard for button in button_row
-        )
+        has_buttons = any(bool(button.url) for button_row in keyboard for button in button_row)
     text = event.message.text
     media = event.message.photo or event.message.document
     return not (text or has_buttons) and media

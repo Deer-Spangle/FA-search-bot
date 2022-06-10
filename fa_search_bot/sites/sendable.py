@@ -199,12 +199,8 @@ def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
         convert_gif_two_pass.labels(site_code=handler.site_code)
         video_length.labels(site_code=handler.site_code)
         for entrypoint in DockerEntrypoint:
-            docker_run_time.labels(
-                site_code=handler.site_code, entrypoint=entrypoint.value
-            )
-            docker_failures.labels(
-                site_code=handler.site_code, entrypoint=entrypoint.value
-            )
+            docker_run_time.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
+            docker_failures.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
         inline_results.labels(site_code=handler.site_code)
 
 
@@ -287,9 +283,7 @@ class Sendable(ABC):
 
     SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
     SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
-    SIZE_LIMIT_VIDEO = (
-            10 * 1000 ** 2
-    )  # Maximum 10MB video autodownload size on telegram
+    SIZE_LIMIT_VIDEO = 10 * 1000 ** 2  # Maximum 10MB video autodownload size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
     LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
 
@@ -357,9 +351,7 @@ class Sendable(ABC):
         settings = CaptionSettings()
         ext = self.download_file_ext
 
-        async def send_partial(
-                file: Union[str, BinaryIO, bytes], force_doc: bool = False
-        ) -> None:
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
             if isinstance(file, str):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
@@ -386,9 +378,7 @@ class Sendable(ABC):
             return
 
         # Handle photos
-        if ext in self.EXTENSIONS_PHOTO or (
-                ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)
-        ):
+        if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             sendable_image.labels(site_code=self.site_id).inc()
             if self.download_file_size > self.SIZE_LIMIT_IMAGE:
                 settings.direct_link = True
@@ -423,19 +413,13 @@ class Sendable(ABC):
 
     async def _send_video(
             self,
-            send_partial: Callable[
-                [Union[str, BinaryIO, bytes]], Coroutine[None, None, None]
-            ],
+            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
     ) -> None:
         try:
-            logger.info(
-                "Sending video, site ID %s, submission ID %s", self.site_id, self.id
-            )
+            logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
             filename = self._get_video_from_cache()
             if filename is None:
-                logger.info(
-                    "Video not in cache, converting to mp4. Submission ID %s", self.id
-                )
+                logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
                 output_path: str = await self._convert_video(self.download_url)
                 filename = self._save_video_to_cache(output_path)
             else:
@@ -486,18 +470,14 @@ class Sendable(ABC):
         # first pass
         client = docker.from_env()
         output_path = random_sandbox_video_path("mp4")
-        await self._run_docker(
-            client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}"
-        )
+        await self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             convert_gif_only_one_attempt.labels(site_code=self.site_id).inc()
             return output_path
         # If it's too big, do a 2 pass run
         convert_gif_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(
-            client, output_path, gif_url, ffmpeg_options
-        )
+        return await self._convert_two_pass(client, output_path, gif_url, ffmpeg_options)
 
     @_count_exceptions_with_labels(convert_video_failures)
     async def _convert_video(self, video_url: str) -> str:
@@ -521,18 +501,14 @@ class Sendable(ABC):
         # first pass
         convert_video_to_video.labels(site_code=self.site_id).inc()
         output_path = random_sandbox_video_path("mp4")
-        await self._run_docker(
-            client, f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} /{output_path}"
-        )
+        await self._run_docker(client, f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
             convert_video_only_one_attempt.labels(site_code=self.site_id).inc()
             return output_path
         # If it's too big, do a 2 pass run
         convert_video_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(
-            client, output_path, video_url, ffmpeg_options, ffmpeg_prefix
-        )
+        return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
             self,
@@ -564,9 +540,7 @@ class Sendable(ABC):
                 )
                 raise ValueError("Bitrate cannot be negative")
         log_file = random_sandbox_video_path("log")
-        full_ffmpeg_options = (
-            f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
-        )
+        full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
         await self._run_docker(
             client,
             f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
@@ -577,9 +551,7 @@ class Sendable(ABC):
         )
         return two_pass_filename
 
-    async def _video_has_audio_track(
-            self, client: DockerClient, input_path: str
-    ) -> bool:
+    async def _video_has_audio_track(self, client: DockerClient, input_path: str) -> bool:
         input_path = _format_input_path(input_path)
         audio_track_str = await self._run_docker(
             client,
@@ -588,9 +560,7 @@ class Sendable(ABC):
         )
         return bool(len(audio_track_str))
 
-    async def _video_audio_bitrate(
-            self, client: DockerClient, input_path: str
-    ) -> float:
+    async def _video_audio_bitrate(self, client: DockerClient, input_path: str) -> float:
         input_path = _format_input_path(input_path)
         audio_bitrate_str = await self._run_docker(
             client,
@@ -611,9 +581,7 @@ class Sendable(ABC):
         video_length.labels(site_code=self.site_id).observe(duration)
         return duration
 
-    async def _run_docker(
-            self, client: DockerClient, args: str, entrypoint: Optional[str] = None
-    ) -> str:
+    async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         labels = {
             "site_code": self.site_id,
             "entrypoint": DockerEntrypoint.from_string(entrypoint).value,
@@ -635,9 +603,7 @@ class Sendable(ABC):
                     detach=True,
                 )
                 start_time = datetime.datetime.now()
-                while (
-                        datetime.datetime.now() - start_time
-                ).total_seconds() < self.DOCKER_TIMEOUT:
+                while (datetime.datetime.now() - start_time).total_seconds() < self.DOCKER_TIMEOUT:
                     container.reload()
                     if container.status == "exited":
                         output = container.logs()
@@ -650,16 +616,12 @@ class Sendable(ABC):
                 container.remove(force=True)
                 raise TimeoutError("Docker container timed out")
 
-    def to_inline_query_result(
-            self, builder: InlineBuilder
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         inline_results.labels(site_code=self.site_id).inc()
         return builder.photo(
             file=self.thumbnail_url,
             id=f"{self.site_id}:{self.id}",
             text=self.link,
             # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[
-                Button.inline("⏳ Optimising", f"neaten_me:{self.site_id}:{self.id}")
-            ],
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.site_id}:{self.id}")],
         )

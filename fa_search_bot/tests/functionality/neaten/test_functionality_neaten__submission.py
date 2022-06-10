@@ -34,9 +34,7 @@ async def test_ignore_link(mock_client):
 
 @pytest.mark.asyncio
 async def test_ignore_profile_link(mock_client):
-    event = MockTelegramEvent.with_message(
-        text="https://www.furaffinity.net/user/fender/"
-    )
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
     handler = MockSiteHandler(MockExportAPI())
     neaten = NeatenFunctionality({handler.site_code: handler})
 
@@ -47,9 +45,7 @@ async def test_ignore_profile_link(mock_client):
 
 @pytest.mark.asyncio
 async def test_ignore_journal_link(mock_client):
-    event = MockTelegramEvent.with_message(
-        text="https://www.furaffinity.net/journal/9150534/"
-    )
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
     handler = MockSiteHandler(MockExportAPI())
     neaten = NeatenFunctionality({handler.site_code: handler})
 
@@ -61,9 +57,7 @@ async def test_ignore_journal_link(mock_client):
 @pytest.mark.asyncio
 async def test_ignore_channel_post(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_channel_post(
-        text=f"https://www.furaffinity.net/view/{post_id}/"
-    )
+    event = MockTelegramEvent.with_channel_post(text=f"https://www.furaffinity.net/view/{post_id}/")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
@@ -197,9 +191,7 @@ async def test_two_submission_links(mock_client):
     post_id1 = 23636984
     post_id2 = 23636996
     event = MockTelegramEvent.with_message(
-        text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(
-            post_id1, post_id2
-        ),
+        text="furaffinity.net/view/{}\nfuraffinity.net/view/{}".format(post_id1, post_id2),
         client=mock_client,
     )
     submission1 = MockSubmission(post_id1)
@@ -245,9 +237,7 @@ async def test_duplicate_submission_links(mock_client):
 @pytest.mark.asyncio
 async def test_deleted_submission(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(
-        text="furaffinity.net/view/{}".format(post_id)
-    )
+    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id))
     handler = FAHandler(MockExportAPI())
     neaten = NeatenFunctionality({handler.site_code: handler})
 
@@ -262,9 +252,7 @@ async def test_deleted_submission(mock_client):
 @pytest.mark.asyncio
 async def test_deleted_submission_group_chat(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(
-        text="furaffinity.net/view/{}".format(post_id), chat_type=ChatType.GROUP
-    )
+    event = MockTelegramEvent.with_message(text="furaffinity.net/view/{}".format(post_id), chat_type=ChatType.GROUP)
     handler = MockSiteHandler(MockExportAPI())
     neaten = NeatenFunctionality({handler.site_code: handler})
 
@@ -469,10 +457,7 @@ async def test_link_in_markdown(mock_client):
 @pytest.mark.asyncio
 async def test_link_in_button(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(
-        text="Hello",
-        client=mock_client,
-    ).with_buttons(
+    event = MockTelegramEvent.with_message(text="Hello", client=mock_client, ).with_buttons(
         [
             [
                 MockButton("View on E621", "https://e621.net/post/show/1699284"),
@@ -565,9 +550,7 @@ async def test_auto_doc_just_under_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(
-        post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1
-    )
+    submission = MockSubmission(post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -588,9 +571,7 @@ async def test_auto_doc_just_over_size_limit(mock_client):
         text="https://www.furaffinity.net/view/{}/".format(post_id),
         client=mock_client,
     )
-    submission = MockSubmission(
-        post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1
-    )
+    submission = MockSubmission(post_id, file_ext="pdf", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -607,9 +588,7 @@ async def test_auto_doc_just_over_size_limit(mock_client):
 @pytest.mark.asyncio
 async def test_cloudflare_error(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(
-        text="https://www.furaffinity.net/view/{}/".format(post_id)
-    )
+    event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/view/{}/".format(post_id))
     api = MockExportAPI()
     handler = FAHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
@@ -622,6 +601,4 @@ async def test_cloudflare_error(mock_client):
     with pytest.raises(StopPropagation):
         await neaten.call(event)
 
-    event.reply.assert_called_with(
-        "Furaffinity returned a cloudflare error, so I cannot neaten links."
-    )
+    event.reply.assert_called_with("Furaffinity returned a cloudflare error, so I cannot neaten links.")

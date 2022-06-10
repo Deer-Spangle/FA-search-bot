@@ -32,9 +32,7 @@ async def test_call__route_add_subscription(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_add_subscription_with_username(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/add_subscription@FASearchBot test"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -54,9 +52,7 @@ async def test_call__route_add_subscription_with_username(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_subscription(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/remove_subscription example"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -76,9 +72,7 @@ async def test_call__route_remove_subscription(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_subscription_with_username(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/remove_subscription@FASearchBot example"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)
@@ -117,9 +111,7 @@ async def test_call__route_list_subscriptions(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_list_subscriptions_with_username(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/list_subscriptions@FASearchBot"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)

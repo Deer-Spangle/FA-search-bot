@@ -10,9 +10,7 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 @pytest.mark.asyncio
 async def test_call__route_add_blocklisted_tag(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/add_blocklisted_tag test"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/add_blocklisted_tag test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = BlocklistFunctionality(watcher)
@@ -33,9 +31,7 @@ async def test_call__route_add_blocklisted_tag(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_remove_blocklisted_tag(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/remove_blocklisted_tag example"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_blocklisted_tag example")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = BlocklistFunctionality(watcher)

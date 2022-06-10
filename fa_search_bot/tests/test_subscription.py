@@ -559,9 +559,7 @@ def test_matches_word_in_tag():
 def test_matches_with_rating():
     query = "deer rating:general"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="Deer plays in woods", rating=Rating.GENERAL
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer plays in woods", rating=Rating.GENERAL).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -571,9 +569,7 @@ def test_matches_with_rating():
 def test_matches_not_rating():
     query = "deer rating:general"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="Deer 'plays' in woods", rating=Rating.ADULT
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer 'plays' in woods", rating=Rating.ADULT).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -583,9 +579,7 @@ def test_matches_not_rating():
 def test_matches_negative_rating():
     query = "deer -rating:general"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="Deer 'plays' in woods", rating=Rating.MATURE
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer 'plays' in woods", rating=Rating.MATURE).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -595,9 +589,7 @@ def test_matches_negative_rating():
 def test_matches_not_negative_rating():
     query = "deer -rating:general"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="Deer plays in woods", rating=Rating.GENERAL
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer plays in woods", rating=Rating.GENERAL).build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -609,9 +601,7 @@ def test_matches_general_rating():
     query2 = "deer rating:safe"
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
-    submission = SubmissionBuilder(
-        title="Deer plays in woods", rating=Rating.GENERAL
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer plays in woods", rating=Rating.GENERAL).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
     match2 = subscription2.matches_result(submission, AndQuery([]))
@@ -625,9 +615,7 @@ def test_matches_mature_rating():
     query2 = "deer rating:questionable"
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
-    submission = SubmissionBuilder(
-        title="Deer plays in woods", rating=Rating.MATURE
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer plays in woods", rating=Rating.MATURE).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
     match2 = subscription2.matches_result(submission, AndQuery([]))
@@ -641,9 +629,7 @@ def test_matches_explicit_rating():
     query2 = "deer rating:explicit"
     subscription1 = Subscription(query1, 12432)
     subscription2 = Subscription(query2, 12432)
-    submission = SubmissionBuilder(
-        title="Deer plays in woods", rating=Rating.ADULT
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deer plays in woods", rating=Rating.ADULT).build_full_submission()
 
     match1 = subscription1.matches_result(submission, AndQuery([]))
     match2 = subscription2.matches_result(submission, AndQuery([]))
@@ -661,9 +647,7 @@ def test_matches_result__doesnt_match_blocklisted_rating():
         keywords=["example", "submission", "keywords"],
         rating=Rating.ADULT,
     ).build_full_submission()
-    blocklist = AndQuery(
-        [NotQuery(RatingQuery(Rating.ADULT)), NotQuery(RatingQuery(Rating.MATURE))]
-    )
+    blocklist = AndQuery([NotQuery(RatingQuery(Rating.ADULT)), NotQuery(RatingQuery(Rating.MATURE))])
 
     match = subscription.matches_result(submission, blocklist)
 
@@ -673,9 +657,7 @@ def test_matches_result__doesnt_match_blocklisted_rating():
 def test_matches_result__prefix_matches():
     query = "deer*"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="deertaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="deertaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -685,9 +667,7 @@ def test_matches_result__prefix_matches():
 def test_matches_result__prefix_matches_case_insensitive():
     query = "deer*"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="Deertaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="Deertaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -707,9 +687,7 @@ def test_matches_result__prefix_doesnt_match_term():
 def test_matches_result__suffix_matches():
     query = "*taur"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="deertaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="deertaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -719,9 +697,7 @@ def test_matches_result__suffix_matches():
 def test_matches_result__suffix_matches_case_insensitive():
     query = "*taur"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="DeerTaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="DeerTaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -741,9 +717,7 @@ def test_matches_result__suffix_doesnt_match_term():
 def test_matches_result__regex_matches():
     query = "d*taur"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="deertaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="deertaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -753,9 +727,7 @@ def test_matches_result__regex_matches():
 def test_matches_result__regex_matches_case_insensitive():
     query = "d*taur"
     subscription = Subscription(query, 12432)
-    submission = SubmissionBuilder(
-        title="DeerTaur plays in woods"
-    ).build_full_submission()
+    submission = SubmissionBuilder(title="DeerTaur plays in woods").build_full_submission()
 
     match = subscription.matches_result(submission, AndQuery([]))
 
@@ -821,9 +793,7 @@ def test_from_json_old_format():
     sub = Subscription.from_json_old_format(data)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
-    assert sub.latest_update == datetime.datetime(
-        2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc
-    )
+    assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
 
 
 def test_from_json_new_format():
@@ -832,9 +802,7 @@ def test_from_json_new_format():
     sub = Subscription.from_json_new_format(data, 17839)
     assert sub.query_str == "example query"
     assert sub.destination == 17839
-    assert sub.latest_update == datetime.datetime(
-        2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc
-    )
+    assert sub.latest_update == datetime.datetime(2019, 9, 17, 21, 14, 7, tzinfo=datetime.timezone.utc)
 
 
 def test_from_json_paused_unset():
@@ -879,9 +847,7 @@ def test_to_json_and_back_no_update():
 
 def test_to_json_and_back():
     sub = Subscription("something", 3223)
-    sub.latest_update = datetime.datetime(
-        2019, 9, 17, 21, 16, 14, tzinfo=datetime.timezone.utc
-    )
+    sub.latest_update = datetime.datetime(2019, 9, 17, 21, 16, 14, tzinfo=datetime.timezone.utc)
 
     data = sub.to_json()
     new_sub = Subscription.from_json_new_format(data, 3223)

@@ -1,16 +1,30 @@
 import pytest
 
-from fa_search_bot.query_parser import (AndQuery, ArtistField, DescriptionField, ExceptionQuery, InvalidQueryException,
-                                        KeywordField, LocationOrQuery, NotQuery, OrQuery, PhraseQuery, PrefixQuery,
-                                        RatingQuery, RegexQuery, SuffixQuery, TitleField, WordQuery, parse_query)
+from fa_search_bot.query_parser import (
+    AndQuery,
+    ArtistField,
+    DescriptionField,
+    ExceptionQuery,
+    InvalidQueryException,
+    KeywordField,
+    LocationOrQuery,
+    NotQuery,
+    OrQuery,
+    PhraseQuery,
+    PrefixQuery,
+    RatingQuery,
+    RegexQuery,
+    SuffixQuery,
+    TitleField,
+    WordQuery,
+    parse_query,
+)
 from fa_search_bot.sites.fa_submission import Rating
 
 
 def test_parser():
     assert parse_query("first") == WordQuery("first")
-    assert parse_query("first document") == AndQuery(
-        [WordQuery("first"), WordQuery("document")]
-    )
+    assert parse_query("first document") == AndQuery([WordQuery("first"), WordQuery("document")])
 
 
 def test_negation():
@@ -19,18 +33,12 @@ def test_negation():
     assert parse_query("! first") == NotQuery(WordQuery("first"))
     assert parse_query("not first") == NotQuery(WordQuery("first"))
     assert parse_query("NOT first") == NotQuery(WordQuery("first"))
-    assert parse_query("first not second") == AndQuery(
-        [WordQuery("first"), NotQuery(WordQuery("second"))]
-    )
+    assert parse_query("first not second") == AndQuery([WordQuery("first"), NotQuery(WordQuery("second"))])
 
 
 def test_connectors():
-    assert parse_query("first and document") == AndQuery(
-        [WordQuery("first"), WordQuery("document")]
-    )
-    assert parse_query("first or document") == OrQuery(
-        [WordQuery("first"), WordQuery("document")]
-    )
+    assert parse_query("first and document") == AndQuery([WordQuery("first"), WordQuery("document")])
+    assert parse_query("first or document") == OrQuery([WordQuery("first"), WordQuery("document")])
     assert parse_query("first AND doc OR document") == OrQuery(
         [AndQuery([WordQuery("first"), WordQuery("doc")]), WordQuery("document")]
     )
@@ -75,9 +83,7 @@ def test_fields():
     assert parse_query("keyword:first document") == AndQuery(
         [WordQuery("first", KeywordField()), WordQuery("document")]
     )
-    assert parse_query('keyword:"first document"') == PhraseQuery(
-        "first document", KeywordField()
-    )
+    assert parse_query('keyword:"first document"') == PhraseQuery("first document", KeywordField())
     with pytest.raises(InvalidQueryException):
         parse_query("keyword:(first and document)")
     assert parse_query("@keyword first document") == AndQuery(
@@ -118,9 +124,7 @@ def test_artist_field():
 def test_rating_field():
     assert parse_query("rating:general") == RatingQuery(Rating.GENERAL)
     assert parse_query("-rating:adult") == NotQuery(RatingQuery(Rating.ADULT))
-    assert parse_query("ych rating:mature") == AndQuery(
-        [WordQuery("ych"), RatingQuery(Rating.MATURE)]
-    )
+    assert parse_query("ych rating:mature") == AndQuery([WordQuery("ych"), RatingQuery(Rating.MATURE)])
 
 
 def test_rating_quote():
@@ -158,13 +162,9 @@ def test_exception():
 
 
 def test_exceptions():
-    assert parse_query(
-        'multi* except (multitude or "no multi" or multicol*)'
-    ) == ExceptionQuery(
+    assert parse_query('multi* except (multitude or "no multi" or multicol*)') == ExceptionQuery(
         PrefixQuery("multi"),
-        LocationOrQuery(
-            [WordQuery("multitude"), PhraseQuery("no multi"), PrefixQuery("multicol")]
-        ),
+        LocationOrQuery([WordQuery("multitude"), PhraseQuery("no multi"), PrefixQuery("multicol")]),
     )
 
 

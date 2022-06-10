@@ -40,7 +40,4 @@ class FASubmissionShortTest(unittest.TestCase):
         assert mock_builder.photo.call_args[1]["id"] == post_id
         assert mock_builder.photo.call_args[1]["text"] == link
         assert len(mock_builder.photo.call_args[1]["buttons"]) == 1
-        assert (
-                mock_builder.photo.call_args[1]["buttons"][0].data
-                == f"neaten_me:{post_id}".encode()
-        )
+        assert mock_builder.photo.call_args[1]["buttons"][0].data == f"neaten_me:{post_id}".encode()

@@ -7,9 +7,7 @@ from telethon import TelegramClient
 from telethon.events import InlineQuery, NewMessage, StopPropagation
 from telethon.events.common import EventBuilder, EventCommon
 
-usage_counter = Counter(
-    "fasearchbot_usage_total", "Total usage of bot features", labelnames=["function"]
-)
+usage_counter = Counter("fasearchbot_usage_total", "Total usage of bot features", labelnames=["function"])
 
 
 @asynccontextmanager

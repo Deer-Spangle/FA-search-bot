@@ -18,9 +18,7 @@ class InlineFavsFunctionality(BotFunctionality):
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
 
     def __init__(self, api: FAExportAPI):
-        prefix_pattern = re.compile(
-            "^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I
-        )
+        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
 
@@ -51,21 +49,12 @@ class InlineFavsFunctionality(BotFunctionality):
 
     async def _favs_query_results(
             self, event: InlineQuery.Event, username: str, offset: Optional[str]
-    ) -> Tuple[
-        List[
-            Coroutine[
-                None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]
-            ]
-        ],
-        Optional[str],
-    ]:
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str],]:
         # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None
         try:
-            submissions = (await self.api.get_user_favs(username, offset))[
-                          : self.INLINE_MAX
-                          ]
+            submissions = (await self.api.get_user_favs(username, offset))[: self.INLINE_MAX]
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
             msg = f'FurAffinity user does not exist by the name: "{username}".'

@@ -15,9 +15,7 @@ def _random_image_id(submission_id: int) -> int:
 
 
 def _random_string() -> str:
-    return "".join(
-        random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20))
-    )
+    return "".join(random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20)))
 
 
 def _random_rating() -> Rating:
@@ -61,9 +59,7 @@ class MockSubmission(FASubmissionFull):
             folder = "stories/"
         # Variables for superclass
         if thumbnail_url is None:
-            thumbnail_url = (
-                f"https://t.furaffinity.net/{submission_id}@1600-{image_id}.jpg"
-            )
+            thumbnail_url = f"https://t.furaffinity.net/{submission_id}@1600-{image_id}.jpg"
         if download_url is None:
             download_url = (
                 f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/"
@@ -78,9 +74,7 @@ class MockSubmission(FASubmissionFull):
             title = _random_string()
         if author is None:
             profile_name = _random_string()
-            author = FAUser.from_submission_dict(
-                {"name": profile_name.title(), "profile_name": profile_name}
-            )
+            author = FAUser.from_submission_dict({"name": profile_name.title(), "profile_name": profile_name})
         if description is None:
             description = _random_string() * 5
         if keywords is None:
@@ -121,9 +115,7 @@ class MockExportAPI(FAExportAPI):
         self.submissions[submission.submission_id] = submission
         return self
 
-    def with_submissions(
-            self, list_submissions: List[MockSubmission]
-    ) -> "MockExportAPI":
+    def with_submissions(self, list_submissions: List[MockSubmission]) -> "MockExportAPI":
         for submission in list_submissions:
             self.with_submission(submission)
         return self
@@ -150,16 +142,12 @@ class MockExportAPI(FAExportAPI):
         self.with_submissions(list_submissions)
         return self
 
-    def with_search_results(
-            self, query: str, list_submissions: List[MockSubmission], page: int = 1
-    ):
+    def with_search_results(self, query: str, list_submissions: List[MockSubmission], page: int = 1):
         self.search_results[f"{query.lower()}:{page}"] = list_submissions
         self.with_submissions(list_submissions)
         return self
 
-    def with_browse_results(
-            self, list_submissions: List[MockSubmission], page: int = 1
-    ):
+    def with_browse_results(self, list_submissions: List[MockSubmission], page: int = 1):
         self.browse_results[page] = list_submissions
         self.with_submissions(list_submissions)
         return self
@@ -169,9 +157,7 @@ class MockExportAPI(FAExportAPI):
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
         return self.submissions[submission_id]
 
-    async def get_user_folder(
-            self, user: str, folder: str, page: int = 1
-    ) -> List[FASubmission]:
+    async def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmission]:
         if user not in self.user_folders:
             return []
         if f"{folder}:{page}" not in self.user_folders[user]:

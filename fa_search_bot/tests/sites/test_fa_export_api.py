@@ -239,9 +239,7 @@ async def test_get_user_folder_specified_page(requests_mock):
 async def test_get_user_folder_empty(requests_mock):
     username = "fender"
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/user/{username}/gallery.json?page=1&full=1", json=[]
-    )
+    requests_mock.get(f"https://example.com/user/{username}/gallery.json?page=1&full=1", json=[])
 
     results = await api.get_user_folder(username, "gallery")
 
@@ -367,9 +365,7 @@ async def test_get_search_results_specified_page(requests_mock):
 async def test_get_search_results_no_results(requests_mock):
     search = "chital_deer"
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1", json=[]
-    )
+    requests_mock.get(f"https://example.com/search.json?full=1&perpage=48&q={search}&page=1", json=[])
 
     results = await api.get_search_results(search)
 
@@ -380,9 +376,7 @@ async def test_get_search_results_no_results(requests_mock):
 async def test_get_browse_page_default_1(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/browse.json?page=1", json=[builder.build_search_json()]
-    )
+    requests_mock.get(f"https://example.com/browse.json?page=1", json=[builder.build_search_json()])
 
     results = await api.get_browse_page()
 
@@ -395,9 +389,7 @@ async def test_get_browse_page_default_1(requests_mock):
 async def test_get_browse_page_specify_page(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(
-        f"https://example.com/browse.json?page=5", json=[builder.build_search_json()]
-    )
+    requests_mock.get(f"https://example.com/browse.json?page=5", json=[builder.build_search_json()])
 
     results = await api.get_browse_page(5)
 

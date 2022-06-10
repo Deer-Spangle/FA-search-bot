@@ -27,14 +27,8 @@ class SubscriptionFunctionality(BotFunctionality):
     USE_CASE_RESUME_SUB = "subscription_resume"
 
     def __init__(self, watcher: SubscriptionWatcher):
-        commands = (
-                [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd]
-                + self.pause_cmds
-                + self.resume_cmds
-        )
-        commands_pattern = re.compile(
-            r"^/(" + "|".join(re.escape(c) for c in commands) + ")"
-        )
+        commands = [self.add_sub_cmd, self.remove_sub_cmd, self.list_sub_cmd] + self.pause_cmds + self.resume_cmds
+        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 
@@ -54,9 +48,7 @@ class SubscriptionFunctionality(BotFunctionality):
         message_text = event.text
         command = message_text.split()[0]
         args = message_text[len(command):].strip()
-        await event.reply(
-            self._route_command(event.chat_id, command, args), parse_mode="html"
-        )
+        await event.reply(self._route_command(event.chat_id, command, args), parse_mode="html")
         raise StopPropagation
 
     def _route_command(self, destination: int, command: str, args: str) -> str:
@@ -84,9 +76,7 @@ class SubscriptionFunctionality(BotFunctionality):
         try:
             new_sub = Subscription(query, destination)
         except InvalidQueryException as e:
-            logger.error(
-                "Failed to parse new subscription query: %s", query, exc_info=e
-            )
+            logger.error("Failed to parse new subscription query: %s", query, exc_info=e)
             return f"Failed to parse subscription query: {html.escape(str(e))}"
         if new_sub in self.watcher.subscriptions:
             return f'A subscription already exists for "{html.escape(query)}".'
@@ -100,15 +90,11 @@ class SubscriptionFunctionality(BotFunctionality):
             self.watcher.subscriptions.remove(old_sub)
             return f'Removed subscription: "{html.escape(query)}".\n{self._list_subs(destination)}'
         except KeyError:
-            return (
-                f'There is not a subscription for "{html.escape(query)}" in this chat.'
-            )
+            return f'There is not a subscription for "{html.escape(query)}" in this chat.'
 
     def _list_subs(self, destination: int) -> str:
         self.usage_counter.labels(function=self.USE_CASE_LIST).inc()
-        subs = [
-            sub for sub in self.watcher.subscriptions if sub.destination == destination
-        ]
+        subs = [sub for sub in self.watcher.subscriptions if sub.destination == destination]
         subs.sort(key=lambda sub: sub.query_str.casefold())
         sub_list_entries = []
         for sub in subs:
@@ -180,9 +166,7 @@ class BlocklistFunctionality(BotFunctionality):
             self.remove_block_tag_cmd,
             self.list_block_tag_cmd,
         ]
-        commands_pattern = re.compile(
-            r"^/(" + "|".join(re.escape(c) for c in commands) + ")"
-        )
+        commands_pattern = re.compile(r"^/(" + "|".join(re.escape(c) for c in commands) + ")")
         super().__init__(NewMessage(pattern=commands_pattern, incoming=True))
         self.watcher = watcher
 

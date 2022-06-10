@@ -20,9 +20,7 @@ async def test_unhandled_message(mock_client):
 
 @pytest.mark.asyncio
 async def test_unhandled_group_message(mock_client):
-    event = MockTelegramEvent.with_message(
-        text="Hey friendo, how are you?", chat_type=ChatType.GROUP
-    )
+    event = MockTelegramEvent.with_message(text="Hey friendo, how are you?", chat_type=ChatType.GROUP)
     unhandled = UnhandledMessageFunctionality()
 
     await unhandled.call(event)

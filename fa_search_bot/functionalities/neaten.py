@@ -30,14 +30,10 @@ class NeatenFunctionality(BotFunctionality):
     def __init__(self, handlers: Dict[str, SiteHandler]):
         self.handlers = handlers
         link_regex = re.compile(
-            "("
-            + "|".join(handler.link_regex.pattern for handler in handlers.values())
-            + ")",
+            "(" + "|".join(handler.link_regex.pattern for handler in handlers.values()) + ")",
             re.IGNORECASE,
         )
-        super().__init__(
-            NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True)
-        )
+        super().__init__(NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True))
 
     @property
     def usage_labels(self) -> List[str]:
@@ -84,9 +80,7 @@ class NeatenFunctionality(BotFunctionality):
                             link_matches += handler.find_links_in_str(button.url)
         return link_matches
 
-    async def _get_submission_id_from_link(
-            self, event: NewMessage.Event, link: str
-    ) -> Optional[SubmissionID]:
+    async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[SubmissionID]:
         for site_id, handler in self.handlers.items():
             try:
                 sub_id = await handler.get_submission_id_from_link(link)
@@ -102,9 +96,7 @@ class NeatenFunctionality(BotFunctionality):
                 return None
         return None
 
-    async def _handle_submission_link(
-            self, event: NewMessage.Event, sub_id: SubmissionID
-    ) -> None:
+    async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID) -> None:
         logger.info("Found a link, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
         handler = self.handlers.get(sub_id.site_id)

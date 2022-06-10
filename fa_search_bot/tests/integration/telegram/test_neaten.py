@@ -11,9 +11,7 @@ pytestmark = pytest.mark.asyncio
 async def test_neaten_link(controller: BotController):
     # - send link, get neatened pic
     async with controller.collect(count=2) as response:
-        await controller.client.send_message(
-            controller.peer_id, "https://www.furaffinity.net/view/19925704/"
-        )
+        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/19925704/")
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -25,9 +23,7 @@ async def test_neaten_link_in_group(controller: BotController, group_chat: Chat)
     # - neaten link in group
     group_id = group_chat.id
     async with controller.collect(count=2, peer=group_id) as response:
-        await controller.client.send_message(
-            group_id, "https://www.furaffinity.net/view/19925704/"
-        )
+        await controller.client.send_message(group_id, "https://www.furaffinity.net/view/19925704/")
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -40,9 +36,7 @@ async def test_no_neaten_caption_in_group(controller: BotController, group_chat:
     group_id = group_chat.id
     thumb_link = "https://t.furaffinity.net/19925704@400-1462827244.jpg"
     async with controller.collect(peer=group_id, raise_=False) as response:
-        await controller.client.send_photo(
-            group_id, thumb_link, caption="https://www.furaffinity.net/view/19925704/"
-        )
+        await controller.client.send_photo(group_id, thumb_link, caption="https://www.furaffinity.net/view/19925704/")
 
     assert response.num_messages == 0
 
@@ -73,9 +67,7 @@ async def test_neaten_link_in_button(controller: BotController, bot: FASearchBot
 
     # Run the test
     async with controller.collect(count=2) as response:
-        await controller.client.forward_messages(
-            controller.peer_id, controller.peer_id, msg_id
-        )
+        await controller.client.forward_messages(controller.peer_id, controller.peer_id, msg_id)
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -83,9 +75,7 @@ async def test_neaten_link_in_button(controller: BotController, bot: FASearchBot
     assert response.messages[-1].photo
 
 
-async def test_neaten_link_in_button_with_image(
-        controller: BotController, bot: FASearchBot
-):
+async def test_neaten_link_in_button_with_image(controller: BotController, bot: FASearchBot):
     # Creating an example message to forward to the bot
     client_user = await controller.client.get_me()
     user_id = client_user.id
@@ -111,9 +101,7 @@ async def test_neaten_link_in_button_with_image(
 
     # Run the test
     async with controller.collect(count=2) as response:
-        await controller.client.forward_messages(
-            controller.peer_id, controller.peer_id, msg_id
-        )
+        await controller.client.forward_messages(controller.peer_id, controller.peer_id, msg_id)
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -124,9 +112,7 @@ async def test_neaten_link_in_button_with_image(
 async def test_neaten_txt_link(controller: BotController):
     # - send link, get neatened pic
     async with controller.collect(count=2) as response:
-        await controller.client.send_message(
-            controller.peer_id, "https://www.furaffinity.net/view/572932/"
-        )
+        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/572932/")
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -139,9 +125,7 @@ async def test_neaten_txt_link(controller: BotController):
 async def test_neaten_pdf_link(controller: BotController):
     # - send link, get neatened pic
     async with controller.collect(count=2) as response:
-        await controller.client.send_message(
-            controller.peer_id, "https://www.furaffinity.net/view/41734655/"
-        )
+        await controller.client.send_message(controller.peer_id, "https://www.furaffinity.net/view/41734655/")
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -154,9 +138,7 @@ async def test_neaten_pdf_link(controller: BotController):
 async def test_neaten_e621_link(controller: BotController):
     # - send link, get neatened pic
     async with controller.collect(count=2) as response:
-        await controller.client.send_message(
-            controller.peer_id, "https://e621.net/posts/1092773/"
-        )
+        await controller.client.send_message(controller.peer_id, "https://e621.net/posts/1092773/")
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")

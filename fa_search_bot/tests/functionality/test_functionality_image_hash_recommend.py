@@ -22,9 +22,7 @@ async def test_sends_recommendation(mock_client):
 
 @pytest.mark.asyncio
 async def test_no_reply_in_group(mock_client):
-    event = MockTelegramEvent.with_message(
-        text=None, chat_type=ChatType.GROUP
-    ).with_photo()
+    event = MockTelegramEvent.with_message(text=None, chat_type=ChatType.GROUP).with_photo()
     func = ImageHashRecommendFunctionality()
 
     await func.call(event)

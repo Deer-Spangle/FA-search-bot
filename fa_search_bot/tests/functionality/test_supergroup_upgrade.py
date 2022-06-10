@@ -12,9 +12,7 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 async def test_supergroup_upgrade(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
-    event = MockTelegramEvent.with_migration(
-        old_chat_id=old_chat_id, new_chat_id=new_chat_id
-    )
+    event = MockTelegramEvent.with_migration(old_chat_id=old_chat_id, new_chat_id=new_chat_id)
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SupergroupUpgradeFunctionality(watcher)

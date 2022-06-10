@@ -49,9 +49,7 @@ class MockObjectsTest(unittest.TestCase):
         assert event.original_update is None
 
     def test_can_create_callback_with_message(self):
-        event = MockTelegramEvent.with_callback_query(b"data").with_inline_id(
-            5, 17, 123
-        )
+        event = MockTelegramEvent.with_callback_query(b"data").with_inline_id(5, 17, 123)
         assert event.data == b"data"
         assert event.original_update is not None
         assert event.original_update.msg_id is not None

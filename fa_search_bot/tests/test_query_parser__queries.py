@@ -1,6 +1,22 @@
-from fa_search_bot.query_parser import (AndQuery, ArtistField, DescriptionField, ExceptionQuery, FieldLocation,
-                                        KeywordField, LocationOrQuery, MatchLocation, NotQuery, OrQuery, PhraseQuery,
-                                        PrefixQuery, RatingQuery, RegexQuery, SuffixQuery, TitleField, WordQuery)
+from fa_search_bot.query_parser import (
+    AndQuery,
+    ArtistField,
+    DescriptionField,
+    ExceptionQuery,
+    FieldLocation,
+    KeywordField,
+    LocationOrQuery,
+    MatchLocation,
+    NotQuery,
+    OrQuery,
+    PhraseQuery,
+    PrefixQuery,
+    RatingQuery,
+    RegexQuery,
+    SuffixQuery,
+    TitleField,
+    WordQuery,
+)
 from fa_search_bot.sites.fa_submission import FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -80,36 +96,28 @@ def test_match_location_overlaps_any__overlaps_only_in_other_fields():
 
 
 def test_or_query__both():
-    submission = SubmissionBuilder(
-        rating=Rating.GENERAL, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.GENERAL, title="test").build_full_submission()
     query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__first():
-    submission = SubmissionBuilder(
-        rating=Rating.GENERAL, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.GENERAL, title="test").build_full_submission()
     query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("title", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__second():
-    submission = SubmissionBuilder(
-        rating=Rating.ADULT, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.ADULT, title="test").build_full_submission()
     query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_or_query__neither():
-    submission = SubmissionBuilder(
-        rating=Rating.ADULT, title="title"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.ADULT, title="title").build_full_submission()
     query = OrQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)
@@ -259,36 +267,28 @@ def test_location_or_query__many_subqueries_many_matches_not_all_though():
 
 
 def test_and_query__both():
-    submission = SubmissionBuilder(
-        rating=Rating.GENERAL, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.GENERAL, title="test").build_full_submission()
     query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert query.matches_submission(submission)
 
 
 def test_and_query__first():
-    submission = SubmissionBuilder(
-        rating=Rating.GENERAL, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.GENERAL, title="test").build_full_submission()
     query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("title", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__second():
-    submission = SubmissionBuilder(
-        rating=Rating.ADULT, title="test"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.ADULT, title="test").build_full_submission()
     query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)
 
 
 def test_and_query__neither():
-    submission = SubmissionBuilder(
-        rating=Rating.ADULT, title="title"
-    ).build_full_submission()
+    submission = SubmissionBuilder(rating=Rating.ADULT, title="title").build_full_submission()
     query = AndQuery([RatingQuery(Rating.GENERAL), WordQuery("test", TitleField())])
 
     assert not query.matches_submission(submission)

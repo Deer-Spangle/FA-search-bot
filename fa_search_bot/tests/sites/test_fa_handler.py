@@ -80,9 +80,7 @@ async def test_get_submission_id_from_link__direct_link_empty_gallery():
 async def test_get_submission_id_from_link__direct_link_no_match():
     username = "fender"
     submission = SubmissionBuilder(username=username).build_full_submission()
-    others = [
-        SubmissionBuilder(username=username).build_full_submission() for _ in range(10)
-    ]
+    others = [SubmissionBuilder(username=username).build_full_submission() for _ in range(10)]
     api = MockExportAPI().with_user_folder(username, "gallery", others)
     handler = FAHandler(api)
     link = handler.find_links_in_str(submission.download_url)[0]

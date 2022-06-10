@@ -22,9 +22,7 @@ class InlineGalleryFunctionality(BotFunctionality):
     ALL_PREFIX = PREFIX_SCRAPS + PREFIX_GALLERY
 
     def __init__(self, api: FAExportAPI):
-        prefix_pattern = re.compile(
-            "^(" + "|".join(re.escape(pref) for pref in self.ALL_PREFIX) + "):", re.I
-        )
+        prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.ALL_PREFIX) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
 
@@ -46,9 +44,7 @@ class InlineGalleryFunctionality(BotFunctionality):
         else:
             self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
         # Get results and next offset
-        results, next_offset = await self._gallery_query_results(
-            event, folder, username, offset
-        )
+        results, next_offset = await self._gallery_query_results(event, folder, username, offset)
         # Await results while ignoring exceptions
         results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
@@ -62,21 +58,12 @@ class InlineGalleryFunctionality(BotFunctionality):
 
     async def _gallery_query_results(
             self, event: InlineQuery.Event, folder: str, username: str, offset: str
-    ) -> Tuple[
-        List[
-            Coroutine[
-                None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]
-            ]
-        ],
-        Optional[str],
-    ]:
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str],]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
         # Try and get results
         try:
-            results = await self._create_user_folder_results(
-                event.builder, username, folder, page
-            )
+            results = await self._create_user_folder_results(event.builder, username, folder, page)
         except PageNotFound:
             logger.warning("User not found for inline gallery query")
             await answer_with_error(
@@ -114,7 +101,4 @@ class InlineGalleryFunctionality(BotFunctionality):
     async def _create_user_folder_results(
             self, builder: InlineBuilder, username: str, folder: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
-        return [
-            x.to_inline_query_result(builder)
-            for x in await self.api.get_user_folder(username, folder, page)
-        ]
+        return [x.to_inline_query_result(builder) for x in await self.api.get_user_folder(username, folder, page)]

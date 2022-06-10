@@ -263,9 +263,7 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__handles_empty_latest_ids(mock_client):
     api = MockExportAPI()
-    api.with_browse_results(
-        [MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")]
-    )
+    api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.running = True
 
@@ -281,9 +279,7 @@ async def test_get_new_results__handles_empty_latest_ids(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__returns_new_results(mock_client):
     api = MockExportAPI()
-    api.with_browse_results(
-        [MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")]
-    )
+    api.with_browse_results([MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")])
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.latest_ids.append("1220")
     watcher.running = True
@@ -298,9 +294,7 @@ async def test_get_new_results__returns_new_results(mock_client):
 @pytest.mark.asyncio
 async def test_get_new_results__includes_missing_ids(mock_client):
     api = MockExportAPI()
-    api.with_browse_results(
-        [MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")]
-    )
+    api.with_browse_results([MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")])
     watcher = SubscriptionWatcher(api, mock_client)
     watcher.latest_ids.append("1220")
     watcher.running = True
@@ -386,9 +380,7 @@ async def test_send_updates__sends_message(mock_client):
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch(
-            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message"
-    ) as m:
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
         await watcher._send_updates([subscription], submission)
 
     assert m.asset_called_once()
@@ -409,12 +401,8 @@ async def test_send_updates__gathers_subscriptions(mock_client):
     subscription3 = Subscription("test", 54321)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch(
-            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message"
-    ) as m:
-        await watcher._send_updates(
-            [subscription1, subscription2, subscription3], submission
-        )
+    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+        await watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
     assert m.call_count == 2
     call_list = m.call_args_list
@@ -658,9 +646,7 @@ def test_save_to_json(mock_client):
 
         assert len(data["destinations"]["3452"]["subscriptions"]) == 0
         assert len(data["destinations"]["3452"]["blocks"]) == 2
-        assert set(
-            [block["query"] for block in data["destinations"]["3452"]["blocks"]]
-        ) == {"test", "example"}
+        assert set([block["query"] for block in data["destinations"]["3452"]["blocks"]]) == {"test", "example"}
 
         assert len(data["destinations"]["1453"]["subscriptions"]) == 0
         assert len(data["destinations"]["1453"]["blocks"]) == 1
@@ -706,25 +692,17 @@ def test_from_json(mock_client):
         list_subs = list(watcher.subscriptions)
         if list_subs[0].query_str == "test":
             assert list_subs[0].destination == 87238
-            assert list_subs[0].latest_update == datetime.datetime(
-                2019, 10, 26, 18, 57, 9
-            )
+            assert list_subs[0].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
             assert list_subs[1].query_str == "example"
             assert list_subs[1].destination == -87023
-            assert list_subs[1].latest_update == datetime.datetime(
-                2019, 10, 25, 17, 34, 8
-            )
+            assert list_subs[1].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
         else:
             assert list_subs[0].query_str == "example"
             assert list_subs[0].destination == -87023
-            assert list_subs[0].latest_update == datetime.datetime(
-                2019, 10, 25, 17, 34, 8
-            )
+            assert list_subs[0].latest_update == datetime.datetime(2019, 10, 25, 17, 34, 8)
             assert list_subs[1].query_str == "test"
             assert list_subs[1].destination == 87238
-            assert list_subs[1].latest_update == datetime.datetime(
-                2019, 10, 26, 18, 57, 9
-            )
+            assert list_subs[1].latest_update == datetime.datetime(2019, 10, 26, 18, 57, 9)
         assert len(watcher.blocklists) == 2
         assert 8732 in watcher.blocklists
         assert len(watcher.blocklists[8732]) == 2

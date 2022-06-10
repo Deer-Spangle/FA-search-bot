@@ -28,9 +28,7 @@ class FAUserTest(unittest.TestCase):
         name = "John"
         profile_name = "john"
 
-        author = FAUser.from_submission_dict(
-            {"name": name, "profile_name": profile_name}
-        )
+        author = FAUser.from_submission_dict({"name": name, "profile_name": profile_name})
 
         assert author.name == name
         assert author.profile_name == profile_name

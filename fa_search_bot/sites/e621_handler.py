@@ -35,12 +35,8 @@ class Endpoint(enum.Enum):
 class E621Handler(SiteHandler):
     POST_LINK = re.compile(r"e(?:621|926)\.net/posts/([0-9]+)", re.I)
     OLD_POST_LINK = re.compile(r"e(?:621|926)\.net/post/show/([0-9]+)", re.I)
-    DIRECT_LINK = re.compile(
-        r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)"
-    )
-    E6_LINKS = re.compile(
-        f"({POST_LINK.pattern}|{OLD_POST_LINK.pattern}|{DIRECT_LINK.pattern})"
-    )
+    DIRECT_LINK = re.compile(r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
+    E6_LINKS = re.compile(f"({POST_LINK.pattern}|{OLD_POST_LINK.pattern}|{DIRECT_LINK.pattern})")
     POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
     def __init__(self, api: AsyncYippiClient):
@@ -88,9 +84,7 @@ class E621Handler(SiteHandler):
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
-            with api_failures.labels(
-                    endpoint=Endpoint.SEARCH_MD5.value
-            ).count_exceptions():
+            with api_failures.labels(endpoint=Endpoint.SEARCH_MD5.value).count_exceptions():
                 posts = await self.api.posts(f"md5:{md5_hash}")
         if not posts:
             return None
@@ -98,9 +92,7 @@ class E621Handler(SiteHandler):
 
     async def _get_post_by_id(self, post_id: Union[int, str]) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
-            with api_failures.labels(
-                    endpoint=Endpoint.SUBMISSION.value
-            ).count_exceptions():
+            with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
                 return await self.api.post(post_id)
 
     async def send_submission(
@@ -115,9 +107,7 @@ class E621Handler(SiteHandler):
     ) -> None:
         post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
-        await sendable.send_message(
-            client, chat, reply_to=reply_to, prefix=prefix, edit=edit
-        )
+        await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     def link_for_submission(self, submission_id: int) -> str:
         return f"https://e621.net/posts/{submission_id}/"
@@ -136,9 +126,7 @@ class E621Handler(SiteHandler):
         if self.POST_HASH.match(sub_id_str):
             post = await self._find_post_by_hash(sub_id_str)
             if post is None:
-                raise HandlerException(
-                    f"No e621 submission matches the hash: {sub_id_str}"
-                )
+                raise HandlerException(f"No e621 submission matches the hash: {sub_id_str}")
         else:
             post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)

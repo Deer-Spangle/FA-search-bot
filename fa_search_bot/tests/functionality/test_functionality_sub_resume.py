@@ -87,9 +87,7 @@ async def test_call__route_resume_subscription(mock_client):
 
 @pytest.mark.asyncio
 async def test_call__route_resume_subscription_with_handle(mock_client):
-    event = MockTelegramEvent.with_message(
-        chat_id=14358, text="/resume@FASearchBot test"
-    )
+    event = MockTelegramEvent.with_message(chat_id=14358, text="/resume@FASearchBot test")
     api = MockExportAPI()
     watcher = SubscriptionWatcher(api, mock_client)
     func = SubscriptionFunctionality(watcher)

@@ -50,9 +50,7 @@ sub_total_matches = Counter(
     "fasearchbot_fasubwatcher_sub_matches_total",
     "Total number of subscriptions matches",
 )
-sub_updates = Counter(
-    "fasearchbot_fasubwatcher_updates_sent_total", "Number of subscription updates sent"
-)
+sub_updates = Counter("fasearchbot_fasubwatcher_updates_sent_total", "Number of subscription updates sent")
 sub_blocked = Counter(
     "fasearchbot_fasubwatcher_dest_blocked_total",
     "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first",
@@ -65,9 +63,7 @@ latest_sub_processed = Gauge(
     "fasearchbot_fasubwatcher_latest_processed_unixtime",
     "Time that the latest submission was processed",
 )
-gauge_sub = Gauge(
-    "fasearchbot_fasubwatcher_subscription_count", "Total number of subscriptions"
-)
+gauge_sub = Gauge("fasearchbot_fasubwatcher_subscription_count", "Total number of subscriptions")
 gauge_subs_active = Gauge(
     "fasearchbot_fasubwatcher_subscription_count_active",
     "Number of active subscriptions",
@@ -103,15 +99,9 @@ class SubscriptionWatcher:
         self.blocklists = dict()  # type: Dict[int, Set[str]]
         self.blocklist_query_cache = dict()  # type: Dict[str, Query]
         gauge_sub.set_function(lambda: len(self.subscriptions))
-        gauge_subs_active.set_function(
-            lambda: len([s for s in self.subscriptions if not s.paused])
-        )
-        gauge_sub_destinations.set_function(
-            lambda: len(set(s.destination for s in self.subscriptions))
-        )
-        gauge_sub_blocks.set_function(
-            lambda: sum(len(blocks) for blocks in self.blocklists.values())
-        )
+        gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
+        gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
+        gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
 
     async def run(self) -> None:
         """
@@ -138,12 +128,8 @@ class SubscriptionWatcher:
                 subs_processed.inc()
                 latest_sub_processed.set_to_current_time()
                 try:
-                    full_result = await self.api.get_full_submission(
-                        result.submission_id
-                    )
-                    logger.debug(
-                        "Got full data for submission %s", result.submission_id
-                    )
+                    full_result = await self.api.get_full_submission(result.submission_id)
+                    logger.debug("Got full data for submission %s", result.submission_id)
                 except PageNotFound:
                     logger.warning(
                         "Submission %s, disappeared before I could check it.",
@@ -161,9 +147,7 @@ class SubscriptionWatcher:
                     subs_failed.inc()
                     continue
                 except Exception as e:
-                    logger.error(
-                        "Failed to get submission %s", result.submission_id, exc_info=e
-                    )
+                    logger.error("Failed to get submission %s", result.submission_id, exc_info=e)
                     subs_other_failed.inc()
                     subs_failed.inc()
                     continue
@@ -173,12 +157,7 @@ class SubscriptionWatcher:
                 matching_subscriptions = []
                 for subscription in subscriptions:
                     blocklist = self.blocklists.get(subscription.destination, set())
-                    blocklist_query = AndQuery(
-                        [
-                            NotQuery(self._get_blocklist_query(block))
-                            for block in blocklist
-                        ]
-                    )
+                    blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
                     if subscription.matches_result(full_result, blocklist_query):
                         matching_subscriptions.append(subscription)
                 logger.debug(
@@ -221,9 +200,7 @@ class SubscriptionWatcher:
                 logger.warning("Failed to get browse page, retrying", exc_info=e)
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
             except CloudflareError:
-                logger.warning(
-                    "FA is under cloudflare protection, waiting before retry"
-                )
+                logger.warning("FA is under cloudflare protection, waiting before retry")
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
         return []
 
@@ -232,9 +209,7 @@ class SubscriptionWatcher:
         Gets new results since last scan, returning them in order from oldest to newest.
         """
         if len(self.latest_ids) == 0:
-            logger.info(
-                "First time checking subscriptions, getting initial submissions"
-            )
+            logger.info("First time checking subscriptions, getting initial submissions")
             first_page = await self._get_browse_page()
             if not first_page:
                 return []
@@ -245,12 +220,8 @@ class SubscriptionWatcher:
             return []
         newest_id = int(first_page[0].submission_id)
         latest_recorded_id = int(self.latest_ids[-1])
-        logger.info(
-            "Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id
-        )
-        new_results = [
-            FASubmission(str(x)) for x in range(newest_id, latest_recorded_id, -1)
-        ]
+        logger.info("Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id)
+        new_results = [FASubmission(str(x)) for x in range(newest_id, latest_recorded_id, -1)]
         logger.info("New submissions: %s", len(new_results))
         # Return oldest result first
         return new_results[::-1]
@@ -260,9 +231,7 @@ class SubscriptionWatcher:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()
 
-    async def _send_updates(
-            self, subscriptions: List["Subscription"], result: FASubmissionFull
-    ) -> None:
+    async def _send_updates(self, subscriptions: List["Subscription"], result: FASubmissionFull) -> None:
         destination_map = collections.defaultdict(lambda: [])
         for sub in subscriptions:
             sub.latest_update = datetime.datetime.now()
@@ -271,20 +240,14 @@ class SubscriptionWatcher:
             queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             try:
-                logger.info(
-                    "Sending submission %s to subscription", result.submission_id
-                )
+                logger.info("Sending submission %s to subscription", result.submission_id)
                 sub_updates.inc()
                 sendable = SendableFASubmission(result)
                 await sendable.send_message(self.client, dest, prefix=prefix)
             except (UserIsBlockedError, InputUserDeactivatedError):
                 sub_blocked.inc()
-                logger.info(
-                    "Destination %s is blocked or deleted, pausing subscriptions", dest
-                )
-                all_subs = [
-                    sub for sub in self.subscriptions if sub.destination == dest
-                ]
+                logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
+                all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
                 for sub in all_subs:
                     sub.paused = True
             except Exception as e:
@@ -334,9 +297,7 @@ class SubscriptionWatcher:
             lambda: {"subscriptions": [], "blocks": []}
         )
         for subscription in self.subscriptions.copy():
-            destination_dict[str(subscription.destination)]["subscriptions"].append(
-                subscription.to_json()
-            )
+            destination_dict[str(subscription.destination)]["subscriptions"].append(subscription.to_json())
         for dest, block_queries in self.blocklists.items():
             for block in block_queries:
                 destination_dict[str(dest)]["blocks"].append({"query": block})
@@ -346,9 +307,7 @@ class SubscriptionWatcher:
         os.replace(self.FILENAME_TEMP, self.FILENAME)
 
     @staticmethod  # TODO: make classmethod
-    def load_from_json(
-            api: FAExportAPI, client: TelegramClient
-    ) -> "SubscriptionWatcher":
+    def load_from_json(api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file")
         try:
             with open(SubscriptionWatcher.FILENAME, "r") as f:
@@ -364,23 +323,17 @@ class SubscriptionWatcher:
         return SubscriptionWatcher.load_from_json_new_format(data, api, client)
 
     @staticmethod
-    def load_from_json_old_format(
-            data: Dict, api: FAExportAPI, client: TelegramClient
-    ) -> "SubscriptionWatcher":
+    def load_from_json_old_format(data: Dict, api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in old format")
         new_watcher = SubscriptionWatcher(api, client)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
-        new_watcher.subscriptions = set(
-            Subscription.from_json_old_format(x) for x in data["subscriptions"]
-        )
+        new_watcher.subscriptions = set(Subscription.from_json_old_format(x) for x in data["subscriptions"])
         new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
     @staticmethod
-    def load_from_json_new_format(
-            data: Dict, api: FAExportAPI, client: TelegramClient
-    ) -> "SubscriptionWatcher":
+    def load_from_json_new_format(data: Dict, api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in new format")
         new_watcher = SubscriptionWatcher(api, client)
         for old_id in data["latest_ids"]:
@@ -389,13 +342,9 @@ class SubscriptionWatcher:
         for dest, value in data["destinations"].items():
             dest_id = int(dest)
             for subscription in value["subscriptions"]:
-                subscriptions.add(
-                    Subscription.from_json_new_format(subscription, dest_id)
-                )
+                subscriptions.add(Subscription.from_json_new_format(subscription, dest_id))
             if value["blocks"]:
-                new_watcher.blocklists[dest_id] = set(
-                    block["query"] for block in value["blocks"]
-                )
+                new_watcher.blocklists[dest_id] = set(block["query"] for block in value["blocks"])
         logger.debug(f"Loaded {len(subscriptions)} subscriptions")
         new_watcher.subscriptions = subscriptions
         return new_watcher
@@ -449,10 +398,7 @@ class Subscription:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Subscription):
             return False
-        return (
-                self.query_str.casefold() == other.query_str.casefold()
-                and self.destination == other.destination
-        )
+        return self.query_str.casefold() == other.query_str.casefold() and self.destination == other.destination
 
     def __hash__(self) -> int:
         return hash((self.query_str.casefold(), self.destination))
