@@ -3,7 +3,7 @@ import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import Dict, List, NewType, Optional, Pattern, Any
+from typing import Dict, List, NewType, Optional, Pattern, Any, Sequence
 
 import pyparsing
 from pyparsing import (
@@ -196,7 +196,7 @@ class LocationQuery(Query, ABC):
 
 
 class OrQuery(Query):
-    def __init__(self, sub_queries: List["Query"]):
+    def __init__(self, sub_queries: Sequence["Query"]):
         self.sub_queries = sub_queries
 
     def matches_submission(self, sub: FASubmissionFull) -> bool:
@@ -223,7 +223,7 @@ class LocationOrQuery(OrQuery, LocationQuery):
     def __init__(self, sub_queries: List["LocationQuery"]):
         super().__init__(sub_queries)
         # Set it again, so we know sub_queries are LocationQuery objects, rather than just Query objects
-        self.sub_queries = sub_queries
+        self.sub_queries: List["LocationQuery"] = sub_queries
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         return list(
