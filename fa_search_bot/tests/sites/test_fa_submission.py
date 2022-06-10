@@ -37,6 +37,22 @@ def test_create_from_short_dict():
     assert submission.author.link == builder.author.link
 
 
+def test_create_from_short_fav_dict():
+    builder = SubmissionBuilder(fav_id=173)
+
+    submission = FASubmission.from_short_fav_dict(builder.build_search_json())
+
+    assert isinstance(submission, FASubmissionShort)
+    assert submission.submission_id == builder.submission_id
+    assert submission.link == builder.link
+
+    assert submission.thumbnail_url == builder.thumbnail_url
+    assert submission.title == builder.title
+    assert submission.author.profile_name == builder.author.profile_name
+    assert submission.author.name == builder.author.name
+    assert submission.author.link == builder.author.link
+
+
 def test_create_from_full_dict():
     builder = SubmissionBuilder()
 

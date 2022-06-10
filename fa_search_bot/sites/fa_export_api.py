@@ -177,7 +177,7 @@ class FAExportAPI:
             data = resp.json()
             submissions = []
             for submission_data in data:
-                submissions.append(FASubmission.from_short_dict(submission_data))
+                submissions.append(FASubmission.from_short_fav_dict(submission_data))
             return submissions
         else:
             logger.warning("User favourites not found with name: %s", user)

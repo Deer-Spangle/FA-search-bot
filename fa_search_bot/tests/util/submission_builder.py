@@ -152,12 +152,7 @@ class SubmissionBuilder:
         }
 
     def build_search_json(self):
-        return {
-            "id": self.submission_id,
-            "title": self.title,
-            "thumbnail": self.thumbnail_url,
-            "link": f"https://www.furaffinity.net/view/{self.submission_id}/",
-            "name": self.author.name,
-            "profile": self.author.link,
-            "profile_name": self.author.profile_name,
-        }
+        data = self.build_search_json()
+        if self.fav_id:
+            data["fav_id"] = self.fav_id
+        return data

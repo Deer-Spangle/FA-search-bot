@@ -3,7 +3,7 @@ import logging
 import re
 from abc import ABC
 from enum import Enum
-from typing import Coroutine, Dict, List, Optional, Union
+from typing import Coroutine, Dict, List, Optional, Union, TypedDict, overload
 
 import dateutil.parser
 import requests
@@ -20,6 +20,45 @@ class Rating(Enum):
     ADULT = 3
 
 
+UserShortResp = TypedDict("UserShortResp", {
+    "name": str,
+    "profile_name": str,
+})
+
+
+class SubmissionShortResp(TypedDict, UserShortResp):
+    id: str
+    title: str
+    thumbnail: str
+
+
+class SubmissionFavShortResp(TypedDict, SubmissionShortResp):
+    fav_id: str
+
+
+class SubmissionResp(TypedDict, UserShortResp):
+    link: str
+    download: str
+    full: str
+    thumbnail: Optional[str]
+    title: str
+    description_body: str
+    keywords: List[str]
+    rating: str
+
+
+class OnlineStatusResp(TypedDict):
+    guests: int
+    registered: int
+    other: int
+    total: int
+
+
+class StatusResp(TypedDict):
+    online: OnlineStatusResp
+    fa_server_time_at: str
+
+
 class FAUser(ABC):
     def __init__(self, name: str, profile_name: str):
         self.name = name
@@ -27,11 +66,11 @@ class FAUser(ABC):
         self.link = f"https://furaffinity.net/user/{profile_name}/"
 
     @staticmethod
-    def from_short_dict(short_dict: Dict[str, str]) -> Union["FAUserShort"]:
+    def from_short_dict(short_dict: UserShortResp) -> Union["FAUserShort"]:
         return FAUser.from_submission_dict(short_dict)
 
     @staticmethod
-    def from_submission_dict(short_dict: Dict[str, str]) -> Union["FAUserShort"]:
+    def from_submission_dict(short_dict: UserShortResp) -> Union["FAUserShort"]:
         name = short_dict["name"]
         profile_name = short_dict["profile_name"]
         new_user = FAUserShort(name, profile_name)
@@ -50,25 +89,33 @@ class FASubmission(ABC):
 
     @staticmethod
     def from_short_dict(
-            short_dict: Dict[str, str]
-    ) -> Union["FASubmissionShortFav", "FASubmissionShort"]:
+            short_dict: SubmissionShortResp
+    ) -> "FASubmissionShort":
         submission_id = short_dict["id"]
         thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict["thumbnail"])
         title = short_dict["title"]
         author = FAUser.from_short_dict(short_dict)
-        if "fav_id" in short_dict:
-            return FASubmissionShortFav(
-                submission_id, thumbnail_url, title, author, short_dict["fav_id"]
-            )
         return FASubmissionShort(
             submission_id, thumbnail_url, title, author
         )
 
     @staticmethod
+    def from_short_fav_dict(
+            short_dict: SubmissionFavShortResp
+    ) -> "FASubmissionShortFav":
+        submission_id = short_dict["id"]
+        thumbnail_url = FASubmission.make_thumbnail_bigger(short_dict["thumbnail"])
+        title = short_dict["title"]
+        author = FAUser.from_short_dict(short_dict)
+        return FASubmissionShortFav(
+            submission_id, thumbnail_url, title, author, short_dict["fav_id"]
+        )
+
+    @staticmethod
     def from_full_dict(
-            full_dict: Dict[str, Union[str, List[str]]]
+            full_dict: SubmissionResp
     ) -> "FASubmissionFull":
-        full_link: str = full_dict["link"]
+        full_link = full_dict["link"]
         submission_id = FASubmission.id_from_link(full_link)
         download_url = full_dict["download"]
         full_image_url = full_dict["full"]
@@ -113,7 +160,10 @@ class FASubmission(ABC):
             r"d2?\.(?:facdn|furaffinity)\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/",
             re.I,
         )
-        sub_timestamp = direct_link_regex.search(download_url).group(2)
+        sub_match = direct_link_regex.search(download_url)
+        if not sub_match:
+            raise ValueError("This is not a valid download URL")
+        sub_timestamp = sub_match.group(2)
         return f"https://t.furaffinity.net/{submission_id}@1600-{sub_timestamp}.jpg"
 
     @staticmethod
@@ -122,7 +172,10 @@ class FASubmission(ABC):
 
     @staticmethod
     def id_from_link(link: str) -> str:
-        return re.search("view/([0-9]+)", link).group(1)
+        id_match = re.search("view/([0-9]+)", link)
+        if not id_match:
+            raise ValueError("Link does not seem to have a valid ID")
+        return id_match.group(1)
 
     @staticmethod
     def _get_file_size(url: str) -> int:
@@ -186,7 +239,7 @@ class FASubmissionFull(FASubmissionShort):
         self.description = description
         self.keywords = keywords
         self.rating = rating
-        self._download_file_size = None
+        self._download_file_size: Optional[int] = None
 
     @property
     def download_file_size(self) -> int:
@@ -216,7 +269,7 @@ class FAStatus:
 
     @classmethod
     def from_dict(
-            cls, status_dict: Dict[str, Union[str, Dict[str, int]]]
+            cls, status_dict: StatusResp
     ) -> "FAStatus":
         return FAStatus(
             status_dict["online"]["guests"],
