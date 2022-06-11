@@ -48,7 +48,7 @@ class InlineFavsFunctionality(BotFunctionality):
         raise StopPropagation
 
     async def _favs_query_results(
-            self, event: InlineQuery.Event, username: str, offset: Optional[str]
+        self, event: InlineQuery.Event, username: str, offset: Optional[str]
     ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str],]:
         # For fav listings, the offset can be the last ID
         if offset == "":
