@@ -4,19 +4,28 @@ import datetime
 import json
 import logging
 import os
-from typing import Any, Deque, Dict, List, Optional, Sequence, Set
+from typing import TYPE_CHECKING
 
 import dateutil.parser
 import heartbeat
 from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
-from telethon import TelegramClient
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
-from fa_search_bot.query_parser import AndQuery, NotQuery, Query, parse_query
-from fa_search_bot.sites.fa_export_api import CloudflareError, FAExportAPI, PageNotFound
+from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
+from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.fa_handler import SendableFASubmission
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort
+from fa_search_bot.sites.fa_submission import FASubmission
+
+if TYPE_CHECKING:
+    from typing import Any, Deque, Dict, List, Optional, Sequence, Set
+
+    from telethon import TelegramClient
+
+    from fa_search_bot.query_parser import Query
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
+
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"

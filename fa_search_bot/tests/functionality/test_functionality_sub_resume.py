@@ -327,7 +327,7 @@ def test_resume_subscription__case_insensitive(mock_client):
 
     resp = func._resume_subscription(18749, "test")
 
-    assert f'Resumed subscription: "test".' in resp
+    assert 'Resumed subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -356,7 +356,7 @@ def test_resume_subscription__already_running(mock_client):
 
     resp = func._resume_subscription(18749, "test")
 
-    assert resp == f'Subscription for "test" is already running.'
+    assert resp == 'Subscription for "test" is already running.'
     assert len(watcher.subscriptions) == 2
     sub1, sub2 = watcher.subscriptions
     if sub1.query_str != "test":

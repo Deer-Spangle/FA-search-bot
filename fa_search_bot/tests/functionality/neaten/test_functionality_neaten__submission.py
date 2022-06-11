@@ -150,7 +150,7 @@ async def test_submission_link_in_group_caption(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_submission_link_in_group_caption(mock_client):
+async def test_submission_link_in_group_document_caption(mock_client):
     post_id = 23636984
     event = MockTelegramEvent.with_message(
         chat_type=ChatType.GROUP, text=f"https://www.furaffinity.net/view/{post_id}/"

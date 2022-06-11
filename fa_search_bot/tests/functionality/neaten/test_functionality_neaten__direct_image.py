@@ -501,7 +501,7 @@ async def test_result_on_third_page(mock_client):
             ],
             page=page,
         )
-    submission = await api.get_full_submission(str(post_id))
+    await api.get_full_submission(str(post_id))
     handler = MockSiteHandler(api)
     neaten = NeatenFunctionality({handler.site_code: handler})
 

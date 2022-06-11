@@ -1,4 +1,3 @@
-import random
 from asyncio import Future
 from unittest.mock import Mock
 

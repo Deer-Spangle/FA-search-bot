@@ -2,13 +2,16 @@ import asyncio
 import os
 import sys
 import time
+from typing import TYPE_CHECKING
 
 import pytest
 from pyrogram import Client
-from pyrogram.types import Chat
 from tgintegration import BotController
 
 from fa_search_bot.bot import Config, FASearchBot
+
+if TYPE_CHECKING:
+    from pyrogram.types import Chat
 
 
 @pytest.fixture(scope="session", autouse=True)

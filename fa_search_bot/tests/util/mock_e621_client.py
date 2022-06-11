@@ -1,8 +1,11 @@
 import random
 import uuid
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING
 
 from yippi import AsyncYippiClient, Post
+
+if TYPE_CHECKING:
+    from typing import List, Optional, Union
 
 
 class MockPost(Post):

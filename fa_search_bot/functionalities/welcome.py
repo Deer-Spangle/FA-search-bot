@@ -1,11 +1,14 @@
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon.events import NewMessage, StopPropagation
 from telethon.extensions import markdown
 
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+
+if TYPE_CHECKING:
+    from typing import List
 
 logger = logging.getLogger(__name__)
 

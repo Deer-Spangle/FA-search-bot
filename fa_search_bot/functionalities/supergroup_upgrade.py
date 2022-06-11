@@ -1,13 +1,18 @@
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon import events
 from telethon.events import StopPropagation
 from telethon.tl import types
-from telethon.tl.types import UpdateNewChannelMessage
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.subscription_watcher import SubscriptionWatcher
+
+if TYPE_CHECKING:
+    from typing import List
+
+    from telethon.tl.types import UpdateNewChannelMessage
+
+    from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 

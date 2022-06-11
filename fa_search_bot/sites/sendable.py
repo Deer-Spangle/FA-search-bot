@@ -5,25 +5,29 @@ import enum
 import io
 import logging
 import os
-import typing
 import uuid
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Callable, Coroutine, List, Optional, Union
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 import docker
 import requests
-from docker import DockerClient
-from docker.models.containers import Container
 from PIL import Image
 from prometheus_client import Counter
 from prometheus_client.metrics import Histogram
-from telethon import Button, TelegramClient
+from telethon import Button
 from telethon.errors import BadRequestError
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    from typing import Any, BinaryIO, Coroutine, List, Optional, Union
+
+    from docker import DockerClient
+    from docker.models.containers import Container
+    from telethon import TelegramClient
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
+
     from fa_search_bot.sites.site_handler import SiteHandler
+
 
 logger = logging.getLogger(__name__)
 
@@ -228,13 +232,13 @@ def _convert_gif_to_png(file_url: str) -> bytes:
     return byte_arr.getvalue()
 
 
-WrapReturn = typing.TypeVar("WrapReturn", covariant=True)
+WrapReturn = TypeVar("WrapReturn", covariant=True)
 WrapFunc = Callable[..., WrapReturn]
 
 
-def _count_exceptions_with_labels(counter: Counter) -> typing.Callable[[WrapFunc], WrapFunc]:
+def _count_exceptions_with_labels(counter: Counter) -> Callable[[WrapFunc], WrapFunc]:
     def _count_exceptions(f: WrapFunc) -> WrapFunc:
-        async def wrapper(s: "Sendable", *args: typing.Any, **kwargs: typing.Any) -> WrapReturn:
+        async def wrapper(s: "Sendable", *args: Any, **kwargs: Any) -> WrapReturn:
             self = s
             with counter.labels(site_code=self.site_id).count_exceptions():
                 return await f(*args, **kwargs)

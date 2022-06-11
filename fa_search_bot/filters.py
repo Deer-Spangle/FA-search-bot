@@ -1,6 +1,9 @@
-import re
+from typing import TYPE_CHECKING
 
-from telethon.events import NewMessage
+if TYPE_CHECKING:
+    import re
+
+    from telethon.events import NewMessage
 
 
 def filter_regex(event: NewMessage.Event, pattern: re.Pattern) -> bool:

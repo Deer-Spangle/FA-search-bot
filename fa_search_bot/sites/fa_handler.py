@@ -1,16 +1,22 @@
 import logging
 import re
-from re import Pattern
-from typing import Coroutine, List, Optional, Union
+from typing import TYPE_CHECKING
 
-from telethon import TelegramClient
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
-
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
-from fa_search_bot.sites.sendable import CaptionSettings, Sendable
+from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
+
+if TYPE_CHECKING:
+    from re import Pattern
+    from typing import Coroutine, List, Optional, Union
+
+    from telethon import TelegramClient
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.sendable import CaptionSettings
+
 
 logger = logging.getLogger(__name__)
 

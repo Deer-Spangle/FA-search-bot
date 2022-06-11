@@ -1,12 +1,17 @@
 import logging
-from typing import Dict, List
+from typing import TYPE_CHECKING
 
-from telethon import TelegramClient
 from telethon.events import CallbackQuery, Raw
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.site_handler import SiteHandler
+
+if TYPE_CHECKING:
+    from typing import Dict, List
+
+    from telethon import TelegramClient
+
+    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 

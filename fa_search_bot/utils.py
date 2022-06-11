@@ -1,5 +1,8 @@
 import asyncio
-from typing import Coroutine, List, TypeVar
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from typing import Coroutine, List
 
 T = TypeVar("T")
 

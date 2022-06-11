@@ -1,7 +1,11 @@
+from typing import TYPE_CHECKING
+
 import pytest
 from pyrogram.raw.functions.messages import MigrateChat
-from pyrogram.types import Chat
-from tgintegration import BotController
+
+if TYPE_CHECKING:
+    from pyrogram.types import Chat
+    from tgintegration import BotController
 
 pytestmark = pytest.mark.asyncio
 

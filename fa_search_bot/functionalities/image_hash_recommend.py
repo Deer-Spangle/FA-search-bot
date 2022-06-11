@@ -1,10 +1,13 @@
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.filters import filter_image_no_caption
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+
+if TYPE_CHECKING:
+    from typing import List
 
 logger = logging.getLogger(__name__)
 

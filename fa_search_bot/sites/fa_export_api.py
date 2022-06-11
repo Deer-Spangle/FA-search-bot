@@ -2,18 +2,18 @@ import asyncio
 import datetime
 import enum
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 import requests
 from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.fa_submission import (
-    FAStatus,
-    FASubmission,
-    FASubmissionFull,
-    FASubmissionShort,
-    FASubmissionShortFav,
-)
+from fa_search_bot.sites.fa_submission import FAStatus, FASubmission
+
+if TYPE_CHECKING:
+    from typing import List, Optional
+
+    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmissionShortFav
+
 
 logger = logging.getLogger(__name__)
 

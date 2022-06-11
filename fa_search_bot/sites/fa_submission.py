@@ -1,15 +1,20 @@
-import datetime
 import logging
 import re
 from abc import ABC
 from enum import Enum
-from typing import Coroutine, Dict, List, Optional, TypedDict, Union, overload
+from typing import TYPE_CHECKING, TypedDict
 
 import dateutil.parser
 import requests
 from telethon import Button
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResultPhoto
+
+if TYPE_CHECKING:
+    import datetime
+    from typing import Coroutine, List, Optional, Union
+
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineResultPhoto
+
 
 logger = logging.getLogger(__name__)
 

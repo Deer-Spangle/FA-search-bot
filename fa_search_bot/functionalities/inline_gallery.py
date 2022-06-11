@@ -1,14 +1,21 @@
 import logging
 import re
-from typing import Coroutine, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from typing import Coroutine, List, Optional, Tuple, Union
+
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
+
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +65,7 @@ class InlineGalleryFunctionality(BotFunctionality):
 
     async def _gallery_query_results(
         self, event: InlineQuery.Event, folder: str, username: str, offset: str
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str],]:
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
         # Try and get results

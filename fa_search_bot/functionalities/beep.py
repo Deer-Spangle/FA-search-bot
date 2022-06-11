@@ -1,9 +1,12 @@
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon import events
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+
+if TYPE_CHECKING:
+    from typing import List
 
 logger = logging.getLogger(__name__)
 

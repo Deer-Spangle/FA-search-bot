@@ -3,7 +3,7 @@ import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NewType, Optional, Pattern, Sequence
+from typing import TYPE_CHECKING, NewType
 
 import pyparsing
 from pyparsing import (
@@ -12,15 +12,21 @@ from pyparsing import (
     Group,
     Literal,
     ParseException,
-    ParserElement,
-    ParseResults,
     QuotedString,
     Word,
     ZeroOrMore,
     printables,
 )
 
-from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating
+from fa_search_bot.sites.fa_submission import Rating
+
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Optional, Pattern, Sequence
+
+    from pyparsing import ParserElement, ParseResults
+
+    from fa_search_bot.sites.fa_submission import FASubmissionFull
+
 
 logger = logging.getLogger(__name__)
 

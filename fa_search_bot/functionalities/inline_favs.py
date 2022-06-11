@@ -1,13 +1,19 @@
 import logging
 import re
-from typing import Coroutine, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from typing import Coroutine, List, Optional, Tuple, Union
+
+    from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
+
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +55,7 @@ class InlineFavsFunctionality(BotFunctionality):
 
     async def _favs_query_results(
         self, event: InlineQuery.Event, username: str, offset: Optional[str]
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str],]:
+    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str]]:
         # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None

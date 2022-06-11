@@ -43,7 +43,7 @@ def test_api_request__detects_cloudflare(requests_mock):
     try:
         api._api_request(path, Endpoint.BROWSE)
         assert False, "Should have thrown cloudflare error"
-    except CloudflareError as e:
+    except CloudflareError:
         pass
 
 
@@ -376,7 +376,7 @@ async def test_get_search_results_no_results(requests_mock):
 async def test_get_browse_page_default_1(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(f"https://example.com/browse.json?page=1", json=[builder.build_search_json()])
+    requests_mock.get("https://example.com/browse.json?page=1", json=[builder.build_search_json()])
 
     results = await api.get_browse_page()
 
@@ -389,7 +389,7 @@ async def test_get_browse_page_default_1(requests_mock):
 async def test_get_browse_page_specify_page(requests_mock):
     builder = SubmissionBuilder()
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(f"https://example.com/browse.json?page=5", json=[builder.build_search_json()])
+    requests_mock.get("https://example.com/browse.json?page=5", json=[builder.build_search_json()])
 
     results = await api.get_browse_page(5)
 
@@ -401,7 +401,7 @@ async def test_get_browse_page_specify_page(requests_mock):
 @pytest.mark.asyncio
 async def test_get_browse_page_no_results(requests_mock):
     api = FAExportAPI("https://example.com/", ignore_status=True)
-    requests_mock.get(f"https://example.com/browse.json?page=5", json=[])
+    requests_mock.get("https://example.com/browse.json?page=5", json=[])
 
     results = await api.get_browse_page(5)
 

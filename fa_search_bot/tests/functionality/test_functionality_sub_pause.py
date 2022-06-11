@@ -274,7 +274,7 @@ def test_pause_subscription__one_matching(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f'Paused subscription: "test".' in resp
+    assert 'Paused subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -301,7 +301,7 @@ def test_pause_subscription__case_insensitive(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f'Paused subscription: "test".' in resp
+    assert 'Paused subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -328,7 +328,7 @@ def test_pause_subscription__already_paused(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert resp == f'Subscription for "test" is already paused.'
+    assert resp == 'Subscription for "test" is already paused.'
     assert len(watcher.subscriptions) == 2
     sub1, sub2 = watcher.subscriptions
     if sub1.query_str != "test":

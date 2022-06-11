@@ -1,6 +1,9 @@
-from unittest.mock import AsyncMock
+from typing import TYPE_CHECKING
 
 from fa_search_bot.tests.util.mock_telegram_event import _MockInlineBuilder
+
+if TYPE_CHECKING:
+    from unittest.mock import AsyncMock
 
 
 def assert_answer_is_error(answer: AsyncMock, title: str, desc: str) -> None:

@@ -1,9 +1,14 @@
+from typing import TYPE_CHECKING
+
 import pytest
 import requests
-from pyrogram.types import Chat
-from tgintegration import BotController
 
-from fa_search_bot.bot import FASearchBot
+if TYPE_CHECKING:
+    from pyrogram.types import Chat
+    from tgintegration import BotController
+
+    from fa_search_bot.bot import FASearchBot
+
 
 pytestmark = pytest.mark.asyncio
 

@@ -1,13 +1,18 @@
 import html
 import logging
 import re
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
-from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
+from fa_search_bot.subscription_watcher import Subscription
+
+if TYPE_CHECKING:
+    from typing import List
+
+    from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +77,7 @@ class SubscriptionFunctionality(BotFunctionality):
     def _add_sub(self, destination: int, query: str) -> str:
         self.usage_counter.labels(function=self.USE_CASE_ADD).inc()
         if query == "":
-            return f"Please specify the subscription query you wish to add."
+            return "Please specify the subscription query you wish to add."
         try:
             new_sub = Subscription(query, destination)
         except InvalidQueryException as e:
@@ -192,7 +197,7 @@ class BlocklistFunctionality(BotFunctionality):
     def _add_to_blocklist(self, destination: int, query: str) -> str:
         self.usage_counter.labels(function=self.USE_CASE_ADD).inc()
         if query == "":
-            return f"Please specify the tag you wish to add to blocklist."
+            return "Please specify the tag you wish to add to blocklist."
         try:
             self.watcher.add_to_blocklist(destination, query)
         except InvalidQueryException as e:

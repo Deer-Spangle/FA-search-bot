@@ -1,13 +1,18 @@
 import logging
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.types import InputBotInlineResultPhoto
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.sites.fa_export_api import APIException
-from fa_search_bot.sites.site_handler import SiteHandler
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from typing import Dict, List, Optional
+
+    from telethon.tl.types import InputBotInlineResultPhoto
+
+    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 
