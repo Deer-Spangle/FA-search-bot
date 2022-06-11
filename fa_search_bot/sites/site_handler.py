@@ -53,7 +53,7 @@ class SiteHandler(ABC):
         *,
         reply_to: Optional[int] = None,
         prefix: str = None,
-        edit: bool = False
+        edit: bool = False,
     ) -> None:
         raise NotImplementedError
 
