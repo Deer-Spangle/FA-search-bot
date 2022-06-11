@@ -109,21 +109,21 @@ class FAHandler(SiteHandler):
         return f"https://www.furaffinity.net/view/{submission_id}/"
 
     async def send_submission(
-            self,
-            submission_id: int,
-            client: TelegramClient,
-            chat: Union[TypeInputPeer, InputBotInlineMessageID],
-            *,
-            reply_to: Optional[int] = None,
-            prefix: str = None,
-            edit: bool = False,
+        self,
+        submission_id: int,
+        client: TelegramClient,
+        chat: Union[TypeInputPeer, InputBotInlineMessageID],
+        *,
+        reply_to: Optional[int] = None,
+        prefix: str = None,
+        edit: bool = False,
     ) -> None:
         submission = await self.api.get_full_submission(str(submission_id))
         sendable = SendableFASubmission(submission)
         await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     async def submission_as_answer(
-            self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         sub = await self.api.get_full_submission(str(submission_id))
         sendable = SendableFASubmission(sub)
@@ -137,7 +137,7 @@ class FAHandler(SiteHandler):
             return False
 
     async def get_search_results(
-            self, builder: InlineBuilder, query: str, page: int
+        self, builder: InlineBuilder, query: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         posts = await self.api.get_search_results(query, page)
         return [submission.to_inline_query_result(builder, self.site_code) for submission in posts]

@@ -63,7 +63,7 @@ class InlineSearchFunctionality(BotFunctionality):
         return results, next_offset
 
     async def _search_query_results(
-            self, event: InlineQuery.Event, query: str, offset: str
+        self, event: InlineQuery.Event, query: str, offset: str
     ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
         page, skip = _parse_inline_offset(offset)
         handler, query = self._parse_site_prefix(query)

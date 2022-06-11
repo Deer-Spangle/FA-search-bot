@@ -6,11 +6,11 @@ from fa_search_bot.sites.fa_handler import FAHandler
 
 class MockSiteHandler(FAHandler):
     def __init__(
-            self,
-            api: FAExportAPI,
-            *,
-            site_name: str = None,
-            site_code: str = None,
+        self,
+        api: FAExportAPI,
+        *,
+        site_name: str = None,
+        site_code: str = None,
     ):
         super().__init__(api)
         self._site_name = site_name or "MockSite"

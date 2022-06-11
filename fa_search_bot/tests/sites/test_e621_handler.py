@@ -212,8 +212,8 @@ async def test_submission_as_answer(mock_client):
     exp_result = "tgrdsasdfds"
 
     with mock.patch(
-            "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
-            return_value=exp_result,
+        "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
+        return_value=exp_result,
     ) as mock_inline:
         result = await handler.submission_as_answer(post_id, mock_builder)
 
@@ -233,8 +233,8 @@ async def test_submission_as_answer__md5(mock_client):
     exp_result = "tgrdsasdfds"
 
     with mock.patch(
-            "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
-            return_value=exp_result,
+        "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
+        return_value=exp_result,
     ) as mock_inline:
         result = await handler.submission_as_answer(post_md5, mock_builder)
 

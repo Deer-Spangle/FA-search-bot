@@ -57,7 +57,7 @@ class InlineGalleryFunctionality(BotFunctionality):
         raise StopPropagation
 
     async def _gallery_query_results(
-            self, event: InlineQuery.Event, folder: str, username: str, offset: str
+        self, event: InlineQuery.Event, folder: str, username: str, offset: str
     ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str],]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
@@ -99,6 +99,6 @@ class InlineGalleryFunctionality(BotFunctionality):
         return results, next_offset
 
     async def _create_user_folder_results(
-            self, builder: InlineBuilder, username: str, folder: str, page: int
+        self, builder: InlineBuilder, username: str, folder: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         return [x.to_inline_query_result(builder) for x in await self.api.get_user_folder(username, folder, page)]

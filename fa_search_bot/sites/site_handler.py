@@ -41,14 +41,14 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def send_submission(
-            self,
-            submission_id: int,
-            client: TelegramClient,
-            chat: Union[TypeInputPeer, InputBotInlineMessageID],
-            *,
-            reply_to: Optional[int] = None,
-            prefix: str = None,
-            edit: bool = False
+        self,
+        submission_id: int,
+        client: TelegramClient,
+        chat: Union[TypeInputPeer, InputBotInlineMessageID],
+        *,
+        reply_to: Optional[int] = None,
+        prefix: str = None,
+        edit: bool = False
     ) -> None:
         raise NotImplementedError
 
@@ -58,7 +58,7 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def submission_as_answer(
-            self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         raise NotImplementedError
 
@@ -72,6 +72,6 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def get_search_results(
-            self, builder: InlineBuilder, query: str, page: int
+        self, builder: InlineBuilder, query: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         raise NotImplementedError

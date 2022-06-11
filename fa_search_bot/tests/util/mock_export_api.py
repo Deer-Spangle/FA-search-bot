@@ -28,22 +28,22 @@ class MockSubmission(FASubmissionFull):
     EXTENSIONS_ART = ["gif", "jpg", "jpeg", "png"]
 
     def __init__(
-            self,
-            submission_id: Union[str, int],
-            *,
-            username: str = None,
-            image_id: int = None,
-            file_size: int = 14852,
-            file_ext: str = "jpg",
-            fav_id: str = None,
-            title: str = None,
-            author: FAUser = None,
-            description: str = None,
-            keywords: List[str] = None,
-            thumbnail_url: str = None,
-            download_url: str = None,
-            full_image_url: str = None,
-            rating: Rating = None,
+        self,
+        submission_id: Union[str, int],
+        *,
+        username: str = None,
+        image_id: int = None,
+        file_size: int = 14852,
+        file_ext: str = "jpg",
+        fav_id: str = None,
+        title: str = None,
+        author: FAUser = None,
+        description: str = None,
+        keywords: List[str] = None,
+        thumbnail_url: str = None,
+        download_url: str = None,
+        full_image_url: str = None,
+        rating: Rating = None,
     ):
         # Internal variables
         if image_id is None:
@@ -121,11 +121,11 @@ class MockExportAPI(FAExportAPI):
         return self
 
     def with_user_folder(
-            self,
-            username: str,
-            folder: str,
-            list_submissions: List[MockSubmission],
-            page: int = 1,
+        self,
+        username: str,
+        folder: str,
+        list_submissions: List[MockSubmission],
+        page: int = 1,
     ) -> "MockExportAPI":
         if username not in self.user_folders:
             self.user_folders[username] = {}
@@ -134,7 +134,7 @@ class MockExportAPI(FAExportAPI):
         return self
 
     def with_user_favs(
-            self, username: str, list_submissions: List[MockSubmission], next_id: str = None
+        self, username: str, list_submissions: List[MockSubmission], next_id: str = None
     ) -> "MockExportAPI":
         if username not in self.user_folders:
             self.user_folders[username] = {}

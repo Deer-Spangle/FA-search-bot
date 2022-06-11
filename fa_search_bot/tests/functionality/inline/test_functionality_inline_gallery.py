@@ -314,8 +314,8 @@ async def test_over_max_submissions_continue(mock_client):
         assert args[0][x].kwargs["text"] == submissions[x + inline.INLINE_MAX].link
         assert len(args[0][x].kwargs["buttons"]) == 1
         assert (
-                args[0][x].kwargs["buttons"][0].data
-                == f"neaten_me:{submissions[x + inline.INLINE_MAX].submission_id}".encode()
+            args[0][x].kwargs["buttons"][0].data
+            == f"neaten_me:{submissions[x + inline.INLINE_MAX].submission_id}".encode()
         )
 
 

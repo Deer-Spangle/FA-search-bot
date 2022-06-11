@@ -254,7 +254,7 @@ async def test_two_direct_links(mock_client):
     post_id2 = 232346
     event = MockTelegramEvent.with_message(
         text="https://d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png "
-             "https://d.facdn.net/art/{0}/{2}/{2}.pic_of_you.png".format(username, image_id1, image_id2),
+        "https://d.facdn.net/art/{0}/{2}/{2}.pic_of_you.png".format(username, image_id1, image_id2),
         client=mock_client,
     )
     submission1 = MockSubmission(post_id1, image_id=image_id1)

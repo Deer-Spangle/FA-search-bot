@@ -47,7 +47,7 @@ class SubscriptionFunctionality(BotFunctionality):
     async def call(self, event: NewMessage.Event) -> None:
         message_text = event.text
         command = message_text.split()[0]
-        args = message_text[len(command):].strip()
+        args = message_text[len(command) :].strip()
         await event.reply(self._route_command(event.chat_id, command, args), parse_mode="html")
         raise StopPropagation
 
@@ -178,7 +178,7 @@ class BlocklistFunctionality(BotFunctionality):
         message_text = event.text
         destination = event.chat_id
         command = message_text.split()[0]
-        args = message_text[len(command):].strip()
+        args = message_text[len(command) :].strip()
         if command.startswith("/" + self.add_block_tag_cmd):
             await event.reply(self._add_to_blocklist(destination, args))
         elif command.startswith("/" + self.remove_block_tag_cmd):

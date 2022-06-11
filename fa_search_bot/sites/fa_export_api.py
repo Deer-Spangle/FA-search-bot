@@ -96,7 +96,7 @@ class FAExportAPI:
             if str(resp.status_code)[0] != "5":
                 api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
                 return resp
-            await asyncio.sleep(tries ** 2)
+            await asyncio.sleep(tries**2)
             resp = self._api_request(path, endpoint_label)
         api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
         return resp
@@ -106,8 +106,8 @@ class FAExportAPI:
             return False
         now = datetime.datetime.now()
         if (
-                self.last_status_check is None
-                or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
+            self.last_status_check is None
+            or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
         ):
             status = self.status()
             self.last_status_check = now

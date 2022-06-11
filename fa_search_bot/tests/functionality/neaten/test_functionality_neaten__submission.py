@@ -457,7 +457,7 @@ async def test_link_in_markdown(mock_client):
 @pytest.mark.asyncio
 async def test_link_in_button(mock_client):
     post_id = 23636984
-    event = MockTelegramEvent.with_message(text="Hello", client=mock_client, ).with_buttons(
+    event = MockTelegramEvent.with_message(text="Hello", client=mock_client,).with_buttons(
         [
             [
                 MockButton("View on E621", "https://e621.net/post/show/1699284"),

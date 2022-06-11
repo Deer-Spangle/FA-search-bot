@@ -167,10 +167,10 @@ class MatchLocation:
 
     def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, MatchLocation)
-                and self.field == other.field
-                and self.start_position == other.start_position
-                and self.end_position == other.end_position
+            isinstance(other, MatchLocation)
+            and self.field == other.field
+            and self.start_position == other.start_position
+            and self.end_position == other.end_position
         )
 
     def __hash__(self) -> int:
@@ -201,9 +201,9 @@ class OrQuery(Query):
 
     def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, OrQuery)
-                and len(self.sub_queries) == len(other.sub_queries)
-                and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
+            isinstance(other, OrQuery)
+            and len(self.sub_queries) == len(other.sub_queries)
+            and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
         )
 
     def __repr__(self) -> str:
@@ -232,9 +232,9 @@ class AndQuery(Query):
 
     def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, AndQuery)
-                and len(self.sub_queries) == len(other.sub_queries)
-                and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
+            isinstance(other, AndQuery)
+            and len(self.sub_queries) == len(other.sub_queries)
+            and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
         )
 
     def __repr__(self) -> str:
@@ -413,9 +413,9 @@ class RegexQuery(LocationQuery):
 
     def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, RegexQuery)
-                and self.pattern.pattern == other.pattern.pattern
-                and self.field == other.field
+            isinstance(other, RegexQuery)
+            and self.pattern.pattern == other.pattern.pattern
+            and self.field == other.field
         )
 
     def __repr__(self) -> str:
@@ -508,10 +508,10 @@ def query_parser() -> ParserElement:
         Group(
             exception_elem
             | (
-                    Literal("(")
-                    + exception_elem
-                    + ZeroOrMore(pyparsing.Optional(CaselessKeyword("or")) + exception_elem)
-                    + Literal(")")
+                Literal("(")
+                + exception_elem
+                + ZeroOrMore(pyparsing.Optional(CaselessKeyword("or")) + exception_elem)
+                + Literal(")")
             )
         )
         .setName("exception")

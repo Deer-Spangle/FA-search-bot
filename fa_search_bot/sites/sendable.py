@@ -281,10 +281,10 @@ class Sendable(ABC):
     EXTENSIONS_PHOTO = ["jpg", "jpeg"]  # Telegram can embed these as images
     # Maybe use these for labels
 
-    SIZE_LIMIT_IMAGE = 5 * 1000 ** 2  # Maximum 5MB image size on telegram
-    SIZE_LIMIT_GIF = 8 * 1000 ** 2  # Maximum 8MB gif size on telegram
-    SIZE_LIMIT_VIDEO = 10 * 1000 ** 2  # Maximum 10MB video autodownload size on telegram
-    SIZE_LIMIT_DOCUMENT = 20 * 1000 ** 2  # Maximum 20MB document size on telegram
+    SIZE_LIMIT_IMAGE = 5 * 1000**2  # Maximum 5MB image size on telegram
+    SIZE_LIMIT_GIF = 8 * 1000**2  # Maximum 8MB gif size on telegram
+    SIZE_LIMIT_VIDEO = 10 * 1000**2  # Maximum 10MB video autodownload size on telegram
+    SIZE_LIMIT_DOCUMENT = 20 * 1000**2  # Maximum 20MB document size on telegram
     LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
 
     CACHE_DIR = "video_cache"
@@ -339,13 +339,13 @@ class Sendable(ABC):
 
     @_count_exceptions_with_labels(sendable_failure)
     async def send_message(
-            self,
-            client: TelegramClient,
-            chat: TypeInputPeer,
-            *,
-            reply_to: int = None,
-            prefix: str = None,
-            edit: bool = False,
+        self,
+        client: TelegramClient,
+        chat: TypeInputPeer,
+        *,
+        reply_to: int = None,
+        prefix: str = None,
+        edit: bool = False,
     ) -> None:
         sendable_sent.labels(site_code=self.site_id).inc()
         settings = CaptionSettings()
@@ -412,8 +412,8 @@ class Sendable(ABC):
         return await send_partial(self.preview_image_url)
 
     async def _send_video(
-            self,
-            send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
+        self,
+        send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
     ) -> None:
         try:
             logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
@@ -511,12 +511,12 @@ class Sendable(ABC):
         return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
-            self,
-            client: DockerClient,
-            sandbox_path: str,
-            video_url: str,
-            ffmpeg_options: str,
-            ffmpeg_prefix: str = "",
+        self,
+        client: DockerClient,
+        sandbox_path: str,
+        video_url: str,
+        ffmpeg_options: str,
+        ffmpeg_prefix: str = "",
     ) -> str:
         logger.info(
             "Doing a two pass video conversion on site ID %s, submission ID %s",

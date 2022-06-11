@@ -180,7 +180,7 @@ class FASubmissionShort(FASubmission):
         self.author = author
 
     def to_inline_query_result(
-            self, builder: InlineBuilder, site_code: Optional[str] = None
+        self, builder: InlineBuilder, site_code: Optional[str] = None
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         inline_id = f"{self.submission_id}"
         if site_code:
@@ -196,12 +196,12 @@ class FASubmissionShort(FASubmission):
 
 class FASubmissionShortFav(FASubmissionShort):
     def __init__(
-            self,
-            submission_id: str,
-            thumbnail_url: str,
-            title: str,
-            author: FAUser,
-            fav_id: str,
+        self,
+        submission_id: str,
+        thumbnail_url: str,
+        title: str,
+        author: FAUser,
+        fav_id: str,
     ) -> None:
         super().__init__(submission_id, thumbnail_url, title, author)
         self.fav_id = fav_id
@@ -209,16 +209,16 @@ class FASubmissionShortFav(FASubmissionShort):
 
 class FASubmissionFull(FASubmissionShort):
     def __init__(
-            self,
-            submission_id: str,
-            thumbnail_url: str,
-            download_url: str,
-            full_image_url: str,
-            title: str,
-            author: FAUser,
-            description: str,
-            keywords: List[str],
-            rating: Rating,
+        self,
+        submission_id: str,
+        thumbnail_url: str,
+        download_url: str,
+        full_image_url: str,
+        title: str,
+        author: FAUser,
+        description: str,
+        keywords: List[str],
+        rating: Rating,
     ) -> None:
         super().__init__(submission_id, thumbnail_url, title, author)
         self.download_url = download_url
@@ -241,12 +241,12 @@ class FASubmissionFull(FASubmissionShort):
 
 class FAStatus:
     def __init__(
-            self,
-            online_guests: int,
-            online_registered: int,
-            online_other: int,
-            online_total: int,
-            server_time: datetime.datetime,
+        self,
+        online_guests: int,
+        online_registered: int,
+        online_other: int,
+        online_total: int,
+        server_time: datetime.datetime,
     ):
         self.online_guests = online_guests
         self.online_registered = online_registered

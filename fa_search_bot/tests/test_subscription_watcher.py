@@ -452,8 +452,8 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
-            throw_blocked,
+        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        throw_blocked,
     ):
         await watcher._send_updates([subscription], submission)
 
@@ -472,8 +472,8 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
         raise InputUserDeactivatedError(None)
 
     with mock.patch(
-            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
-            throw_deleted,
+        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        throw_deleted,
     ):
         await watcher._send_updates([subscription], submission)
 
@@ -494,8 +494,8 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-            "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
-            throw_blocked,
+        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        throw_blocked,
     ):
         await watcher._send_updates([subscription1], submission)
 

@@ -87,15 +87,15 @@ def test_load_old_save_new(mock_client):
     assert len(dest3["subscriptions"]) == 2
     assert len(dest3["blocks"]) == 0
     assert {
-               "query": "@keywords deer",
-               "latest_update": "2020-10-31T21:09:58.755093",
-               "paused": False,
-           } in dest3["subscriptions"]
+        "query": "@keywords deer",
+        "latest_update": "2020-10-31T21:09:58.755093",
+        "paused": False,
+    } in dest3["subscriptions"]
     assert {
-               "query": "@keywords dragon",
-               "latest_update": "2020-10-31T21:09:58.755093",
-               "paused": False,
-           } in dest3["subscriptions"]
+        "query": "@keywords dragon",
+        "latest_update": "2020-10-31T21:09:58.755093",
+        "paused": False,
+    } in dest3["subscriptions"]
     # Check dest 87654
     dest4 = new_data["destinations"]["87654"]
     assert len(dest4["subscriptions"]) == 0

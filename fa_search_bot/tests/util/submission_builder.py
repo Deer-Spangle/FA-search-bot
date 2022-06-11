@@ -7,20 +7,20 @@ from fa_search_bot.tests.util.mock_export_api import MockSubmission, _random_ima
 
 class SubmissionBuilder:
     def __init__(
-            self,
-            *,
-            submission_id: Union[str, int] = None,
-            username: str = None,
-            image_id: int = None,
-            file_size: int = None,
-            thumb_size: int = None,
-            file_ext: str = "jpg",
-            fav_id: str = None,
-            title: str = None,
-            author: FAUser = None,
-            description: str = None,
-            keywords: List[str] = None,
-            rating: Rating = None,
+        self,
+        *,
+        submission_id: Union[str, int] = None,
+        username: str = None,
+        image_id: int = None,
+        file_size: int = None,
+        thumb_size: int = None,
+        file_ext: str = "jpg",
+        fav_id: str = None,
+        title: str = None,
+        author: FAUser = None,
+        description: str = None,
+        keywords: List[str] = None,
+        rating: Rating = None,
     ):
         if submission_id is None:
             submission_id = random.randint(10_000, 100_000)

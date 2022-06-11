@@ -474,8 +474,8 @@ async def test_send_image_just_over_size_limit(mock_client):
     assert mock_client.send_message.call_args[1]["entity"] == chat
     assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
     assert (
-            mock_client.send_message.call_args[1]["message"]
-            == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
+        mock_client.send_message.call_args[1]["message"]
+        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
     )
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
     assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
@@ -494,8 +494,8 @@ async def test_send_image_over_document_size_limit(mock_client):
     assert mock_client.send_message.call_args[1]["entity"] == chat
     assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
     assert (
-            mock_client.send_message.call_args[1]["message"]
-            == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
+        mock_client.send_message.call_args[1]["message"]
+        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
     )
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
     assert mock_client.send_message.call_args[1]["parse_mode"] == "html"

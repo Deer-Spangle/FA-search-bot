@@ -96,14 +96,14 @@ class E621Handler(SiteHandler):
                 return await self.api.post(post_id)
 
     async def send_submission(
-            self,
-            submission_id: int,
-            client: TelegramClient,
-            chat: Union[TypeInputPeer, InputBotInlineMessageID],
-            *,
-            reply_to: Optional[int] = None,
-            prefix: str = None,
-            edit: bool = False,
+        self,
+        submission_id: int,
+        client: TelegramClient,
+        chat: Union[TypeInputPeer, InputBotInlineMessageID],
+        *,
+        reply_to: Optional[int] = None,
+        prefix: str = None,
+        edit: bool = False,
     ) -> None:
         post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
@@ -120,7 +120,7 @@ class E621Handler(SiteHandler):
             return bool(self.POST_HASH.match(example))
 
     async def submission_as_answer(
-            self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         sub_id_str = str(submission_id)
         if self.POST_HASH.match(sub_id_str):
@@ -133,7 +133,7 @@ class E621Handler(SiteHandler):
         return sendable.to_inline_query_result(builder)
 
     async def get_search_results(
-            self, builder: InlineBuilder, query: str, page: int
+        self, builder: InlineBuilder, query: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():

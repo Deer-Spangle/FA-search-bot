@@ -33,13 +33,13 @@ class MockTelegramEvent:
 
     @staticmethod
     def with_message(
-            message_id: Optional[int] = None,
-            chat_id: Optional[int] = None,
-            text: Optional[str] = None,
-            chat_type: ChatType = ChatType.PRIVATE,
-            migrate_from_chat_id: Optional[int] = None,
-            migrate_to_chat_id: Optional[int] = None,
-            client: Optional[TelegramClient] = None,
+        message_id: Optional[int] = None,
+        chat_id: Optional[int] = None,
+        text: Optional[str] = None,
+        chat_type: ChatType = ChatType.PRIVATE,
+        migrate_from_chat_id: Optional[int] = None,
+        migrate_to_chat_id: Optional[int] = None,
+        client: Optional[TelegramClient] = None,
     ) -> "_MockTelegramMessage":
         return _MockTelegramMessage(
             message_id=message_id,
@@ -53,9 +53,9 @@ class MockTelegramEvent:
 
     @staticmethod
     def with_channel_post(
-            message_id: Optional[int] = None,
-            chat_id: Optional[int] = None,
-            text: Optional[str] = None,
+        message_id: Optional[int] = None,
+        chat_id: Optional[int] = None,
+        text: Optional[str] = None,
     ):
         return _MockTelegramMessage(
             message_id=message_id,
@@ -81,11 +81,11 @@ class MockTelegramEvent:
 
     @classmethod
     def with_inline_send(
-            cls,
-            result_id: str = None,
-            dc_id: int = None,
-            msg_id: int = None,
-            access_hash: int = None,
+        cls,
+        result_id: str = None,
+        dc_id: int = None,
+        msg_id: int = None,
+        access_hash: int = None,
     ):
         return _MockTelegramInlineSend(
             result_id=result_id,
@@ -97,15 +97,15 @@ class MockTelegramEvent:
 
 class _MockTelegramMessage(MockTelegramEvent):
     def __init__(
-            self,
-            *,
-            message_id: Optional[int] = None,
-            text: Optional[str] = None,
-            chat_id: Optional[int] = None,
-            chat_type: ChatType = ChatType.PRIVATE,
-            migrate_from_chat_id: Optional[int] = None,
-            migrate_to_chat_id: Optional[int] = None,
-            client: Optional[TelegramClient] = None,
+        self,
+        *,
+        message_id: Optional[int] = None,
+        text: Optional[str] = None,
+        chat_id: Optional[int] = None,
+        chat_type: ChatType = ChatType.PRIVATE,
+        migrate_from_chat_id: Optional[int] = None,
+        migrate_to_chat_id: Optional[int] = None,
+        client: Optional[TelegramClient] = None,
     ):
         super().__init__()
         # Set up message data
@@ -212,11 +212,11 @@ class _MockTelegramMigration(MockTelegramEvent):
 
 class _MockTelegramInlineSend:
     def __init__(
-            self,
-            result_id: str = None,
-            dc_id: int = None,
-            msg_id: int = None,
-            access_hash: int = None,
+        self,
+        result_id: str = None,
+        dc_id: int = None,
+        msg_id: int = None,
+        access_hash: int = None,
     ):
         self.id = result_id
         self.msg_id = MockInlineMessageId(dc_id, msg_id, access_hash)
@@ -258,14 +258,14 @@ class _MockInlineBuilder:
 
 class _MockMessage:
     def __init__(
-            self,
-            *,
-            message_id: Optional[int] = None,
-            text: Optional[str] = None,
-            chat_id: Optional[int] = None,
-            chat_type: ChatType = ChatType.PRIVATE,
-            migrate_from_chat_id: Optional[int] = None,
-            migrate_to_chat_id: Optional[int] = None,
+        self,
+        *,
+        message_id: Optional[int] = None,
+        text: Optional[str] = None,
+        chat_id: Optional[int] = None,
+        chat_type: ChatType = ChatType.PRIVATE,
+        migrate_from_chat_id: Optional[int] = None,
+        migrate_to_chat_id: Optional[int] = None,
     ):
         self.id = message_id
         self.chat_id = chat_id

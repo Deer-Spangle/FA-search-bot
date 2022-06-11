@@ -7,12 +7,12 @@ from yippi import AsyncYippiClient, Post
 
 class MockPost(Post):
     def __init__(
-            self,
-            *,
-            post_id: int = None,
-            md5: str = None,
-            ext: str = "jpg",
-            tags: List[str] = None,
+        self,
+        *,
+        post_id: int = None,
+        md5: str = None,
+        ext: str = "jpg",
+        tags: List[str] = None,
     ):
         file_w, file_h = random.randint(100, 10_000), random.randint(100, 10_000)
         sample_w = file_w / (max(file_w, file_h) / 850)
@@ -81,10 +81,10 @@ class MockAsyncYippiClient(AsyncYippiClient):
         return next(filter(lambda post: post.id == post_id, self._posts), None)
 
     async def posts(
-            self,
-            tags: Union[List, str] = None,
-            limit: int = None,
-            page: Union[int, str] = None,
+        self,
+        tags: Union[List, str] = None,
+        limit: int = None,
+        page: Union[int, str] = None,
     ) -> List[Post]:
         if not tags:
             return self._posts
