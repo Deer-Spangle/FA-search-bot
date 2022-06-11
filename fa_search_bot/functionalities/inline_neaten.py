@@ -49,7 +49,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         pass
 
     async def _answer_id_query(
-            self, event: InlineQuery.Event, submission_id: str
+        self, event: InlineQuery.Event, submission_id: str
     ) -> Optional[List[InputBotInlineResultPhoto]]:
         try:
             result_futures = await gather_ignore_exceptions(
@@ -62,7 +62,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         return None
 
     async def _answer_link_query(
-            self, event: InlineQuery.Event, handler: SiteHandler, links: List[str]
+        self, event: InlineQuery.Event, handler: SiteHandler, links: List[str]
     ) -> Optional[List[InputBotInlineResultPhoto]]:
         submission_ids = await gather_ignore_exceptions([handler.get_submission_id_from_link(link) for link in links])
         results = await gather_ignore_exceptions(
