@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from fa_search_bot.tests.util.mock_telegram_event import _MockInlineBuilder
