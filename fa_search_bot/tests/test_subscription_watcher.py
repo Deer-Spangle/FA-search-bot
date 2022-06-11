@@ -17,6 +17,7 @@ from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 if TYPE_CHECKING:
     from typing import List
+
     from fa_search_bot.sites.fa_submission import FASubmissionFull
 
 

@@ -8,6 +8,7 @@ from fa_search_bot.sites.sendable import Sendable
 
 if TYPE_CHECKING:
     from tgintegration import BotController
+
     from fa_search_bot.bot import FASearchBot
 
 pytestmark = pytest.mark.asyncio

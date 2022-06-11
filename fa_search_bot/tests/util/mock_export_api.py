@@ -7,6 +7,7 @@ from fa_search_bot.sites.fa_submission import FASubmissionFull, FAUser, Rating
 
 if TYPE_CHECKING:
     from typing import List, Union
+
     from fa_search_bot.sites.fa_submission import FASubmission
 
 
