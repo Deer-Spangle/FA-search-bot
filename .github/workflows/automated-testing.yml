@@ -85,7 +85,3 @@ jobs:
         run: poetry run mypy fa_search_bot
       - name: Isort
         run: poetry run isort fa_search_bot --check
-      - name: Unit tests
-        run: poetry run task test
-        env:
-          CONFIG_FILE: "config-test.json"
