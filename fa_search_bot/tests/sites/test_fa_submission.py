@@ -34,9 +34,9 @@ def test_create_from_short_dict():
 
 
 def test_create_from_short_fav_dict():
-    builder = SubmissionBuilder(fav_id=173)
+    builder = SubmissionBuilder(fav_id="173")
 
-    submission = FASubmission.from_short_fav_dict(builder.build_search_json())
+    submission = FASubmission.from_short_fav_dict(builder.build_fav_json())
 
     assert isinstance(submission, FASubmissionShort)
     assert submission.submission_id == builder.submission_id
