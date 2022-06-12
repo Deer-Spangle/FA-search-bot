@@ -111,7 +111,7 @@ async def test_video_has_audio():
     assert mock_run.args[0] == client
     assert "-show_streams -select_streams a" in mock_run.args[1]
     assert video_path in mock_run.args[1]
-    assert mock_run.kwargs['entrypoint'] == "ffprobe"
+    assert mock_run.kwargs["entrypoint"] == "ffprobe"
 
 
 @pytest.mark.asyncio
@@ -130,7 +130,7 @@ async def test_video_has_no_audio():
     assert mock_run.args[0] == client
     assert "-show_streams -select_streams a" in mock_run.args[1]
     assert video_path in mock_run.args[1]
-    assert mock_run.kwargs['entrypoint'] == "ffprobe"
+    assert mock_run.kwargs["entrypoint"] == "ffprobe"
 
 
 @pytest.mark.asyncio
@@ -281,13 +281,13 @@ async def test_send_animated_gif_submission(mock_client):
     cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
     assert convert.called
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]["entity"] == chat
     assert mock_rename.called
     assert mock_rename.args[0] == "output.mp4"
     assert mock_rename.args[1] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]['file'] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]["file"] == f"{cache_dir}/{submission.submission_id}.mp4"
+    assert mock_client.send_message.call_args[1]["message"] == submission.link
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
@@ -307,12 +307,12 @@ async def test_send_animated_gif_submission_from_cache(mock_client):
     cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
     assert not convert.called
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
+    assert mock_client.send_message.call_args[1]["entity"] == chat
     assert mock_exists.called
     assert mock_exists.args[0] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]['file'] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]["file"] == f"{cache_dir}/{submission.submission_id}.mp4"
+    assert mock_client.send_message.call_args[1]["message"] == submission.link
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
@@ -331,10 +331,10 @@ async def test_send_static_gif_convert_to_png(mock_client):
 
     assert not convert.called
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs['entity'] == chat
-    assert mock_client.send_message.call_args.kwargs['file'] == png_output
-    assert mock_client.send_message.call_args.kwargs['message'] == submission.link
-    assert mock_client.send_message.call_args.kwargs['reply_to'] == message_id
+    assert mock_client.send_message.call_args.kwargs["entity"] == chat
+    assert mock_client.send_message.call_args.kwargs["file"] == png_output
+    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
+    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
@@ -353,10 +353,10 @@ async def test_send_static_png_does_not_convert(mock_client):
 
     assert not convert.called
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs['entity'] == chat
-    assert mock_client.send_message.call_args.kwargs['file'] == submission.download_url
-    assert mock_client.send_message.call_args.kwargs['message'] == submission.link
-    assert mock_client.send_message.call_args.kwargs['reply_to'] == message_id
+    assert mock_client.send_message.call_args.kwargs["entity"] == chat
+    assert mock_client.send_message.call_args.kwargs["file"] == submission.download_url
+    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
+    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
@@ -371,10 +371,10 @@ async def test_send_animated_gif_convert_failure(mock_client):
         await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs['entity'] == chat
-    assert mock_client.send_message.call_args.kwargs['file'] == submission.download_url
-    assert mock_client.send_message.call_args.kwargs['message'] == submission.link
-    assert mock_client.send_message.call_args.kwargs['reply_to'] == message_id
+    assert mock_client.send_message.call_args.kwargs["entity"] == chat
+    assert mock_client.send_message.call_args.kwargs["file"] == submission.download_url
+    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
+    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
@@ -389,13 +389,13 @@ async def test_send_pdf_submission(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    assert mock_client.send_message.call_args[1]['force_document'] is True
-    sent_message = mock_client.send_message.call_args[1]['message']
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["force_document"] is True
+    sent_message = mock_client.send_message.call_args[1]["message"]
     assert sent_message.endswith(submission.link)
-    assert f"\"{title}\"" in sent_message
+    assert f'"{title}"' in sent_message
     assert author.name in sent_message
     assert author.link in sent_message
 
@@ -412,12 +412,12 @@ async def test_send_mp3_submission(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    sent_message = mock_client.send_message.call_args[1]['message']
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    sent_message = mock_client.send_message.call_args[1]["message"]
     assert sent_message.endswith(submission.link)
-    assert f"\"{title}\"" in sent_message
+    assert f'"{title}"' in sent_message
     assert author.name in sent_message
     assert author.link in sent_message
 
@@ -434,21 +434,20 @@ async def test_send_unrecognised_submission(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
-    sent_message = mock_client.send_message.call_args[1]['message']
-    assert sent_message.endswith(f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>")
-    assert f"\"{title}\"" in sent_message
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.full_image_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
+    sent_message = mock_client.send_message.call_args[1]["message"]
+    assert sent_message.endswith(f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>')
+    assert f'"{title}"' in sent_message
     assert author.name in sent_message
     assert author.link in sent_message
 
 
 @pytest.mark.asyncio
 async def test_send_image_just_under_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
@@ -456,16 +455,15 @@ async def test_send_image_just_under_size_limit(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["message"] == submission.link
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
 async def test_send_image_just_over_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE + 1) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE + 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
@@ -473,18 +471,19 @@ async def test_send_image_just_over_size_limit(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.thumbnail_url
-    assert mock_client.send_message.call_args[1]['message'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
+    assert (
+        mock_client.send_message.call_args[1]["message"]
+        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
+    )
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
 
 
 @pytest.mark.asyncio
 async def test_send_image_over_document_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
@@ -492,12 +491,14 @@ async def test_send_image_over_document_size_limit(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.thumbnail_url
-    assert mock_client.send_message.call_args[1]['message'] == \
-           f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>"
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
+    assert (
+        mock_client.send_message.call_args[1]["message"]
+        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
+    )
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
 
 
 @pytest.mark.asyncio
@@ -508,7 +509,7 @@ async def test_send_pdf_just_under_size_limit(mock_client):
         file_ext="pdf",
         file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1,
         title=title,
-        author=author
+        author=author,
     ).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
@@ -517,12 +518,12 @@ async def test_send_pdf_just_under_size_limit(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    sent_message = mock_client.send_message.call_args[1]['message']
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    sent_message = mock_client.send_message.call_args[1]["message"]
     assert sent_message.endswith(submission.link)
-    assert f"\"{title}\"" in sent_message
+    assert f'"{title}"' in sent_message
     assert author.name in sent_message
     assert author.link in sent_message
 
@@ -535,7 +536,7 @@ async def test_send_pdf_just_over_size_limit(mock_client):
         file_ext="pdf",
         file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1,
         title=title,
-        author=author
+        author=author,
     ).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
@@ -544,21 +545,20 @@ async def test_send_pdf_just_over_size_limit(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
-    assert mock_client.send_message.call_args[1]['parse_mode'] == 'html'
-    sent_message = mock_client.send_message.call_args[1]['message']
-    assert sent_message.endswith(f"{submission.link}\n<a href=\"{submission.download_url}\">Direct download</a>")
-    assert f"\"{title}\"" in sent_message
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.full_image_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
+    sent_message = mock_client.send_message.call_args[1]["message"]
+    assert sent_message.endswith(f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>')
+    assert f'"{title}"' in sent_message
     assert author.name in sent_message
     assert author.link in sent_message
 
 
 @pytest.mark.asyncio
 async def test_send_message__with_prefix(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
@@ -566,17 +566,16 @@ async def test_send_message__with_prefix(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id, prefix="Update on a search")
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert submission.link in mock_client.send_message.call_args[1]['message']
-    assert "Update on a search\n" in mock_client.send_message.call_args[1]['message']
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert submission.link in mock_client.send_message.call_args[1]["message"]
+    assert "Update on a search\n" in mock_client.send_message.call_args[1]["message"]
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
 async def test_send_message__without_prefix(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
@@ -584,16 +583,15 @@ async def test_send_message__without_prefix(mock_client):
     await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]['entity'] == chat
-    assert mock_client.send_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.send_message.call_args[1]['message'] == submission.link
-    assert mock_client.send_message.call_args[1]['reply_to'] == message_id
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["message"] == submission.link
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
 
 @pytest.mark.asyncio
 async def test_send_message__edit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE // 2) \
-        .build_full_submission()
+    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE // 2).build_full_submission()
     sendable = SendableFASubmission(submission)
     entity = MockInlineMessageId()
     message_id = 2873292
@@ -602,11 +600,11 @@ async def test_send_message__edit(mock_client):
 
     mock_client.send_message.assert_not_called()
     mock_client.edit_message.assert_called_once()
-    assert mock_client.edit_message.call_args[1]['entity'] == entity
-    assert mock_client.edit_message.call_args[1]['file'] == submission.download_url
-    assert mock_client.edit_message.call_args[1]['message'] == submission.link
-    assert mock_client.edit_message.call_args[1]['parse_mode'] == 'html'
-    assert 'reply_to' not in mock_client.edit_message.call_args[1]
+    assert mock_client.edit_message.call_args[1]["entity"] == entity
+    assert mock_client.edit_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.edit_message.call_args[1]["message"] == submission.link
+    assert mock_client.edit_message.call_args[1]["parse_mode"] == "html"
+    assert "reply_to" not in mock_client.edit_message.call_args[1]
 
 
 @pytest.mark.asyncio
@@ -621,11 +619,11 @@ async def test_inline_query():
 
     assert result == exp_result
     builder.photo.assert_called_once()
-    assert builder.photo.call_args.kwargs['file'] == sendable.thumbnail_url
-    assert sendable.site_id in builder.photo.call_args.kwargs['id']
-    assert builder.photo.call_args.kwargs['id'] == f"{sendable.site_id}:{sendable.id}"
-    assert builder.photo.call_args.kwargs['text'] == sendable.link
-    buttons = builder.photo.call_args.kwargs['buttons']
+    assert builder.photo.call_args.kwargs["file"] == sendable.thumbnail_url
+    assert sendable.site_id in builder.photo.call_args.kwargs["id"]
+    assert builder.photo.call_args.kwargs["id"] == f"{sendable.site_id}:{sendable.id}"
+    assert builder.photo.call_args.kwargs["text"] == sendable.link
+    buttons = builder.photo.call_args.kwargs["buttons"]
     assert len(buttons) == 1
     assert "Optimising" in buttons[0].text
     assert buttons[0].data == f"neaten_me:{sendable.site_id}:{sendable.id}".encode()

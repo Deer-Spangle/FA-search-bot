@@ -1,18 +1,24 @@
-import logging
-from typing import Dict, List
+from __future__ import annotations
 
-from telethon import TelegramClient
-from telethon.events import Raw, CallbackQuery
+import logging
+from typing import TYPE_CHECKING
+
+from telethon.events import CallbackQuery, Raw
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.site_handler import SiteHandler
+
+if TYPE_CHECKING:
+    from typing import Dict, List
+
+    from telethon import TelegramClient
+
+    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 
 
 class InlineEditFunctionality(BotFunctionality):
-
     def __init__(self, handlers: Dict[str, SiteHandler], client: TelegramClient):
         super().__init__(Raw(UpdateBotInlineSend))
         self.handlers = handlers
@@ -34,12 +40,16 @@ class InlineEditFunctionality(BotFunctionality):
             logger.error("Unrecognised site ID in result callback: %s", site_id)
             return
         msg_id = event.msg_id
-        logger.debug("Got an inline result send event. site_id=%s, sub_id=%s, msg_id=%s", site_id, sub_id, msg_id)
+        logger.debug(
+            "Got an inline result send event. site_id=%s, sub_id=%s, msg_id=%s",
+            site_id,
+            sub_id,
+            msg_id,
+        )
         await handler.send_submission(sub_id, self.client, msg_id, edit=True)
 
 
 class InlineEditButtonPress(BotFunctionality):
-
     def __init__(self, handlers: Dict[str, SiteHandler]):
         super().__init__(CallbackQuery(pattern="^neaten_me:"))
         self.handlers = handlers
@@ -63,5 +73,10 @@ class InlineEditButtonPress(BotFunctionality):
         if handler is None:
             logger.error("Unrecognised site ID in button callback: %s", site_id)
             return
-        logger.debug("Optimise button pressed for site_id=%s sub_id=%s msg_id=%s", site_id, sub_id, msg_id)
+        logger.debug(
+            "Optimise button pressed for site_id=%s sub_id=%s msg_id=%s",
+            site_id,
+            sub_id,
+            msg_id,
+        )
         await handler.send_submission(sub_id, event.client, msg_id, edit=True)

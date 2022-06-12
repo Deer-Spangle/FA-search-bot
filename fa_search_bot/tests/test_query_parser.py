@@ -1,10 +1,25 @@
 import pytest
 
+from fa_search_bot.query_parser import (
+    AndQuery,
+    ArtistField,
+    DescriptionField,
+    ExceptionQuery,
+    InvalidQueryException,
+    KeywordField,
+    LocationOrQuery,
+    NotQuery,
+    OrQuery,
+    PhraseQuery,
+    PrefixQuery,
+    RatingQuery,
+    RegexQuery,
+    SuffixQuery,
+    TitleField,
+    WordQuery,
+    parse_query,
+)
 from fa_search_bot.sites.fa_submission import Rating
-from fa_search_bot.query_parser import parse_query, WordQuery, AndQuery, NotQuery, OrQuery, KeywordField, \
-    InvalidQueryException, \
-    PhraseQuery, TitleField, RatingQuery, DescriptionField, PrefixQuery, SuffixQuery, RegexQuery, ArtistField, \
-    ExceptionQuery, LocationOrQuery
 
 
 def test_parser():
@@ -45,30 +60,30 @@ def test_brackets():
 
 
 def test_quotes():
-    assert parse_query("\"first document\"") == PhraseQuery("first document")
-    assert parse_query("\"Hello WORLD!\"") == PhraseQuery("Hello WORLD!")
+    assert parse_query('"first document"') == PhraseQuery("first document")
+    assert parse_query('"Hello WORLD!"') == PhraseQuery("Hello WORLD!")
 
 
 def test_quotes_and_brackets():
-    assert parse_query("not (hello \"first :) document\")") == NotQuery(
+    assert parse_query('not (hello "first :) document")') == NotQuery(
         AndQuery([WordQuery("hello"), PhraseQuery("first :) document")])
     )
 
 
 def test_extra_quotes():
     with pytest.raises(InvalidQueryException):
-        parse_query("\"hello \" document\"")
+        parse_query('"hello " document"')
 
 
 def test_escaped_quotes():
-    assert parse_query("\"hello \\\" document\"") == PhraseQuery("hello \" document")
+    assert parse_query('"hello \\" document"') == PhraseQuery('hello " document')
 
 
 def test_fields():
     assert parse_query("keyword:first document") == AndQuery(
         [WordQuery("first", KeywordField()), WordQuery("document")]
     )
-    assert parse_query("keyword:\"first document\"") == PhraseQuery("first document", KeywordField())
+    assert parse_query('keyword:"first document"') == PhraseQuery("first document", KeywordField())
     with pytest.raises(InvalidQueryException):
         parse_query("keyword:(first and document)")
     assert parse_query("@keyword first document") == AndQuery(
@@ -114,7 +129,7 @@ def test_rating_field():
 
 def test_rating_quote():
     with pytest.raises(InvalidQueryException):
-        parse_query("rating:\"general adult\"")
+        parse_query('rating:"general adult"')
 
 
 def test_rating_invalid():
@@ -147,24 +162,23 @@ def test_exception():
 
 
 def test_exceptions():
-    assert parse_query("multi* except (multitude or \"no multi\" or multicol*)") == ExceptionQuery(
-        PrefixQuery("multi"), LocationOrQuery([
-            WordQuery("multitude"), PhraseQuery("no multi"), PrefixQuery("multicol")
-        ])
+    assert parse_query('multi* except (multitude or "no multi" or multicol*)') == ExceptionQuery(
+        PrefixQuery("multi"),
+        LocationOrQuery([WordQuery("multitude"), PhraseQuery("no multi"), PrefixQuery("multicol")]),
     )
 
 
 def test_field_exceptions():
     assert parse_query("keywords:multi* except multicol*") == ExceptionQuery(
         PrefixQuery("multi", KeywordField()),
-        LocationOrQuery([PrefixQuery("multicol", KeywordField())])
+        LocationOrQuery([PrefixQuery("multicol", KeywordField())]),
     )
 
 
 def test_field_exceptions_brackets():
     assert parse_query("keywords:(multi* except multicol*)") == ExceptionQuery(
         PrefixQuery("multi", KeywordField()),
-        LocationOrQuery([PrefixQuery("multicol", KeywordField())])
+        LocationOrQuery([PrefixQuery("multicol", KeywordField())]),
     )
 
 

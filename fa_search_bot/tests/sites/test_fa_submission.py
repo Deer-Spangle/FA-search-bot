@@ -1,7 +1,7 @@
 import asyncio
 
 from fa_search_bot.sites.fa_handler import FAHandler
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull
+from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 loop = asyncio.get_event_loop()
@@ -20,9 +20,23 @@ def test_constructor():
 def test_create_from_short_dict():
     builder = SubmissionBuilder()
 
-    submission = FASubmission.from_short_dict(
-        builder.build_search_json()
-    )
+    submission = FASubmission.from_short_dict(builder.build_search_json())
+
+    assert isinstance(submission, FASubmissionShort)
+    assert submission.submission_id == builder.submission_id
+    assert submission.link == builder.link
+
+    assert submission.thumbnail_url == builder.thumbnail_url
+    assert submission.title == builder.title
+    assert submission.author.profile_name == builder.author.profile_name
+    assert submission.author.name == builder.author.name
+    assert submission.author.link == builder.author.link
+
+
+def test_create_from_short_fav_dict():
+    builder = SubmissionBuilder(fav_id="173")
+
+    submission = FASubmission.from_short_fav_dict(builder.build_fav_json())
 
     assert isinstance(submission, FASubmissionShort)
     assert submission.submission_id == builder.submission_id
@@ -38,9 +52,7 @@ def test_create_from_short_dict():
 def test_create_from_full_dict():
     builder = SubmissionBuilder()
 
-    submission = FASubmission.from_full_dict(
-        builder.build_submission_json()
-    )
+    submission = FASubmission.from_full_dict(builder.build_submission_json())
 
     assert isinstance(submission, FASubmissionFull)
     assert submission.submission_id == builder.submission_id
@@ -62,9 +74,7 @@ def test_create_short_dict_makes_thumb_bigger_75():
     builder = SubmissionBuilder(thumb_size=75)
     big_thumb_link = builder.thumbnail_url.replace("@75-", "@1600-")
 
-    submission = FASubmission.from_short_dict(
-        builder.build_search_json()
-    )
+    submission = FASubmission.from_short_dict(builder.build_search_json())
 
     assert submission.thumbnail_url == big_thumb_link
 
@@ -115,12 +125,7 @@ def test_id_from_link():
 def test_get_file_size(requests_mock):
     url = "http://example.com/file.jpg"
     size = 7567
-    requests_mock.head(
-        url,
-        headers={
-            "content-length": str(size)
-        }
-    )
+    requests_mock.head(url, headers={"content-length": str(size)})
 
     file_size = FASubmission._get_file_size(url)
 

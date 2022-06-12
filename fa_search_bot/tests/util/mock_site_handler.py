@@ -1,17 +1,21 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_handler import FAHandler
+
+if TYPE_CHECKING:
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
 
 
 class MockSiteHandler(FAHandler):
-
     def __init__(
-            self,
-            api: FAExportAPI,
-            *,
-            site_name: str = None,
-            site_code: str = None,
+        self,
+        api: FAExportAPI,
+        *,
+        site_name: str = None,
+        site_code: str = None,
     ):
         super().__init__(api)
         self._site_name = site_name or "MockSite"

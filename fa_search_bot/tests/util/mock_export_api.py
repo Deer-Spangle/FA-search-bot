@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import random
 import string
-from typing import Union, List
-from unittest.mock import MagicMock, AsyncMock
-
-from telethon import TelegramClient
-from telethon.tl.types import TypeInputPeer
+from typing import TYPE_CHECKING
 
 from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionFull, FAUser, Rating
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FAUser, Rating
+
+if TYPE_CHECKING:
+    from typing import List, Union
+
+    from fa_search_bot.sites.fa_submission import FASubmission
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -15,7 +18,7 @@ def _random_image_id(submission_id: int) -> int:
 
 
 def _random_string() -> str:
-    return ''.join(random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20)))
+    return "".join(random.choice(string.ascii_lowercase) for _ in range(random.randint(5, 20)))
 
 
 def _random_rating() -> Rating:
@@ -28,22 +31,22 @@ class MockSubmission(FASubmissionFull):
     EXTENSIONS_ART = ["gif", "jpg", "jpeg", "png"]
 
     def __init__(
-            self,
-            submission_id: Union[str, int],
-            *,
-            username: str = None,
-            image_id: int = None,
-            file_size: int = 14852,
-            file_ext: str = "jpg",
-            fav_id: str = None,
-            title: str = None,
-            author: FAUser = None,
-            description: str = None,
-            keywords: List[str] = None,
-            thumbnail_url: str = None,
-            download_url: str = None,
-            full_image_url: str = None,
-            rating: Rating = None
+        self,
+        submission_id: Union[str, int],
+        *,
+        username: str = None,
+        image_id: int = None,
+        file_size: int = 14852,
+        file_ext: str = "jpg",
+        fav_id: str = None,
+        title: str = None,
+        author: FAUser = None,
+        description: str = None,
+        keywords: List[str] = None,
+        thumbnail_url: str = None,
+        download_url: str = None,
+        full_image_url: str = None,
+        rating: Rating = None,
     ):
         # Internal variables
         if image_id is None:
@@ -61,8 +64,10 @@ class MockSubmission(FASubmissionFull):
         if thumbnail_url is None:
             thumbnail_url = f"https://t.furaffinity.net/{submission_id}@1600-{image_id}.jpg"
         if download_url is None:
-            download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
+            download_url = (
+                f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/"
                 f"{image_id}.{username}_{_random_string()}.{file_ext}"
+            )
         if full_image_url is None:
             if file_ext in self.EXTENSIONS_ART:
                 full_image_url = download_url
@@ -81,8 +86,15 @@ class MockSubmission(FASubmissionFull):
             rating = _random_rating()
         # Super
         super().__init__(
-            str(submission_id), thumbnail_url, download_url,
-            full_image_url, title, author, description, keywords, rating
+            str(submission_id),
+            thumbnail_url,
+            download_url,
+            full_image_url,
+            title,
+            author,
+            description,
+            keywords,
+            rating,
         )
         self.fav_id = fav_id
         self._download_file_size = file_size
@@ -93,7 +105,6 @@ class MockSubmission(FASubmissionFull):
 
 
 class MockExportAPI(FAExportAPI):
-
     def __init__(self):
         self.browse_count = 0
         self.call_after_x_browse = (lambda: None, -1)
@@ -103,22 +114,22 @@ class MockExportAPI(FAExportAPI):
         self.search_results = {}
         self.browse_results = {}
 
-    def with_submission(self, submission: MockSubmission) -> 'MockExportAPI':
+    def with_submission(self, submission: MockSubmission) -> "MockExportAPI":
         self.submissions[submission.submission_id] = submission
         return self
 
-    def with_submissions(self, list_submissions: List[MockSubmission]) -> 'MockExportAPI':
+    def with_submissions(self, list_submissions: List[MockSubmission]) -> "MockExportAPI":
         for submission in list_submissions:
             self.with_submission(submission)
         return self
 
     def with_user_folder(
-            self,
-            username: str,
-            folder: str,
-            list_submissions: List[MockSubmission],
-            page: int = 1
-    ) -> 'MockExportAPI':
+        self,
+        username: str,
+        folder: str,
+        list_submissions: List[MockSubmission],
+        page: int = 1,
+    ) -> "MockExportAPI":
         if username not in self.user_folders:
             self.user_folders[username] = {}
         self.user_folders[username][f"{folder}:{page}"] = list_submissions
@@ -126,8 +137,8 @@ class MockExportAPI(FAExportAPI):
         return self
 
     def with_user_favs(
-            self, username: str, list_submissions: List[MockSubmission], next_id: str = None
-    ) -> 'MockExportAPI':
+        self, username: str, list_submissions: List[MockSubmission], next_id: str = None
+    ) -> "MockExportAPI":
         if username not in self.user_folders:
             self.user_folders[username] = {}
         self.user_folders[username][f"favs:{next_id}"] = list_submissions

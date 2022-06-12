@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon import events
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
+if TYPE_CHECKING:
+    from typing import List
+
 logger = logging.getLogger(__name__)
 
 
 class BeepFunctionality(BotFunctionality):
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(events.NewMessage(pattern="/beep", incoming=True))
 
     async def call(self, event: events.NewMessage.Event) -> None:

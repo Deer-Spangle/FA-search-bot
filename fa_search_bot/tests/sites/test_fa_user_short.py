@@ -4,7 +4,6 @@ from fa_search_bot.sites.fa_submission import FAUserShort
 
 
 class FAUserShortTest(unittest.TestCase):
-
     def test_constructor(self):
         name = "John"
         profile_name = "john"

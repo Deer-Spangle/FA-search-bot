@@ -1,4 +1,4 @@
-from fa_search_bot.sites.fa_submission import FAUser, Rating, FASubmissionFull
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
@@ -15,7 +15,15 @@ def test_constructor():
     rating = Rating.GENERAL
 
     submission = FASubmissionFull(
-        post_id, thumb_link, full_link, full_link, title, author, description, keywords, rating
+        post_id,
+        thumb_link,
+        full_link,
+        full_link,
+        title,
+        author,
+        description,
+        keywords,
+        rating,
     )
 
     assert isinstance(submission, FASubmissionFull)
@@ -34,22 +42,14 @@ def test_constructor():
 def test_download_file_size(requests_mock):
     submission = SubmissionBuilder().build_full_submission()
     size = 23124
-    requests_mock.head(
-        submission.full_image_url,
-        headers={
-            "content-length": str(size)
-        }
-    )
+    requests_mock.head(submission.full_image_url, headers={"content-length": str(size)})
 
     file_size = submission.download_file_size
 
     assert isinstance(file_size, int)
     assert file_size == size
 
-    requests_mock.head(
-        submission.full_image_url,
-        status_code=404
-    )
+    requests_mock.head(submission.full_image_url, status_code=404)
 
     file_size2 = submission.download_file_size
 

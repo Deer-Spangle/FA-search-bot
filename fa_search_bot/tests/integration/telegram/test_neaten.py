@@ -1,9 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 import requests
-from pyrogram.types import Chat
-from tgintegration import BotController
 
-from fa_search_bot.bot import FASearchBot
+if TYPE_CHECKING:
+    from pyrogram.types import Chat
+    from tgintegration import BotController
+
+    from fa_search_bot.bot import FASearchBot
+
 
 pytestmark = pytest.mark.asyncio
 
@@ -52,22 +59,22 @@ async def test_neaten_link_in_button(controller: BotController, bot: FASearchBot
                 "chat_id": user_id,
                 "text": "Hello there",
                 "reply_markup": {
-                    "inline_keyboard": [[{
-                        "text": "View on FA",
-                        "url": "https://www.furaffinity.net/view/19925704/"
-                    }]]
-                }
-            }
+                    "inline_keyboard": [
+                        [
+                            {
+                                "text": "View on FA",
+                                "url": "https://www.furaffinity.net/view/19925704/",
+                            }
+                        ]
+                    ]
+                },
+            },
         )
     msg_id = test_msg.messages[0].message_id
 
     # Run the test
     async with controller.collect(count=2) as response:
-        await controller.client.forward_messages(
-            controller.peer_id,
-            controller.peer_id,
-            msg_id
-        )
+        await controller.client.forward_messages(controller.peer_id, controller.peer_id, msg_id)
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")
@@ -86,22 +93,22 @@ async def test_neaten_link_in_button_with_image(controller: BotController, bot: 
                 "chat_id": user_id,
                 "photo": "https://t.furaffinity.net/19925704@400-1462827244.jpg",
                 "reply_markup": {
-                    "inline_keyboard": [[{
-                        "text": "View on FA",
-                        "url": "https://www.furaffinity.net/view/19925704/"
-                    }]]
-                }
-            }
+                    "inline_keyboard": [
+                        [
+                            {
+                                "text": "View on FA",
+                                "url": "https://www.furaffinity.net/view/19925704/",
+                            }
+                        ]
+                    ]
+                },
+            },
         )
     msg_id = test_msg.messages[0].message_id
 
     # Run the test
     async with controller.collect(count=2) as response:
-        await controller.client.forward_messages(
-            controller.peer_id,
-            controller.peer_id,
-            msg_id
-        )
+        await controller.client.forward_messages(controller.peer_id, controller.peer_id, msg_id)
 
     assert response.num_messages == 2
     assert response.messages[0].text.startswith("⏳")

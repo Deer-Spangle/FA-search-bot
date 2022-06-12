@@ -1,28 +1,37 @@
+from __future__ import annotations
+
 import enum
 import logging
 import re
-from typing import Union, Optional, List, Pattern, Coroutine
+from typing import TYPE_CHECKING
 
-from prometheus_client.metrics import Histogram, Counter
-from telethon import TelegramClient
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
-from yippi import AsyncYippiClient, Post
+from prometheus_client.metrics import Counter, Histogram
 
-from fa_search_bot.sites.sendable import Sendable, CaptionSettings
-from fa_search_bot.sites.site_handler import SiteHandler, HandlerException
+from fa_search_bot.sites.sendable import Sendable
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
+
+if TYPE_CHECKING:
+    from typing import Coroutine, List, Optional, Pattern, Union
+
+    from telethon import TelegramClient
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+    from yippi import AsyncYippiClient, Post
+
+    from fa_search_bot.sites.sendable import CaptionSettings
+
 
 logger = logging.getLogger(__name__)
 
 api_request_times = Histogram(
     "fasearchbot_e6handler_request_time_seconds",
     "Request times of the e621 API, in seconds",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 api_failures = Counter(
     "fasearchbot_e6handler_exceptions_total",
     "Total number of exceptions raised while querying the e621 API",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 
 
@@ -78,9 +87,7 @@ class E621Handler(SiteHandler):
         md5_hash = direct_match.group(1)
         post = await self._find_post_by_hash(md5_hash)
         if not post:
-            raise HandlerException(
-                f"Could not locate the post with hash {md5_hash}."
-            )
+            raise HandlerException(f"Could not locate the post with hash {md5_hash}.")
         logger.info("e621 link: direct image link")
         return post.id
 
@@ -98,14 +105,14 @@ class E621Handler(SiteHandler):
                 return await self.api.post(post_id)
 
     async def send_submission(
-            self,
-            submission_id: int,
-            client: TelegramClient,
-            chat: Union[TypeInputPeer, InputBotInlineMessageID],
-            *,
-            reply_to: Optional[int] = None,
-            prefix: str = None,
-            edit: bool = False
+        self,
+        submission_id: int,
+        client: TelegramClient,
+        chat: Union[TypeInputPeer, InputBotInlineMessageID],
+        *,
+        reply_to: Optional[int] = None,
+        prefix: str = None,
+        edit: bool = False,
     ) -> None:
         post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
@@ -122,36 +129,28 @@ class E621Handler(SiteHandler):
             return bool(self.POST_HASH.match(example))
 
     async def submission_as_answer(
-            self,
-            submission_id: Union[int, str],
-            builder: InlineBuilder
+        self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        if self.POST_HASH.match(str(submission_id)):
-            post = await self._find_post_by_hash(submission_id)
+        sub_id_str = str(submission_id)
+        if self.POST_HASH.match(sub_id_str):
+            post = await self._find_post_by_hash(sub_id_str)
             if post is None:
-                raise HandlerException(f"No e621 submission matches the hash: {submission_id}")
+                raise HandlerException(f"No e621 submission matches the hash: {sub_id_str}")
         else:
             post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
         return sendable.to_inline_query_result(builder)
 
     async def get_search_results(
-            self,
-            builder: InlineBuilder,
-            query: str,
-            page: int
+        self, builder: InlineBuilder, query: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
                 posts = await self.api.posts(query, page=page)
-        return [
-            E621Post(post).to_inline_query_result(builder)
-            for post in posts
-        ]
+        return [E621Post(post).to_inline_query_result(builder) for post in posts]
 
 
 class E621Post(Sendable):
-
     def __init__(self, post: Post):
         self.post = post
 

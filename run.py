@@ -5,7 +5,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from prometheus_client import Counter
 
-from fa_search_bot.bot import FASearchBot
+from fa_search_bot.bot import FASearchBot, Config
 
 log_entries = Counter(
     "fasearchbot_log_messages_total",
@@ -39,6 +39,7 @@ def setup_logging() -> None:
 
 if __name__ == "__main__":
     setup_logging()
-    bot = FASearchBot(os.getenv('CONFIG_FILE', 'config.json'))
+    config = Config.load_from_file(os.getenv('CONFIG_FILE', 'config.json'))
+    bot = FASearchBot(config)
     bot.start()
     bot.run()

@@ -1,5 +1,4 @@
 class MockMethod:
-
     def __init__(self, value=None):
         self.called = False
         self.value = value
@@ -17,7 +16,6 @@ class MockMethod:
 
 
 class MockMultiMethod:
-
     def __init__(self, values=None):
         self.calls = 0
         self.values = values

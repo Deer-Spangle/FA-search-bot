@@ -1,10 +1,15 @@
-from abc import ABC, abstractmethod
-from re import Pattern
-from typing import List, Union, Optional, Coroutine
+from __future__ import annotations
 
-from telethon import TelegramClient
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import TypeInputPeer, InputBotInlineMessageID, InputBotInlineResultPhoto
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from re import Pattern
+    from typing import Coroutine, List, Optional, Union
+
+    from telethon import TelegramClient
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
 
 class HandlerException(Exception):
@@ -12,7 +17,6 @@ class HandlerException(Exception):
 
 
 class SiteHandler(ABC):
-
     @property
     @abstractmethod
     def site_name(self) -> str:
@@ -42,14 +46,14 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def send_submission(
-            self,
-            submission_id: int,
-            client: TelegramClient,
-            chat: Union[TypeInputPeer, InputBotInlineMessageID],
-            *,
-            reply_to: Optional[int] = None,
-            prefix: str = None,
-            edit: bool = False
+        self,
+        submission_id: int,
+        client: TelegramClient,
+        chat: Union[TypeInputPeer, InputBotInlineMessageID],
+        *,
+        reply_to: Optional[int] = None,
+        prefix: str = None,
+        edit: bool = False,
     ) -> None:
         raise NotImplementedError
 
@@ -59,21 +63,20 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def submission_as_answer(
-            self,
-            submission_id: Union[int, str],
-            builder: InlineBuilder
+        self, submission_id: Union[int, str], builder: InlineBuilder
     ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
         raise NotImplementedError
 
     @property
     def search_prefixes(self) -> List[str]:
-        return [self.site_name[0].lower(), self.site_code.lower(), self.site_name.lower()]
+        return [
+            self.site_name[0].lower(),
+            self.site_code.lower(),
+            self.site_name.lower(),
+        ]
 
     @abstractmethod
     async def get_search_results(
-            self,
-            builder: InlineBuilder,
-            query: str,
-            page: int
+        self, builder: InlineBuilder, query: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
         raise NotImplementedError

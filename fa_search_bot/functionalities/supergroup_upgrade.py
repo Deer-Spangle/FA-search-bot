@@ -1,13 +1,20 @@
+from __future__ import annotations
+
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon import events
 from telethon.events import StopPropagation
 from telethon.tl import types
-from telethon.tl.types import UpdateNewChannelMessage
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.subscription_watcher import SubscriptionWatcher
+
+if TYPE_CHECKING:
+    from typing import List
+
+    from telethon.tl.types import UpdateNewChannelMessage
+
+    from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +26,6 @@ def filter_migration(event: UpdateNewChannelMessage) -> bool:
 
 
 class SupergroupUpgradeFunctionality(BotFunctionality):
-
     def __init__(self, watcher: SubscriptionWatcher):
         super().__init__(events.Raw(types.UpdateNewChannelMessage, func=filter_migration))
         self.watcher = watcher
@@ -28,9 +34,9 @@ class SupergroupUpgradeFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return ["supergroup_upgrade"]
 
-    async def call(self, event: types.UpdateNewChannelMessage):
+    async def call(self, event: types.UpdateNewChannelMessage) -> None:
         old_chat_id = -1 * event.message.action.chat_id
-        new_chat_id = int('-100' + str(event.message.to_id.channel_id))
+        new_chat_id = int("-100" + str(event.message.to_id.channel_id))
         # Log the upgrade
         logger.info("Migration from chat ID: %s to chat ID: %s", old_chat_id, new_chat_id)
         self.usage_counter.labels(function="supergroup_upgrade").inc()

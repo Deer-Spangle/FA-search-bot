@@ -15,9 +15,7 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _Moc
 async def test_empty_query_no_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query="")
     handler = FAHandler(MockExportAPI())
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -33,26 +31,24 @@ async def test_simple_search(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) > 0
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-        assert result.kwargs['file'] == submission.thumbnail_url
-        assert result.kwargs['id'] == f"{handler.site_code}:{post_id}"
-        assert result.kwargs['text'] == submission.link
-        assert len(result.kwargs['buttons']) == 1
-        assert result.kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
+        assert result.kwargs["file"] == submission.thumbnail_url
+        assert result.kwargs["id"] == f"{handler.site_code}:{post_id}"
+        assert result.kwargs["text"] == submission.link
+        assert len(result.kwargs["buttons"]) == 1
+        assert result.kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -61,19 +57,13 @@ async def test_no_search_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term)
     api = MockExportAPI().with_search_results(search_term, [])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    assert_answer_is_error(
-        event.answer,
-        "No results found.",
-        f"No results for search \"{search_term}\"."
-    )
+    assert_answer_is_error(event.answer, "No results found.", f'No results for search "{search_term}".')
 
 
 @pytest.mark.asyncio
@@ -85,9 +75,7 @@ async def test_search_with_offset(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission], page=offset)
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -98,11 +86,11 @@ async def test_search_with_offset(mock_client):
     assert len(args[0]) > 0
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-        assert result.kwargs['file'] == submission.thumbnail_url
-        assert result.kwargs['id'] == f"{handler.site_code}:{post_id}"
-        assert result.kwargs['text'] == submission.link
-        assert len(result.kwargs['buttons']) == 1
-        assert result.kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
+        assert result.kwargs["file"] == submission.thumbnail_url
+        assert result.kwargs["id"] == f"{handler.site_code}:{post_id}"
+        assert result.kwargs["text"] == submission.link
+        assert len(result.kwargs["buttons"]) == 1
+        assert result.kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -112,17 +100,15 @@ async def test_search_with_offset_no_more_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
     api = MockExportAPI().with_search_results(search_term, [], page=offset)
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] is None
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] is None
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 0
 
@@ -137,31 +123,29 @@ async def test_search_with_spaces(mock_client):
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_search_results(search_term, [submission1, submission2])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 2
     for result in args[0]:
         assert isinstance(result, _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission1.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission1.submission_id}"
-    assert args[0][0].kwargs['text'] == submission1.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission1.submission_id}".encode()
-    assert args[0][1].kwargs['file'] == submission2.thumbnail_url
-    assert args[0][1].kwargs['id'] == f"{handler.site_code}:{submission2.submission_id}"
-    assert args[0][1].kwargs['text'] == submission2.link
-    assert len(args[0][1].kwargs['buttons']) == 1
-    assert args[0][1].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission2.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission1.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission1.submission_id}"
+    assert args[0][0].kwargs["text"] == submission1.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission1.submission_id}".encode()
+    assert args[0][1].kwargs["file"] == submission2.thumbnail_url
+    assert args[0][1].kwargs["id"] == f"{handler.site_code}:{submission2.submission_id}"
+    assert args[0][1].kwargs["text"] == submission2.link
+    assert len(args[0][1].kwargs["buttons"]) == 1
+    assert args[0][1].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -172,25 +156,23 @@ async def test_search_with_combo_characters(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -201,25 +183,23 @@ async def test_search_with_field(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -233,25 +213,23 @@ async def test_search_site_prefix__letter(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -264,25 +242,23 @@ async def test_search_site_prefix__code(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_code=site_code)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -295,25 +271,23 @@ async def test_search_site_prefix__name(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{post_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{post_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -326,25 +300,23 @@ async def test_search_site_prefix__name_lower(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -356,25 +328,23 @@ async def test_search_site_prefix_e621(mock_client):
     post = MockPost(post_id=post_id, tags=["citrinelle"])
     api = MockAsyncYippiClient([post])
     handler = E621Handler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == post._direct_thumb_link
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{post_id}"
-    assert args[0][0].kwargs['text'] == post._post_link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
+    assert args[0][0].kwargs["file"] == post._direct_thumb_link
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{post_id}"
+    assert args[0][0].kwargs["text"] == post._post_link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{post_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -386,22 +356,20 @@ async def test_search_site_prefix_fa(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({
-        handler.site_code: handler
-    })
+    inline = InlineSearchFunctionality({handler.site_code: handler})
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]['next_offset'] == "2"
-    assert event.answer.call_args[1]['gallery'] is True
+    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
     assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs['file'] == submission.thumbnail_url
-    assert args[0][0].kwargs['id'] == f"{handler.site_code}:{submission.submission_id}"
-    assert args[0][0].kwargs['text'] == submission.link
-    assert len(args[0][0].kwargs['buttons']) == 1
-    assert args[0][0].kwargs['buttons'][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()
+    assert args[0][0].kwargs["file"] == submission.thumbnail_url
+    assert args[0][0].kwargs["id"] == f"{handler.site_code}:{submission.submission_id}"
+    assert args[0][0].kwargs["text"] == submission.link
+    assert len(args[0][0].kwargs["buttons"]) == 1
+    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{handler.site_code}:{submission.submission_id}".encode()

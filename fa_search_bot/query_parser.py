@@ -1,15 +1,34 @@
+from __future__ import annotations
+
 import functools
 import logging
 import re
 import string
 from abc import ABC, abstractmethod
-from typing import List, Optional, NewType, Dict, Pattern
+from typing import TYPE_CHECKING, NewType
 
 import pyparsing
-from pyparsing import Word, QuotedString, printables, Literal, Forward, ZeroOrMore, Group, \
-    ParseResults, ParseException, ParserElement, CaselessKeyword
+from pyparsing import (
+    CaselessKeyword,
+    Forward,
+    Group,
+    Literal,
+    ParseException,
+    QuotedString,
+    Word,
+    ZeroOrMore,
+    printables,
+)
 
-from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating
+from fa_search_bot.sites.fa_submission import Rating
+
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Optional, Pattern, Sequence
+
+    from pyparsing import ParserElement, ParseResults
+
+    from fa_search_bot.sites.fa_submission import FASubmissionFull
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +38,14 @@ rating_dict = {
     "mature": Rating.MATURE,
     "questionable": Rating.MATURE,
     "adult": Rating.ADULT,
-    "explicit": Rating.ADULT
+    "explicit": Rating.ADULT,
 }
 
 punctuation = string.punctuation.replace("-", "").replace("_", "")
-punctuation_pattern = r"[\s"+re.escape(punctuation)+"]+"
-not_punctuation_pattern = r"[^\s"+re.escape(punctuation)+"]+"
-boundary_pattern_start = r"(?:^|(?<=[\s"+re.escape(punctuation)+"]))"
-boundary_pattern_end = r"(?:(?=[\s"+re.escape(punctuation)+"])|$)"
+punctuation_pattern = r"[\s" + re.escape(punctuation) + "]+"
+not_punctuation_pattern = r"[^\s" + re.escape(punctuation) + "]+"
+boundary_pattern_start = r"(?:^|(?<=[\s" + re.escape(punctuation) + "]))"
+boundary_pattern_end = r"(?:(?=[\s" + re.escape(punctuation) + "])|$)"
 
 
 def _split_text_to_words(text: str) -> List[str]:
@@ -41,11 +60,10 @@ def _split_text_to_cleaned_words(text: str) -> List[str]:
     return _clean_word_list(_split_text_to_words(text))
 
 
-FieldLocation = NewType('FieldLocation', str)
+FieldLocation = NewType("FieldLocation", str)
 
 
 class Field(ABC):
-
     @abstractmethod
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         raise NotImplementedError
@@ -58,15 +76,14 @@ class Field(ABC):
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
         raise NotImplementedError
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__
 
 
 class KeywordField(Field):
-
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         return _clean_word_list(sub.keywords)
 
@@ -74,14 +91,10 @@ class KeywordField(Field):
         return sub.keywords
 
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
-        return {
-            FieldLocation(f"keyword_{num}"): keyword
-            for num, keyword in enumerate(sub.keywords)
-        }
+        return {FieldLocation(f"keyword_{num}"): keyword for num, keyword in enumerate(sub.keywords)}
 
 
 class TitleField(Field):
-
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         return _split_text_to_cleaned_words(sub.title)
 
@@ -93,7 +106,6 @@ class TitleField(Field):
 
 
 class DescriptionField(Field):
-
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         return _split_text_to_cleaned_words(sub.description)
 
@@ -105,7 +117,6 @@ class DescriptionField(Field):
 
 
 class ArtistField(Field):
-
     def get_field_words(self, sub: FASubmissionFull) -> List[str]:
         return [sub.author.name.lower(), sub.author.profile_name.lower()]
 
@@ -115,7 +126,7 @@ class ArtistField(Field):
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
         return {
             FieldLocation("name"): sub.author.name,
-            FieldLocation("profile_name"): sub.author.profile_name
+            FieldLocation("profile_name"): sub.author.profile_name,
         }
 
 
@@ -125,7 +136,7 @@ class AnyField(Field):
             *TitleField().get_field_words(sub),
             *DescriptionField().get_field_words(sub),
             *KeywordField().get_field_words(sub),
-            *ArtistField().get_field_words(sub)
+            *ArtistField().get_field_words(sub),
         ]
 
     def get_texts(self, sub: FASubmissionFull) -> List[str]:
@@ -133,7 +144,7 @@ class AnyField(Field):
             *TitleField().get_texts(sub),
             *DescriptionField().get_texts(sub),
             *KeywordField().get_texts(sub),
-            *ArtistField().get_texts(sub)
+            *ArtistField().get_texts(sub),
         ]
 
     def get_texts_dict(self, sub: FASubmissionFull) -> Dict[FieldLocation, str]:
@@ -141,18 +152,17 @@ class AnyField(Field):
             **TitleField().get_texts_dict(sub),
             **DescriptionField().get_texts_dict(sub),
             **KeywordField().get_texts_dict(sub),
-            **ArtistField().get_texts_dict(sub)
+            **ArtistField().get_texts_dict(sub),
         }
 
 
 class MatchLocation:
-
     def __init__(self, field: FieldLocation, start_position: int, end_position: int):
         self.field = field
         self.start_position = start_position
         self.end_position = end_position
 
-    def overlaps(self, location: 'MatchLocation') -> bool:
+    def overlaps(self, location: "MatchLocation") -> bool:
         if self.field != location.field:
             return False
         if self.start_position < location.start_position:
@@ -160,10 +170,10 @@ class MatchLocation:
         else:
             return location.end_position > self.start_position
 
-    def overlaps_any(self, locations: List['MatchLocation']) -> bool:
+    def overlaps_any(self, locations: List["MatchLocation"]) -> bool:
         return any(self.overlaps(location) for location in locations)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, MatchLocation)
             and self.field == other.field
@@ -171,96 +181,91 @@ class MatchLocation:
             and self.end_position == other.end_position
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.field, self.start_position, self.end_position))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MatchLocation(FieldLocation({self.field}), {self.start_position}, {self.end_position})"
 
 
 class Query(ABC):
-
     @abstractmethod
     def matches_submission(self, sub: FASubmissionFull) -> bool:
         raise NotImplementedError
 
 
 class LocationQuery(Query, ABC):
-
     @abstractmethod
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         raise NotImplementedError
 
 
 class OrQuery(Query):
-
-    def __init__(self, sub_queries: List['Query']):
+    def __init__(self, sub_queries: Sequence["Query"]):
         self.sub_queries = sub_queries
 
     def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(q.matches_submission(sub) for q in self.sub_queries)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, OrQuery)
-                and len(self.sub_queries) == len(other.sub_queries)
-                and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
+            isinstance(other, OrQuery)
+            and len(self.sub_queries) == len(other.sub_queries)
+            and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "OR(" + ", ".join(repr(q) for q in self.sub_queries) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "(" + " OR ".join(str(q) for q in self.sub_queries) + ")"
 
 
 class LocationOrQuery(OrQuery, LocationQuery):
-
-    def __init__(self, sub_queries: List['LocationQuery']):
+    def __init__(self, sub_queries: List["LocationQuery"]):
         super().__init__(sub_queries)
         # Set it again, so we know sub_queries are LocationQuery objects, rather than just Query objects
-        self.sub_queries = sub_queries
+        self.sub_queries: List["LocationQuery"] = sub_queries
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         return list(set(match for q in self.sub_queries for match in q.match_locations(sub)))
 
 
 class AndQuery(Query):
-
-    def __init__(self, sub_queries: List['Query']):
+    def __init__(self, sub_queries: List["Query"]):
         self.sub_queries = sub_queries
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return all(q.matches_submission(sub) for q in self.sub_queries)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, AndQuery)
-                and len(self.sub_queries) == len(other.sub_queries)
-                and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
+            isinstance(other, AndQuery)
+            and len(self.sub_queries) == len(other.sub_queries)
+            and all(self.sub_queries[i] == other.sub_queries[i] for i in range(len(self.sub_queries)))
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AND(" + ", ".join(repr(q) for q in self.sub_queries) + ")"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "(" + " AND ".join(str(q) for q in self.sub_queries) + ")"
 
 
 class NotQuery(Query):
-    def __init__(self, sub_query: 'Query'):
+    def __init__(self, sub_query: "Query"):
         self.sub_query = sub_query
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return not self.sub_query.matches_submission(sub)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, NotQuery) and self.sub_query == other.sub_query
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"NOT({self.sub_query!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"-{self.sub_query}"
 
 
@@ -268,28 +273,27 @@ class RatingQuery(Query):
     def __init__(self, rating: Rating):
         self.rating = rating
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return sub.rating == self.rating
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, RatingQuery) and self.rating == other.rating
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RATING({self.rating})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"rating:{self.rating}"
 
 
 class WordQuery(LocationQuery):
-
-    def __init__(self, word: str, field: Optional['Field'] = None):
+    def __init__(self, word: str, field: Optional["Field"] = None):
         self.word = word
         if field is None:
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return self.word.lower() in self.field.get_field_words(sub)
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
@@ -300,38 +304,37 @@ class WordQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, WordQuery) and self.word == other.word and self.field == other.field
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"WORD({self.word})"
         return f"WORD({self.word}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.word
         return f"{self.field}:{self.word}"
 
 
 class PrefixQuery(LocationQuery):
-    def __init__(self, prefix: str, field: Optional['Field'] = None):
+    def __init__(self, prefix: str, field: Optional["Field"] = None):
         self.prefix = prefix
         if field is None:
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(
             word.startswith(self.prefix.lower()) and word != self.prefix.lower()
-            for word
-            in self.field.get_field_words(sub)
+            for word in self.field.get_field_words(sub)
         )
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         regex = re.compile(
             boundary_pattern_start + re.escape(self.prefix) + not_punctuation_pattern + boundary_pattern_end,
-            re.I
+            re.I,
         )
         return [
             MatchLocation(location, m.start(), m.end())
@@ -339,38 +342,37 @@ class PrefixQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, PrefixQuery) and self.prefix == other.prefix and self.field == other.field
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"PREFIX({self.prefix})"
         return f"PREFIX({self.prefix}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.prefix + "*"
         return f"{self.field}:{self.prefix}*"
 
 
 class SuffixQuery(LocationQuery):
-    def __init__(self, suffix: str, field: Optional['Field'] = None):
+    def __init__(self, suffix: str, field: Optional["Field"] = None):
         self.suffix = suffix
         if field is None:
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(
             word.endswith(self.suffix.lower()) and word != self.suffix.lower()
-            for word
-            in self.field.get_field_words(sub)
+            for word in self.field.get_field_words(sub)
         )
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
         regex = re.compile(
             boundary_pattern_start + not_punctuation_pattern + re.escape(self.suffix) + boundary_pattern_end,
-            re.I
+            re.I,
         )
         return [
             MatchLocation(location, m.start(), m.end())
@@ -378,28 +380,28 @@ class SuffixQuery(LocationQuery):
             for m in regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, SuffixQuery) and self.suffix == other.suffix and self.field == other.field
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"SUFFIX({self.suffix})"
         return f"SUFFIX({self.suffix}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return "*" + self.suffix
         return f"{self.field}:*{self.suffix}"
 
 
 class RegexQuery(LocationQuery):
-    def __init__(self, pattern: Pattern[str], field: Optional['Field'] = None):
+    def __init__(self, pattern: Pattern[str], field: Optional["Field"] = None):
         self.pattern = pattern
         if field is None:
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(self.pattern.search(word) for word in self.field.get_field_words(sub))
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
@@ -410,40 +412,40 @@ class RegexQuery(LocationQuery):
         ]
 
     @classmethod
-    def from_string_with_asterisks(cls, word: string, field: Optional['Field'] = None) -> 'RegexQuery':
+    def from_string_with_asterisks(cls, word: str, field: Optional["Field"] = None) -> "RegexQuery":
         word_split = re.split(r"\*+", word)
         parts = [re.escape(part) for part in word_split]
         regex = boundary_pattern_start + not_punctuation_pattern.join(parts) + boundary_pattern_end
         pattern = re.compile(regex, re.I)
         return RegexQuery(pattern, field)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, RegexQuery)
             and self.pattern.pattern == other.pattern.pattern
             and self.field == other.field
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"REGEX({self.pattern.pattern})"
         return f"REGEX({self.pattern.pattern}, {self.field})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
             return self.pattern.pattern
         return f"{self.field}:{self.pattern.pattern}"
 
 
 class PhraseQuery(LocationQuery):
-    def __init__(self, phrase: str, field: Optional['Field'] = None):
+    def __init__(self, phrase: str, field: Optional["Field"] = None):
         self.phrase = phrase
         self.phrase_regex = re.compile(boundary_pattern_start + re.escape(self.phrase) + boundary_pattern_end, re.I)
         if field is None:
             field = AnyField()
         self.field = field
 
-    def matches_submission(self, sub: FASubmissionFull):
+    def matches_submission(self, sub: FASubmissionFull) -> bool:
         return any(self.phrase_regex.search(text) for text in self.field.get_texts(sub))
 
     def match_locations(self, sub: FASubmissionFull) -> List[MatchLocation]:
@@ -453,22 +455,21 @@ class PhraseQuery(LocationQuery):
             for m in self.phrase_regex.finditer(text)
         ]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, PhraseQuery) and self.phrase == other.phrase and self.field == other.field
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.field == AnyField():
             return f"PHRASE({self.phrase})"
-        return f"PHRASE(\"{self.phrase}\", {self.field})"
+        return f'PHRASE("{self.phrase}", {self.field})'
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.field == AnyField():
-            return f"\"{self.phrase}\""
-        return f"{self.field}:\"{self.phrase}\""
+            return f'"{self.phrase}"'
+        return f'{self.field}:"{self.phrase}"'
 
 
 class ExceptionQuery(Query):
-
     def __init__(self, word: LocationQuery, exception: LocationQuery):
         self.word = word
         self.exception = exception
@@ -478,13 +479,13 @@ class ExceptionQuery(Query):
         exception_locations = self.exception.match_locations(sub)
         return any(not location.overlaps_any(exception_locations) for location in word_locations)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, ExceptionQuery) and self.word == other.word and self.exception == other.exception
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"EXCEPTION({self.word!r}, {self.exception!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.word} EXCEPT {self.exception}"
 
 
@@ -495,51 +496,78 @@ class InvalidQueryException(Exception):
 @functools.lru_cache()
 def query_parser() -> ParserElement:
     # Creating the grammar
-    valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace("\"", "")
+    valid_chars = printables.replace("(", "").replace(")", "").replace(":", "").replace('"', "")
     expr = Forward().setName("expression")
 
     quotes = QuotedString('"', "\\").setName("quoted string").setResultsName("quotes")
 
-    brackets = Group(Literal("(").suppress() + expr + Literal(")").suppress()) \
-        .setName("bracketed expression").setResultsName("brackets")
+    brackets = (
+        Group(Literal("(").suppress() + expr + Literal(")").suppress())
+        .setName("bracketed expression")
+        .setResultsName("brackets")
+    )
 
     words = Word(valid_chars).setName("word").setResultsName("word")
 
-    exception_elem = Group(quotes | words).setName("exception element")\
-        .setResultsName("exception_element", listAllMatches=True)
-    exception = Group(
-        exception_elem | (
-            Literal("(") +
-            exception_elem + ZeroOrMore(pyparsing.Optional(CaselessKeyword("or")) + exception_elem)
-            + Literal(")")
+    exception_elem = (
+        Group(quotes | words).setName("exception element").setResultsName("exception_element", listAllMatches=True)
+    )
+    exception = (
+        Group(
+            exception_elem
+            | (
+                Literal("(")
+                + exception_elem
+                + ZeroOrMore(pyparsing.Optional(CaselessKeyword("or")) + exception_elem)
+                + Literal(")")
+            )
         )
-    ).setName("exception").setResultsName("exception")
-    exception_connector = (CaselessKeyword("except") | CaselessKeyword("ignore"))\
-        .setName("Except").setResultsName("except")
+        .setName("exception")
+        .setResultsName("exception")
+    )
+    exception_connector = (
+        (CaselessKeyword("except") | CaselessKeyword("ignore")).setName("Except").setResultsName("except")
+    )
     exception_word = words.setName("exception word").setResultsName("exception_word")
 
-    word_with_exception = Group(exception_word + exception_connector + exception) \
-        .setName("word with exception").setResultsName("word_with_exception")
+    word_with_exception = (
+        Group(exception_word + exception_connector + exception)
+        .setName("word with exception")
+        .setResultsName("word_with_exception")
+    )
     word_with_exception_brackets = Literal("(") + word_with_exception + Literal(")")
 
-    field_name = Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress())) \
-        .setName("field name").setResultsName("field_name")
-    field_value = Group(quotes | word_with_exception_brackets | word_with_exception | words)\
-        .setName("field value").setResultsName("field_value")
+    field_name = (
+        Group((Literal("@").suppress() + Word(valid_chars)) | (Word(valid_chars) + Literal(":").suppress()))
+        .setName("field name")
+        .setResultsName("field_name")
+    )
+    field_value = (
+        Group(quotes | word_with_exception_brackets | word_with_exception | words)
+        .setName("field value")
+        .setResultsName("field_value")
+    )
     field = Group(field_name + field_value).setName("field").setResultsName("field")
 
-    negator = Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessKeyword("not"))) \
-        .setName("negator").setResultsName("negator")
-    element = Group(quotes | brackets | field | word_with_exception | words) \
-        .setName("element").setResultsName("element")
+    negator = (
+        Group(pyparsing.Optional(Literal("!") | Literal("-") | CaselessKeyword("not")))
+        .setName("negator")
+        .setResultsName("negator")
+    )
+    element = (
+        Group(quotes | brackets | field | word_with_exception | words).setName("element").setResultsName("element")
+    )
     full_element = Group(negator + element).setName("full element").setResultsName("full_element", listAllMatches=True)
-    connector = Group(pyparsing.Optional(CaselessKeyword("or") | CaselessKeyword("and"))) \
-        .setName("connector").setResultsName("connector", listAllMatches=True)
+    connector = (
+        Group(pyparsing.Optional(CaselessKeyword("or") | CaselessKeyword("and")))
+        .setName("connector")
+        .setResultsName("connector", listAllMatches=True)
+    )
     expr <<= full_element + ZeroOrMore(connector + full_element)
     return expr
 
 
-def parse_query(query_str: str) -> 'Query':
+def parse_query(query_str: str) -> "Query":
     logger.debug("Parsing query: %s", query_str)
     expr = query_parser()
     # Parsing input
@@ -552,7 +580,7 @@ def parse_query(query_str: str) -> 'Query':
     return parse_expression(parsed)
 
 
-def parse_expression(parsed: ParseResults) -> 'Query':
+def parse_expression(parsed: ParseResults) -> "Query":
     result = parse_full_element(parsed.full_element[0])
     num_connectors = len(parsed.connector)
     for i in range(num_connectors):
@@ -562,7 +590,7 @@ def parse_expression(parsed: ParseResults) -> 'Query':
     return result
 
 
-def parse_connector(parsed: ParseResults, query1: 'Query', query2: 'Query') -> 'Query':
+def parse_connector(parsed: ParseResults, query1: "Query", query2: "Query") -> "Query":
     if not parsed:
         return AndQuery([query1, query2])
     if parsed[0].lower() == "and":
@@ -573,13 +601,13 @@ def parse_connector(parsed: ParseResults, query1: 'Query', query2: 'Query') -> '
     raise InvalidQueryException(f"I do not recognise this connector: {parsed}")
 
 
-def parse_full_element(parsed: ParseResults) -> 'Query':
+def parse_full_element(parsed: ParseResults) -> "Query":
     if not parsed.negator:
         return parse_element(parsed.element)
     return NotQuery(parse_element(parsed.element))
 
 
-def parse_element(parsed: ParseResults) -> 'Query':
+def parse_element(parsed: ParseResults) -> "Query":
     if parsed.quotes:
         return parse_quotes(parsed.quotes)
     if parsed.brackets:
@@ -594,11 +622,11 @@ def parse_element(parsed: ParseResults) -> 'Query':
     raise InvalidQueryException(f"I do not recognise this element: {parsed}")
 
 
-def parse_quotes(phrase: str, field: Optional['Field'] = None) -> 'LocationQuery':
+def parse_quotes(phrase: str, field: Optional["Field"] = None) -> "LocationQuery":
     return PhraseQuery(phrase, field)
 
 
-def parse_field(parsed: ParseResults) -> 'Query':
+def parse_field(parsed: ParseResults) -> "Query":
     field_name = parsed.field_name[0]
     field_value = parsed.field_value
     if field_name.lower() == "rating":
@@ -614,7 +642,7 @@ def parse_field(parsed: ParseResults) -> 'Query':
     raise InvalidQueryException(f"Unrecognised field value {field_value}")
 
 
-def parse_rating_field(field_value: ParseResults) -> 'Query':
+def parse_rating_field(field_value: ParseResults) -> "Query":
     if field_value.quotes:
         logger.warning("Rating field cannot be a quote")
         raise InvalidQueryException("Rating field cannot be a quote")
@@ -625,7 +653,7 @@ def parse_rating_field(field_value: ParseResults) -> 'Query':
     return RatingQuery(rating)
 
 
-def parse_field_name(field_name: str) -> 'Field':
+def parse_field_name(field_name: str) -> "Field":
     if field_name.lower() == "title":
         return TitleField()
     if field_name.lower() in ["desc", "description", "message"]:
@@ -638,7 +666,7 @@ def parse_field_name(field_name: str) -> 'Field':
     raise InvalidQueryException(f"Unrecognised field name: {field_name}")
 
 
-def parse_word(word: str, field: Optional['Field'] = None) -> 'LocationQuery':
+def parse_word(word: str, field: Optional["Field"] = None) -> "LocationQuery":
     if word.startswith("*") and "*" not in word[1:]:
         return SuffixQuery(word[1:], field)
     if word.endswith("*") and "*" not in word[:-1]:
@@ -647,15 +675,15 @@ def parse_word(word: str, field: Optional['Field'] = None) -> 'LocationQuery':
         return RegexQuery.from_string_with_asterisks(word, field)
     reserved_keywords = ["not", "and", "or", "except", "ignore"]
     if word.lower() in reserved_keywords:
-        logger.warning("Word query (\"%s\") cannot be a reserved keyword.", word)
+        logger.warning('Word query ("%s") cannot be a reserved keyword.', word)
         raise InvalidQueryException(
-            f"Word query (\"{word}\") cannot be a reserved keyword: {reserved_keywords}. "
+            f'Word query ("{word}") cannot be a reserved keyword: {reserved_keywords}. '
             f"If you really want to search for this word, please surround it with quotation marks"
         )
     return WordQuery(word, field)
 
 
-def parse_exception(parsed: ParseResults, field: Optional['Field']) -> 'LocationQuery':
+def parse_exception(parsed: ParseResults, field: Optional["Field"]) -> "LocationQuery":
     elements = []
     for elem in parsed.exception_element:
         if elem.quotes:
@@ -669,7 +697,7 @@ def parse_exception(parsed: ParseResults, field: Optional['Field']) -> 'Location
     return LocationOrQuery(elements)
 
 
-def parse_word_with_exception(parsed: ParseResults, field: Optional['Field'] = None) -> 'Query':
+def parse_word_with_exception(parsed: ParseResults, field: Optional["Field"] = None) -> "Query":
     word = parse_word(parsed.exception_word, field)
     exc = parse_exception(parsed.exception, field)
     return ExceptionQuery(word, exc)

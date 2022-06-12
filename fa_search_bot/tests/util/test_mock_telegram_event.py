@@ -4,7 +4,6 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _Moc
 
 
 class MockObjectsTest(unittest.TestCase):
-
     def test_cannot_create_update(self):
         try:
             MockTelegramEvent()

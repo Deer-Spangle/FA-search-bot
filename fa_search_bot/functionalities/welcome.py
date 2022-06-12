@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import List
+from typing import TYPE_CHECKING
 
 from telethon.events import NewMessage, StopPropagation
 from telethon.extensions import markdown
@@ -7,15 +9,17 @@ from telethon.extensions import markdown
 from fa_search_bot._version import __VERSION__
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 
+if TYPE_CHECKING:
+    from typing import List
+
 logger = logging.getLogger(__name__)
 
 
 class WelcomeFunctionality(BotFunctionality):
+    def __init__(self) -> None:
+        super().__init__(NewMessage(pattern="/start", incoming=True))
 
-    def __init__(self):
-        super().__init__(NewMessage(pattern='/start', incoming=True))
-
-    async def call(self, event: NewMessage.Event):
+    async def call(self, event: NewMessage.Event) -> None:
         logger.info("Welcome message sent to user")
         self.usage_counter.labels(function="welcome").inc()
         await event.respond(
@@ -32,7 +36,7 @@ class WelcomeFunctionality(BotFunctionality):
             "- Store blocklists for those subscriptions\n"
             "You can get more details by reading "
             "[my README on github](https://github.com/Deer-Spangle/FA-search-bot#commands)",
-            parse_mode=markdown
+            parse_mode=markdown,
         )
         raise StopPropagation
 

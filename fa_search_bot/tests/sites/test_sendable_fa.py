@@ -56,4 +56,4 @@ def test_caption_title():
     caption = sendable.caption(settings)
 
     assert sendable.link in caption
-    assert f"\"{submission.title}\"" in caption
+    assert f'"{submission.title}"' in caption

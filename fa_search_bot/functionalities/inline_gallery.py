@@ -1,14 +1,23 @@
+from __future__ import annotations
+
 import logging
 import re
-from typing import List, Tuple, Coroutine, Union, Optional
+from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error, _parse_inline_offset
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
+from fa_search_bot.sites.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from typing import Coroutine, List, Optional, Tuple, Union
+
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
+
+    from fa_search_bot.sites.fa_export_api import FAExportAPI
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +39,7 @@ class InlineGalleryFunctionality(BotFunctionality):
     def usage_labels(self) -> List[str]:
         return [self.USE_CASE_GALLERY, self.USE_CASE_SCRAPS]
 
-    async def call(self, event: InlineQuery.Event):
+    async def call(self, event: InlineQuery.Event) -> None:
         query_split = event.query.query.split(":", 1)
         offset = event.query.offset
         logger.info("Got an inline query, page=%s", offset)
@@ -57,11 +66,7 @@ class InlineGalleryFunctionality(BotFunctionality):
         raise StopPropagation
 
     async def _gallery_query_results(
-            self,
-            event: InlineQuery.Event,
-            folder: str,
-            username: str,
-            offset: str
+        self, event: InlineQuery.Event, folder: str, username: str, offset: str
     ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
@@ -73,7 +78,7 @@ class InlineGalleryFunctionality(BotFunctionality):
             await answer_with_error(
                 event,
                 "User does not exist.",
-                f"FurAffinity user does not exist by the name: \"{username}\"."
+                f'FurAffinity user does not exist by the name: "{username}".',
             )
             raise StopPropagation
         # If no results, send error
@@ -83,18 +88,18 @@ class InlineGalleryFunctionality(BotFunctionality):
             await answer_with_error(
                 event,
                 f"Nothing in {folder}.",
-                f"There are no submissions in {folder} for user \"{username}\"."
+                f'There are no submissions in {folder} for user "{username}".',
             )
             raise StopPropagation
         # Handle paging of big result lists
         return self._page_results(results, page, skip)
 
-    def _page_results(self, results: List, page: int, skip: int) -> Tuple[List, str]:
+    def _page_results(self, results: List, page: int, skip: Optional[int]) -> Tuple[List, str]:
         next_offset = str(page + 1)
         if skip:
             results = results[skip:]
         if len(results) > self.INLINE_MAX:
-            results = results[:self.INLINE_MAX]
+            results = results[: self.INLINE_MAX]
             if skip:
                 skip += self.INLINE_MAX
             else:
@@ -103,14 +108,6 @@ class InlineGalleryFunctionality(BotFunctionality):
         return results, next_offset
 
     async def _create_user_folder_results(
-            self,
-            builder: InlineBuilder,
-            username: str,
-            folder: str,
-            page: int
+        self, builder: InlineBuilder, username: str, folder: str, page: int
     ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
-        return [
-            x.to_inline_query_result(builder)
-            for x
-            in await self.api.get_user_folder(username, folder, page)
-        ]
+        return [x.to_inline_query_result(builder) for x in await self.api.get_user_folder(username, folder, page)]

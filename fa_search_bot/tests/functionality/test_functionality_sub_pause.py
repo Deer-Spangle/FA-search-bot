@@ -2,7 +2,7 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
-from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
+from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
@@ -242,7 +242,7 @@ def test_pause_subscription__no_matching(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert resp == 'There is not a subscription for "test" in this chat.'
     assert len(watcher.subscriptions) == 2
     for subscription in watcher.subscriptions:
         assert subscription.paused is False
@@ -257,7 +257,7 @@ def test_pause_subscription__one_matching_in_wrong_destination(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert resp == 'There is not a subscription for "test" in this chat.'
     assert len(watcher.subscriptions) == 2
     for subscription in watcher.subscriptions:
         assert subscription.paused is False
@@ -274,7 +274,7 @@ def test_pause_subscription__one_matching(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f"Paused subscription: \"test\"." in resp
+    assert 'Paused subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -301,7 +301,7 @@ def test_pause_subscription__case_insensitive(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert f"Paused subscription: \"test\"." in resp
+    assert 'Paused subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -328,7 +328,7 @@ def test_pause_subscription__already_paused(mock_client):
 
     resp = func._pause_subscription(18749, "test")
 
-    assert resp == f"Subscription for \"test\" is already paused."
+    assert resp == 'Subscription for "test" is already paused.'
     assert len(watcher.subscriptions) == 2
     sub1, sub2 = watcher.subscriptions
     if sub1.query_str != "test":

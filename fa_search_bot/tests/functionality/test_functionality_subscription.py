@@ -4,7 +4,7 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
-from fa_search_bot.subscription_watcher import SubscriptionWatcher, Subscription
+from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
@@ -158,7 +158,7 @@ def test_add_sub__no_add_duplicate(mock_client):
 
     resp = func._add_sub(18749, "test")
 
-    assert resp == "A subscription already exists for \"test\"."
+    assert resp == 'A subscription already exists for "test".'
     assert len(watcher.subscriptions) == 1
 
 
@@ -170,7 +170,7 @@ def test_add_sub__no_add_duplicate_case_insensitive(mock_client):
 
     resp = func._add_sub(18749, "TEST")
 
-    assert resp == "A subscription already exists for \"TEST\"."
+    assert resp == 'A subscription already exists for "TEST".'
     assert len(watcher.subscriptions) == 1
 
 
@@ -184,7 +184,7 @@ def test_add_sub__adds_subscription(mock_client):
     resp = func._add_sub(18749, "test")
 
     assert "Added subscription" in resp
-    assert "\"test\"" in resp
+    assert '"test"' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -204,7 +204,7 @@ def test_remove_sub__non_existent_subscription(mock_client):
 
     resp = func._remove_sub(18749, "test")
 
-    assert resp == "There is not a subscription for \"test\" in this chat."
+    assert resp == 'There is not a subscription for "test" in this chat.'
     assert len(watcher.subscriptions) == 2
 
 
@@ -222,7 +222,7 @@ def test_remove_sub__removes_subscription(mock_client):
 
     resp = func._remove_sub(18749, "test")
 
-    assert "Removed subscription: \"test\"." in resp
+    assert 'Removed subscription: "test".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp
@@ -253,7 +253,7 @@ def test_remove_sub__removes_subscription_case_insensitive(mock_client):
 
     resp = func._remove_sub(18749, "TEST")
 
-    assert "Removed subscription: \"TEST\"." in resp
+    assert 'Removed subscription: "TEST".' in resp
     assert list_subs.called
     assert list_subs.args[0] == 18749
     assert "Listing subscriptions" in resp

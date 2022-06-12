@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
 
 import pytest
-from tgintegration import BotController
 
-from fa_search_bot.bot import FASearchBot
 from fa_search_bot.sites.fa_handler import SendableFASubmission
 from fa_search_bot.sites.sendable import Sendable
+
+if TYPE_CHECKING:
+    from tgintegration import BotController
+
+    from fa_search_bot.bot import FASearchBot
 
 pytestmark = pytest.mark.asyncio
 

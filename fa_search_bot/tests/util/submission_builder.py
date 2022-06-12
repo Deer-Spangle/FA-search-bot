@@ -1,27 +1,31 @@
-import random
-from typing import Union, List
+from __future__ import annotations
 
-from fa_search_bot.sites.fa_submission import FAUser, FASubmission, FASubmissionFull, FASubmissionShort, Rating
-from fa_search_bot.tests.util.mock_export_api import _random_string, _random_image_id, MockSubmission
+import random
+from typing import TYPE_CHECKING
+
+from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FAUser, Rating
+from fa_search_bot.tests.util.mock_export_api import MockSubmission, _random_image_id, _random_string
+
+if TYPE_CHECKING:
+    from typing import List, Union
 
 
 class SubmissionBuilder:
-
     def __init__(
-            self,
-            *,
-            submission_id: Union[str, int] = None,
-            username: str = None,
-            image_id: int = None,
-            file_size: int = None,
-            thumb_size: int = None,
-            file_ext: str = "jpg",
-            fav_id: str = None,
-            title: str = None,
-            author: FAUser = None,
-            description: str = None,
-            keywords: List[str] = None,
-            rating: Rating = None
+        self,
+        *,
+        submission_id: Union[str, int] = None,
+        username: str = None,
+        image_id: int = None,
+        file_size: int = None,
+        thumb_size: int = None,
+        file_ext: str = "jpg",
+        fav_id: str = None,
+        title: str = None,
+        author: FAUser = None,
+        description: str = None,
+        keywords: List[str] = None,
+        rating: Rating = None,
     ):
         if submission_id is None:
             submission_id = random.randint(10_000, 100_000)
@@ -43,8 +47,10 @@ class SubmissionBuilder:
             thumb_size = 1600
         # Variables for superclass
         thumbnail_url = f"https://t.furaffinity.net/{submission_id}@{thumb_size}-{image_id}.jpg"
-        download_url = f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/" \
+        download_url = (
+            f"https://d.furaffinity.net/art/{username}/{folder}{image_id}/"
             f"{image_id}.{username}_{_random_string()}.{file_ext}"
+        )
         if file_ext in MockSubmission.EXTENSIONS_ART:
             full_image_url = download_url
         else:
@@ -85,18 +91,13 @@ class SubmissionBuilder:
             self.author,
             self.description,
             self.keywords,
-            self.rating
+            self.rating,
         )
         sub._download_file_size = self._download_file_size
         return sub
 
     def build_short_submission(self):
-        sub = FASubmissionShort(
-            self.submission_id,
-            self.thumbnail_url,
-            self.title,
-            self.author
-        )
+        sub = FASubmissionShort(self.submission_id, self.thumbnail_url, self.title, self.author)
         return sub
 
     def build_mock_submission(self):
@@ -132,9 +133,9 @@ class SubmissionBuilder:
             "rating": {
                 Rating.GENERAL: "General",
                 Rating.MATURE: "Mature",
-                Rating.ADULT: "Adult"
+                Rating.ADULT: "Adult",
             }[self.rating],
-            "keywords": self.keywords
+            "keywords": self.keywords,
         }
 
     def build_search_json(self):
@@ -145,5 +146,11 @@ class SubmissionBuilder:
             "link": f"https://www.furaffinity.net/view/{self.submission_id}/",
             "name": self.author.name,
             "profile": self.author.link,
-            "profile_name": self.author.profile_name
+            "profile_name": self.author.profile_name,
         }
+
+    def build_fav_json(self):
+        data = self.build_search_json()
+        if self.fav_id:
+            data["fav_id"] = self.fav_id
+        return data

@@ -1,6 +1,11 @@
-import re
+from __future__ import annotations
 
-from telethon.events import NewMessage
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import re
+
+    from telethon.events import NewMessage
 
 
 def filter_regex(event: NewMessage.Event, pattern: re.Pattern) -> bool:

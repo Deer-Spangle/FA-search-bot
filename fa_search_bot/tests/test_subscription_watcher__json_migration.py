@@ -6,43 +6,30 @@ from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 
 def test_load_old_save_new(mock_client):
     old_data = {
-        "latest_ids": [
-            "38447607",
-            "38447608",
-            "38447609",
-            "38447610"
-        ],
+        "latest_ids": ["38447607", "38447608", "38447609", "38447610"],
         "subscriptions": [
             {
                 "query": "deer",
                 "destination": -10053,
-                "latest_update": "2020-09-20T11:11:19.329747"
+                "latest_update": "2020-09-20T11:11:19.329747",
             },
             {
                 "query": "rating:safe rabbit",
                 "destination": -76543,
-                "latest_update": "2020-10-31T21:50:54.020924"
+                "latest_update": "2020-10-31T21:50:54.020924",
             },
             {
                 "query": "@keywords deer",
                 "destination": 34342,
-                "latest_update": "2020-10-31T21:09:58.755093"
+                "latest_update": "2020-10-31T21:09:58.755093",
             },
             {
                 "query": "@keywords dragon",
                 "destination": 34342,
-                "latest_update": "2020-10-31T21:09:58.755093"
+                "latest_update": "2020-10-31T21:09:58.755093",
             },
         ],
-        "blacklists": {
-            "87654": [
-                "artist:fender",
-                "fox"
-            ],
-            "-76543": [
-                "artist:fred"
-            ]
-        }
+        "blacklists": {"87654": ["artist:fender", "fox"], "-76543": ["artist:fred"]},
     }
     api = MockExportAPI()
 
@@ -83,7 +70,7 @@ def test_load_old_save_new(mock_client):
     assert dest1["subscriptions"][0] == {
         "query": "deer",
         "latest_update": "2020-09-20T11:11:19.329747",
-        "paused": False
+        "paused": False,
     }
     # check dest -76543
     dest2 = new_data["destinations"]["-76543"]
@@ -92,36 +79,26 @@ def test_load_old_save_new(mock_client):
     assert dest2["subscriptions"][0] == {
         "query": "rating:safe rabbit",
         "latest_update": "2020-10-31T21:50:54.020924",
-        "paused": False
+        "paused": False,
     }
-    assert dest2["blocks"][0] == {
-        "query": "artist:fred"
-    }
+    assert dest2["blocks"][0] == {"query": "artist:fred"}
     # Check dest 34342
     dest3 = new_data["destinations"]["34342"]
     assert len(dest3["subscriptions"]) == 2
     assert len(dest3["blocks"]) == 0
-    assert \
-        {
-            "query": "@keywords deer",
-            "latest_update": "2020-10-31T21:09:58.755093",
-            "paused": False
-        } in dest3["subscriptions"]
-    assert \
-        {
-            "query": "@keywords dragon",
-            "latest_update": "2020-10-31T21:09:58.755093",
-            "paused": False
-        } in dest3["subscriptions"]
+    assert {
+        "query": "@keywords deer",
+        "latest_update": "2020-10-31T21:09:58.755093",
+        "paused": False,
+    } in dest3["subscriptions"]
+    assert {
+        "query": "@keywords dragon",
+        "latest_update": "2020-10-31T21:09:58.755093",
+        "paused": False,
+    } in dest3["subscriptions"]
     # Check dest 87654
     dest4 = new_data["destinations"]["87654"]
     assert len(dest4["subscriptions"]) == 0
     assert len(dest4["blocks"]) == 2
-    assert \
-        {
-            "query": "artist:fender"
-        } in dest4["blocks"]
-    assert \
-        {
-            "query": "fox"
-        } in dest4["blocks"]
+    assert {"query": "artist:fender"} in dest4["blocks"]
+    assert {"query": "fox"} in dest4["blocks"]

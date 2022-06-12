@@ -1,41 +1,45 @@
+from __future__ import annotations
+
 import asyncio
+import datetime
 import enum
 import logging
-import datetime
-from typing import List
+from typing import TYPE_CHECKING
 
 import requests
-from prometheus_client import Counter, Enum, Histogram, Gauge
+from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.fa_submission import FASubmission, FASubmissionShort, FASubmissionFull, FASubmissionShortFav, \
-    FAStatus
+from fa_search_bot.sites.fa_submission import FAStatus, FASubmission
+
+if TYPE_CHECKING:
+    from typing import List, Optional
+
+    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FASubmissionShortFav
+
 
 logger = logging.getLogger(__name__)
 
 site_slowdown = Enum(
     "fasearchbot_faapi_slowdown_state",
     "Whether the FA API is in a slow state due to high number of registered users on FA",
-    states=["slow", "not_slow"]
+    states=["slow", "not_slow"],
 )
-site_latest_id = Gauge(
-    "fasearchbot_faapi_latest_id",
-    "Latest FA submission ID the bot has seen"
-)
+site_latest_id = Gauge("fasearchbot_faapi_latest_id", "Latest FA submission ID the bot has seen")
 cloudflare_errors = Counter(
     "fasearchbot_faapi_cloudflare_errors_total",
     "Number of cloudflare errors received by the FA API",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 api_request_times = Histogram(
     "fasearchbot_faapi_request_time_seconds",
     "Request times of the FA API, in seconds",
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 api_retry_counts = Histogram(
     "fasearchbot_faapi_retry_counts",
     "Retry counts of the FA API",
     buckets=list(range(10)),
-    labelnames=["endpoint"]
+    labelnames=["endpoint"],
 )
 
 
@@ -68,7 +72,7 @@ class FAExportAPI:
 
     def __init__(self, base_url: str, ignore_status: bool = False):
         self.base_url = base_url.rstrip("/")
-        self.last_status_check = None
+        self.last_status_check: Optional[datetime.datetime] = None
         self.slow_down_status = False
         self.ignore_status = ignore_status
         for endpoint in Endpoint:
@@ -94,7 +98,7 @@ class FAExportAPI:
             if str(resp.status_code)[0] != "5":
                 api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
                 return resp
-            await asyncio.sleep(tries ** 2)
+            await asyncio.sleep(tries**2)
             resp = self._api_request(path, endpoint_label)
         api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
         return resp
@@ -104,8 +108,8 @@ class FAExportAPI:
             return False
         now = datetime.datetime.now()
         if (
-                self.last_status_check is None
-                or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
+            self.last_status_check is None
+            or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
         ):
             status = self.status()
             self.last_status_check = now
@@ -124,7 +128,12 @@ class FAExportAPI:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
 
     async def get_user_folder(self, user: str, folder: str, page: int = 1) -> List[FASubmissionShort]:
-        logger.debug("Getting user folder for user %s, folder %s, and page %s", user, folder, page)
+        logger.debug(
+            "Getting user folder for user %s, folder %s, and page %s",
+            user,
+            folder,
+            page,
+        )
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         resp = await self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1", Endpoint.USER_FOLDER)
@@ -150,7 +159,7 @@ class FAExportAPI:
             data = resp.json()
             submissions = []
             for submission_data in data:
-                submissions.append(FASubmission.from_short_dict(submission_data))
+                submissions.append(FASubmission.from_short_fav_dict(submission_data))
             return submissions
         else:
             logger.warning("User favourites not found with name: %s", user)
@@ -159,8 +168,7 @@ class FAExportAPI:
     async def get_search_results(self, query: str, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Searching for query: %s, page: %s", query, page)
         resp = await self._api_request_with_retry(
-            f"search.json?full=1&perpage=48&q={query}&page={page}",
-            Endpoint.SEARCH
+            f"search.json?full=1&perpage=48&q={query}&page={page}", Endpoint.SEARCH
         )
         data = resp.json()
         submissions = []
