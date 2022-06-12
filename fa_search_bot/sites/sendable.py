@@ -243,7 +243,7 @@ def _count_exceptions_with_labels(counter: Counter) -> Callable[[WrapFunc], Wrap
         async def wrapper(s: "Sendable", *args: Any, **kwargs: Any) -> WrapReturn:
             self = s
             with counter.labels(site_code=self.site_id).count_exceptions():
-                return await f(*args, **kwargs)
+                return await f(self, *args, **kwargs)
 
         return wrapper
 
