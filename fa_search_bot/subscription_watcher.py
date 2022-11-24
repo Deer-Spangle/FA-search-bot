@@ -12,7 +12,7 @@ import dateutil.parser
 import heartbeat
 from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
-from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
+from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
@@ -255,7 +255,7 @@ class SubscriptionWatcher:
                 sub_updates.inc()
                 sendable = SendableFASubmission(result)
                 await sendable.send_message(self.client, dest, prefix=prefix)
-            except (UserIsBlockedError, InputUserDeactivatedError):
+            except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
                 all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
