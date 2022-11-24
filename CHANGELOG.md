@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.1] - 2022-11-24
+
+### Fixed
+
+- Subscriptions will now be paused when the bot cannot access a channel
+
 ## [1.12.0] - 2021-12-02
 
 ### Added
