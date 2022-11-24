@@ -83,6 +83,10 @@ gauge_sub_destinations = Gauge(
     "fasearchbot_fasubwatcher_subscription_destination_count",
     "Number of different subscription destinations",
 )
+gauge_sub_active_destinations = Gauge(
+    "fasearchbot_fasubwatcher_subscription_destination_count_active",
+    "Number of different subscription destinations with at least one active subscription",
+)
 gauge_sub_blocks = Gauge(
     "fasearchbot_fasubwatcher_subscription_block_query_count",
     "Total number of blocklist queries",
@@ -112,6 +116,9 @@ class SubscriptionWatcher:
         gauge_sub.set_function(lambda: len(self.subscriptions))
         gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
         gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
+        gauge_sub_active_destinations.set_function(
+            lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
+        )
         gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
 
     async def run(self) -> None:
