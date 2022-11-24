@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.2] - 2022-11-24
+
+### Added
+
+- Added a prometheus metric `fasearchbot_fasubwatcher_subscription_destination_count_active`, which says how many
+  destinations have at least one active subscription
+
 ## [1.12.1] - 2022-11-24
 
 ### Fixed
