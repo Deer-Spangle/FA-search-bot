@@ -32,6 +32,7 @@ In most cases, sending as a document meant that the md5 was not changed. (Sendin
   - Small webp images sent as photos were displayed as stickers in the linux desktop client
 
 ## Results table
+```text
 +--------------------+-----+-------------+-----+-------------+-----+----------------+-----+----------------+-----+-------------+-----+-------------+
 |                    | MD5 | sent format | MD5 | sent forma5 | MD5 | sent format    | MD5 | sent format    | MD5 | sent format | MD5 | sent forma5 |
 |                    | by url            | by url            | by bytes             | by bytes             | by file path      | by file path      |
@@ -58,7 +59,7 @@ In most cases, sending as a document meant that the md5 was not changed. (Sendin
 |      jpg_with_exif |  -  | -           |  -  | -           |  N  | photo          |  Y  | doc (no thumb) |  N  | photo       |  Y  | doc         |
 | mp4_with_metadata' |  -  | -           |  -  | -           |  Y  | doc (no thumb) |  Y  | doc (no thumb) |  Y  | video       |  Y  | doc         |
 +--------------------+-----+-------------+-----+-------------+-----+----------------+-----+----------------+-----+-------------+-----+-------------+
-
+```
 
 ## Conclusion
 Sending via local file path gives the most predictable results, and md5 hash is preserved for all types except for when sending images as photos.
