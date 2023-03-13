@@ -29,7 +29,7 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
 
 @dataclasses.dataclass(frozen=True)
 class SubmissionID:
-    site_id: str
+    site_code: str
     submission_id: int
 
 
@@ -88,11 +88,11 @@ class NeatenFunctionality(BotFunctionality):
         return link_matches
 
     async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[SubmissionID]:
-        for site_id, handler in self.handlers.items():
+        for site_code, handler in self.handlers.items():
             try:
                 sub_id = await handler.get_submission_id_from_link(link)
                 if sub_id is not None:
-                    return SubmissionID(site_id, sub_id)
+                    return SubmissionID(site_code, sub_id)
             except HandlerException as e:
                 logger.warning(
                     "Site handler (%s) raised exception:",
@@ -105,8 +105,8 @@ class NeatenFunctionality(BotFunctionality):
 
     async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID) -> None:
         logger.info("Found a link, ID: %s", sub_id)
-        self.usage_counter.labels(function=f"neaten_{sub_id.site_id}").inc()
-        handler = self.handlers.get(sub_id.site_id)
+        self.usage_counter.labels(function=f"neaten_{sub_id.site_code}").inc()
+        handler = self.handlers.get(sub_id.site_code)
         if handler is None:
             return
         try:
