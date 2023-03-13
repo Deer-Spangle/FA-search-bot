@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import logging
 import re
 from typing import TYPE_CHECKING
@@ -11,7 +10,7 @@ from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.sendable import CantSendFileType
-from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.site_handler import HandlerException, SubmissionID
 
 if TYPE_CHECKING:
     from typing import Dict, List, Optional
@@ -25,12 +24,6 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
     # Only send an error message in private message
     if event.is_private:
         await event.reply(error_message)
-
-
-@dataclasses.dataclass(frozen=True)
-class SubmissionID:
-    site_code: str
-    submission_id: int
 
 
 class NeatenFunctionality(BotFunctionality):

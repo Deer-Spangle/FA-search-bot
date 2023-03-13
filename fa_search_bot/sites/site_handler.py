@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -9,11 +10,37 @@ if TYPE_CHECKING:
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
-    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer, Message, Photo
 
 
 class HandlerException(Exception):
     pass
+
+
+@dataclasses.dataclass(frozen=True)
+class SubmissionID:
+    site_code: str
+    submission_id: int
+
+
+@dataclasses.dataclass
+class SentSubmission:
+    sub_id: SubmissionID
+    is_photo: bool
+    media_id: int
+    access_hash: int
+
+    @classmethod
+    def from_resp(cls, sub_id: SubmissionID, resp: Message) -> "SentSubmission":
+        is_photo: bool = isinstance(resp.file.media, Photo)
+        media_id: int = resp.file.media.id
+        access_hash: int = resp.file.media.access_hash
+        return cls(
+            sub_id,
+            is_photo,
+            media_id,
+            access_hash,
+        )
 
 
 class SiteHandler(ABC):
@@ -54,7 +81,7 @@ class SiteHandler(ABC):
         reply_to: Optional[int] = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> None:
+    ) -> SentSubmission:
         raise NotImplementedError
 
     @abstractmethod
