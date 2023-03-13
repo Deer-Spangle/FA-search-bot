@@ -29,9 +29,10 @@ class SentSubmission:
     is_photo: bool
     media_id: int
     access_hash: int
+    file_url: str
 
     @classmethod
-    def from_resp(cls, sub_id: SubmissionID, resp: Message) -> "SentSubmission":
+    def from_resp(cls, sub_id: SubmissionID, resp: Message, file_url: str) -> "SentSubmission":
         is_photo: bool = isinstance(resp.file.media, Photo)
         media_id: int = resp.file.media.id
         access_hash: int = resp.file.media.access_hash
@@ -40,6 +41,7 @@ class SentSubmission:
             is_photo,
             media_id,
             access_hash,
+            file_url,
         )
 
 

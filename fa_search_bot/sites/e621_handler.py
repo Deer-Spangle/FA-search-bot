@@ -117,7 +117,7 @@ class E621Handler(SiteHandler):
         post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
         resp = await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
-        return SentSubmission.from_resp(SubmissionID(self.site_code, submission_id), resp)
+        return SentSubmission.from_resp(SubmissionID(self.site_code, submission_id), resp, sendable.download_url)
 
     def link_for_submission(self, submission_id: int) -> str:
         return f"https://e621.net/posts/{submission_id}/"
