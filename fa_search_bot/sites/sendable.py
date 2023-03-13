@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from docker.models.containers import Container
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
-    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
+    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer, Message
 
     from fa_search_bot.sites.site_handler import SiteHandler
 
@@ -352,12 +352,12 @@ class Sendable(ABC):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> None:
+    ) -> Message:
         sendable_sent.labels(site_code=self.site_id).inc()
         settings = CaptionSettings()
         ext = self.download_file_ext
 
-        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> Message:
             if isinstance(file, str):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
@@ -365,15 +365,14 @@ class Sendable(ABC):
                     file = _convert_gif_to_png(file)
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
-                await client.edit_message(
+                return await client.edit_message(
                     entity=chat,
                     file=file,
                     message=self.caption(settings, prefix),
                     force_document=force_doc,
                     parse_mode="html",
                 )
-                return
-            await client.send_message(
+            return await client.send_message(
                 entity=chat,
                 file=file,
                 message=self.caption(settings, prefix),
@@ -381,7 +380,6 @@ class Sendable(ABC):
                 force_document=force_doc,
                 parse_mode="html",  # Markdown is not safe here, because of the prefix.
             )
-            return
 
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
@@ -420,7 +418,7 @@ class Sendable(ABC):
     async def _send_video(
         self,
         send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[Message]],
-    ) -> None:
+    ) -> Message:
         try:
             logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
             filename = self._get_video_from_cache()
@@ -430,7 +428,7 @@ class Sendable(ABC):
                 filename = self._save_video_to_cache(output_path)
             else:
                 sendable_animated_cached.labels(site_code=self.site_id).inc()
-            await send_partial(filename)
+            return await send_partial(filename)
         except Exception as e:
             logger.error(
                 "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
@@ -438,8 +436,7 @@ class Sendable(ABC):
                 self.id,
                 exc_info=e,
             )
-            await send_partial(self.download_url)
-        return
+            return await send_partial(self.download_url)
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
