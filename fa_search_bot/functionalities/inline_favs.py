@@ -11,7 +11,7 @@ from fa_search_bot.sites.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
-    from typing import Coroutine, List, Optional, Tuple, Union
+    from typing import Awaitable, List, Optional, Tuple, Union
 
     from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
@@ -57,7 +57,7 @@ class InlineFavsFunctionality(BotFunctionality):
 
     async def _favs_query_results(
         self, event: InlineQuery.Event, username: str, offset: Optional[str]
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str]]:
+    ) -> Tuple[List[Awaitable[Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str]]:
         # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None

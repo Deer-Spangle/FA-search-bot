@@ -11,7 +11,7 @@ from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 
 if TYPE_CHECKING:
-    from typing import Coroutine, List, Optional, Pattern, Union
+    from typing import Awaitable, List, Optional, Pattern, Union
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
@@ -130,7 +130,7 @@ class E621Handler(SiteHandler):
 
     async def submission_as_answer(
         self, submission_id: Union[int, str], builder: InlineBuilder
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    ) -> Awaitable[InputBotInlineResultPhoto]:
         sub_id_str = str(submission_id)
         if self.POST_HASH.match(sub_id_str):
             post = await self._find_post_by_hash(sub_id_str)
@@ -143,7 +143,7 @@ class E621Handler(SiteHandler):
 
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
                 posts = await self.api.posts(query, page=page)

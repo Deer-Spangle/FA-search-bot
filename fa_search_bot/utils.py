@@ -4,12 +4,12 @@ import asyncio
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from typing import Coroutine, List
+    from typing import Awaitable, List
 
 T = TypeVar("T")
 
 
-async def gather_ignore_exceptions(coros: List[Coroutine[None, None, T]]) -> List[T]:
+async def gather_ignore_exceptions(coros: List[Awaitable[T]]) -> List[T]:
     return list(
         filter(
             lambda x: not isinstance(x, Exception),

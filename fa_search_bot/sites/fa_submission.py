@@ -12,7 +12,7 @@ from telethon import Button
 
 if TYPE_CHECKING:
     import datetime
-    from typing import Coroutine, List, Optional, Union
+    from typing import Awaitable, List, Optional, Union
 
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineResultPhoto
@@ -190,7 +190,7 @@ class FASubmissionShort(FASubmission):
 
     def to_inline_query_result(
         self, builder: InlineBuilder, site_code: Optional[str] = None
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    ) -> Awaitable[InputBotInlineResultPhoto]:
         inline_id = f"{self.submission_id}"
         if site_code:
             inline_id = f"{site_code}:{self.submission_id}"

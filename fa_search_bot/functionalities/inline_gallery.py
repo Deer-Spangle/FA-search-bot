@@ -11,7 +11,7 @@ from fa_search_bot.sites.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
-    from typing import Coroutine, List, Optional, Tuple, Union
+    from typing import Awaitable, List, Optional, Tuple, Union
 
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
@@ -67,7 +67,7 @@ class InlineGalleryFunctionality(BotFunctionality):
 
     async def _gallery_query_results(
         self, event: InlineQuery.Event, folder: str, username: str, offset: str
-    ) -> Tuple[List[Coroutine[None, None, Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
+    ) -> Tuple[List[Awaitable[Union[InputBotInlineResult, InputBotInlineResultPhoto]]], Optional[str]]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
         # Try and get results
@@ -109,5 +109,5 @@ class InlineGalleryFunctionality(BotFunctionality):
 
     async def _create_user_folder_results(
         self, builder: InlineBuilder, username: str, folder: str, page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
         return [x.to_inline_query_result(builder) for x in await self.api.get_user_folder(username, folder, page)]

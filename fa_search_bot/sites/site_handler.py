@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from re import Pattern
-    from typing import Coroutine, List, Optional, Union
+    from typing import List, Optional, Union, Awaitable
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
@@ -64,7 +64,7 @@ class SiteHandler(ABC):
     @abstractmethod
     async def submission_as_answer(
         self, submission_id: Union[int, str], builder: InlineBuilder
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    ) -> Awaitable[InputBotInlineResultPhoto]:
         raise NotImplementedError
 
     @property
@@ -78,5 +78,5 @@ class SiteHandler(ABC):
     @abstractmethod
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
         raise NotImplementedError

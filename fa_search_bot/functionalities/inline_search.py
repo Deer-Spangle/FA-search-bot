@@ -9,7 +9,7 @@ from fa_search_bot.functionalities.functionalities import BotFunctionality, _par
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
-    from typing import Coroutine, Dict, List, Optional, Tuple
+    from typing import Awaitable, Dict, List, Optional, Tuple
 
     from telethon.tl.types import InputBotInlineResult
 
@@ -69,7 +69,7 @@ class InlineSearchFunctionality(BotFunctionality):
 
     async def _search_query_results(
         self, event: InlineQuery.Event, query: str, offset: str
-    ) -> Tuple[List[Coroutine[None, None, InputBotInlineResult]], Optional[str]]:
+    ) -> Tuple[List[Awaitable[InputBotInlineResult]], Optional[str]]:
         page, skip = _parse_inline_offset(offset)
         handler, query = self._parse_site_prefix(query)
         results = await handler.get_search_results(event.builder, query.strip(), page)

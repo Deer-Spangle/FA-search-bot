@@ -9,7 +9,7 @@ from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 
 if TYPE_CHECKING:
     from re import Pattern
-    from typing import Coroutine, List, Optional, Union
+    from typing import List, Optional, Union, Awaitable
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
@@ -132,7 +132,7 @@ class FAHandler(SiteHandler):
 
     async def submission_as_answer(
         self, submission_id: Union[int, str], builder: InlineBuilder
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    ) -> Awaitable[InputBotInlineResultPhoto]:
         sub = await self.api.get_full_submission(str(submission_id))
         sendable = SendableFASubmission(sub)
         return sendable.to_inline_query_result(builder)
@@ -146,7 +146,7 @@ class FAHandler(SiteHandler):
 
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
         posts = await self.api.get_search_results(query, page)
         return [submission.to_inline_query_result(builder, self.site_code) for submission in posts]
 

@@ -20,7 +20,7 @@ from telethon import Button
 from telethon.errors import BadRequestError
 
 if TYPE_CHECKING:
-    from typing import Any, BinaryIO, Coroutine, List, Optional, Union
+    from typing import Any, Awaitable, BinaryIO, List, Optional, Union
 
     from docker import DockerClient
     from docker.models.containers import Container
@@ -419,7 +419,7 @@ class Sendable(ABC):
 
     async def _send_video(
         self,
-        send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
+        send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[Message]],
     ) -> None:
         try:
             logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
@@ -622,7 +622,7 @@ class Sendable(ABC):
                 container.remove(force=True)
                 raise TimeoutError("Docker container timed out")
 
-    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+    def to_inline_query_result(self, builder: InlineBuilder) -> Awaitable[InputBotInlineResultPhoto]:
         inline_results.labels(site_code=self.site_id).inc()
         return builder.photo(
             file=self.thumbnail_url,
