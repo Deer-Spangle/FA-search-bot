@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -10,10 +11,12 @@ if TYPE_CHECKING:
     from re import Pattern
     from typing import List, Optional, Union, Awaitable
 
-    from telethon import TelegramClient
+    from telethon import TelegramClient, events
     from telethon.tl.custom import InlineBuilder
     import telethon.tl.patched
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+
+logger = logging.getLogger(__name__)
 
 
 class HandlerException(Exception):
@@ -51,6 +54,20 @@ class SentSubmission:
 
     def to_input_media(self) -> Union[InputPhoto, InputDocument]:
         return (InputPhoto if self.is_photo else InputDocument)(self.media_id, self.access_hash, b"")
+
+    def try_to_reply(self, event: events.NewMessage.Event) -> bool:
+        try:
+            input_media = self.to_input_media()
+            await event.reply(
+                self.caption,
+                file=input_media,
+                force_document=not self.is_photo,
+                parse_mode="html",
+            )
+            return True
+        except Exception as e:
+            logger.warning("Failed to post from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
+            return False
 
 
 class SiteHandler(ABC):

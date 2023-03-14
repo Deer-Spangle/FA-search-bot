@@ -106,18 +106,8 @@ class NeatenFunctionality(BotFunctionality):
             return
         cache_entry = self.cache.load_cache(sub_id)
         if cache_entry:
-            try:
-                input_media = cache_entry.to_input_media()
-                await event.reply(
-                    cache_entry.caption,
-                    file=input_media,
-                    force_document=not cache_entry.is_photo,
-                    parse_mode="html",
-                )
+            if cache_entry.try_to_reply(event):
                 return
-            except Exception as e:
-                logger.warning("Failed to post from cache due to exception. Submission ID: %s", sub_id, exc_info=e)
-                pass
         try:
             sent_sub = await handler.send_submission(
                 sub_id.submission_id,
