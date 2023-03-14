@@ -11,6 +11,7 @@ from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.database import Database
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.functionalities import usage_counter
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
@@ -28,6 +29,7 @@ from fa_search_bot.sites.e621_handler import E621Handler
 from fa_search_bot.sites.fa_export_api import FAExportAPI
 from fa_search_bot.sites.fa_handler import FAHandler
 from fa_search_bot.sites.sendable import initialise_metrics_labels
+from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 if TYPE_CHECKING:
@@ -101,6 +103,8 @@ class FASearchBot:
         self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(self.api, self.client)
         self.log_task: Optional[Task] = None
         self.watcher_task: Optional[Task] = None
+        self.db = Database()
+        self.submission_cache = SubmissionCache(self.db)
 
     @property
     def bot_key(self) -> str:
