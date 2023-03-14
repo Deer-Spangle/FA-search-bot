@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from typing import Dict, List, Optional
 
     from fa_search_bot.sites.site_handler import SiteHandler
+    from fa_search_bot.submission_cache import SubmissionCache
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,9 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
 
 
 class NeatenFunctionality(BotFunctionality):
-    def __init__(self, handlers: Dict[str, SiteHandler]):
+    def __init__(self, handlers: Dict[str, SiteHandler], submission_cache: SubmissionCache):
         self.handlers = handlers
+        self.cache = submission_cache
         link_regex = re.compile(
             "(" + "|".join(handler.link_regex.pattern for handler in handlers.values()) + ")",
             re.IGNORECASE,
@@ -102,8 +104,22 @@ class NeatenFunctionality(BotFunctionality):
         handler = self.handlers.get(sub_id.site_code)
         if handler is None:
             return
+        cache_entry = self.cache.load_cache(sub_id)
+        if cache_entry:
+            try:
+                input_media = cache_entry.to_input_media()
+                await event.reply(
+                    cache_entry.caption,
+                    file=input_media,
+                    force_document=not cache_entry.is_photo,
+                    parse_mode="html",
+                )
+                return
+            except Exception as e:
+                logger.warning("Failed to post from cache due to exception. Submission ID: %s", sub_id, exc_info=e)
+                pass
         try:
-            await handler.send_submission(
+            sent_sub = await handler.send_submission(
                 sub_id.submission_id,
                 event.client,
                 event.input_chat,
@@ -125,3 +141,5 @@ class NeatenFunctionality(BotFunctionality):
                 event,
                 f"{handler.site_name} returned a cloudflare error, so I cannot neaten links.",
             )
+        else:
+            self.cache.save_cache(sent_sub)
