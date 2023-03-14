@@ -26,7 +26,8 @@ if TYPE_CHECKING:
     from docker.models.containers import Container
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
-    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer, Message
+    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
+    from telethon.tl.patched import Message
 
     from fa_search_bot.sites.site_handler import SiteHandler
 
