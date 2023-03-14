@@ -18,6 +18,7 @@ class DBCacheEntry:
     media_id: int
     access_hash: int
     file_url: str
+    caption: str
     cache_date: datetime.datetime
 
 
@@ -57,7 +58,7 @@ class Database:
 
     def fetch_cache_entry(self, site_code: str, submission_id: str) -> Optional[DBCacheEntry]:
         with self._execute(
-                "SELECT is_photo, media_id, access_hash, file_url, cache_date "
+                "SELECT is_photo, media_id, access_hash, file_url, caption, cache_date "
                 "FROM cache_entries WHERE site_code = ? AND submission_id = ?",
                 (site_code, submission_id)
         ) as cursor:
@@ -71,18 +72,19 @@ class Database:
                 row["media_id"],
                 row["access_hash"],
                 row["file_url"],
+                row["caption"],
                 dateutil.parser.parse(row["cache_date"])
             )
 
     def save_cache_entry(self, entry: DBCacheEntry) -> None:
         self._just_execute(
             "INSERT INTO cache_entries "
-            "(site_code, submission_id, is_photo, media_id, access_hash, file_url, cache_date) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (site_code, submission_id) "
+            "(site_code, submission_id, is_photo, media_id, access_hash, file_url, caption, cache_date) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (site_code, submission_id) "
             "DO UPDATE SET is_photo=excluded.is_photo, media_id=excluded.media_id, access_hash=excluded.access_hash, "
-            "file_url=excluded.file_url, cache_date=excluded.cache_date",
+            "file_url=excluded.file_url, caption=excluded.caption, cache_date=excluded.cache_date",
             (
                 entry.site_code, entry.submission_id, entry.is_photo, entry.media_id, entry.access_hash, entry.file_url,
-                entry.cache_date.isoformat()
+                entry.caption, entry.cache_date.isoformat()
             )
         )

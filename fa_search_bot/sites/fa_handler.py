@@ -129,7 +129,10 @@ class FAHandler(SiteHandler):
         submission = await self.api.get_full_submission(str(submission_id))
         sendable = SendableFASubmission(submission)
         resp = await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
-        return SentSubmission.from_resp(SubmissionID(self.site_code, submission_id), resp, submission.download_url)
+        caption = resp.message
+        if prefix:
+            caption = caption.removeprefix(prefix).strip()
+        return SentSubmission.from_resp(SubmissionID(self.site_code, submission_id), resp, submission.download_url, caption)
 
     async def submission_as_answer(
         self, submission_id: Union[int, str], builder: InlineBuilder

@@ -33,9 +33,10 @@ class SentSubmission:
     media_id: int
     access_hash: int
     file_url: str
+    caption: str
 
     @classmethod
-    def from_resp(cls, sub_id: SubmissionID, resp: telethon.tl.patched.Message, file_url: str) -> "SentSubmission":
+    def from_resp(cls, sub_id: SubmissionID, resp: telethon.tl.patched.Message, file_url: str, caption: str) -> "SentSubmission":
         is_photo: bool = isinstance(resp.file.media, Photo)
         media_id: int = resp.file.media.id
         access_hash: int = resp.file.media.access_hash
@@ -45,6 +46,7 @@ class SentSubmission:
             media_id,
             access_hash,
             file_url,
+            caption,
         )
 
     def to_input_media(self) -> Union[InputPhoto, InputDocument]:

@@ -1,9 +1,6 @@
 import dataclasses
 import datetime
-import hashlib
 from typing import Optional
-
-import requests
 
 from fa_search_bot.database import Database, DBCacheEntry
 from fa_search_bot.sites.site_handler import SentSubmission, SubmissionID
@@ -31,12 +28,13 @@ class SubmissionCache:
             sent_submission.media_id,
             sent_submission.access_hash,
             sent_submission.file_url,
+            sent_submission.caption,
             now(),
         )
         self.db.save_cache_entry(cache_entry)
 
     def load_cache(self, sub_id: SubmissionID) -> Optional[SentSubmission]:
-        entry = self.db.fetch_cache_entry(sub_id.site_code, sub_id.submission_id)
+        entry = self.db.fetch_cache_entry(sub_id.site_code, str(sub_id.submission_id))
         if entry is None:
             return None
         return SentSubmission(
@@ -44,5 +42,6 @@ class SubmissionCache:
             entry.is_photo,
             entry.media_id,
             entry.access_hash,
-            entry.file_url
+            entry.file_url,
+            entry.caption,
         )
