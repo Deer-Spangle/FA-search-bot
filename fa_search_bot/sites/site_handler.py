@@ -4,13 +4,16 @@ import dataclasses
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from telethon.tl.types import Photo, InputPhoto, InputDocument
+
 if TYPE_CHECKING:
     from re import Pattern
     from typing import List, Optional, Union, Awaitable
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
-    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer, Message, Photo
+    import telethon.tl.patched
+    from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
 
 class HandlerException(Exception):
@@ -32,7 +35,7 @@ class SentSubmission:
     file_url: str
 
     @classmethod
-    def from_resp(cls, sub_id: SubmissionID, resp: Message, file_url: str) -> "SentSubmission":
+    def from_resp(cls, sub_id: SubmissionID, resp: telethon.tl.patched.Message, file_url: str) -> "SentSubmission":
         is_photo: bool = isinstance(resp.file.media, Photo)
         media_id: int = resp.file.media.id
         access_hash: int = resp.file.media.access_hash
@@ -43,6 +46,9 @@ class SentSubmission:
             access_hash,
             file_url,
         )
+
+    def to_input_media(self) -> Union[InputPhoto, InputDocument]:
+        return (InputPhoto if self.is_photo else InputDocument)(self.media_id, self.access_hash, b"")
 
 
 class SiteHandler(ABC):
