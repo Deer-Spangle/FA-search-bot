@@ -182,29 +182,14 @@ class CaptionSettings:
 
 def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
     for handler in handlers:
-        sendable_sent.labels(site_code=handler.site_code)
-        sendable_gif_to_png.labels(site_code=handler.site_code)
-        sendable_edit.labels(site_code=handler.site_code)
-        sendable_failure.labels(site_code=handler.site_code)
-        sendable_image.labels(site_code=handler.site_code)
-        sendable_animated.labels(site_code=handler.site_code)
-        sendable_auto_doc.labels(site_code=handler.site_code)
-        sendable_audio.labels(site_code=handler.site_code)
-        sendable_other.labels(site_code=handler.site_code)
-        sendable_animated_cached.labels(site_code=handler.site_code)
-        convert_video_total.labels(site_code=handler.site_code)
-        convert_video_failures.labels(site_code=handler.site_code)
-        convert_video_animated.labels(site_code=handler.site_code)
-        convert_video_no_audio.labels(site_code=handler.site_code)
-        convert_video_no_audio_gif.labels(site_code=handler.site_code)
-        convert_video_to_video.labels(site_code=handler.site_code)
-        convert_video_only_one_attempt.labels(site_code=handler.site_code)
-        convert_video_two_pass.labels(site_code=handler.site_code)
-        convert_gif_total.labels(site_code=handler.site_code)
-        convert_gif_failures.labels(site_code=handler.site_code)
-        convert_gif_only_one_attempt.labels(site_code=handler.site_code)
-        convert_gif_two_pass.labels(site_code=handler.site_code)
-        video_length.labels(site_code=handler.site_code)
+        for metric in [
+            sendable_sent, sendable_gif_to_png, sendable_edit, sendable_failure, sendable_image, sendable_animated,
+            sendable_auto_doc, sendable_audio, sendable_other, sendable_animated_cached, convert_video_total,
+            convert_video_failures, convert_video_animated, convert_video_no_audio, convert_video_no_audio_gif,
+            convert_video_to_video, convert_video_only_one_attempt, convert_video_two_pass, convert_gif_total,
+            convert_gif_failures, convert_gif_only_one_attempt, convert_gif_two_pass, video_length
+        ]:
+            metric.labels(site_code=handler.site_code)
         for entrypoint in DockerEntrypoint:
             docker_run_time.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
             docker_failures.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
