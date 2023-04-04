@@ -9,6 +9,17 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.4] - 2023-04-04
+
+### Added
+
+- Added a prometheus metric `fasearchbot_fasubwatcher_latest_posted_at_unixtime`, which is the unix timestamp that the 
+  latest processed submission was uploaded to FA
+
+### Removed
+
+- Removed the `fasearchbot_fasubwatcher_backlog_seconds` metric, which may become outdated or misleading
+
 ## [1.12.3] - 2023-04-04
 
 ### Added
