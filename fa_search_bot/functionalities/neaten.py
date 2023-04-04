@@ -106,7 +106,7 @@ class NeatenFunctionality(BotFunctionality):
             return
         cache_entry = self.cache.load_cache(sub_id)
         if cache_entry:
-            if cache_entry.try_to_reply(event):
+            if await cache_entry.try_to_reply(event):
                 return
         try:
             sent_sub = await handler.send_submission(

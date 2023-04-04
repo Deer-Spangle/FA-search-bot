@@ -55,7 +55,7 @@ class SentSubmission:
     def to_input_media(self) -> Union[InputPhoto, InputDocument]:
         return (InputPhoto if self.is_photo else InputDocument)(self.media_id, self.access_hash, b"")
 
-    def try_to_reply(self, event: events.NewMessage.Event) -> bool:
+    async def try_to_reply(self, event: events.NewMessage.Event) -> bool:
         try:
             input_media = self.to_input_media()
             await event.reply(
