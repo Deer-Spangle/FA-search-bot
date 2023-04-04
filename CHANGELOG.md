@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.3] - 2023-04-04
+
+### Added
+
+- Added a prometheus metric `fasearchbot_fasubwatcher_backlog_seconds`, which says how many seconds old the latest 
+  submission checked by the subscription watcher is. (i.e. how many seconds since it was posted on FA)
+
 ## [1.12.2] - 2022-11-24
 
 ### Added
