@@ -95,6 +95,10 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
+gauge_backlog_seconds = Gauge(
+    fasearchbot_fasubwatcher_backlog_seconds",
+    "Age, in seconds, of the latest checked submission",
+)
 
 
 class SubscriptionWatcher:
@@ -169,6 +173,8 @@ class SubscriptionWatcher:
                     subs_other_failed.inc()
                     subs_failed.inc()
                     continue
+                # Log the age of the latest checked submission
+                gauge_backlog_seconds.set((datetime.datetime.now(tz=datetime.timezone.utc) - full_result.posted_at).total_seconds())
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
