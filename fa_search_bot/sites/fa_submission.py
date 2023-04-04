@@ -132,6 +132,7 @@ class FASubmission(ABC):
             "Mature": Rating.MATURE,
             "General": Rating.GENERAL,
         }[full_dict["rating"]]
+        posted_at = dateutil.parser.parse(full_dict["posted_at"])
         new_submission = FASubmissionFull(
             submission_id,
             thumbnail_url,
@@ -142,6 +143,7 @@ class FASubmission(ABC):
             description,
             keywords,
             rating,
+            posted_at,
         )
         return new_submission
 
@@ -226,6 +228,7 @@ class FASubmissionFull(FASubmissionShort):
         description: str,
         keywords: List[str],
         rating: Rating,
+        posted_at: datetime.datetime,
     ) -> None:
         super().__init__(submission_id, thumbnail_url, title, author)
         self.download_url = download_url
@@ -233,6 +236,7 @@ class FASubmissionFull(FASubmissionShort):
         self.description = description
         self.keywords = keywords
         self.rating = rating
+        self.posted_at = posted_at
         self._download_file_size: Optional[int] = None
 
     @property
