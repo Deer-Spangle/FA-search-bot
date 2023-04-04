@@ -370,11 +370,13 @@ class Sendable(ABC):
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             sendable_image.labels(site_code=self.site_id).inc()
-            if self.download_file_size > self.SIZE_LIMIT_IMAGE:
-                settings.direct_link = True
-                return await send_partial(self.thumbnail_url)
+            dl_path = random_sandbox_video_path(ext)
+            resp = requests.get(self.download_url, stream=True)
+            with open(dl_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
             try:
-                return await send_partial(self.download_url)
+                return await send_partial(dl_path)
             except BadRequestError:
                 settings.direct_link = True
                 return await send_partial(self.thumbnail_url)
