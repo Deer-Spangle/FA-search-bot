@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING
 from prometheus_client.metrics import Counter, Histogram
 
 from fa_search_bot.sites.sendable import Sendable
-from fa_search_bot.sites.site_handler import HandlerException, SiteHandler, SentSubmission, SubmissionID
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
+from fa_search_bot.sites.sent_submission import SentSubmission
+from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from typing import Awaitable, List, Optional, Pattern, Union

@@ -28,7 +28,9 @@ if TYPE_CHECKING:
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
-    from fa_search_bot.sites.site_handler import SiteHandler, SentSubmission, SubmissionID
+    from fa_search_bot.sites.site_handler import SiteHandler
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
 

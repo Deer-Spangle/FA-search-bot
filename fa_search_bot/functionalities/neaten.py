@@ -10,7 +10,8 @@ from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.sendable import CantSendFileType
-from fa_search_bot.sites.site_handler import HandlerException, SubmissionID
+from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from typing import Dict, List, Optional
