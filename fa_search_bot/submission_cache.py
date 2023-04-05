@@ -38,7 +38,7 @@ class SubmissionCache:
         if entry is None:
             return None
         return SentSubmission(
-            SubmissionID(entry.site_code, int(entry.submission_id)),
+            SubmissionID(entry.site_code, entry.submission_id),
             entry.is_photo,
             entry.media_id,
             entry.access_hash,

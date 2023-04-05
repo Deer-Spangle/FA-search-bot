@@ -26,7 +26,7 @@ class HandlerException(Exception):
 @dataclasses.dataclass(frozen=True)
 class SubmissionID:
     site_code: str
-    submission_id: int
+    submission_id: str
 
 
 @dataclasses.dataclass
@@ -91,17 +91,17 @@ class SiteHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
+    async def get_submission_id_from_link(self, link: str) -> Optional[str]:
         raise NotImplementedError
 
     @abstractmethod
-    def link_for_submission(self, submission_id: int) -> str:
+    def link_for_submission(self, submission_id: str) -> str:
         raise NotImplementedError
 
     @abstractmethod
     async def send_submission(
         self,
-        submission_id: int,
+        submission_id: str,
         client: TelegramClient,
         chat: Union[TypeInputPeer, InputBotInlineMessageID],
         *,

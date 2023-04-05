@@ -69,17 +69,17 @@ class E621Handler(SiteHandler):
     def find_links_in_str(self, haystack: str) -> List[str]:
         return [match.group(0) for match in self.E6_LINKS.finditer(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
+    async def get_submission_id_from_link(self, link: str) -> Optional[str]:
         # Handle submission page link matches
         sub_match = self.POST_LINK.match(link)
         if sub_match:
             logger.info("e621 link: post link")
-            return int(sub_match.group(1))
+            return sub_match.group(1)
         # Handle thumbnail link matches
         thumb_match = self.OLD_POST_LINK.match(link)
         if thumb_match:
             logger.info("e621 link: old post link")
-            return int(thumb_match.group(1))
+            return thumb_match.group(1)
         # Handle direct file link matches
         direct_match = self.DIRECT_LINK.match(link)
         if not direct_match:
@@ -89,7 +89,7 @@ class E621Handler(SiteHandler):
         if not post:
             raise HandlerException(f"Could not locate the post with hash {md5_hash}.")
         logger.info("e621 link: direct image link")
-        return post.id
+        return str(post.id)
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
@@ -106,7 +106,7 @@ class E621Handler(SiteHandler):
 
     async def send_submission(
         self,
-        submission_id: int,
+        submission_id: str,
         client: TelegramClient,
         chat: Union[TypeInputPeer, InputBotInlineMessageID],
         *,
@@ -119,7 +119,7 @@ class E621Handler(SiteHandler):
         resp = await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
         return SentSubmission.from_resp(SubmissionID(self.site_code, submission_id), resp, sendable.download_url)
 
-    def link_for_submission(self, submission_id: int) -> str:
+    def link_for_submission(self, submission_id: str) -> str:
         return f"https://e621.net/posts/{submission_id}/"
 
     def is_valid_submission_id(self, example: str) -> bool:
@@ -156,12 +156,8 @@ class E621Post(Sendable):
         self.post = post
 
     @property
-    def site_id(self) -> str:
-        return "e6"
-
-    @property
-    def id(self) -> str:
-        return str(self.post.id)
+    def submission_id(self) -> SubmissionID:
+        return SubmissionID("e6", self.post.id)
 
     @property
     def download_url(self) -> str:

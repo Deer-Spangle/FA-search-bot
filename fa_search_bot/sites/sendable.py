@@ -283,13 +283,16 @@ class Sendable(ABC):
     DOCKER_TIMEOUT = 5 * 60
 
     @property
-    @abstractmethod
     def site_id(self) -> str:
-        raise NotImplementedError
+        return self.submission_id.site_code
+
+    @property
+    def id(self) -> str:
+        return self.submission_id.submission_id
 
     @property
     @abstractmethod
-    def id(self) -> str:
+    def submission_id(self) -> SubmissionID:
         raise NotImplementedError
 
     @property

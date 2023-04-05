@@ -34,7 +34,7 @@ class InlineEditFunctionality(BotFunctionality):
         site_id = "fa"
         if len(id_split) == 2:
             site_id = id_split[0]
-        sub_id = int(id_split[-1])
+        sub_id = id_split[-1]
         handler = self.handlers.get(site_id)
         if handler is None:
             logger.error("Unrecognised site ID in result callback: %s", site_id)
@@ -64,7 +64,7 @@ class InlineEditButtonPress(BotFunctionality):
             return
         self.usage_counter.labels(function="inline_edit_button").inc()
         data_split = data.split(":")
-        sub_id = int(data_split[-1])
+        sub_id = data_split[-1]
         site_id = "fa"
         if len(data_split) == 3:
             site_id = data_split[-2]
