@@ -71,17 +71,17 @@ class E621Handler(SiteHandler):
     def find_links_in_str(self, haystack: str) -> List[str]:
         return [match.group(0) for match in self.E6_LINKS.finditer(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> Optional[str]:
+    async def get_submission_id_from_link(self, link: str) -> Optional[SubmissionID]:
         # Handle submission page link matches
         sub_match = self.POST_LINK.match(link)
         if sub_match:
             logger.info("e621 link: post link")
-            return sub_match.group(1)
+            return SubmissionID(self.site_code, sub_match.group(1))
         # Handle thumbnail link matches
         thumb_match = self.OLD_POST_LINK.match(link)
         if thumb_match:
             logger.info("e621 link: old post link")
-            return thumb_match.group(1)
+            return SubmissionID(self.site_code, thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.DIRECT_LINK.match(link)
         if not direct_match:
@@ -91,7 +91,7 @@ class E621Handler(SiteHandler):
         if not post:
             raise HandlerException(f"Could not locate the post with hash {md5_hash}.")
         logger.info("e621 link: direct image link")
-        return str(post.id)
+        return SubmissionID(self.site_code, str(post.id))
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
@@ -101,10 +101,10 @@ class E621Handler(SiteHandler):
             return None
         return posts[0]
 
-    async def _get_post_by_id(self, post_id: Union[int, str]) -> Optional[Post]:
+    async def _get_post_by_id(self, sub_id: SubmissionID) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
             with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
-                return await self.api.post(post_id)
+                return await self.api.post(int(sub_id.submission_id))
 
     async def send_submission(
         self,
@@ -116,7 +116,7 @@ class E621Handler(SiteHandler):
         prefix: str = None,
         edit: bool = False,
     ) -> SentSubmission:
-        post = await self._get_post_by_id(submission_id)
+        post = await self._get_post_by_id(SubmissionID(self.site_code, submission_id))
         sendable = E621Post(post)
         return await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
@@ -131,9 +131,9 @@ class E621Handler(SiteHandler):
             return bool(self.POST_HASH.match(example))
 
     async def submission_as_answer(
-        self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: SubmissionID, builder: InlineBuilder
     ) -> Awaitable[InputBotInlineResultPhoto]:
-        sub_id_str = str(submission_id)
+        sub_id_str = submission_id.submission_id
         if self.POST_HASH.match(sub_id_str):
             post = await self._find_post_by_hash(sub_id_str)
             if post is None:

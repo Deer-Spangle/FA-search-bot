@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineResultPhoto
 
     from fa_search_bot.sites.site_handler import SiteHandler
+    from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class InlineNeatenFunctionality(BotFunctionality):
     ) -> Optional[List[InputBotInlineResultPhoto]]:
         try:
             result_futures = await gather_ignore_exceptions(
-                [handler.submission_as_answer(submission_id, event.builder) for handler in self.handlers.values()]
+                [handler.submission_as_answer(SubmissionID(handler.site_code, submission_id), event.builder) for handler in self.handlers.values()]
             )
             return await gather_ignore_exceptions(result_futures)
         except APIException:

@@ -57,17 +57,17 @@ class FAHandler(SiteHandler):
     def find_links_in_str(self, haystack: str) -> List[str]:
         return [match.group(0) for match in self.FA_LINKS.finditer(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> Optional[str]:
+    async def get_submission_id_from_link(self, link: str) -> Optional[SubmissionID]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link)
         if sub_match:
             logger.info("FA link: submission link")
-            return sub_match.group(1)
+            return SubmissionID(self.site_code, sub_match.group(1))
         # Handle thumbnail link matches
         thumb_match = self.FA_THUMB_LINK.match(link)
         if thumb_match:
             logger.info("FA link: thumbnail link")
-            return thumb_match.group(1)
+            return SubmissionID(self.site_code, thumb_match.group(1))
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link)
         if not direct_match:
@@ -78,7 +78,7 @@ class FAHandler(SiteHandler):
         if not submission_id:
             raise HandlerException(f"Could not locate the image by {username} with image id {image_id}.")
         logger.info("FA link: direct image link")
-        return submission_id
+        return SubmissionID(self.site_code, submission_id)
 
     async def _find_submission(self, username: str, image_id: int) -> Optional[str]:
         folders = ["gallery", "scraps"]
@@ -133,9 +133,9 @@ class FAHandler(SiteHandler):
         return await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 
     async def submission_as_answer(
-        self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: SubmissionID, builder: InlineBuilder
     ) -> Awaitable[InputBotInlineResultPhoto]:
-        sub = await self.api.get_full_submission(str(submission_id))
+        sub = await self.api.get_full_submission(submission_id.submission_id)
         sendable = SendableFASubmission(sub)
         return sendable.to_inline_query_result(builder)
 

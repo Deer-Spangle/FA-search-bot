@@ -43,7 +43,7 @@ class SiteHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_submission_id_from_link(self, link: str) -> Optional[str]:
+    async def get_submission_id_from_link(self, link: str) -> Optional[SubmissionID]:
         raise NotImplementedError
 
     @abstractmethod
@@ -69,7 +69,7 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def submission_as_answer(
-        self, submission_id: Union[int, str], builder: InlineBuilder
+        self, submission_id: SubmissionID, builder: InlineBuilder
     ) -> Awaitable[InputBotInlineResultPhoto]:
         raise NotImplementedError
 

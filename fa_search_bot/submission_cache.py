@@ -3,7 +3,8 @@ import datetime
 from typing import Optional
 
 from fa_search_bot.database import Database, DBCacheEntry
-from fa_search_bot.sites.site_handler import SentSubmission, SubmissionID
+from fa_search_bot.sites.sent_submission import SentSubmission
+from fa_search_bot.sites.submission_id import SubmissionID
 
 
 def now() -> datetime.datetime:

@@ -88,7 +88,7 @@ class NeatenFunctionality(BotFunctionality):
             try:
                 sub_id = await handler.get_submission_id_from_link(link)
                 if sub_id is not None:
-                    return SubmissionID(site_code, sub_id)
+                    return sub_id
             except HandlerException as e:
                 logger.warning(
                     "Site handler (%s) raised exception:",
