@@ -27,10 +27,8 @@ if TYPE_CHECKING:
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
-    from telethon.tl.patched import Message
 
-    from fa_search_bot.sites.site_handler import SiteHandler
-
+    from fa_search_bot.sites.site_handler import SiteHandler, SentSubmission, SubmissionID
 
 logger = logging.getLogger(__name__)
 
@@ -341,12 +339,12 @@ class Sendable(ABC):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> Message:
+    ) -> SentSubmission:
         sendable_sent.labels(site_code=self.site_id).inc()
         settings = CaptionSettings()
         ext = self.download_file_ext
 
-        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> Message:
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> SentSubmission:
             if isinstance(file, str):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
@@ -354,14 +352,15 @@ class Sendable(ABC):
                     file = _convert_gif_to_png(file)
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
-                return await client.edit_message(
+                msg = await client.edit_message(
                     entity=chat,
                     file=file,
                     message=self.caption(settings, prefix),
                     force_document=force_doc,
                     parse_mode="html",
                 )
-            return await client.send_message(
+                return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
+            msg = await client.send_message(
                 entity=chat,
                 file=file,
                 message=self.caption(settings, prefix),
@@ -369,6 +368,7 @@ class Sendable(ABC):
                 force_document=force_doc,
                 parse_mode="html",  # Markdown is not safe here, because of the prefix.
             )
+            return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
 
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
@@ -408,8 +408,8 @@ class Sendable(ABC):
 
     async def _send_video(
         self,
-        send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[Message]],
-    ) -> Message:
+        send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[SentSubmission]],
+    ) -> SentSubmission:
         try:
             logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
             filename = self._get_video_from_cache()
