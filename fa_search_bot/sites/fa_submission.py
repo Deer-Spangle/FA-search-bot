@@ -55,6 +55,7 @@ class SubmissionResp(TypedDict, UserShortResp):
     description_body: str
     keywords: List[str]
     rating: str
+    posted_at: str
 
 
 class OnlineStatusResp(TypedDict):
