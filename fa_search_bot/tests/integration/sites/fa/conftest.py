@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 
 
 @pytest.fixture()

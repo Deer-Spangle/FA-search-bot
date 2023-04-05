@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FAUser, Rating
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort, FAUser, Rating
 from fa_search_bot.tests.util.mock_export_api import MockSubmission, _random_image_id, _random_string
 
 if TYPE_CHECKING:

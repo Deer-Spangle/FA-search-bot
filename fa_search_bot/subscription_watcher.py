@@ -15,9 +15,9 @@ from prometheus_client.metrics import Counter
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
-from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
-from fa_search_bot.sites.fa_handler import SendableFASubmission
-from fa_search_bot.sites.fa_submission import FASubmission
+from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
+from fa_search_bot.sites.furaffinity.fa_handler import SendableFASubmission
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
 if TYPE_CHECKING:
     from typing import Any, Deque, Dict, List, Optional, Sequence, Set
@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     from telethon import TelegramClient
 
     from fa_search_bot.query_parser import Query
-    from fa_search_bot.sites.fa_export_api import FAExportAPI
-    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
 
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"

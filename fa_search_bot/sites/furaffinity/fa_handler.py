@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
-    from fa_search_bot.sites.fa_export_api import FAExportAPI
-    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
     from fa_search_bot.sites.sendable import CaptionSettings
 
 

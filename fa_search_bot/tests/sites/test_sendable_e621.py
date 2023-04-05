@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 from yippi import Post
 
-from fa_search_bot.sites.e621_handler import E621Post
+from fa_search_bot.sites.e621.e621_handler import E621Post
 from fa_search_bot.sites.sendable import CaptionSettings
 
 

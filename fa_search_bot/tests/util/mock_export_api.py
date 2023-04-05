@@ -4,13 +4,13 @@ import random
 import string
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FAUser, Rating
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FAUser, Rating
 
 if TYPE_CHECKING:
     from typing import List, Union
 
-    from fa_search_bot.sites.fa_submission import FASubmission
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
 
 def _random_image_id(submission_id: int) -> int:

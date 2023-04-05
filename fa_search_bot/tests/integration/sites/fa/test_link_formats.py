@@ -1,6 +1,6 @@
 import pytest
 
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 
 
 @pytest.mark.asyncio

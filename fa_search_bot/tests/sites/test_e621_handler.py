@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 from telethon.tl.custom import InlineBuilder
 
-from fa_search_bot.sites.e621_handler import E621Handler
+from fa_search_bot.sites.e621.e621_handler import E621Handler
 from fa_search_bot.sites.site_handler import HandlerException
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost

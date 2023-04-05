@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 
 if TYPE_CHECKING:
-    from fa_search_bot.sites.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 
 
 class MockSiteHandler(FAHandler):

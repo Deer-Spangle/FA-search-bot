@@ -25,9 +25,9 @@ from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality, 
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
-from fa_search_bot.sites.e621_handler import E621Handler
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.e621.e621_handler import E621Handler
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
@@ -175,7 +175,7 @@ class FASearchBot:
             NeatenFunctionality(handlers, self.submission_cache),
             InlineFavsFunctionality(self.api),
             InlineGalleryFunctionality(self.api),
-            InlineNeatenFunctionality(handlers),
+            InlineNeatenFunctionality(handlers, self.submission_cache),
             InlineSearchFunctionality(handlers),
             InlineEditFunctionality(handlers, self.client),
             InlineEditButtonPress(handlers),

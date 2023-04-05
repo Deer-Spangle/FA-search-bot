@@ -1,4 +1,4 @@
-from fa_search_bot.sites.fa_handler import SendableFASubmission
+from fa_search_bot.sites.furaffinity.fa_handler import SendableFASubmission
 from fa_search_bot.sites.sendable import CaptionSettings
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 

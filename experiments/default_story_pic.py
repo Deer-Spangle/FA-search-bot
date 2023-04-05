@@ -12,8 +12,8 @@ import pytest
 import requests
 from PIL import ImageDraw, Image
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_submission import FASubmissionFull
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 
 
 class FASubmissionFullWithDefaultStoryIconDetection(FASubmissionFull):

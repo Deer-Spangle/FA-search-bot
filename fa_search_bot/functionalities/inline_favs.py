@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
-from fa_search_bot.sites.fa_export_api import PageNotFound
+from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
-    from fa_search_bot.sites.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 
 logger = logging.getLogger(__name__)
 

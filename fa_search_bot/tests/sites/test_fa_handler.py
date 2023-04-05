@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.site_handler import HandlerException
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI

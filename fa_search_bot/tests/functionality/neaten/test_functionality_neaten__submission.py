@@ -2,8 +2,8 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
-from fa_search_bot.sites.fa_export_api import CloudflareError
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler

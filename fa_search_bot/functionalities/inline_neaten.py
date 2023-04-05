@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.fa_export_api import APIException
-from fa_search_bot.utils import gather_ignore_exceptions
+from fa_search_bot.sites.furaffinity.fa_export_api import APIException
+from fa_search_bot.submission_cache import SubmissionCache
+from fa_search_bot.utils import gather_ignore_exceptions, gather_ignore_none
 
 if TYPE_CHECKING:
     from typing import Dict, List, Optional

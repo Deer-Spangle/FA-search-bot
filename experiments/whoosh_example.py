@@ -8,7 +8,7 @@ from whoosh.searching import Searcher
 
 from fa_search_bot.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, TitleField, DescriptionField, KeywordField
-from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating, FAUser
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, Rating, FAUser
 from fa_search_bot.subscription_watcher import Subscription, rating_dict
 
 schema = Schema(title=TEXT, description=TEXT, keywords=KEYWORD)
