@@ -11,6 +11,7 @@ from fa_search_bot.functionalities.functionalities import BotFunctionality, in_p
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.sendable import CantSendFileType
 from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
@@ -64,8 +65,8 @@ class NeatenFunctionality(BotFunctionality):
                 await self._handle_submission_link(event, submission_id)
         raise StopPropagation
 
-    def _find_links_in_message(self, event: NewMessage.Event) -> Optional[List[str]]:
-        link_matches = []
+    def _find_links_in_message(self, event: NewMessage.Event) -> Optional[List[SiteLink]]:
+        link_matches: List[SiteLink] = []
         # Get links from text
         message = event.message.text
         # Only use image caption in private chats
@@ -83,20 +84,23 @@ class NeatenFunctionality(BotFunctionality):
                             link_matches += handler.find_links_in_str(button.url)
         return link_matches
 
-    async def _get_submission_id_from_link(self, event: NewMessage.Event, link: str) -> Optional[SubmissionID]:
-        for site_code, handler in self.handlers.items():
-            try:
-                sub_id = await handler.get_submission_id_from_link(link)
-                if sub_id is not None:
-                    return sub_id
-            except HandlerException as e:
-                logger.warning(
-                    "Site handler (%s) raised exception:",
-                    handler.__class__.__name__,
-                    exc_info=e,
-                )
-                await _return_error_in_privmsg(event, f"Error finding submission: {e}")
-                return None
+    async def _get_submission_id_from_link(self, event: NewMessage.Event, link: SiteLink) -> Optional[SubmissionID]:
+        handler = self.handlers.get(link.site_code)
+        if not handler:
+            logger.warning("Site handler (%s) could not be found for link: (%s)", link.site_code, link.link)
+            return None
+        try:
+            sub_id = await handler.get_submission_id_from_link(link)
+            if sub_id is not None:
+                return sub_id
+        except HandlerException as e:
+            logger.warning(
+                "Site handler (%s) raised exception finding link:",
+                handler.__class__.__name__,
+                exc_info=e,
+            )
+            await _return_error_in_privmsg(event, f"Error finding submission: {e}")
+            return None
         return None
 
     async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID) -> None:

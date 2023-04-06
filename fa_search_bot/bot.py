@@ -28,6 +28,7 @@ from fa_search_bot.functionalities.welcome import WelcomeFunctionality
 from fa_search_bot.sites.e621.e621_handler import E621Handler
 from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
@@ -167,6 +168,7 @@ class FASearchBot:
             fa_handler.site_code: fa_handler,
             self.e6_handler.site_code: self.e6_handler,
         }
+        handler_group = HandlerGroup([fa_handler, self.e6_handler])
         initialise_metrics_labels(list(handlers.values()))
         functionalities = [
             BeepFunctionality(),
@@ -175,7 +177,7 @@ class FASearchBot:
             NeatenFunctionality(handlers, self.submission_cache),
             InlineFavsFunctionality(self.api),
             InlineGalleryFunctionality(self.api),
-            InlineNeatenFunctionality(handlers, self.submission_cache),
+            InlineNeatenFunctionality(handler_group, self.submission_cache),
             InlineSearchFunctionality(handlers),
             InlineEditFunctionality(handlers, self.client),
             InlineEditButtonPress(handlers),

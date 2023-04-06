@@ -10,6 +10,7 @@ from prometheus_client.metrics import Counter, Histogram
 from fa_search_bot.sites.sendable import Sendable
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
+from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
@@ -68,22 +69,22 @@ class E621Handler(SiteHandler):
     def link_regex(self) -> Pattern:
         return self.E6_LINKS
 
-    def find_links_in_str(self, haystack: str) -> List[str]:
-        return [match.group(0) for match in self.E6_LINKS.finditer(haystack)]
+    def find_links_in_str(self, haystack: str) -> List[SiteLink]:
+        return [SiteLink(self.site_code, match.group(0)) for match in self.E6_LINKS.finditer(haystack)]
 
-    async def get_submission_id_from_link(self, link: str) -> Optional[SubmissionID]:
+    async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches
-        sub_match = self.POST_LINK.match(link)
+        sub_match = self.POST_LINK.match(link.link)
         if sub_match:
             logger.info("e621 link: post link")
             return SubmissionID(self.site_code, sub_match.group(1))
         # Handle thumbnail link matches
-        thumb_match = self.OLD_POST_LINK.match(link)
+        thumb_match = self.OLD_POST_LINK.match(link.link)
         if thumb_match:
             logger.info("e621 link: old post link")
             return SubmissionID(self.site_code, thumb_match.group(1))
         # Handle direct file link matches
-        direct_match = self.DIRECT_LINK.match(link)
+        direct_match = self.DIRECT_LINK.match(link.link)
         if not direct_match:
             return None
         md5_hash = direct_match.group(1)

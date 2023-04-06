@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from fa_search_bot.sites.sent_submission import SentSubmission
+from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
@@ -39,11 +40,11 @@ class SiteHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def find_links_in_str(self, haystack: str) -> List[str]:
+    def find_links_in_str(self, haystack: str) -> List[SiteLink]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_submission_id_from_link(self, link: str) -> Optional[SubmissionID]:
+    async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         raise NotImplementedError
 
     @abstractmethod
@@ -70,8 +71,15 @@ class SiteHandler(ABC):
     @abstractmethod
     async def submission_as_answer(
         self, submission_id: SubmissionID, builder: InlineBuilder
-    ) -> Awaitable[InputBotInlineResultPhoto]:
+    ) -> InputBotInlineResultPhoto:
         raise NotImplementedError
+
+    @abstractmethod
+    async def link_as_answer(
+        self, link: SiteLink, builder: InlineBuilder
+    ) -> InputBotInlineResultPhoto:
+        sub_id = await self.get_submission_id_from_link(link)
+        return await self.submission_as_answer(sub_id, builder)
 
     @property
     def search_prefixes(self) -> List[str]:
