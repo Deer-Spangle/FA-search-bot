@@ -29,9 +29,8 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
 
 
 class NeatenFunctionality(BotFunctionality):
-    def __init__(self, handler_group: HandlerGroup, submission_cache: SubmissionCache):
+    def __init__(self, handler_group: HandlerGroup):
         self.handlers = handler_group
-        self.cache = submission_cache
         link_regex = re.compile(
             "(" + "|".join(handler.link_regex.pattern for handler in handler_group.handlers.values()) + ")",
             re.IGNORECASE,
@@ -90,32 +89,32 @@ class NeatenFunctionality(BotFunctionality):
         handler = self.handlers.handlers.get(sub_id.site_code)
         if handler is None:
             return
-        cache_entry = self.cache.load_cache(sub_id)
-        if cache_entry:
-            if await cache_entry.try_to_reply(event):
-                return
         try:
-            sent_sub = await handler.send_submission(
-                sub_id.submission_id,
-                event.client,
-                event.input_chat,
-                reply_to=event.message.id,
-            )
+            await self.handlers.send_submission(sub_id, event)
         except CantSendFileType as e:
             logger.warning("Can't send file type. Submission ID: %s", sub_id)
             await _return_error_in_privmsg(event, str(e))
         except PageNotFound:
             logger.warning("Submission invalid or deleted. Submission ID: %s", sub_id)
-            await _return_error_in_privmsg(
-                event,
-                f"This doesn't seem to be a valid {handler.site_name} submission: "
-                f"{handler.link_for_submission(sub_id.submission_id)}",
-            )
+            handler = self.handlers.handler_for_sub_id(sub_id)
+            if handler:
+                await _return_error_in_privmsg(
+                    event,
+                    f"This doesn't seem to be a valid {handler.site_name} submission: "
+                    f"{handler.link_for_submission(sub_id.submission_id)}",
+                )
+            else:
+                await _return_error_in_privmsg(
+                    event,
+                    f"This doesn't seem to be a valid submission, no site could be found for submission ID: {sub_id}"
+                )
         except CloudflareError:
             logger.warning("Cloudflare error")
+            site_name = "The site"
+            handler = self.handlers.handler_for_sub_id(sub_id)
+            if handler:
+                site_name = handler.site_name
             await _return_error_in_privmsg(
                 event,
-                f"{handler.site_name} returned a cloudflare error, so I cannot neaten links.",
+                f"{site_name} returned a cloudflare error, so I cannot neaten links.",
             )
-        else:
-            self.cache.save_cache(sent_sub)

@@ -168,13 +168,13 @@ class FASearchBot:
             fa_handler.site_code: fa_handler,
             self.e6_handler.site_code: self.e6_handler,
         }
-        handler_group = HandlerGroup([fa_handler, self.e6_handler])
+        handler_group = HandlerGroup([fa_handler, self.e6_handler], self.submission_cache)
         initialise_metrics_labels(list(handlers.values()))
         functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(handler_group, self.submission_cache),
+            NeatenFunctionality(handler_group),
             InlineFavsFunctionality(self.api),
             InlineGalleryFunctionality(self.api),
             InlineNeatenFunctionality(handler_group, self.submission_cache),
