@@ -16,6 +16,9 @@ class HandlerGroup:
             handler.site_code: handler for handler in handlers
         }
 
+    def site_codes(self) -> List[str]:
+        return [h.site_code for h in self.handlers.values()]
+
     def list_potential_submission_ids(self, query: str) -> List[SubmissionID]:
         return [
             SubmissionID(handler.site_code, query)
@@ -29,8 +32,12 @@ class HandlerGroup:
             links += handler.find_links_in_str(query)
         return links
 
-    def site_codes(self) -> List[str]:
-        return [h.site_code for h in self.handlers.values()]
+    async def get_sub_ids_from_links(self, links: List[SiteLink]) -> List[SubmissionID]:
+        return await gather_ignore_exceptions([
+            self.handlers[link.site_code].get_submission_id_from_link(link)
+            for link in links
+            if link.site_code in self.handlers
+        ])
 
     async def answer_submission_ids(self, sub_ids: List[SubmissionID], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
         return await gather_ignore_exceptions([

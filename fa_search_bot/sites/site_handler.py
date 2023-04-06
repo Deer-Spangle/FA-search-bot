@@ -77,8 +77,10 @@ class SiteHandler(ABC):
     @abstractmethod
     async def link_as_answer(
         self, link: SiteLink, builder: InlineBuilder
-    ) -> InputBotInlineResultPhoto:
+    ) -> Optional[InputBotInlineResultPhoto]:
         sub_id = await self.get_submission_id_from_link(link)
+        if sub_id is None:
+            return None
         return await self.submission_as_answer(sub_id, builder)
 
     @property

@@ -174,7 +174,7 @@ class FASearchBot:
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(handlers, self.submission_cache),
+            NeatenFunctionality(handler_group, self.submission_cache),
             InlineFavsFunctionality(self.api),
             InlineGalleryFunctionality(self.api),
             InlineNeatenFunctionality(handler_group, self.submission_cache),
