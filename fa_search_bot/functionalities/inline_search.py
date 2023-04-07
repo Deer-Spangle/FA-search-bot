@@ -1,21 +1,23 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
     from typing import Awaitable, Dict, List, Optional, Tuple
 
-    from telethon.tl.types import InputBotInlineResult
+    from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
 
     from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class InlineSearchFunctionality(BotFunctionality):
@@ -24,10 +26,10 @@ class InlineSearchFunctionality(BotFunctionality):
     USE_CASE_E621 = "inline_e621"
     PREFIX_E621 = ["e621", "e6", "e"]
 
-    def __init__(self, handlers: Dict[str, "SiteHandler"]):
+    def __init__(self, handlers: HandlerGroup):
         super().__init__(InlineQuery())
         self.handlers = handlers
-        self.default_handler = list(handlers.values())[0]
+        self.default_handler = handlers.default
 
     @property
     def usage_labels(self) -> List[str]:
@@ -54,7 +56,7 @@ class InlineSearchFunctionality(BotFunctionality):
         )
         raise StopPropagation
 
-    def _page_results(self, results: List, page: int, skip: Optional[int]) -> Tuple[List, str]:
+    def _page_results(self, results: List[T], page: int, skip: Optional[int]) -> Tuple[List[T], str]:
         next_offset = str(page + 1)
         if skip:
             results = results[skip:]
@@ -69,8 +71,9 @@ class InlineSearchFunctionality(BotFunctionality):
 
     async def _search_query_results(
         self, event: InlineQuery.Event, query: str, offset: str
-    ) -> Tuple[List[Awaitable[InputBotInlineResult]], Optional[str]]:
+    ) -> Tuple[List[InputBotInlineResultPhoto], Optional[str]]:
         page, skip = _parse_inline_offset(offset)
+        results = self.handlers.answer_search(query, event, page)
         handler, query = self._parse_site_prefix(query)
         results = await handler.get_search_results(event.builder, query.strip(), page)
         if len(results) == 0:
@@ -86,7 +89,7 @@ class InlineSearchFunctionality(BotFunctionality):
             return self.default_handler, query
         prefix, rest = query.split(":", 1)
         prefix_clean = prefix.strip().lower()
-        for handler in self.handlers.values():
+        for handler in self.handlers.handlers.values():
             if prefix_clean in handler.search_prefixes:
                 return handler, rest
         return self.default_handler, rest

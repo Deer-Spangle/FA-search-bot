@@ -85,5 +85,5 @@ class SiteHandler(ABC):
     @abstractmethod
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
+    ) -> List[InputBotInlineResultPhoto]:
         raise NotImplementedError

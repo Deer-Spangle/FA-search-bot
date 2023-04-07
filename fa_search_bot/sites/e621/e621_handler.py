@@ -12,6 +12,7 @@ from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
     from typing import Awaitable, List, Optional, Pattern, Union
@@ -146,11 +147,11 @@ class E621Handler(SiteHandler):
 
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
+    ) -> List[InputBotInlineResultPhoto]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
                 posts = await self.api.posts(query, page=page)
-        return [E621Post(post).to_inline_query_result(builder) for post in posts]
+        return await gather_ignore_exceptions([E621Post(post).to_inline_query_result(builder) for post in posts])
 
 
 class E621Post(Sendable):

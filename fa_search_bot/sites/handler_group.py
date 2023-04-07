@@ -22,6 +22,7 @@ class HandlerGroup:
         self.handlers: Dict[str, SiteHandler] = {
             handler.site_code: handler for handler in handlers
         }
+        self.default = handlers[0]
         self.cache = submission_cache
 
     def site_codes(self) -> List[str]:
@@ -84,6 +85,18 @@ class HandlerGroup:
 
     async def answer_links(self, links: List[SiteLink], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
         return await gather_ignore_exceptions([self.answer_link(link, event) for link in links])
+
+    async def answer_search(self, query: str, event: InlineQuery.Event, page: int) -> List[InputBotInlineResultPhoto]:
+        search_handler = self.default
+        if ":" in query:
+            prefix, query = query.split(":", 1)
+            prefix_clean = prefix.strip().lower()
+            for handler in self.handlers.values():
+                if prefix_clean in handler.search_prefixes:
+                    search_handler = handler
+                    break
+        # TODO: caching
+        return await search_handler.get_search_results(event.builder, query.strip(), page)
 
     async def send_submission(self, sub_id: SubmissionID, reply_to: NewMessage.Event) -> SentSubmission:
         handler = self.handlers.get(sub_id.site_code)

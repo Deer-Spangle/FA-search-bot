@@ -9,6 +9,7 @@ from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
     from re import Pattern
@@ -149,9 +150,9 @@ class FAHandler(SiteHandler):
 
     async def get_search_results(
         self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Awaitable[InputBotInlineResultPhoto]]:
+    ) -> List[InputBotInlineResultPhoto]:
         posts = await self.api.get_search_results(query, page)
-        return [submission.to_inline_query_result(builder, self.site_code) for submission in posts]
+        return await gather_ignore_exceptions([submission.to_inline_query_result(builder, self.site_code) for submission in posts])
 
 
 class SendableFASubmission(Sendable):

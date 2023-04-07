@@ -178,7 +178,7 @@ class FASearchBot:
             InlineFavsFunctionality(self.api, self.submission_cache),
             InlineGalleryFunctionality(self.api, self.submission_cache),
             InlineNeatenFunctionality(handler_group),
-            InlineSearchFunctionality(handlers),
+            InlineSearchFunctionality(handler_group),
             InlineEditFunctionality(handler_group, self.client),
             InlineEditButtonPress(handler_group),
             SubscriptionFunctionality(self.subscription_watcher),
