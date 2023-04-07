@@ -12,11 +12,9 @@ from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
-    from typing import Dict, List
+    from typing import List
 
     from telethon import TelegramClient
-
-    from fa_search_bot.sites.site_handler import SiteHandler
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ class InlineEditFunctionality(BotFunctionality):
 
 
 class InlineEditButtonPress(BotFunctionality):
-    def __init__(self, handlers: Dict[str, SiteHandler]):
+    def __init__(self, handlers: HandlerGroup):
         super().__init__(CallbackQuery(pattern="^neaten_me:"))
         self.handlers = handlers
 
@@ -60,20 +58,11 @@ class InlineEditButtonPress(BotFunctionality):
         if not data.startswith("neaten_me:"):
             return
         self.usage_counter.labels(function="inline_edit_button").inc()
-        data_split = data.split(":")
-        sub_id = data_split[-1]
-        site_id = "fa"
-        if len(data_split) == 3:
-            site_id = data_split[-2]
+        sub_id = SubmissionID.from_inline_code(data.removeprefix("neaten_me:"))
         msg_id = event.original_update.msg_id
-        handler = self.handlers.get(site_id)
-        if handler is None:
-            logger.error("Unrecognised site ID in button callback: %s", site_id)
-            return
         logger.debug(
-            "Optimise button pressed for site_id=%s sub_id=%s msg_id=%s",
-            site_id,
+            "Optimise button pressed for sub_id=%s msg_id=%s",
             sub_id,
             msg_id,
         )
-        await handler.send_submission(sub_id, event.client, msg_id, edit=True)
+        await self.handlers.edit_submission(sub_id, event.client, msg_id)

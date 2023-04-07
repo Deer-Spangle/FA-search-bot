@@ -180,7 +180,7 @@ class FASearchBot:
             InlineNeatenFunctionality(handler_group),
             InlineSearchFunctionality(handlers),
             InlineEditFunctionality(handler_group, self.client),
-            InlineEditButtonPress(handlers),
+            InlineEditButtonPress(handler_group),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),
