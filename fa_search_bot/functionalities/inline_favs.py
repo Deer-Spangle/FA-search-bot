@@ -5,15 +5,19 @@ import re
 from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
+from telethon.tl.custom import InlineBuilder
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShortFav
+from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
-    from typing import Awaitable, List, Optional, Tuple, Union
+    from typing import List, Optional, Tuple
 
-    from telethon.tl.types import InputBotInlineResult, InputBotInlineResultPhoto
+    from telethon.tl.types import InputBotInlineResultPhoto
 
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 
@@ -25,10 +29,11 @@ class InlineFavsFunctionality(BotFunctionality):
     USE_CASE_FAVS = "inline_favourites"
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
 
-    def __init__(self, api: FAExportAPI):
+    def __init__(self, api: FAExportAPI, submission_cache: SubmissionCache):
         prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
+        self.cache = submission_cache
 
     @property
     def usage_labels(self) -> List[str]:
@@ -44,8 +49,6 @@ class InlineFavsFunctionality(BotFunctionality):
         username = query_split[1]
         # Get results and next offset
         results, next_offset = await self._favs_query_results(event, username, offset)
-        # Await results while ignoring exceptions
-        results = await gather_ignore_exceptions(results)
         logger.info(f"There are {len(results)} results.")
         # Send results
         await event.answer(
@@ -57,7 +60,7 @@ class InlineFavsFunctionality(BotFunctionality):
 
     async def _favs_query_results(
         self, event: InlineQuery.Event, username: str, offset: Optional[str]
-    ) -> Tuple[List[Awaitable[Union[InputBotInlineResultPhoto, InputBotInlineResult]]], Optional[str]]:
+    ) -> Tuple[List[InputBotInlineResultPhoto], Optional[str]]:
         # For fav listings, the offset can be the last ID
         if offset == "":
             offset = None
@@ -78,5 +81,18 @@ class InlineFavsFunctionality(BotFunctionality):
         next_offset = str(submissions[-1].fav_id)
         if next_offset == offset:
             return [], None
-        results = [x.to_inline_query_result(event.builder) for x in submissions]
+        results = await gather_ignore_exceptions(
+            [self.inline_query_photo(submission, event.builder) for submission in submissions]
+        )
         return results, next_offset
+
+    async def inline_query_photo(
+            self,
+            submission: FASubmissionShortFav,
+            builder: InlineBuilder
+    ) -> InputBotInlineResultPhoto:
+        sub_id = SubmissionID("fa", submission.submission_id)
+        cache_entry = self.cache.load_cache(sub_id)
+        if cache_entry:
+            return await cache_entry.as_inline_result(builder)
+        return await submission.to_inline_query_result(builder)
