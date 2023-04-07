@@ -7,7 +7,6 @@ from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.sites.handler_group import HandlerGroup
-from fa_search_bot.submission_cache import SubmissionCache
 
 if TYPE_CHECKING:
     from typing import List
@@ -19,10 +18,9 @@ class InlineNeatenFunctionality(BotFunctionality):
     USE_CASE_ID = "inline_neaten_id"
     USE_CASE_LINK = "inline_neaten_link"
 
-    def __init__(self, handlers: HandlerGroup, submission_cache: SubmissionCache) -> None:
+    def __init__(self, handlers: HandlerGroup) -> None:
         super().__init__(InlineQuery())
         self.handlers = handlers
-        self.cache = submission_cache
 
     @property
     def usage_labels(self) -> List[str]:
