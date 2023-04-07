@@ -176,7 +176,7 @@ class FASearchBot:
             ImageHashRecommendFunctionality(),
             NeatenFunctionality(handler_group),
             InlineFavsFunctionality(self.api),
-            InlineGalleryFunctionality(self.api),
+            InlineGalleryFunctionality(self.api, self.submission_cache),
             InlineNeatenFunctionality(handler_group),
             InlineSearchFunctionality(handlers),
             InlineEditFunctionality(handler_group, self.client),
