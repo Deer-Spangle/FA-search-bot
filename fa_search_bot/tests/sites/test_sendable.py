@@ -5,7 +5,7 @@ import pytest
 from docker import DockerClient
 from telethon.tl.custom import InlineBuilder
 
-from fa_search_bot.sites.furaffinity.fa_handler import SendableFASubmission
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
 from fa_search_bot.sites.sendable import Sendable, random_sandbox_video_path
 from fa_search_bot.tests.conftest import MockChat

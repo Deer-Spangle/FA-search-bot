@@ -4,7 +4,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.sendable import Sendable
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
-    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
-    from fa_search_bot.sites.sendable import CaptionSettings
-
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShort
 
 logger = logging.getLogger(__name__)
 
@@ -153,49 +151,3 @@ class FAHandler(SiteHandler):
     ) -> List[InputBotInlineResultPhoto]:
         posts = await self.api.get_search_results(query, page)
         return await gather_ignore_exceptions([submission.to_inline_query_result(builder, self.site_code) for submission in posts])
-
-
-class SendableFASubmission(Sendable):
-    def __init__(self, submission: FASubmissionFull):
-        self.submission = submission
-
-    @property
-    def submission_id(self) -> SubmissionID:
-        return SubmissionID("fa", self.submission.submission_id)
-
-    @property
-    def download_url(self) -> str:
-        return self.submission.download_url
-
-    @property
-    def download_file_ext(self) -> str:
-        return self.submission.download_file_ext
-
-    @property
-    def download_file_size(self) -> int:
-        return self.submission.download_file_size
-
-    @property
-    def preview_image_url(self) -> str:
-        return self.submission.full_image_url
-
-    @property
-    def thumbnail_url(self) -> str:
-        return self.submission.thumbnail_url
-
-    @property
-    def link(self) -> str:
-        return self.submission.link
-
-    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
-        lines = []
-        if prefix:
-            lines.append(prefix)
-        if settings.title:
-            lines.append(f'"{self.submission.title}"')
-        if settings.author:
-            lines.append(f'By: <a href="{self.submission.author.link}">{self.submission.author.name}</a>')
-        lines.append(self.submission.link)
-        if settings.direct_link:
-            lines.append(f'<a href="{self.download_url}">Direct download</a>')
-        return "\n".join(lines)

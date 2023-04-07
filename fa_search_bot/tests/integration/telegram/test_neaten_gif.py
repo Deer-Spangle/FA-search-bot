@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from fa_search_bot.sites.furaffinity.fa_handler import SendableFASubmission
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import Sendable
 
 if TYPE_CHECKING:

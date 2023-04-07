@@ -16,7 +16,7 @@ from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, Chann
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
-from fa_search_bot.sites.furaffinity.fa_handler import SendableFASubmission
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
 if TYPE_CHECKING:

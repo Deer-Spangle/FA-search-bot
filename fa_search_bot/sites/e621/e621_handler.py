@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from prometheus_client.metrics import Counter, Histogram
 
-from fa_search_bot.sites.sendable import Sendable
+from fa_search_bot.sites.e621.sendable import E621Post
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
@@ -21,9 +21,6 @@ if TYPE_CHECKING:
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
     from yippi import AsyncYippiClient, Post
-
-    from fa_search_bot.sites.sendable import CaptionSettings
-
 
 logger = logging.getLogger(__name__)
 
@@ -152,51 +149,3 @@ class E621Handler(SiteHandler):
             with api_failures.labels(endpoint=Endpoint.SEARCH.value).count_exceptions():
                 posts = await self.api.posts(query, page=page)
         return await gather_ignore_exceptions([E621Post(post).to_inline_query_result(builder) for post in posts])
-
-
-class E621Post(Sendable):
-    def __init__(self, post: Post):
-        self.post = post
-
-    @property
-    def submission_id(self) -> SubmissionID:
-        return SubmissionID("e6", str(self.post.id))
-
-    @property
-    def download_url(self) -> str:
-        return self.post.file["url"]
-
-    @property
-    def download_file_ext(self) -> str:
-        return self.post.file["ext"].lower()
-
-    @property
-    def download_file_size(self) -> int:
-        return self.post.file["size"]
-
-    @property
-    def preview_image_url(self) -> str:
-        if self.download_file_ext == "swf":
-            return self.post.preview["url"]
-        if self.download_file_ext == "webm":
-            return self.post.sample["url"]
-        return self.download_url
-
-    @property
-    def thumbnail_url(self) -> str:
-        if self.download_file_ext == "swf":
-            return self.post.preview["url"]
-        return self.post.sample["url"]
-
-    @property
-    def link(self) -> str:
-        return f"https://e621.net/posts/{self.id}"
-
-    def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
-        lines = []
-        if prefix:
-            lines.append(prefix)
-        lines.append(self.link)
-        if settings.direct_link:
-            lines.append(f"<a href=\"{self.post.file['url']}\">Direct download</a>")
-        return "\n".join(lines)
