@@ -179,7 +179,7 @@ class FASearchBot:
             InlineGalleryFunctionality(self.api),
             InlineNeatenFunctionality(handler_group),
             InlineSearchFunctionality(handlers),
-            InlineEditFunctionality(handlers, self.client),
+            InlineEditFunctionality(handler_group, self.client),
             InlineEditButtonPress(handlers),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),

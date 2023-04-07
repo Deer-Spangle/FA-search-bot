@@ -1,8 +1,9 @@
 import logging
 from typing import List, Optional, Dict
 
+from telethon import TelegramClient
 from telethon.events import InlineQuery, NewMessage
-from telethon.tl.types import InputBotInlineResultPhoto
+from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
 
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.sites.sent_submission import SentSubmission
@@ -98,6 +99,29 @@ class HandlerGroup:
             reply_to.client,
             reply_to.input_chat,
             reply_to=reply_to.message.id,
+        )
+        self.cache.save_cache(sent_sub)
+        return sent_sub
+
+    async def edit_submission(
+            self,
+            sub_id: SubmissionID,
+            client: TelegramClient,
+            msg_id: InputBotInlineMessageID,
+    ) -> SentSubmission:
+        handler = self.handlers.get(sub_id.site_code)
+        if handler is None:
+            logger.error("Unrecognised site code (%s) trying to edit submission: %s")
+            raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+        cache_entry = self.cache.load_cache(sub_id)
+        if cache_entry:
+            if await cache_entry.try_to_edit(client, msg_id):
+                return cache_entry
+        sent_sub = await handler.send_submission(
+            sub_id.submission_id,
+            client,
+            msg_id,
+            edit=True,
         )
         self.cache.save_cache(sent_sub)
         return sent_sub

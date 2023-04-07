@@ -7,6 +7,9 @@ from telethon.events import CallbackQuery, Raw
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
+from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
+from fa_search_bot.sites.handler_group import HandlerGroup
+from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from typing import Dict, List
@@ -19,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class InlineEditFunctionality(BotFunctionality):
-    def __init__(self, handlers: Dict[str, SiteHandler], client: TelegramClient):
+    def __init__(self, handlers: HandlerGroup, client: TelegramClient):
         super().__init__(Raw(UpdateBotInlineSend))
         self.handlers = handlers
         self.client = client
@@ -31,17 +34,16 @@ class InlineEditFunctionality(BotFunctionality):
     async def call(self, event: UpdateBotInlineSend) -> None:
         self.usage_counter.labels(function="inline_edit").inc()
         sub_id = SubmissionID.from_inline_code(event.id)
-        handler = self.handlers.get(site_id)
-        if handler is None:
-            logger.error("Unrecognised site ID in result callback: %s", site_id)
-            return
         msg_id = event.msg_id
         logger.debug(
             "Got an inline result send event. sub_id=%s, msg_id=%s",
             sub_id,
             msg_id,
         )
-        await handler.send_submission(sub_id.submission_id, self.client, msg_id, edit=True)
+        try:
+            await self.handlers.edit_submission(sub_id, self.client, msg_id)
+        except PageNotFound as e:
+            logger.error("Failed to edit inline query response: ", exc_info=e)
 
 
 class InlineEditButtonPress(BotFunctionality):

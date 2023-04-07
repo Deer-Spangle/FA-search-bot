@@ -3,9 +3,9 @@ import logging
 from typing import Union
 
 import telethon.tl.patched
-from telethon import events, Button
+from telethon import events, Button, TelegramClient
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto
+from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto, InputBotInlineMessageID
 
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -56,6 +56,20 @@ class SentSubmission:
             return True
         except Exception as e:
             logger.warning("Failed to post from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
+            return False
+
+    async def try_to_edit(self, client: TelegramClient, msg_id: InputBotInlineMessageID) -> bool:
+        try:
+            input_media = self.to_input_media()
+            await client.edit_message(
+                entity=msg_id,
+                file=input_media,
+                message=self.caption,
+                parse_mode="html",
+            )
+            return True
+        except Exception as e:
+            logger.warning("Failed to edit from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
             return False
 
     async def as_inline_result(self, builder: InlineBuilder) -> InputBotInlineResultPhoto:
