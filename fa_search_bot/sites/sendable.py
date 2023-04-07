@@ -619,5 +619,5 @@ class Sendable(ABC):
             id=f"{self.site_id}:{self.id}",
             text=self.link,
             # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.site_id}:{self.id}")],
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id.to_inline_code()}")],
         )

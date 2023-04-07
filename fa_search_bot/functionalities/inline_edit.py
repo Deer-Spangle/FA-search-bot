@@ -30,23 +30,18 @@ class InlineEditFunctionality(BotFunctionality):
 
     async def call(self, event: UpdateBotInlineSend) -> None:
         self.usage_counter.labels(function="inline_edit").inc()
-        id_split = event.id.split(":")
-        site_id = "fa"
-        if len(id_split) == 2:
-            site_id = id_split[0]
-        sub_id = id_split[-1]
+        sub_id = SubmissionID.from_inline_code(event.id)
         handler = self.handlers.get(site_id)
         if handler is None:
             logger.error("Unrecognised site ID in result callback: %s", site_id)
             return
         msg_id = event.msg_id
         logger.debug(
-            "Got an inline result send event. site_id=%s, sub_id=%s, msg_id=%s",
-            site_id,
+            "Got an inline result send event. sub_id=%s, msg_id=%s",
             sub_id,
             msg_id,
         )
-        await handler.send_submission(sub_id, self.client, msg_id, edit=True)
+        await handler.send_submission(sub_id.submission_id, self.client, msg_id, edit=True)
 
 
 class InlineEditButtonPress(BotFunctionality):
