@@ -3,8 +3,9 @@ import logging
 from typing import Union
 
 import telethon.tl.patched
-from telethon import events
-from telethon.tl.types import Photo, InputPhoto, InputDocument
+from telethon import events, Button
+from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto
 
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -56,3 +57,12 @@ class SentSubmission:
         except Exception as e:
             logger.warning("Failed to post from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
             return False
+
+    async def as_inline_result(self, builder: InlineBuilder) -> InputBotInlineResultPhoto:
+        return await builder.photo(
+            file=self.to_input_media(),
+            id=f"{self.sub_id.site_code}:{self.sub_id.submission_id}",
+            text=self.caption,
+            # Button is required such that the bot can get a callback with the message id, and edit it later.
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.sub_id.site_code}:{self.sub_id.submission_id}")],
+        )

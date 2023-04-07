@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from telethon.events import InlineQuery, NewMessage
 from telethon.tl.types import InputBotInlineResultPhoto
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class HandlerGroup:
     def __init__(self, handlers: List[SiteHandler], submission_cache: SubmissionCache) -> None:
         super().__init__()
-        self.handlers = {
+        self.handlers: Dict[str, SiteHandler] = {
             handler.site_code: handler for handler in handlers
         }
         self.cache = submission_cache
@@ -49,20 +49,40 @@ class HandlerGroup:
             if link.site_code in self.handlers
         ])
 
-    async def answer_submission_ids(self, sub_ids: List[SubmissionID], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
-        return await gather_ignore_exceptions([
-            self.handlers[sub_id.site_code].submission_as_answer(sub_id, event.builder)
-            for sub_id in sub_ids
-            if sub_id.site_code in self.handlers
-        ])
+    async def answer_submission(self, sub_id: SubmissionID, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
+        cache_entry = self.cache.load_cache(sub_id)
+        if cache_entry:
+            return await cache_entry.as_inline_result(event.builder)
+        handler = self.handlers.get(sub_id.site_code)
+        if not handler:
+            raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+        inline_photo = await handler.submission_as_answer(sub_id, event.builder)
+        # Don't really want to cache this anyway, it's likely a thumbnail
+        return inline_photo
+
+    async def answer_submission_ids(
+            self,
+            sub_ids: List[SubmissionID],
+            event: InlineQuery.Event
+    ) -> List[InputBotInlineResultPhoto]:
+        return await gather_ignore_exceptions([self.answer_submission(sub_id, event) for sub_id in sub_ids])
+
+    async def answer_link(self, link: SiteLink, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
+        handler = self.handlers.get(link.site_code)
+        if not handler:
+            raise PageNotFound(f"Handler not found matching site code: {link.site_code}")
+        sub_id = await handler.get_submission_id_from_link(link)
+        if sub_id is None:
+            raise PageNotFound(f"Could not find submission ID for link: {link.link}")
+        cache_entry = self.cache.load_cache(sub_id)
+        if cache_entry:
+            return await cache_entry.as_inline_result(event.builder)
+        inline_photo = await handler.submission_as_answer(sub_id, event.builder)
+        # Don't save to cache, as it might be a thumbnail
+        return inline_photo
 
     async def answer_links(self, links: List[SiteLink], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
-        results = await gather_ignore_exceptions([
-            self.handlers[link.site_code].link_as_answer(link, event.builder)
-            for link in links
-            if link.site_code in self.handlers
-        ])
-        return [result for result in results if result is not None]
+        return await gather_ignore_exceptions([self.answer_link(link, event) for link in links])
 
     async def send_submission(self, sub_id: SubmissionID, reply_to: NewMessage.Event) -> SentSubmission:
         handler = self.handlers.get(sub_id.site_code)
