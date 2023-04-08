@@ -5,7 +5,8 @@ from typing import Union
 import telethon.tl.patched
 from telethon import events, Button, TelegramClient
 from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto, InputBotInlineMessageID
+from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto, InputBotInlineMessageID, \
+    TypeInputPeer
 
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -55,7 +56,7 @@ class SentSubmission:
             )
             return True
         except Exception as e:
-            logger.warning("Failed to post from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
+            logger.warning("Failed to reply from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
             return False
 
     async def try_to_edit(self, client: TelegramClient, msg_id: InputBotInlineMessageID) -> bool:
@@ -70,6 +71,20 @@ class SentSubmission:
             return True
         except Exception as e:
             logger.warning("Failed to edit from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
+            return False
+
+    async def try_to_send(self, client: TelegramClient, chat: TypeInputPeer, *, prefix: str = None) -> bool:
+        try:
+            input_media = self.to_input_media()
+            await client.send_message(
+                entity=chat,
+                file=input_media,
+                message=self.caption,
+                parse_mode="html",
+            )
+            return True
+        except Exception as e:
+            logger.warning("Failed to send from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
             return False
 
     async def as_inline_result(self, builder: InlineBuilder) -> InputBotInlineResultPhoto:

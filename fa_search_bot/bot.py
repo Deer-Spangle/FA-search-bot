@@ -101,11 +101,13 @@ class FASearchBot:
         )
         self.alive = False
         self.functionalities: List[BotFunctionality] = []
-        self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(self.api, self.client)
-        self.log_task: Optional[Task] = None
-        self.watcher_task: Optional[Task] = None
         self.db = Database()
         self.submission_cache = SubmissionCache(self.db)
+        self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(
+            self.api, self.client, self.submission_cache
+        )
+        self.log_task: Optional[Task] = None
+        self.watcher_task: Optional[Task] = None
 
     @property
     def bot_key(self) -> str:
