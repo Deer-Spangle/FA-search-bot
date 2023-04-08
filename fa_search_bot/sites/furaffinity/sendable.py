@@ -2,9 +2,27 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
-from fa_search_bot.sites.sendable import Sendable, CaptionSettings
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
+from fa_search_bot.sites.sendable import Sendable, CaptionSettings, InlineSendable
 from fa_search_bot.sites.submission_id import SubmissionID
+
+
+class InlineSendableFASubmission(InlineSendable):
+
+    def __init__(self, submission: FASubmissionShort) -> None:
+        self.submission = submission
+
+    @property
+    def submission_id(self) -> SubmissionID:
+        return SubmissionID("fa", self.submission.submission_id)
+
+    @property
+    def thumbnail_url(self) -> str:
+        return self.submission.thumbnail_url
+
+    @property
+    def link(self) -> str:
+        return self.submission.link
 
 
 class SendableFASubmission(Sendable):

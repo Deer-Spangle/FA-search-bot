@@ -260,7 +260,46 @@ def _format_input_path(input_path: str) -> str:
     return f"/{input_path}"
 
 
-class Sendable(ABC):
+class InlineSendable(ABC):
+
+    @property
+    def site_id(self) -> str:
+        return self.submission_id.site_code
+
+    @property
+    def id(self) -> str:
+        return self.submission_id.submission_id
+
+    @property
+    @abstractmethod
+    def submission_id(self) -> SubmissionID:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def thumbnail_url(self) -> str:
+        """
+        A scaled down thumbnail, of the full image, or of the preview image
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def link(self) -> str:
+        raise NotImplementedError
+
+    def to_inline_query_result(self, builder: InlineBuilder) -> Awaitable[InputBotInlineResultPhoto]:
+        inline_results.labels(site_code=self.site_id).inc()
+        return builder.photo(
+            file=self.thumbnail_url,
+            id=f"{self.site_id}:{self.id}",
+            text=self.link,
+            # Button is required such that the bot can get a callback with the message id, and edit it later.
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id.to_inline_code()}")],
+        )
+
+
+class Sendable(InlineSendable):
     EXTENSIONS_GIF = ["gif"]  # These should be converted to png, if not animated
     EXTENSIONS_ANIMATED = [
         "gif",
@@ -281,19 +320,6 @@ class Sendable(ABC):
 
     CACHE_DIR = "video_cache"
     DOCKER_TIMEOUT = 5 * 60
-
-    @property
-    def site_id(self) -> str:
-        return self.submission_id.site_code
-
-    @property
-    def id(self) -> str:
-        return self.submission_id.submission_id
-
-    @property
-    @abstractmethod
-    def submission_id(self) -> SubmissionID:
-        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -317,19 +343,6 @@ class Sendable(ABC):
         For image submissions, the preview image is probably the same as the download url.
         For non-image submissions, the preview image is probably a cover image.
         """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def thumbnail_url(self) -> str:
-        """
-        A scaled down thumbnail, of the full image, or of the preview image
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def link(self) -> str:
         raise NotImplementedError
 
     @_count_exceptions_with_labels(sendable_failure)
@@ -611,13 +624,3 @@ class Sendable(ABC):
                 container.kill()
                 container.remove(force=True)
                 raise TimeoutError("Docker container timed out")
-
-    def to_inline_query_result(self, builder: InlineBuilder) -> Awaitable[InputBotInlineResultPhoto]:
-        inline_results.labels(site_code=self.site_id).inc()
-        return builder.photo(
-            file=self.thumbnail_url,
-            id=f"{self.site_id}:{self.id}",
-            text=self.link,
-            # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id.to_inline_code()}")],
-        )
