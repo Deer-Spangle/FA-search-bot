@@ -3,9 +3,11 @@ from typing import List, Optional, Dict
 
 from telethon import TelegramClient
 from telethon.events import InlineQuery, NewMessage
+from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
 
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
+from fa_search_bot.sites.sendable import InlineSendable
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_handler import SiteHandler
 from fa_search_bot.sites.site_link import SiteLink
@@ -95,8 +97,21 @@ class HandlerGroup:
                 if prefix_clean in handler.search_prefixes:
                     search_handler = handler
                     break
-        # TODO: caching
-        return await search_handler.get_search_results(event.builder, query.strip(), page)
+        results = await search_handler.get_search_results(query.strip(), page)
+        return await gather_ignore_exceptions([
+            self._answer_inline_sendable(result, event.builder) for result in results
+        ])
+
+    async def _answer_inline_sendable(
+            self,
+            sendable: InlineSendable,
+            builder: InlineBuilder
+    ) -> InputBotInlineResultPhoto:
+        cache_entry = self.cache.load_cache(sendable.submission_id)
+        if cache_entry:
+            return await cache_entry.as_inline_result(builder)
+        # Can't save cache of inline sendable, unfortunately
+        return await sendable.to_inline_query_result(builder)
 
     async def send_submission(self, sub_id: SubmissionID, reply_to: NewMessage.Event) -> SentSubmission:
         handler = self.handlers.get(sub_id.site_code)
