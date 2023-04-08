@@ -4,12 +4,12 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission, InlineSendableFASubmission
+from fa_search_bot.sites.sendable import InlineSendable
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
-from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
     from re import Pattern
@@ -147,7 +147,7 @@ class FAHandler(SiteHandler):
             return False
 
     async def get_search_results(
-        self, builder: InlineBuilder, query: str, page: int
-    ) -> List[InputBotInlineResultPhoto]:
+        self, query: str, page: int
+    ) -> List[InlineSendable]:
         posts = await self.api.get_search_results(query, page)
-        return await gather_ignore_exceptions([submission.to_inline_query_result(builder, self.site_code) for submission in posts])
+        return [InlineSendableFASubmission(post) for post in posts]
