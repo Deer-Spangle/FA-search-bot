@@ -83,12 +83,15 @@ class SentSubmission:
             return False
 
     async def try_to_send(self, client: TelegramClient, chat: TypeInputPeer, *, prefix: str = None) -> bool:
+        message = self.caption
+        if prefix:
+            message = prefix + "\n" + self.caption
         try:
             input_media = self.to_input_media()
             await client.send_message(
                 entity=chat,
                 file=input_media,
-                message=self.caption,
+                message=message,
                 parse_mode="html",
             )
             return True
