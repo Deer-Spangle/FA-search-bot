@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional
-
-from yippi import Post
+from typing import Optional, TYPE_CHECKING
 
 from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.submission_id import SubmissionID
+
+if TYPE_CHECKING:
+    from yippi import Post
 
 
 class E621Post(Sendable):

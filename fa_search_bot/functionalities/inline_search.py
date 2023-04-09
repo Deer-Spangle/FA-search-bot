@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, TypeVar
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
-from fa_search_bot.sites.handler_group import HandlerGroup
 
 if TYPE_CHECKING:
     from typing import List, Optional, Tuple
 
     from telethon.tl.types import InputBotInlineResultPhoto
+
+    from fa_search_bot.sites.handler_group import HandlerGroup
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")

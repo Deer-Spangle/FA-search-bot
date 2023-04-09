@@ -8,9 +8,7 @@ from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
-from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShort
 from fa_search_bot.sites.submission_id import SubmissionID
-from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.utils import gather_ignore_exceptions
 
 if TYPE_CHECKING:
@@ -20,6 +18,8 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineResultPhoto
 
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShort
+    from fa_search_bot.submission_cache import SubmissionCache
 
 
 logger = logging.getLogger(__name__)

@@ -19,6 +19,8 @@ from prometheus_client.metrics import Histogram
 from telethon import Button
 from telethon.errors import BadRequestError
 
+from fa_search_bot.sites.sent_submission import SentSubmission
+
 if TYPE_CHECKING:
     from typing import Any, Awaitable, BinaryIO, List, Optional, Union
 
@@ -29,7 +31,6 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
     from fa_search_bot.sites.site_handler import SiteHandler
-    from fa_search_bot.sites.sent_submission import SentSubmission
     from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
@@ -187,7 +188,7 @@ def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
             sendable_auto_doc, sendable_audio, sendable_other, sendable_animated_cached, convert_video_total,
             convert_video_failures, convert_video_animated, convert_video_no_audio, convert_video_no_audio_gif,
             convert_video_to_video, convert_video_only_one_attempt, convert_video_two_pass, convert_gif_total,
-            convert_gif_failures, convert_gif_only_one_attempt, convert_gif_two_pass, video_length
+            convert_gif_failures, convert_gif_only_one_attempt, convert_gif_two_pass, video_length,
         ]:
             metric.labels(site_code=handler.site_code)
         for entrypoint in DockerEntrypoint:

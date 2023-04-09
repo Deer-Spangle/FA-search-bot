@@ -3,11 +3,13 @@ import datetime
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from sqlite3 import Cursor
 from threading import RLock
-from typing import Optional, Union, Tuple, Dict, ContextManager
+from typing import Optional, Union, Tuple, Dict, ContextManager, TYPE_CHECKING
 
 import dateutil.parser
+
+if TYPE_CHECKING:
+    from sqlite3 import Cursor
 
 
 @dataclasses.dataclass

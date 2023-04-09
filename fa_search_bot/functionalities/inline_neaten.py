@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.handler_group import HandlerGroup
 
 if TYPE_CHECKING:
     from typing import List
+
+    from fa_search_bot.sites.handler_group import HandlerGroup
 
 logger = logging.getLogger(__name__)
 

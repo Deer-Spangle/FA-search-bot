@@ -4,10 +4,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.sendable import InlineSendable
-from fa_search_bot.sites.sent_submission import SentSubmission
-from fa_search_bot.sites.site_link import SiteLink
-from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from re import Pattern
@@ -16,6 +12,11 @@ if TYPE_CHECKING:
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+
+    from fa_search_bot.sites.sendable import InlineSendable
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.sites.site_link import SiteLink
+    from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,5 @@ class SiteHandler(ABC):
         ]
 
     @abstractmethod
-    async def get_search_results(
-        self, query: str, page: int
-    ) -> List[InlineSendable]:
+    async def get_search_results(self, query: str, page: int) -> List[InlineSendable]:
         raise NotImplementedError

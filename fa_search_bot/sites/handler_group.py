@@ -1,19 +1,22 @@
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, TYPE_CHECKING
 
-from telethon import TelegramClient
-from telethon.events import InlineQuery, NewMessage
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
 
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
-from fa_search_bot.sites.sendable import InlineSendable
-from fa_search_bot.sites.sent_submission import SentSubmission
-from fa_search_bot.sites.site_handler import SiteHandler
-from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
-from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.utils import gather_ignore_exceptions
+
+if TYPE_CHECKING:
+    from telethon import TelegramClient
+    from telethon.events import InlineQuery, NewMessage
+    from telethon.tl.custom import InlineBuilder
+    from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
+
+    from fa_search_bot.sites.sendable import InlineSendable
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.sites.site_handler import SiteHandler
+    from fa_search_bot.sites.site_link import SiteLink
+    from fa_search_bot.submission_cache import SubmissionCache
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +24,7 @@ logger = logging.getLogger(__name__)
 class HandlerGroup:
     def __init__(self, handlers: List[SiteHandler], submission_cache: SubmissionCache) -> None:
         super().__init__()
-        self.handlers: Dict[str, SiteHandler] = {
-            handler.site_code: handler for handler in handlers
-        }
+        self.handlers: Dict[str, SiteHandler] = {handler.site_code: handler for handler in handlers}
         self.default = handlers[0]
         self.cache = submission_cache
 

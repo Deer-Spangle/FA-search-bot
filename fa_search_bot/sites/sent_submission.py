@@ -1,14 +1,23 @@
 import dataclasses
 import logging
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 import telethon.tl.patched
 from telethon import events, Button, TelegramClient
-from telethon.tl.custom import InlineBuilder
-from telethon.tl.types import Photo, InputPhoto, InputDocument, InputBotInlineResultPhoto, InputBotInlineMessageID, \
-    TypeInputPeer
+from telethon.tl.types import (
+    Photo,
+    InputPhoto,
+    InputDocument,
+    InputBotInlineResultPhoto,
+    InputBotInlineMessageID,
+    TypeInputPeer,
+)
 
-from fa_search_bot.sites.submission_id import SubmissionID
+
+if TYPE_CHECKING:
+    from telethon.tl.custom import InlineBuilder
+
+    from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +33,11 @@ class SentSubmission:
 
     @classmethod
     def from_resp(
-            cls,
-            sub_id: SubmissionID,
-            resp: telethon.tl.patched.Message,
-            file_url: str,
-            caption: str
+        cls,
+        sub_id: SubmissionID,
+        resp: telethon.tl.patched.Message,
+        file_url: str,
+        caption: str,
     ) -> "SentSubmission":
         is_photo: bool = isinstance(resp.file.media, Photo)
         media_id: int = resp.file.media.id

@@ -13,23 +13,23 @@ import heartbeat
 from prometheus_client import Gauge, Summary
 from prometheus_client.metrics import Counter
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
-from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
-from fa_search_bot.sites.sent_submission import SentSubmission
-from fa_search_bot.submission_cache import SubmissionCache
 
 if TYPE_CHECKING:
     from typing import Any, Deque, Dict, List, Optional, Sequence, Set
 
     from telethon import TelegramClient
+    from telethon.tl.types import TypeInputPeer
 
     from fa_search_bot.query_parser import Query
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.submission_cache import SubmissionCache
 
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
@@ -310,10 +310,10 @@ class SubscriptionWatcher:
                 )
 
     async def _send_subscription_update(
-            self,
-            sendable: SendableFASubmission,
-            chat: TypeInputPeer,
-            prefix: str
+        self,
+        sendable: SendableFASubmission,
+        chat: TypeInputPeer,
+        prefix: str,
     ) -> SentSubmission:
         cache_entry = self.submission_cache.load_cache(sendable.submission_id)
         if cache_entry:
@@ -372,9 +372,9 @@ class SubscriptionWatcher:
 
     @staticmethod  # TODO: make classmethod
     def load_from_json(
-            api: FAExportAPI,
-            client: TelegramClient,
-            submission_cache: SubmissionCache
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file")
         try:
@@ -392,10 +392,10 @@ class SubscriptionWatcher:
 
     @staticmethod
     def load_from_json_old_format(
-            data: Dict,
-            api: FAExportAPI,
-            client: TelegramClient,
-            submission_cache: SubmissionCache
+        data: Dict,
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in old format")
         new_watcher = SubscriptionWatcher(api, client, submission_cache)
@@ -407,10 +407,10 @@ class SubscriptionWatcher:
 
     @staticmethod
     def load_from_json_new_format(
-            data: Dict,
-            api: FAExportAPI,
-            client: TelegramClient,
-            submission_cache: SubmissionCache
+        data: Dict,
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in new format")
         new_watcher = SubscriptionWatcher(api, client, submission_cache)

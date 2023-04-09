@@ -8,13 +8,14 @@ from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
-from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from typing import List
 
     from telethon import TelegramClient
+
+    from fa_search_bot.sites.handler_group import HandlerGroup
 
 logger = logging.getLogger(__name__)
 

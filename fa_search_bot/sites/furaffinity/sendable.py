@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
 from fa_search_bot.sites.sendable import Sendable, CaptionSettings, InlineSendable
 from fa_search_bot.sites.submission_id import SubmissionID
 
+if TYPE_CHECKING:
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
+
 
 class InlineSendableFASubmission(InlineSendable):
-
     def __init__(self, submission: FASubmissionShort) -> None:
         self.submission = submission
 

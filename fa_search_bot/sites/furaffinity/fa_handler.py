@@ -5,9 +5,7 @@ import re
 from typing import TYPE_CHECKING
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission, InlineSendableFASubmission
-from fa_search_bot.sites.sendable import InlineSendable
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
-from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -21,6 +19,8 @@ if TYPE_CHECKING:
 
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShort
+    from fa_search_bot.sites.sendable import InlineSendable
+    from fa_search_bot.sites.sent_submission import SentSubmission
 
 logger = logging.getLogger(__name__)
 
@@ -146,8 +146,6 @@ class FAHandler(SiteHandler):
         except ValueError:
             return False
 
-    async def get_search_results(
-        self, query: str, page: int
-    ) -> List[InlineSendable]:
+    async def get_search_results(self, query: str, page: int) -> List[InlineSendable]:
         posts = await self.api.get_search_results(query, page)
         return [InlineSendableFASubmission(post) for post in posts]
