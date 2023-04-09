@@ -47,11 +47,11 @@ class HandlerGroup:
         return links
 
     async def get_sub_ids_from_links(self, links: List[SiteLink]) -> List[SubmissionID]:
-        return await gather_ignore_exceptions([
+        return [sub_id for sub_id in await gather_ignore_exceptions([
             self.handlers[link.site_code].get_submission_id_from_link(link)
             for link in links
             if link.site_code in self.handlers
-        ])
+        ]) if sub_id is not None]
 
     async def answer_submission(self, sub_id: SubmissionID, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
         cache_entry = self.cache.load_cache(sub_id)
