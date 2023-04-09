@@ -7,7 +7,7 @@ class SubmissionID:
     submission_id: str
 
     @classmethod
-    def from_inline_code(cls, inline_code: str):
+    def from_inline_code(cls, inline_code: str) -> "SubmissionID":
         id_split = inline_code.split(":")
         site_id = "fa"
         if len(id_split) == 2:
