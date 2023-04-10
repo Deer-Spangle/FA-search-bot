@@ -134,10 +134,10 @@ class FAHandler(SiteHandler):
 
     async def submission_as_answer(
         self, submission_id: SubmissionID, builder: InlineBuilder
-    ) -> Awaitable[InputBotInlineResultPhoto]:
+    ) -> InputBotInlineResultPhoto:
         sub = await self.api.get_full_submission(submission_id.submission_id)
         sendable = SendableFASubmission(sub)
-        return sendable.to_inline_query_result(builder)
+        return await sendable.to_inline_query_result(builder)
 
     def is_valid_submission_id(self, example: str) -> bool:
         try:

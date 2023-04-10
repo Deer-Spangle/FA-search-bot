@@ -31,12 +31,16 @@ class SubmissionCache:
             sent_submission.file_url,
             sent_submission.caption,
             now(),
+            sent_submission.full_image,
         )
         self.db.save_cache_entry(cache_entry)
 
-    def load_cache(self, sub_id: SubmissionID) -> Optional[SentSubmission]:
+    def load_cache(self, sub_id: SubmissionID, *, allow_inline: bool = False) -> Optional[SentSubmission]:
         entry = self.db.fetch_cache_entry(sub_id.site_code, str(sub_id.submission_id))
         if entry is None:
+            return None
+        # Unless this is for inline use, only return full image results
+        if not allow_inline and not entry.full_image:
             return None
         return SentSubmission(
             SubmissionID(entry.site_code, entry.submission_id),

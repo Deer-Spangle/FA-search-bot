@@ -56,14 +56,17 @@ class HandlerGroup:
         ]) if sub_id is not None]
 
     async def answer_submission(self, sub_id: SubmissionID, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
-        cache_entry = self.cache.load_cache(sub_id)
+        cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
         if cache_entry:
             return await cache_entry.as_inline_result(event.builder)
         handler = self.handlers.get(sub_id.site_code)
         if not handler:
             raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+        # Send from source
         inline_photo = await handler.submission_as_answer(sub_id, event.builder)
-        # Don't really want to cache this anyway, it's likely a thumbnail
+        # Save to cache
+        sent_sub = SentSubmission.from_inline_result(sub_id, inline_photo)
+        self.cache.save_cache(sent_sub)
         return inline_photo
 
     async def answer_submission_ids(
@@ -80,11 +83,15 @@ class HandlerGroup:
         sub_id = await handler.get_submission_id_from_link(link)
         if sub_id is None:
             raise PageNotFound(f"Could not find submission ID for link: {link.link}")
-        cache_entry = self.cache.load_cache(sub_id)
+        # Check cache
+        cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
         if cache_entry:
             return await cache_entry.as_inline_result(event.builder)
+        # Send from source
         inline_photo = await handler.submission_as_answer(sub_id, event.builder)
-        # Don't save to cache, as it might be a thumbnail
+        # Save to cache
+        sent_sub = SentSubmission.from_inline_result(sub_id, inline_photo)
+        self.cache.save_cache(sent_sub)
         return inline_photo
 
     async def answer_links(self, links: List[SiteLink], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
@@ -109,11 +116,16 @@ class HandlerGroup:
             sendable: InlineSendable,
             builder: InlineBuilder
     ) -> InputBotInlineResultPhoto:
-        cache_entry = self.cache.load_cache(sendable.submission_id)
+        cache_entry = self.cache.load_cache(sendable.submission_id, allow_inline=True)
         if cache_entry:
             return await cache_entry.as_inline_result(builder)
+        # Send from source
+        inline_photo = await sendable.to_inline_query_result(builder)
+        # Save to cache
+        sent_sub = SentSubmission.from_inline_result(sendable.submission_id, inline_photo)
+        self.cache.save_cache(sent_sub)
         # Can't save cache of inline sendable, unfortunately
-        return await sendable.to_inline_query_result(builder)
+        return inline_photo
 
     async def send_submission(self, sub_id: SubmissionID, reply_to: NewMessage.Event) -> SentSubmission:
         handler = self.handlers.get(sub_id.site_code)

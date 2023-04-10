@@ -135,7 +135,7 @@ class E621Handler(SiteHandler):
 
     async def submission_as_answer(
         self, submission_id: SubmissionID, builder: InlineBuilder
-    ) -> Awaitable[InputBotInlineResultPhoto]:
+    ) -> InputBotInlineResultPhoto:
         sub_id_str = submission_id.submission_id
         if self.POST_HASH.match(sub_id_str):
             post = await self._find_post_by_hash(sub_id_str)
@@ -144,7 +144,7 @@ class E621Handler(SiteHandler):
         else:
             post = await self._get_post_by_id(submission_id)
         sendable = E621Post(post)
-        return sendable.to_inline_query_result(builder)
+        return await sendable.to_inline_query_result(builder)
 
     async def get_search_results(self, query: str, page: int) -> List[InlineSendable]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH.value).time():

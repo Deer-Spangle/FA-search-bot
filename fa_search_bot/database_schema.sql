@@ -8,9 +8,10 @@ create table if not exists cache_entries
     is_photo              BOOLEAN not null,
     media_id              INTEGER not null,
     access_hash           INTEGER not null,
-    file_url              TEXT    not null,
+    file_url              TEXT,
     caption               TEXT    not null,
-    cache_date            DATE    not null
+    cache_date            DATE    not null,
+    full_image            BOOLEAN not null  -- If false, this cache is only for inline results
 );
 
 create unique index if not exists cache_entries_site_code_submission_id_uindex

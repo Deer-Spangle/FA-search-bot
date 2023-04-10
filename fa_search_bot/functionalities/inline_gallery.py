@@ -8,6 +8,7 @@ from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
+from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.utils import gather_ignore_exceptions
 
@@ -128,7 +129,12 @@ class InlineGalleryFunctionality(BotFunctionality):
             builder: InlineBuilder
     ) -> InputBotInlineResultPhoto:
         sub_id = SubmissionID("fa", submission.submission_id)
-        cache_entry = self.cache.load_cache(sub_id)
+        cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
         if cache_entry:
             return await cache_entry.as_inline_result(builder)
-        return await submission.to_inline_query_result(builder)
+        # Send from source
+        inline_photo = await submission.to_inline_query_result(builder)
+        # Save to cache
+        sent_sub = SentSubmission.from_inline_result(sub_id, inline_photo)
+        self.cache.save_cache(sent_sub)
+        return inline_photo

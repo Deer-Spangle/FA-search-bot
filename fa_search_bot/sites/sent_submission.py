@@ -1,7 +1,7 @@
 from __future__ import annotations
 import dataclasses
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Optional
 
 import telethon.tl.patched
 from telethon import events, Button, TelegramClient
@@ -29,8 +29,9 @@ class SentSubmission:
     is_photo: bool
     media_id: int
     access_hash: int
-    file_url: str
+    file_url: Optional[str]
     caption: str
+    full_image: bool
 
     @classmethod
     def from_resp(
@@ -50,6 +51,23 @@ class SentSubmission:
             access_hash,
             file_url,
             caption,
+            True,
+        )
+
+    @classmethod
+    def from_inline_result(
+        cls,
+        sub_id: SubmissionID,
+        inline_photo: InputBotInlineResultPhoto,
+    ) -> "SentSubmission":
+        return cls(
+            sub_id,
+            True,
+            inline_photo.photo.id,
+            inline_photo.photo.access_hash,
+            None,
+            inline_photo.send_message.message,
+            False,
         )
 
     def to_input_media(self) -> Union[InputPhoto, InputDocument]:
