@@ -370,50 +370,53 @@ class SubscriptionWatcher:
             json.dump(data, f, indent=2)
         os.replace(self.FILENAME_TEMP, self.FILENAME)
 
-    @staticmethod  # TODO: make classmethod
+    @classmethod
     def load_from_json(
+        cls,
         api: FAExportAPI,
         client: TelegramClient,
         submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file")
         try:
-            with open(SubscriptionWatcher.FILENAME, "r") as f:
+            with open(cls.FILENAME, "r") as f:
                 raw_data = f.read()
                 if not raw_data:
                     raise FileNotFoundError
                 data = json.loads(raw_data)
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
-            return SubscriptionWatcher(api, client, submission_cache)
+            return cls(api, client, submission_cache)
         if "destinations" not in data:
-            return SubscriptionWatcher.load_from_json_old_format(data, api, client, submission_cache)
-        return SubscriptionWatcher.load_from_json_new_format(data, api, client, submission_cache)
+            return cls.load_from_json_old_format(data, api, client, submission_cache)
+        return cls.load_from_json_new_format(data, api, client, submission_cache)
 
-    @staticmethod
+    @classmethod
     def load_from_json_old_format(
+        cls,
         data: Dict,
         api: FAExportAPI,
         client: TelegramClient,
         submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in old format")
-        new_watcher = SubscriptionWatcher(api, client, submission_cache)
+        new_watcher = cls(api, client, submission_cache)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json_old_format(x) for x in data["subscriptions"])
         new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
-    @staticmethod
+    @classmethod
     def load_from_json_new_format(
+        cls,
         data: Dict,
         api: FAExportAPI,
         client: TelegramClient,
         submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in new format")
-        new_watcher = SubscriptionWatcher(api, client, submission_cache)
+        new_watcher = cls(api, client, submission_cache)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         subscriptions = set()
@@ -452,20 +455,20 @@ class Subscription:
             "paused": self.paused,
         }
 
-    @staticmethod
-    def from_json_old_format(saved_sub: Dict) -> "Subscription":
+    @classmethod
+    def from_json_old_format(cls, saved_sub: Dict) -> "Subscription":
         query = saved_sub["query"]
         destination = saved_sub["destination"]
-        new_sub = Subscription(query, destination)
+        new_sub = cls(query, destination)
         new_sub.latest_update = None
         if saved_sub["latest_update"] is not None:
             new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])
         return new_sub
 
-    @staticmethod
-    def from_json_new_format(saved_sub: Dict, dest_id: int) -> "Subscription":
+    @classmethod
+    def from_json_new_format(cls, saved_sub: Dict, dest_id: int) -> "Subscription":
         query = saved_sub["query"]
-        new_sub = Subscription(query, dest_id)
+        new_sub = cls(query, dest_id)
         new_sub.latest_update = None
         if saved_sub["latest_update"] is not None:
             new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])
