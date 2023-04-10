@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
 
 usage_counter = Counter("fasearchbot_usage_total", "Total usage of bot features", labelnames=["function"])
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> AsyncIterator[None]:
@@ -25,7 +28,8 @@ async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> Async
     msg = await event.reply(text)
     try:
         yield
-    except Exception:
+    except Exception as e:
+        logger.error("Unhandled exception in functionality handler", exc_info=e)
         await event.reply("Command failed. Sorry, I tried but failed to process this.")
         raise StopPropagation
     finally:
