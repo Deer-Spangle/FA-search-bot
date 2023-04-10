@@ -9,7 +9,8 @@ import logging
 import os
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, TypeVar
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Callable, TypeVar, Generator
 
 import docker
 import requests
@@ -202,6 +203,18 @@ def random_sandbox_video_path(file_ext: str = "mp4") -> str:
     return f"sandbox/{uuid.uuid4()}.{file_ext}"
 
 
+@contextmanager
+def temp_sandbox_file(file_ext: str = "mp4") -> Generator[str, None, None]:
+    temp_path = random_sandbox_video_path(file_ext)
+    try:
+        yield temp_path
+    finally:
+        try:
+            os.remove(temp_path)
+        except FileNotFoundError:
+            pass
+
+
 def _is_animated(file_url: str) -> bool:
     file_ext = file_url.split(".")[-1].lower()
     if file_ext not in Sendable.EXTENSIONS_ANIMATED:
@@ -389,16 +402,16 @@ class Sendable(InlineSendable):
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             sendable_image.labels(site_code=self.site_id).inc()
-            dl_path = random_sandbox_video_path(ext)
-            resp = requests.get(self.download_url, stream=True)
-            with open(dl_path, "wb") as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            try:
-                return await send_partial(dl_path)
-            except BadRequestError:
-                settings.direct_link = True
-                return await send_partial(self.thumbnail_url)
+            with temp_sandbox_file(ext) as dl_path:
+                resp = requests.get(self.download_url, stream=True)
+                with open(dl_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                try:
+                    return await send_partial(dl_path)
+                except BadRequestError:
+                    settings.direct_link = True
+                    return await send_partial(self.thumbnail_url)
         # Handle animated gifs and videos, which can be made pretty
         if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
             sendable_animated.labels(site_code=self.site_id).inc()
@@ -549,16 +562,16 @@ class Sendable(InlineSendable):
                     self.id,
                 )
                 raise ValueError("Bitrate cannot be negative")
-        log_file = random_sandbox_video_path("log")
-        full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
-        await self._run_docker(
-            client,
-            f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
-        )
-        await self._run_docker(
-            client,
-            f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y",
-        )
+        with temp_sandbox_file("log") as log_file:
+            full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
+            await self._run_docker(
+                client,
+                f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
+            )
+            await self._run_docker(
+                client,
+                f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y",
+            )
         return two_pass_filename
 
     async def _video_has_audio_track(self, client: DockerClient, input_path: str) -> bool:
