@@ -75,13 +75,15 @@ class E621Handler(SiteHandler):
         # Handle submission page link matches
         sub_match = self.POST_LINK.match(link.link)
         if sub_match:
-            logger.info("e621 link: post link")
-            return SubmissionID(self.site_code, sub_match.group(1))
+            sub_id = SubmissionID(self.site_code, sub_match.group(1))
+            logger.info("e621 link format: post link: %s", sub_id)
+            return sub_id
         # Handle thumbnail link matches
         thumb_match = self.OLD_POST_LINK.match(link.link)
         if thumb_match:
-            logger.info("e621 link: old post link")
-            return SubmissionID(self.site_code, thumb_match.group(1))
+            sub_id = SubmissionID(self.site_code, thumb_match.group(1))
+            logger.info("e621 link format: old post link: %s", sub_id)
+            return sub_id
         # Handle direct file link matches
         direct_match = self.DIRECT_LINK.match(link.link)
         if not direct_match:
@@ -90,8 +92,9 @@ class E621Handler(SiteHandler):
         post = await self._find_post_by_hash(md5_hash)
         if not post:
             raise HandlerException(f"Could not locate the post with hash {md5_hash}.")
-        logger.info("e621 link: direct image link")
-        return SubmissionID(self.site_code, str(post.id))
+        sub_id = SubmissionID(self.site_code, str(post.id))
+        logger.info("e621 link format: direct image link: %s", sub_id)
+        return sub_id
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():
