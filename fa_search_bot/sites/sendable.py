@@ -332,7 +332,6 @@ class Sendable(InlineSendable):
     SIZE_LIMIT_DOCUMENT = 20 * 1000**2  # Maximum 20MB document size on telegram
     LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
 
-    CACHE_DIR = "video_cache"
     DOCKER_TIMEOUT = 5 * 60
 
     @property
@@ -440,15 +439,9 @@ class Sendable(InlineSendable):
         send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[SentSubmission]],
     ) -> SentSubmission:
         try:
-            logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
-            filename = self._get_video_from_cache()
-            if filename is None:
-                logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
-                output_path: str = await self._convert_video(self.download_url)
-                filename = self._save_video_to_cache(output_path)
-            else:
-                sendable_animated_cached.labels(site_code=self.site_id).inc()
-            return await send_partial(filename)
+            logger.info("Sending video, site ID %s, submission ID %s, converting to mp4", self.site_id, self.id)
+            output_path: str = await self._convert_video(self.download_url)
+            return await send_partial(output_path)
         except Exception as e:
             logger.error(
                 "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
@@ -460,26 +453,7 @@ class Sendable(InlineSendable):
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
-        raise NotImplementedError
-
-    def _get_video_from_cache(self) -> Optional[str]:
-        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
-        filename = f"{cache_dir}/{self.id}.mp4"
-        if os.path.exists(filename):
-            logger.info(
-                "Loading video from cache, site ID %s, submission ID %s",
-                self.site_id,
-                self.id,
-            )
-            return filename
-        return None
-
-    def _save_video_to_cache(self, video_path: str) -> str:
-        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
-        filename = f"{cache_dir}/{self.id}.mp4"
-        os.makedirs(cache_dir, exist_ok=True)
-        os.rename(video_path, filename)
-        return filename
+        raise NotImplementedError  # TODO: Pull caption builder out, I guess? Three implementations of caption data?
 
     @_count_exceptions_with_labels(convert_gif_failures)
     async def _convert_gif(self, gif_url: str) -> str:
