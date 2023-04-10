@@ -85,9 +85,6 @@ class NeatenFunctionality(BotFunctionality):
     async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID) -> None:
         logger.info("Found a link, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_{sub_id.site_code}").inc()
-        handler = self.handlers.handlers.get(sub_id.site_code)
-        if handler is None:
-            return
         try:
             await self.handlers.send_submission(sub_id, event)
         except CantSendFileType as e:
@@ -117,3 +114,6 @@ class NeatenFunctionality(BotFunctionality):
                 event,
                 f"{site_name} returned a cloudflare error, so I cannot neaten links.",
             )
+        except Exception as e:
+            logger.error("Unhandled exception trying to neaten submission %s", sub_id, exc_info=e)
+            raise e
