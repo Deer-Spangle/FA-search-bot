@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Dict, List
 from unittest.mock import AsyncMock, Mock
 
 from telethon import TelegramClient
-from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto
+from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, \
+    InputPhoto, InputBotInlineMessageMediaAuto
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -256,6 +257,20 @@ class _MockInlineBuilder:
             super().__init__("0", "photo", kwargs.get("photo"), kwargs.get("send_message"))
             self.args = args
             self.kwargs = kwargs
+            self.photo = self._MockInputPhoto()
+            self.send_message = self._MockInputBotInlineMessageMediaAuto()
+
+        class _MockInputPhoto(InputPhoto):
+            def __init__(self):
+                media_id = random.randint(0, 10_000_000)
+                access_hash = random.randint(-1_000_000, 1_000_000)
+                file_ref = "FILEREF" + str(random.randint(1000, 9999))
+                super().__init__(media_id, access_hash, file_ref.encode())
+
+        class _MockInputBotInlineMessageMediaAuto(InputBotInlineMessageMediaAuto):
+            def __init__(self):
+                message = "whatever random message: " + str(random.randint(0, 1_000))
+                super().__init__(message, [], None)
 
     class _MockInlineArticle(_MockInlineResult):
         pass
