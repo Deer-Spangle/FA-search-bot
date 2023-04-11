@@ -81,7 +81,7 @@ async def test_direct_link(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -111,7 +111,7 @@ async def test_direct_link__old_cdn(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -141,7 +141,7 @@ async def test_direct_link__newer_cdn(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -291,12 +291,12 @@ async def test_two_direct_links(mock_client):
     handler._send_submission.assert_called()
     call1, call2 = handler._send_submission.call_args_list
     args1, kwargs1 = call1
-    assert args1[0] == post_id1
+    assert args1[0] == str(post_id1)
     assert args1[1] == mock_client
     assert args1[2] == event.input_chat
     assert kwargs1["reply_to"] == event.message.id
     args2, kwargs2 = call2
-    assert args2[0] == post_id2
+    assert args2[0] == str(post_id2)
     assert args2[1] == mock_client
     assert args2[2] == event.input_chat
     assert kwargs2["reply_to"] == event.message.id
@@ -326,7 +326,7 @@ async def test_duplicate_direct_link(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -358,7 +358,7 @@ async def test_direct_link_and_matching_submission_link(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -398,12 +398,12 @@ async def test_direct_link_and_different_submission_link(mock_client):
     handler._send_submission.assert_called()
     call1, call2 = handler._send_submission.call_args_list
     args1, kwargs1 = call1
-    assert args1[0] == post_id1
+    assert args1[0] == str(post_id1)
     assert args1[1] == mock_client
     assert args1[2] == event.input_chat
     assert kwargs1["reply_to"] == event.message.id
     args2, kwargs2 = call2
-    assert args2[0] == post_id2
+    assert args2[0] == str(post_id2)
     assert args2[1] == mock_client
     assert args2[2] == event.input_chat
     assert kwargs2["reply_to"] == event.message.id
@@ -443,12 +443,12 @@ async def test_submission_link_and_different_direct_link(mock_client):
     handler._send_submission.assert_called()
     call1, call2 = handler._send_submission.call_args_list
     args1, kwargs1 = call1
-    assert args1[0] == post_id1
+    assert args1[0] == str(post_id1)
     assert args1[1] == mock_client
     assert args1[2] == event.input_chat
     assert kwargs1["reply_to"] == event.message.id
     args2, kwargs2 = call2
-    assert args2[0] == post_id2
+    assert args2[0] == str(post_id2)
     assert args2[1] == mock_client
     assert args2[2] == event.input_chat
     assert kwargs2["reply_to"] == event.message.id
@@ -483,7 +483,7 @@ async def test_result_on_first_page(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -530,7 +530,7 @@ async def test_result_on_third_page(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -679,7 +679,7 @@ async def test_result_last_on_page(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -725,7 +725,7 @@ async def test_result_first_on_page(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
@@ -815,7 +815,7 @@ async def test_result_in_scraps(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.input_chat
     assert kwargs["reply_to"] == event.message.id
