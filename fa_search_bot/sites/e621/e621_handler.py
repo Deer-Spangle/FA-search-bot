@@ -13,7 +13,7 @@ from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
-    from typing import Awaitable, List, Optional, Pattern, Union
+    from typing import List, Optional, Pattern, Union
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder

@@ -11,7 +11,7 @@ from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
     from re import Pattern
-    from typing import List, Optional, Union, Awaitable
+    from typing import List, Optional, Union
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
