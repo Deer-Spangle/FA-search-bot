@@ -4,10 +4,12 @@ from telethon.events import StopPropagation
 from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
 from fa_search_bot.sites.e621.e621_handler import E621Handler
 from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
@@ -15,7 +17,8 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _Moc
 async def test_empty_query_no_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query="")
     handler = FAHandler(MockExportAPI())
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -31,7 +34,8 @@ async def test_simple_search(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -57,7 +61,8 @@ async def test_no_search_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term)
     api = MockExportAPI().with_search_results(search_term, [])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -75,7 +80,8 @@ async def test_search_with_offset(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission], page=offset)
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -100,7 +106,8 @@ async def test_search_with_offset_no_more_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
     api = MockExportAPI().with_search_results(search_term, [], page=offset)
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -123,7 +130,8 @@ async def test_search_with_spaces(mock_client):
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_search_results(search_term, [submission1, submission2])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -156,7 +164,8 @@ async def test_search_with_combo_characters(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -183,7 +192,8 @@ async def test_search_with_field(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -213,7 +223,8 @@ async def test_search_site_prefix__letter(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -242,7 +253,8 @@ async def test_search_site_prefix__code(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_code=site_code)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -271,7 +283,8 @@ async def test_search_site_prefix__name(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -300,7 +313,8 @@ async def test_search_site_prefix__name_lower(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -328,7 +342,8 @@ async def test_search_site_prefix_e621(mock_client):
     post = MockPost(post_id=post_id, tags=["citrinelle"])
     api = MockAsyncYippiClient([post])
     handler = E621Handler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -356,7 +371,8 @@ async def test_search_site_prefix_fa(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
-    inline = InlineSearchFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)

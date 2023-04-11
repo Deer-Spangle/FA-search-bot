@@ -2,8 +2,10 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
@@ -17,7 +19,8 @@ async def test_thumbnail_link(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -38,7 +41,8 @@ async def test_thumbnail_link__old_cdn(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -59,7 +63,8 @@ async def test_thumbnail_link__newer_cdn(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -80,7 +85,8 @@ async def test_thumbnail_link_not_round(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -101,7 +107,8 @@ async def test_thumbnail_link_big(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -120,7 +127,8 @@ async def test_doesnt_fire_on_avatar(mock_client):
     )
     api = MockExportAPI()
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     await neaten.call(event)
 
@@ -137,7 +145,8 @@ async def test_thumb_and_submission_link(mock_client):
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_submission(submission)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -160,7 +169,8 @@ async def test_thumb_and_different_submission_link(mock_client):
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_submissions([submission1, submission2])
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)

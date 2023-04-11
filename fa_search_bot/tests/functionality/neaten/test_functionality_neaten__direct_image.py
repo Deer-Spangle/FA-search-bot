@@ -2,8 +2,10 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.neaten import NeatenFunctionality
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import ChatType, MockTelegramEvent
 
 
@@ -11,7 +13,8 @@ from fa_search_bot.tests.util.mock_telegram_event import ChatType, MockTelegramE
 async def test_ignore_message(mock_client):
     event = MockTelegramEvent.with_message(text="hello world")
     handler = MockSiteHandler(MockExportAPI())
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     await neaten.call(event)
 
@@ -22,7 +25,8 @@ async def test_ignore_message(mock_client):
 async def test_ignore_link(mock_client):
     event = MockTelegramEvent.with_message(text="http://example.com")
     handler = MockSiteHandler(MockExportAPI())
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     await neaten.call(event)
 
@@ -33,7 +37,8 @@ async def test_ignore_link(mock_client):
 async def test_ignore_profile_link(mock_client):
     event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/user/fender/")
     handler = MockSiteHandler(MockExportAPI())
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     await neaten.call(event)
 
@@ -44,7 +49,8 @@ async def test_ignore_profile_link(mock_client):
 async def test_ignore_journal_link(mock_client):
     event = MockTelegramEvent.with_message(text="https://www.furaffinity.net/journal/9150534/")
     handler = MockSiteHandler(MockExportAPI())
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     await neaten.call(event)
 
@@ -67,7 +73,8 @@ async def test_direct_link(mock_client):
         [goal_submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -96,7 +103,8 @@ async def test_direct_link__old_cdn(mock_client):
         [goal_submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -125,7 +133,8 @@ async def test_direct_link__newer_cdn(mock_client):
         [goal_submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -153,7 +162,8 @@ async def test_direct_in_progress_message(mock_client):
         [goal_submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -177,7 +187,8 @@ async def test_direct_in_progress_message_groupchat(mock_client):
         [goal_submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -205,7 +216,8 @@ async def test_direct_no_match(mock_client):
             ],
         )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -236,7 +248,8 @@ async def test_direct_no_match_groupchat(mock_client):
             ],
         )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -269,7 +282,8 @@ async def test_two_direct_links(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -304,7 +318,8 @@ async def test_duplicate_direct_link(mock_client):
         [submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -335,7 +350,8 @@ async def test_direct_link_and_matching_submission_link(mock_client):
         [submission, MockSubmission(post_id - 1, image_id=image_id - 15)],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -373,7 +389,8 @@ async def test_direct_link_and_different_submission_link(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -417,7 +434,8 @@ async def test_submission_link_and_different_direct_link(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -457,7 +475,8 @@ async def test_result_on_first_page(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -503,7 +522,8 @@ async def test_result_on_third_page(mock_client):
         )
     await api.get_full_submission(str(post_id))
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -535,7 +555,8 @@ async def test_result_missing_from_first_page(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -579,7 +600,8 @@ async def test_result_missing_from_second_page(mock_client):
             page=page,
         )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -617,7 +639,8 @@ async def test_result_missing_between_pages(mock_client):
         page=2,
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -648,7 +671,8 @@ async def test_result_last_on_page(mock_client):
         ],
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -693,7 +717,8 @@ async def test_result_first_on_page(mock_client):
         page=2,
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -726,7 +751,8 @@ async def test_not_on_first_page_empty_second_page(mock_client):
     )
     api.with_user_folder(username, "gallery", [], page=2)
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
@@ -781,7 +807,8 @@ async def test_result_in_scraps(mock_client):
         page=1,
     )
     handler = MockSiteHandler(api)
-    neaten = NeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    neaten = NeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await neaten.call(event)
