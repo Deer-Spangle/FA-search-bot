@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
@@ -9,10 +10,15 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
+logger = logging.getLogger(__name__)
+
+
 async def gather_ignore_exceptions(coros: List[Awaitable[T]]) -> List[T]:
-    return list(
-        filter(
-            lambda x: not isinstance(x, Exception),
-            await asyncio.gather(*coros, return_exceptions=True),
-        )
-    )
+    results = await asyncio.gather(*coros, return_exceptions=True)
+    answers = []
+    for result in results:
+        if isinstance(result, Exception):
+            logger.debug("Gathering results and hit exception, ignoring.", exc_info=result)
+        else:
+            answers.append(result)
+    return answers
