@@ -110,12 +110,12 @@ async def test_inline_button_press__site_code(mock_client):
 @pytest.mark.asyncio
 async def test_inline_button_press__unknown_site_code(mock_client):
     post_id = 1234
-    callback = MockTelegramEvent.with_callback_query(
-        data=f"neaten_me:xy:{post_id}".encode(), client=mock_client
-    ).with_inline_id()
     sub = MockSubmission(post_id)
     api = MockExportAPI().with_submission(sub)
     handler = MockSiteHandler(api)
+    callback = MockTelegramEvent.with_callback_query(
+        data=f"neaten_me:{handler.site_code}:{post_id}".encode(), client=mock_client
+    ).with_inline_id()
     cache = MockSubmissionCache()
     func = InlineEditButtonPress(HandlerGroup([handler], cache))
 
