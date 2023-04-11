@@ -1,6 +1,7 @@
 import pytest
 
 from fa_search_bot.functionalities.inline_edit import InlineEditButtonPress, InlineEditFunctionality
+from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
@@ -114,11 +115,12 @@ async def test_inline_button_press__unknown_site_code(mock_client):
     api = MockExportAPI().with_submission(sub)
     handler = MockSiteHandler(api)
     callback = MockTelegramEvent.with_callback_query(
-        data=f"neaten_me:{handler.site_code}:{post_id}".encode(), client=mock_client
+        data=f"neaten_me:xy:{post_id}".encode(), client=mock_client
     ).with_inline_id()
     cache = MockSubmissionCache()
     func = InlineEditButtonPress(HandlerGroup([handler], cache))
 
-    await func.call(callback)
+    with pytest.raises(PageNotFound):
+        await func.call(callback)
 
     handler._send_submission.assert_not_called()
