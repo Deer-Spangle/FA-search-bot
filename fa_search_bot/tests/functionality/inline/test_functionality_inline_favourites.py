@@ -5,6 +5,7 @@ from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
 from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
@@ -17,7 +18,8 @@ async def test_user_favourites(mock_client):
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_user_favs(username, [submission1, submission2])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -49,7 +51,8 @@ async def test_user_favs(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_favs(username, [submission])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -75,7 +78,8 @@ async def test_american_spelling(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favorites:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_favs(username, [submission])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -102,7 +106,8 @@ async def test_continue_from_fav_id(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}", offset=fav_id)
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_favs(username, [submission], next_id=fav_id)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -126,7 +131,8 @@ async def test_empty_favs(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     api = MockExportAPI().with_user_favs(username, [])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -146,7 +152,8 @@ async def test_hypens_in_username(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_favs(username, [submission])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -172,7 +179,8 @@ async def test_weird_characters_in_username(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_favs(username, [submission])
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -197,7 +205,8 @@ async def test_no_user_exists(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
     requests_mock.get(f"https://example.com/user/{username}/favorites.json", status_code=404)
 
     with pytest.raises(StopPropagation):
@@ -218,7 +227,8 @@ async def test_username_with_colon(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
     requests_mock.get(f"https://example.com/user/{username}/favorites.json", status_code=404)
 
     with pytest.raises(StopPropagation):
@@ -238,7 +248,8 @@ async def test_over_max_favs(mock_client):
     post_ids = list(range(123456, 123456 + 72))
     submissions = [MockSubmission(x) for x in post_ids]
     api = MockExportAPI().with_user_favs(username, submissions)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
 
     with pytest.raises(StopPropagation):
@@ -266,7 +277,8 @@ async def test_no_username_set(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"favs:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
     requests_mock.get(
         f"https://example.com/user/{username}/favorites.json?page=1&full=1",
         json={
@@ -297,7 +309,8 @@ async def test_user_favourites_last_page(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"favourites:{username}", offset=submission2.fav_id)
     api = MockExportAPI().with_user_favs(username, [submission1, submission2], next_id=submission2.fav_id)
-    inline = InlineFavsFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineFavsFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
