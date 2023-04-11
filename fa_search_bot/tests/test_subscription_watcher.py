@@ -406,7 +406,7 @@ async def test_send_updates__sends_message(mock_client):
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
         await watcher._send_updates([subscription], submission)
 
     assert m.asset_called_once()
@@ -428,7 +428,7 @@ async def test_send_updates__gathers_subscriptions(mock_client):
     subscription3 = Subscription("test", 54321)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
         await watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
     assert m.call_count == 2
@@ -481,7 +481,7 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_blocked,
     ):
         await watcher._send_updates([subscription], submission)
@@ -502,7 +502,7 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
         raise InputUserDeactivatedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_deleted,
     ):
         await watcher._send_updates([subscription], submission)
@@ -525,7 +525,7 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_blocked,
     ):
         await watcher._send_updates([subscription1], submission)
