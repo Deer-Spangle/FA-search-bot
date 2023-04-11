@@ -22,7 +22,7 @@ async def test_inline_edit_functionality__no_site_code(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.msg_id
     assert kwargs["edit"] is True
@@ -42,7 +42,7 @@ async def test_inline_edit_functionality__site_code(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == event.msg_id
     assert kwargs["edit"] is True
@@ -79,7 +79,7 @@ async def test_inline_button_press__no_site_code(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == callback.original_update.msg_id
     assert kwargs["edit"] is True
@@ -101,7 +101,7 @@ async def test_inline_button_press__site_code(mock_client):
 
     handler._send_submission.assert_called_once()
     args, kwargs = handler._send_submission.call_args
-    assert args[0] == post_id
+    assert args[0] == str(post_id)
     assert args[1] == mock_client
     assert args[2] == callback.original_update.msg_id
     assert kwargs["edit"] is True
