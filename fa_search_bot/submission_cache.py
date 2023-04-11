@@ -51,4 +51,5 @@ class SubmissionCache:
             entry.access_hash,
             entry.file_url,
             entry.caption,
+            entry.full_image
         )
