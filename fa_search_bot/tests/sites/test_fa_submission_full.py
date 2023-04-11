@@ -1,3 +1,5 @@
+import datetime
+
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -13,6 +15,7 @@ def test_constructor():
     description = "This is an example post for testing"
     keywords = ["example", "test"]
     rating = Rating.GENERAL
+    posted_at = datetime.datetime.now(datetime.timezone.utc)
 
     submission = FASubmissionFull(
         post_id,
@@ -24,6 +27,7 @@ def test_constructor():
         description,
         keywords,
         rating,
+        posted_at,
     )
 
     assert isinstance(submission, FASubmissionFull)

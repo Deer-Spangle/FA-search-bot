@@ -1,3 +1,4 @@
+import datetime
 from contextlib import contextmanager
 
 from whoosh.fields import *
@@ -107,7 +108,8 @@ if __name__ == "__main__":
         FAUser("uploader", "uploader"),
         "This is the first document we've added!",
         ["first", "document"],
-        Rating.GENERAL
+        Rating.GENERAL,
+        datetime.datetime.now(datetime.timezone.utc),
     )
     sub2 = FASubmissionFull(
         "234",
@@ -118,7 +120,8 @@ if __name__ == "__main__":
         FAUser("uploader", "uploader"),
         "The second one is even more interesting!",
         ["second", "document"],
-        Rating.GENERAL
+        Rating.GENERAL,
+        datetime.datetime.now(datetime.timezone.utc),
     )
 
     print("Whoosh time:")
