@@ -5,6 +5,7 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
@@ -12,7 +13,8 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 async def test_call__route_resume_destination(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/resume")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
@@ -31,7 +33,8 @@ async def test_call__route_resume_destination(mock_client):
 async def test_call__route_unpause_destination(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/unpause")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
@@ -50,7 +53,8 @@ async def test_call__route_unpause_destination(mock_client):
 async def test_call__route_resume_destination_with_handle(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/resume@FASearchBot")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     resume_dest = MockMethod("Resumed all subscriptions")
     func._resume_destination = resume_dest.call
@@ -69,7 +73,8 @@ async def test_call__route_resume_destination_with_handle(mock_client):
 async def test_call__route_resume_subscription(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/resume test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     resume_sub = MockMethod("Resumed subscription")
     func._resume_subscription = resume_sub.call
@@ -89,7 +94,8 @@ async def test_call__route_resume_subscription(mock_client):
 async def test_call__route_resume_subscription_with_handle(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/resume@FASearchBot test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     resume_sub = MockMethod("Resumed subscription")
     func._resume_subscription = resume_sub.call
@@ -107,7 +113,8 @@ async def test_call__route_resume_subscription_with_handle(mock_client):
 
 def test_resume_destination__no_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._resume_destination(18749)
@@ -118,7 +125,8 @@ def test_resume_destination__no_subs(mock_client):
 
 def test_resume_destination__one_sub(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub = Subscription("test", 18749)
     sub.paused = True
     watcher.subscriptions.add(sub)
@@ -141,7 +149,8 @@ def test_resume_destination__one_sub(mock_client):
 
 def test_resume_destination__multiple_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("test", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -167,7 +176,8 @@ def test_resume_destination__multiple_subs(mock_client):
 
 def test_resume_destination__not_in_other_destination(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("test", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -198,7 +208,8 @@ def test_resume_destination__not_in_other_destination(mock_client):
 
 def test_resume_destination__all_running(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("test", 18749)
     sub1.paused = False
     watcher.subscriptions.add(sub1)
@@ -219,7 +230,8 @@ def test_resume_destination__all_running(mock_client):
 
 def test_resume_destination__all_running_except_elsewhere(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("test", 18749)
     sub1.paused = False
     watcher.subscriptions.add(sub1)
@@ -245,7 +257,8 @@ def test_resume_destination__all_running_except_elsewhere(mock_client):
 
 def test_resume_subscription__no_matching(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("example", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -264,7 +277,8 @@ def test_resume_subscription__no_matching(mock_client):
 
 def test_resume_subscription__one_matching_in_wrong_destination(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("example", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -283,7 +297,8 @@ def test_resume_subscription__one_matching_in_wrong_destination(mock_client):
 
 def test_resume_subscription__one_matching(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("example", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -314,7 +329,8 @@ def test_resume_subscription__one_matching(mock_client):
 
 def test_resume_subscription__case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("EXAMPLE", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)
@@ -345,7 +361,8 @@ def test_resume_subscription__case_insensitive(mock_client):
 
 def test_resume_subscription__already_running(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     sub1 = Subscription("example", 18749)
     sub1.paused = True
     watcher.subscriptions.add(sub1)

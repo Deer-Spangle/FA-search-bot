@@ -5,6 +5,7 @@ from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
@@ -12,7 +13,8 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 async def test_call__route_add_blocklisted_tag(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/add_blocklisted_tag test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = BlocklistFunctionality(watcher)
     add_tag = MockMethod("Added to blocklist: test")
     func._add_to_blocklist = add_tag.call
@@ -33,7 +35,8 @@ async def test_call__route_add_blocklisted_tag(mock_client):
 async def test_call__route_remove_blocklisted_tag(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_blocklisted_tag example")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = BlocklistFunctionality(watcher)
     remove_tag = MockMethod("Removed from blocklist: example")
     func._remove_from_blocklist = remove_tag.call
@@ -54,7 +57,8 @@ async def test_call__route_remove_blocklisted_tag(mock_client):
 async def test_call__route_list_blocklisted_tags(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/list_blocklisted_tags")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = BlocklistFunctionality(watcher)
     list_tags = MockMethod("Listing blocklisted tags")
     func._list_blocklisted_tags = list_tags.call
@@ -72,7 +76,8 @@ async def test_call__route_list_blocklisted_tags(mock_client):
 
 def test_add_to_blocklist__no_add_blank(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = BlocklistFunctionality(watcher)
 
     resp = func._add_to_blocklist(18749, "")
@@ -83,7 +88,8 @@ def test_add_to_blocklist__no_add_blank(mock_client):
 
 def test_add_to_blocklist__creates_blocklist_for_channel(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = BlocklistFunctionality(watcher)
     list_tags = MockMethod("Listing blocklisted tags")
     func._list_blocklisted_tags = list_tags.call
@@ -103,7 +109,8 @@ def test_add_to_blocklist__creates_blocklist_for_channel(mock_client):
 
 def test_add_to_blocklist__add_tag_to_blocklist(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.blocklists[18749] = {"example"}
     func = BlocklistFunctionality(watcher)
     list_tags = MockMethod("Listing blocklisted tags")
@@ -124,7 +131,8 @@ def test_add_to_blocklist__add_tag_to_blocklist(mock_client):
 
 def test_remove_from_blocklist__tag_not_in_blocklist(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.blocklists[18749] = {"example"}
     watcher.blocklists[18747] = {"test"}
     func = BlocklistFunctionality(watcher)
@@ -139,7 +147,8 @@ def test_remove_from_blocklist__tag_not_in_blocklist(mock_client):
 
 def test_remove_from_blocklist__removes_tag_from_blocklist(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.blocklists[18749] = {"example", "test"}
     watcher.blocklists[18747] = {"test"}
     func = BlocklistFunctionality(watcher)
@@ -161,7 +170,8 @@ def test_remove_from_blocklist__removes_tag_from_blocklist(mock_client):
 
 def test_list_blocklisted_tags(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.blocklists[18749] = {"example", "deer"}
     watcher.blocklists[18747] = {"test"}
     func = BlocklistFunctionality(watcher)

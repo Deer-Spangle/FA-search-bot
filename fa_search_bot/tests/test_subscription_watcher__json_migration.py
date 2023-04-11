@@ -2,6 +2,7 @@ from unittest import mock
 
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 
 
 def test_load_old_save_new(mock_client):
@@ -32,6 +33,7 @@ def test_load_old_save_new(mock_client):
         "blacklists": {"87654": ["artist:fender", "fox"], "-76543": ["artist:fred"]},
     }
     api = MockExportAPI()
+    cache = MockSubmissionCache()
 
     def mock_load(*args, **kwargs):
         return old_data
@@ -46,7 +48,7 @@ def test_load_old_save_new(mock_client):
     mock_dump = MockDump()
 
     with mock.patch("json.loads", mock_load):
-        watcher = SubscriptionWatcher.load_from_json(api, mock_client)
+        watcher = SubscriptionWatcher.load_from_json(api, mock_client, cache)
 
     assert len(watcher.subscriptions) == 4
     assert len(watcher.blocklists) == 2

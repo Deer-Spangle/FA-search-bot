@@ -14,7 +14,8 @@ async def test_supergroup_upgrade(mock_client):
     new_chat_id = 54321
     event = MockTelegramEvent.with_migration(old_chat_id=old_chat_id, new_chat_id=new_chat_id)
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SupergroupUpgradeFunctionality(watcher)
     migrate_chat = MockMethod("Migrate subscriptions")
     watcher.migrate_chat = migrate_chat.call

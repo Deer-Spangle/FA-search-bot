@@ -7,6 +7,7 @@ from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionalit
 from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 
 
@@ -14,7 +15,8 @@ from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent
 async def test_call__route_add_subscription(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     add_sub = MockMethod("Added subscription test")
     func._add_sub = add_sub.call
@@ -34,7 +36,8 @@ async def test_call__route_add_subscription(mock_client):
 async def test_call__route_add_subscription_with_username(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/add_subscription@FASearchBot test")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     add_sub = MockMethod("Added subscription test")
     func._add_sub = add_sub.call
@@ -54,7 +57,8 @@ async def test_call__route_add_subscription_with_username(mock_client):
 async def test_call__route_remove_subscription(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription example")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     delete_sub = MockMethod("Removed subscription test")
     func._remove_sub = delete_sub.call
@@ -74,7 +78,8 @@ async def test_call__route_remove_subscription(mock_client):
 async def test_call__route_remove_subscription_with_username(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/remove_subscription@FASearchBot example")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     delete_sub = MockMethod("Removed subscription test")
     func._remove_sub = delete_sub.call
@@ -94,7 +99,8 @@ async def test_call__route_remove_subscription_with_username(mock_client):
 async def test_call__route_list_subscriptions(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
@@ -113,7 +119,8 @@ async def test_call__route_list_subscriptions(mock_client):
 async def test_call__route_list_subscriptions_with_username(mock_client):
     event = MockTelegramEvent.with_message(chat_id=14358, text="/list_subscriptions@FASearchBot")
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
@@ -130,7 +137,8 @@ async def test_call__route_list_subscriptions_with_username(mock_client):
 
 def test_add_sub__no_add_blank(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._add_sub(18749, "")
@@ -141,7 +149,8 @@ def test_add_sub__no_add_blank(mock_client):
 
 def test_add_sub__invalid_query(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
 
     resp = func._add_sub(18749, "(hello")
@@ -152,7 +161,8 @@ def test_add_sub__invalid_query(mock_client):
 
 def test_add_sub__no_add_duplicate(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
 
@@ -164,7 +174,8 @@ def test_add_sub__no_add_duplicate(mock_client):
 
 def test_add_sub__no_add_duplicate_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("test", 18749))
     func = SubscriptionFunctionality(watcher)
 
@@ -176,7 +187,8 @@ def test_add_sub__no_add_duplicate_case_insensitive(mock_client):
 
 def test_add_sub__adds_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     func = SubscriptionFunctionality(watcher)
     list_subs = MockMethod("Listing subscriptions")
     func._list_subs = list_subs.call
@@ -197,7 +209,8 @@ def test_add_sub__adds_subscription(mock_client):
 
 def test_remove_sub__non_existent_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     func = SubscriptionFunctionality(watcher)
@@ -210,7 +223,8 @@ def test_remove_sub__non_existent_subscription(mock_client):
 
 def test_remove_sub__removes_subscription(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     new_sub = Subscription("test", 18749)
@@ -241,7 +255,8 @@ def test_remove_sub__removes_subscription(mock_client):
 
 def test_remove_sub__removes_subscription_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     new_sub = Subscription("test", 18749)
@@ -272,7 +287,8 @@ def test_remove_sub__removes_subscription_case_insensitive(mock_client):
 
 def test_list_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18747))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -288,7 +304,8 @@ def test_list_subs(mock_client):
 
 def test_list_subs__alphabetical(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -302,7 +319,8 @@ def test_list_subs__alphabetical(mock_client):
 
 def test_list_subs__alphabetical_case_insensitive(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("Example", 18749))
     watcher.subscriptions.add(Subscription("test", 18749))
     watcher.subscriptions.add(Subscription("deer", 18749))
@@ -316,7 +334,8 @@ def test_list_subs__alphabetical_case_insensitive(mock_client):
 
 def test_list_subs__some_paused(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(Subscription("example", 18749))
     sub_paused = Subscription("test", 18749)
     sub_paused.paused = True
