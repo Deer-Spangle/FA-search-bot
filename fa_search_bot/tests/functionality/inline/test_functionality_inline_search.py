@@ -214,15 +214,15 @@ async def test_search_with_field(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_site_prefix__letter(mock_client):
-    site_letter = "m"
-    site_name = "MockSite"
+    site_letter = "f"
+    site_name = "Furaffinity"
     search_term = "YCH"
     search_query = f"{site_letter}:{search_term}"
     event = MockTelegramEvent.with_inline_query(query=search_query)
     post_id = 213231
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
-    handler = MockSiteHandler(api, site_name=site_name)
+    handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
     inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
@@ -245,7 +245,7 @@ async def test_search_site_prefix__letter(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_site_prefix__code(mock_client):
-    site_code = "ms"
+    site_code = "fa"
     search_term = "YCH"
     search_query = f"{site_code}:{search_term}"
     event = MockTelegramEvent.with_inline_query(query=search_query)
@@ -275,14 +275,14 @@ async def test_search_site_prefix__code(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_site_prefix__name(mock_client):
-    site_name = "MockSite"
+    site_name = "Furaffinity"
     search_term = "YCH"
     search_query = f"{site_name}:{search_term}"
     event = MockTelegramEvent.with_inline_query(query=search_query)
     post_id = 213231
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
-    handler = MockSiteHandler(api, site_name=site_name)
+    handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
     inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
@@ -305,14 +305,14 @@ async def test_search_site_prefix__name(mock_client):
 
 @pytest.mark.asyncio
 async def test_search_site_prefix__name_lower(mock_client):
-    site_name = "MockSite"
+    site_name = "furaffinity"
     search_term = "YCH"
     search_query = f"{site_name.lower()}:{search_term}"
     event = MockTelegramEvent.with_inline_query(query=search_query)
     post_id = 213231
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_search_results(search_term, [submission])
-    handler = MockSiteHandler(api, site_name=site_name)
+    handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
     inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
 
