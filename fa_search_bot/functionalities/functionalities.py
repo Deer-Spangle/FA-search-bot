@@ -66,7 +66,15 @@ class BotFunctionality(ABC):
         self.usage_counter = usage_counter
 
     def register(self, client: TelegramClient) -> None:
-        client.add_event_handler(self.call, self.event)
+        client.add_event_handler(self._wrap_call, self.event)
+
+    async def _wrap_call(self, event: EventCommon) -> None:
+        try:
+            await self.call(event)
+        except Exception as e:
+            if not isinstance(e, StopPropagation):
+                logger.error("Failure when calling %s functionality", self.__class__.__name__, exc_info=e)
+            raise e
 
     @abstractmethod
     async def call(self, event: EventCommon) -> None:

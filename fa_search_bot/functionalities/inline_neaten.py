@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, log_inline_exceptions
+from fa_search_bot.functionalities.functionalities import BotFunctionality
 
 if TYPE_CHECKING:
     from typing import List
@@ -33,22 +33,20 @@ class InlineNeatenFunctionality(BotFunctionality):
         # Check if it's a submission ID
         sub_ids = self.handlers.list_potential_submission_ids(query_clean)
         if sub_ids:
-            with log_inline_exceptions(msg=f"Failed to send inline response for IDs: {sub_ids}"):
-                results = await self.handlers.answer_submission_ids(sub_ids, event)
-                if results:
-                    self.usage_counter.labels(function=f"{self.USE_CASE_ID}").inc()
-                    logger.info("Sending inline ID query result")
-                    await event.answer(results, gallery=True)
-                    raise StopPropagation
+            results = await self.handlers.answer_submission_ids(sub_ids, event)
+            if results:
+                self.usage_counter.labels(function=f"{self.USE_CASE_ID}").inc()
+                logger.info("Sending inline ID query result")
+                await event.answer(results, gallery=True)
+                raise StopPropagation
         # Check if it's a link
         links = self.handlers.list_potential_links(query_clean)
         if links:
-            with log_inline_exceptions(msg=f"Failed to send inline response for links: {links}"):
-                results = await self.handlers.answer_links(links, event)
-                if results:
-                    self.usage_counter.labels(function=f"{self.USE_CASE_LINK}").inc()
-                    logger.info("Sending inline link query results")
-                    await event.answer(results, gallery=True)
-                    raise StopPropagation
+            results = await self.handlers.answer_links(links, event)
+            if results:
+                self.usage_counter.labels(function=f"{self.USE_CASE_LINK}").inc()
+                logger.info("Sending inline link query results")
+                await event.answer(results, gallery=True)
+                raise StopPropagation
         # Otherwise, pass and let inline functionality handle it
         pass

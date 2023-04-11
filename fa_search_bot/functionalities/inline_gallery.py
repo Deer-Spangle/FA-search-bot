@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 
 from telethon.events import InlineQuery, StopPropagation
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error, \
-    log_inline_exceptions
+from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -58,17 +57,16 @@ class InlineGalleryFunctionality(BotFunctionality):
             self.usage_counter.labels(function=self.USE_CASE_SCRAPS).inc()
         else:
             self.usage_counter.labels(function=self.USE_CASE_GALLERY).inc()
-        with log_inline_exceptions(msg="Failed to list inline gallery"):
-            # Get results and next offset
-            results, next_offset = await self._gallery_query_results(event, folder, username, offset)
-            logger.info(f"There are {len(results)} results.")
-            # Send results
-            await event.answer(
-                results,
-                next_offset=str(next_offset) if next_offset else None,
-                gallery=True,
-            )
-            raise StopPropagation
+        # Get results and next offset
+        results, next_offset = await self._gallery_query_results(event, folder, username, offset)
+        logger.info(f"There are {len(results)} results.")
+        # Send results
+        await event.answer(
+            results,
+            next_offset=str(next_offset) if next_offset else None,
+            gallery=True,
+        )
+        raise StopPropagation
 
     async def _gallery_query_results(
         self, event: InlineQuery.Event, folder: str, username: str, offset: str
