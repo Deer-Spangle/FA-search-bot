@@ -37,10 +37,14 @@ class SentSubmission:
     def from_resp(
         cls,
         sub_id: SubmissionID,
-        resp: telethon.tl.patched.Message,
+        resp: Union[telethon.tl.patched.Message, bool],
         file_url: str,
         caption: str,
-    ) -> "SentSubmission":
+    ) -> Optional["SentSubmission"]:
+        # When editing an image sent via inline query, telegram responds with bool instead of message
+        if isinstance(resp, bool):
+            return None
+        # Build the sent message object to cache
         is_photo: bool = isinstance(resp.file.media, Photo)
         media_id: int = resp.file.media.id
         access_hash: int = resp.file.media.access_hash
