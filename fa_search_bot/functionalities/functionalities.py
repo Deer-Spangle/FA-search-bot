@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from contextlib import asynccontextmanager, contextmanager
+from typing import TYPE_CHECKING, Generator
 
 from prometheus_client import Counter
 from telethon.events import StopPropagation
@@ -48,6 +48,16 @@ async def answer_with_error(event: InlineQuery.Event, title: str, msg: str) -> N
         gallery=False,
         next_offset=None,
     )
+
+
+@contextmanager
+def log_inline_exceptions(msg: str) -> Generator[None, None, None]:
+    try:
+        yield
+    except Exception as e:
+        if not isinstance(e, StopPropagation):
+            logger.error(msg, exc_info=e)
+        raise e
 
 
 class BotFunctionality(ABC):

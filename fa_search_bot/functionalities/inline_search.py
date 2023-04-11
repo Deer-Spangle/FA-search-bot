@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, TypeVar
 
 from telethon.events import InlineQuery, StopPropagation
 
-from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
+from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error, \
+    log_inline_exceptions
 
 if TYPE_CHECKING:
     from typing import List, Optional, Tuple
@@ -42,15 +43,16 @@ class InlineSearchFunctionality(BotFunctionality):
             raise StopPropagation
         # Get results and next offset
         self.usage_counter.labels(function=self.USE_CASE_SEARCH).inc()
-        results, next_offset = await self._search_query_results(event, query, offset)
-        logger.info(f"There are {len(results)} results.")
-        # Send results
-        await event.answer(
-            results,
-            next_offset=str(next_offset) if next_offset else None,
-            gallery=True,
-        )
-        raise StopPropagation
+        with log_inline_exceptions(msg="Failed to perform inline search"):
+            results, next_offset = await self._search_query_results(event, query, offset)
+            logger.info(f"There are {len(results)} results.")
+            # Send results
+            await event.answer(
+                results,
+                next_offset=str(next_offset) if next_offset else None,
+                gallery=True,
+            )
+            raise StopPropagation
 
     def _page_results(self, results: List[T], page: int, skip: Optional[int]) -> Tuple[List[T], str]:
         next_offset = str(page + 1)
