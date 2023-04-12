@@ -73,10 +73,15 @@ class FAHandler(SiteHandler):
         if not direct_match:
             return None
         username = direct_match.group(1)
-        image_id = int(direct_match.group(2))
-        submission_id = await self._find_submission(username, image_id)
+        image_id_1 = int(direct_match.group(2))
+        image_id_2 = int(direct_match.group(3))
+        submission_id = await self._find_submission(username, image_id_1)
         if not submission_id:
-            raise HandlerException(f"Could not locate the image by {username} with image id {image_id}.")
+            submission_id = await self._find_submission(username, image_id_2)
+            if not submission_id:
+                raise HandlerException(
+                    f"Could not locate the image by {username} with image id {image_id_1} or {image_id_2}."
+                )
         logger.info("FA link: direct image link")
         return SubmissionID(self.site_code, submission_id)
 
