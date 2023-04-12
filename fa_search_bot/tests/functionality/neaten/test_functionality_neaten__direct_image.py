@@ -224,7 +224,9 @@ async def test_direct_no_match(mock_client):
 
     event.reply.assert_called()
     event.reply.assert_called_with(
-        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
+        "Could not find submissions from links: d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
+            username, image_id
+        ),
     )
 
 
@@ -562,7 +564,9 @@ async def test_result_missing_from_first_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
+        "Could not find submissions from links: d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
+            username, image_id
+        ),
     )
 
 
@@ -607,7 +611,9 @@ async def test_result_missing_from_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
+        "Could not find submissions from links: d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
+            username, image_id
+        ),
     )
 
 
@@ -646,7 +652,9 @@ async def test_result_missing_between_pages(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
+        "Could not find submissions from links: d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
+            username, image_id
+        ),
     )
 
 
@@ -758,7 +766,9 @@ async def test_not_on_first_page_empty_second_page(mock_client):
         await neaten.call(event)
 
     event.reply.assert_called_with(
-        f"Error finding submission: Could not locate the image by {username} with image id {image_id}.",
+        "Could not find submissions from links: d.furaffinity.net/art/{0}/{1}/{1}.pic_of_me.png".format(
+            username, image_id
+        ),
     )
 
 
