@@ -28,6 +28,8 @@ async def in_progress_msg(event: NewMessage.Event, text: Optional[str]) -> Async
     msg = await event.reply(text)
     try:
         yield
+    except StopPropagation as e:
+        raise e
     except Exception as e:
         logger.error("Unhandled exception in functionality handler", exc_info=e)
         await event.reply("Command failed. Sorry, I tried but failed to process this.")
