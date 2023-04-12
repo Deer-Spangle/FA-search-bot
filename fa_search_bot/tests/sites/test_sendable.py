@@ -7,7 +7,7 @@ from telethon.tl.custom import InlineBuilder
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
-from fa_search_bot.sites.sendable import Sendable, random_sandbox_video_path
+from fa_search_bot.sites.sendable import Sendable, random_sandbox_video_path, SANDBOX_DIR
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod, MockMultiMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
@@ -270,47 +270,17 @@ async def test_send_animated_gif_submission(mock_client):
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
-    convert = MockMethod("output.mp4")
+    output_filename = "output.mp4"
+    convert = MockMethod(output_filename)
     sendable._convert_gif = convert.async_call
-    mock_rename = MockMethod()
 
-    with mock.patch("os.rename", mock_rename.call):
-        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-            await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
+        await sendable.send_message(mock_client, chat, reply_to=message_id)
 
-    cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
     assert convert.called
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_rename.called
-    assert mock_rename.args[0] == "output.mp4"
-    assert mock_rename.args[1] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]["file"] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]["message"] == submission.link
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-
-
-@pytest.mark.asyncio
-async def test_send_animated_gif_submission_from_cache(mock_client):
-    submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-    convert = MockMethod("output.mp4")
-    sendable._convert_gif = convert.async_call
-    mock_exists = MockMethod(True)
-
-    with mock.patch("os.path.exists", mock_exists.call):
-        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-            await sendable.send_message(mock_client, chat, reply_to=message_id)
-
-    cache_dir = f"{sendable.CACHE_DIR}/{sendable.site_id}"
-    assert not convert.called
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_exists.called
-    assert mock_exists.args[0] == f"{cache_dir}/{submission.submission_id}.mp4"
-    assert mock_client.send_message.call_args[1]["file"] == f"{cache_dir}/{submission.submission_id}.mp4"
+    assert mock_client.send_message.call_args[1]["file"] == output_filename
     assert mock_client.send_message.call_args[1]["message"] == submission.link
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
@@ -354,7 +324,8 @@ async def test_send_static_png_does_not_convert(mock_client):
     assert not convert.called
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args.kwargs["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"] == submission.download_url
+    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args.kwargs["file"].endswith(".png")
     assert mock_client.send_message.call_args.kwargs["message"] == submission.link
     assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
 
@@ -456,7 +427,8 @@ async def test_send_image_just_under_size_limit(mock_client):
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args[1]["file"].endswith(".jpg")
     assert mock_client.send_message.call_args[1]["message"] == submission.link
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
@@ -472,7 +444,8 @@ async def test_send_image_just_over_size_limit(mock_client):
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
+    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
     assert (
         mock_client.send_message.call_args[1]["message"]
         == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
@@ -492,7 +465,8 @@ async def test_send_image_over_document_size_limit(mock_client):
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.thumbnail_url
+    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
     assert (
         mock_client.send_message.call_args[1]["message"]
         == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
@@ -567,7 +541,8 @@ async def test_send_message__with_prefix(mock_client):
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
     assert submission.link in mock_client.send_message.call_args[1]["message"]
     assert "Update on a search\n" in mock_client.send_message.call_args[1]["message"]
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
@@ -584,7 +559,8 @@ async def test_send_message__without_prefix(mock_client):
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
     assert mock_client.send_message.call_args[1]["message"] == submission.link
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
@@ -600,10 +576,11 @@ async def test_send_message__edit(mock_client):
 
     mock_client.send_message.assert_not_called()
     mock_client.edit_message.assert_called_once()
-    assert mock_client.edit_message.call_args[1]["entity"] == entity
-    assert mock_client.edit_message.call_args[1]["file"] == submission.download_url
-    assert mock_client.edit_message.call_args[1]["message"] == submission.link
-    assert mock_client.edit_message.call_args[1]["parse_mode"] == "html"
+    assert mock_client.edit_message.call_args.kwargs["entity"] == entity
+    assert mock_client.edit_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
+    assert mock_client.edit_message.call_args.kwargs["file"].endswith(".jpg")
+    assert mock_client.edit_message.call_args.kwargs["message"] == submission.link
+    assert mock_client.edit_message.call_args.kwargs["parse_mode"] == "html"
     assert "reply_to" not in mock_client.edit_message.call_args[1]
 
 
