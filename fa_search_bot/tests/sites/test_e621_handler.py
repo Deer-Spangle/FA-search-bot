@@ -1,3 +1,4 @@
+import asyncio
 from unittest import mock
 from unittest.mock import Mock
 
@@ -6,8 +7,16 @@ from telethon.tl.custom import InlineBuilder
 
 from fa_search_bot.sites.e621.e621_handler import E621Handler
 from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.site_link import SiteLink
+from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_e621_client import MockAsyncYippiClient, MockPost
+
+
+def async_return(result):
+    f = asyncio.Future()
+    f.set_result(result)
+    return f
 
 
 def test_site_name_and_code():
@@ -27,9 +36,9 @@ def test_find_links_in_str():
     results = handler.find_links_in_str(haystack)
 
     assert len(results) == 3
-    assert any(result in post._post_link for result in results)
-    assert any(result in post._post_link_old for result in results)
-    assert any(result in post._direct_link for result in results)
+    assert any(result.link in post._post_link for result in results)
+    assert any(result.link in post._post_link_old for result in results)
+    assert any(result.link in post._direct_link for result in results)
 
 
 def test_find_safe_links_in_str():
@@ -41,9 +50,9 @@ def test_find_safe_links_in_str():
     results = handler.find_links_in_str(haystack)
 
     assert len(results) == 3
-    assert any(result in post._post_link_safe for result in results)
-    assert any(result in post._post_link_old_safe for result in results)
-    assert any(result in post._direct_link_safe for result in results)
+    assert any(result.link in post._post_link_safe for result in results)
+    assert any(result.link in post._post_link_old_safe for result in results)
+    assert any(result.link in post._direct_link_safe for result in results)
 
 
 @pytest.mark.asyncio
@@ -56,7 +65,7 @@ async def test_get_submission_id_from_link__post_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -69,7 +78,7 @@ async def test_get_submission_id_from_link__safe_post_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -82,7 +91,7 @@ async def test_get_submission_id_from_link__old_post_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -95,7 +104,7 @@ async def test_get_submission_id_from_link__safe_old_post_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -108,7 +117,7 @@ async def test_get_submission_id_from_link__direct_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -121,7 +130,7 @@ async def test_get_submission_id_from_link__thumb_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -134,7 +143,7 @@ async def test_get_submission_id_from_link__direct_link_safe():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert result == post_id
+    assert result.submission_id == str(post_id)
 
 
 @pytest.mark.asyncio
@@ -152,8 +161,9 @@ async def test_get_submission_id_from_link__direct_link_no_results():
 @pytest.mark.asyncio
 async def test_get_submission_id_from_link__no_link():
     handler = E621Handler(MockAsyncYippiClient())
+    link = SiteLink(handler.site_code, "hello world")
 
-    result = await handler.get_submission_id_from_link("hello world")
+    result = await handler.get_submission_id_from_link(link)
 
     assert result is None
 
@@ -169,7 +179,7 @@ async def test_send_submission(mock_client):
     prefix = "Some prefix"
 
     with mock.patch("fa_search_bot.sites.sendable.Sendable.send_message") as mock_send:
-        await handler.send_submission(post_id, mock_client, chat, reply_to=reply_to, prefix=prefix, edit=True)
+        await handler.send_submission(str(post_id), mock_client, chat, reply_to=reply_to, prefix=prefix, edit=True)
 
     mock_send.assert_called_once()
     assert mock_send.call_args.args == (mock_client, chat)
@@ -210,12 +220,13 @@ async def test_submission_as_answer(mock_client):
     handler = E621Handler(api)
     mock_builder = Mock(InlineBuilder)
     exp_result = "tgrdsasdfds"
+    sub_id = SubmissionID(handler.site_code, str(post_id))
 
     with mock.patch(
         "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
-        return_value=exp_result,
+        return_value=async_return(exp_result),
     ) as mock_inline:
-        result = await handler.submission_as_answer(post_id, mock_builder)
+        result = await handler.submission_as_answer(sub_id, mock_builder)
 
     assert result == exp_result
     mock_inline.assert_called_once()
@@ -231,12 +242,13 @@ async def test_submission_as_answer__md5(mock_client):
     handler = E621Handler(api)
     mock_builder = Mock(InlineBuilder)
     exp_result = "tgrdsasdfds"
+    sub_id = SubmissionID(handler.site_code, post_md5)
 
     with mock.patch(
         "fa_search_bot.sites.sendable.Sendable.to_inline_query_result",
-        return_value=exp_result,
+        return_value=async_return(exp_result),
     ) as mock_inline:
-        result = await handler.submission_as_answer(post_md5, mock_builder)
+        result = await handler.submission_as_answer(sub_id, mock_builder)
 
     assert result == exp_result
     mock_inline.assert_called_once()
