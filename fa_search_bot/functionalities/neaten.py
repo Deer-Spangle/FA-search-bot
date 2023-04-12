@@ -56,7 +56,7 @@ class NeatenFunctionality(BotFunctionality):
                     event,
                     f"Could not find submissions from links: {', '.join(link.link for link in links)}"
                 )
-                return
+                raise StopPropagation
             # Remove duplicates, preserving order
             submission_ids = list(dict.fromkeys(submission_ids))
             # Handle each submission
