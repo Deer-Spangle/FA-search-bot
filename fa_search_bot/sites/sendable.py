@@ -175,6 +175,9 @@ inline_results = Counter(
 )
 
 
+SANDBOX_DIR = "sandbox"
+
+
 @dataclasses.dataclass
 class CaptionSettings:
     direct_link: bool = False
@@ -199,8 +202,8 @@ def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
 
 
 def random_sandbox_video_path(file_ext: str = "mp4") -> str:
-    os.makedirs("sandbox", exist_ok=True)
-    return f"sandbox/{uuid.uuid4()}.{file_ext}"
+    os.makedirs(SANDBOX_DIR, exist_ok=True)
+    return f"{SANDBOX_DIR}/{uuid.uuid4()}.{file_ext}"
 
 
 @contextmanager
@@ -585,7 +588,7 @@ class Sendable(InlineSendable):
         }
         with docker_run_time.labels(**labels).time():
             with docker_failures.labels(**labels).count_exceptions():
-                sandbox_dir = os.getcwd() + "/sandbox"
+                sandbox_dir = os.getcwd() + "/" + SANDBOX_DIR
                 logger.debug(
                     "Running docker container with args %s and entrypoint %s",
                     args,
