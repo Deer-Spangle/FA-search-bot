@@ -18,7 +18,6 @@ from PIL import Image
 from prometheus_client import Counter
 from prometheus_client.metrics import Histogram
 from telethon import Button
-from telethon.errors import BadRequestError
 
 from fa_search_bot.sites.sent_submission import SentSubmission
 
