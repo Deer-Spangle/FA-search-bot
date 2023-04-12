@@ -143,6 +143,7 @@ class SubmissionBuilder:
                 Rating.ADULT: "Adult",
             }[self.rating],
             "keywords": self.keywords,
+            "posted_at": self.posted_at.isoformat(),
         }
 
     def build_search_json(self):
