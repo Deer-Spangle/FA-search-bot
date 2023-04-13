@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import dateutil.parser
 import heartbeat
-from prometheus_client import Gauge
+from prometheus_client import Gauge, Summary
 from prometheus_client.metrics import Counter
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
 
@@ -99,6 +99,34 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
+time_taken_listing_api = Summary(
+    "fasearchbot_fasubwatcher_time_taken_by_listing_api",
+    "Amount of tike taken (in seconds) fetching listing data from the API",
+)
+time_taken_submission_api = Summary(
+    "fasearchbot_fasubwatcher_time_taken_by_submission_api",
+    "Amount of time taken (in seconds) fetching submission data from the API",
+)
+time_taken_sending_messages = Summary(
+    "fasearchbot_fasubwatcher_time_taken_by_sending",
+    "Amount of time taken (in seconds) sending messages to subscriptions",
+)
+time_taken_updating_heartbeat = Summary(
+    "fasearchbot_fasubwatcher_time_taken_by_heartbeat",
+    "Amount of time taken (in seconds) to send a heartbeat to the heartbeat server",
+)
+time_taken_checking_matches = Summary(
+    "fasearchbot_fasubwatcher_time_taken_checking_matches",
+    "Amount of time taken (in seconds) to check whether submissions match subscriptions",
+)
+time_taken_saving_config = Summary(
+    "fasearchbot_fasubwatcher_time_taken_updating_config",
+    "Amount of time taken (in seconds) to update the config",
+)
+time_taken_waiting = Summary(
+    "fasearchbot_fasubwatcher_time_taken_waiting",
+    "Amount of time taken (in seconds) waiting before checking for new subscriptions"
+)
 
 
 class SubscriptionWatcher:
@@ -133,13 +161,15 @@ class SubscriptionWatcher:
         self.running = True
         while self.running:
             try:
-                new_results = await self._get_new_results()
+                with time_taken_listing_api.time():
+                    new_results = await self._get_new_results()
             except Exception as e:
                 logger.error("Failed to get new results", exc_info=e)
                 continue
             count = 0
             gauge_backlog.set(len(new_results))
-            heartbeat.update_heartbeat(heartbeat_app_name)
+            with time_taken_updating_heartbeat.time():
+                heartbeat.update_heartbeat(heartbeat_app_name)
             # Check for subscription updates
             for result in new_results:
                 count += 1
@@ -150,7 +180,8 @@ class SubscriptionWatcher:
                 subs_processed.inc()
                 latest_sub_processed.set_to_current_time()
                 try:
-                    full_result = await self.api.get_full_submission(result.submission_id)
+                    with time_taken_submission_api.time():
+                        full_result = await self.api.get_full_submission(result.submission_id)
                     logger.debug("Got full data for submission %s", result.submission_id)
                 except PageNotFound:
                     logger.warning(
@@ -178,12 +209,13 @@ class SubscriptionWatcher:
                 # Copy subscriptions, to avoid "changed size during iteration" issues
                 subscriptions = self.subscriptions.copy()
                 # Check which subscriptions match
-                matching_subscriptions = []
-                for subscription in subscriptions:
-                    blocklist = self.blocklists.get(subscription.destination, set())
-                    blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
-                    if subscription.matches_result(full_result, blocklist_query):
-                        matching_subscriptions.append(subscription)
+                with time_taken_checking_matches.time():
+                    matching_subscriptions = []
+                    for subscription in subscriptions:
+                        blocklist = self.blocklists.get(subscription.destination, set())
+                        blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
+                        if subscription.matches_result(full_result, blocklist_query):
+                            matching_subscriptions.append(subscription)
                 logger.debug(
                     "Submission %s matches %s subscriptions",
                     result.submission_id,
@@ -192,17 +224,21 @@ class SubscriptionWatcher:
                 if matching_subscriptions:
                     sub_matches.inc()
                     sub_total_matches.inc(len(matching_subscriptions))
-                    await self._send_updates(matching_subscriptions, full_result)
+                    with time_taken_sending_messages.time():
+                        await self._send_updates(matching_subscriptions, full_result)
                 # Update latest ids with the submission we just checked, and save config
-                self._update_latest_ids([result])
+                with time_taken_saving_config.time():
+                    self._update_latest_ids([result])
                 # Lower the backlog remaining count
                 gauge_backlog.dec(1)
                 # If we've done ten, update heartbeat
                 if count % self.UPDATE_PER_HEARTBEAT == 0:
-                    heartbeat.update_heartbeat(heartbeat_app_name)
+                    with time_taken_updating_heartbeat.time():
+                        heartbeat.update_heartbeat(heartbeat_app_name)
                     logger.debug("Heartbeat")
             # Wait
-            await self._wait_while_running(self.BACK_OFF)
+            with time_taken_waiting.time():
+                await self._wait_while_running(self.BACK_OFF)
         logger.info("Subscription watcher shutting down")
 
     def stop(self) -> None:
