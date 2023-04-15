@@ -408,11 +408,10 @@ class Sendable(InlineSendable):
                 with open(dl_path, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=8192):
                         f.write(chunk)
-                try:
-                    return await send_partial(dl_path)
-                except BadRequestError:
+                # TODO: Check image resolution
+                if self.download_file_size > self.SIZE_LIMIT_IMAGE:
                     settings.direct_link = True
-                    return await send_partial(self.thumbnail_url)
+                return await send_partial(dl_path)
         # Handle animated gifs and videos, which can be made pretty
         if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
             sendable_animated.labels(site_code=self.site_id).inc()
