@@ -30,9 +30,11 @@ async def test_inline_gallery_query(controller: BotController):
     assert len(inline_results.results) > 10
     for result in inline_results.results:
         assert result.result.id
+        assert ":" in result.result.id
+        sub_id = result.result.id.split(":")[1]
         assert result.result.send_message.message
         assert "furaffinity.net/view/" in result.result.send_message.message
-        assert result.result.id in result.result.send_message.message
+        assert sub_id in result.result.send_message.message
         assert result.result.type == "photo"
 
 
