@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.12.5] - 2023-04-18
+
+### Added
+
+- Added a series of prometheus metrics to the subscription watcher, logging the time taken by various stages of the
+  subscription watcher's process. These are all of the form `fasearchbot_fasubwatcher_time_taken_*`
+
 ## [1.12.4] - 2023-04-04
 
 ### Added
