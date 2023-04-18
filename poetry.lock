@@ -885,7 +885,7 @@ python = ">=3.7,<4.0"
 
 [[package]]
 name = "telethon"
-version = "1.28.2"
+version = "1.28.5"
 description = "Full-featured Telegram client library for Python 3"
 category = "main"
 optional = false
@@ -1041,7 +1041,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "flake8 (<5)", "pytest-co
 [metadata]
 lock-version = "1.0"
 python-versions = "^3.8"
-content-hash = "59be8a31f786116d2689c8e9b599b54ce0bafe277128e5aa6a2d95bf5e880cfe"
+content-hash = "9f40bb30902a6641fc1182490deda6aeec6acb6c5a77c966f646e63aa848419e"
 
 [metadata.files]
 aiohttp = []
