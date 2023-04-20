@@ -99,34 +99,18 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
-time_taken_listing_api = Summary(
-    "fasearchbot_fasubwatcher_time_taken_by_listing_api",
-    "Amount of tike taken (in seconds) fetching listing data from the API",
+time_taken = Summary(
+    "fasearchbot_fasubwatcher_time_taken",
+    "Amount of time taken (in seconds) doing various tasks of the subscription watcher",
+    labelnames=["task"],
 )
-time_taken_submission_api = Summary(
-    "fasearchbot_fasubwatcher_time_taken_by_submission_api",
-    "Amount of time taken (in seconds) fetching submission data from the API",
-)
-time_taken_sending_messages = Summary(
-    "fasearchbot_fasubwatcher_time_taken_by_sending",
-    "Amount of time taken (in seconds) sending messages to subscriptions",
-)
-time_taken_updating_heartbeat = Summary(
-    "fasearchbot_fasubwatcher_time_taken_by_heartbeat",
-    "Amount of time taken (in seconds) to send a heartbeat to the heartbeat server",
-)
-time_taken_checking_matches = Summary(
-    "fasearchbot_fasubwatcher_time_taken_checking_matches",
-    "Amount of time taken (in seconds) to check whether submissions match subscriptions",
-)
-time_taken_saving_config = Summary(
-    "fasearchbot_fasubwatcher_time_taken_updating_config",
-    "Amount of time taken (in seconds) to update the config",
-)
-time_taken_waiting = Summary(
-    "fasearchbot_fasubwatcher_time_taken_waiting",
-    "Amount of time taken (in seconds) waiting before checking for new subscriptions"
-)
+time_taken_listing_api = time_taken.labels(task="listing submissions to check")
+time_taken_submission_api = time_taken.labels(task="fetching submission data")
+time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
+time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
+time_taken_checking_matches = time_taken.labels(task="checking whether submission matches subscriptions")
+time_taken_saving_config = time_taken.labels(task="updating configuration")
+time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
 class SubscriptionWatcher:
