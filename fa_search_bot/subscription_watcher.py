@@ -317,7 +317,7 @@ class SubscriptionWatcher:
     ) -> SentSubmission:
         cache_entry = self.submission_cache.load_cache(sendable.submission_id)
         if cache_entry:
-            if cache_entry.try_to_send(self.client, chat, prefix=prefix):
+            if await cache_entry.try_to_send(self.client, chat, prefix=prefix):
                 return cache_entry
         result = await sendable.send_message(self.client, chat, prefix=prefix)
         self.submission_cache.save_cache(result)
