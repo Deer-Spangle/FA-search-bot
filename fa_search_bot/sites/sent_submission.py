@@ -4,6 +4,7 @@ import logging
 from typing import Union, TYPE_CHECKING, Optional
 
 import telethon.tl.patched
+from prometheus_client import Counter
 from telethon import events, Button, TelegramClient
 from telethon.tl.types import (
     Photo,
@@ -21,6 +22,13 @@ if TYPE_CHECKING:
     from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
+
+
+sent_from_cache = Counter(
+    "fasearchbot_sentsubmission_sent_from_cache_total",
+    "Total number of messages sent from cache",
+    labelnames=["site_code"],
+)
 
 
 @dataclasses.dataclass
@@ -86,6 +94,7 @@ class SentSubmission:
                 force_document=not self.is_photo,
                 parse_mode="html",
             )
+            sent_from_cache.labels(site_code=self.sub_id.site_code).inc()
             return True
         except Exception as e:
             logger.warning("Failed to reply from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
@@ -100,6 +109,7 @@ class SentSubmission:
                 message=self.caption,
                 parse_mode="html",
             )
+            sent_from_cache.labels(site_code=self.sub_id.site_code).inc()
             return True
         except Exception as e:
             logger.warning("Failed to edit from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
@@ -117,6 +127,7 @@ class SentSubmission:
                 message=message,
                 parse_mode="html",
             )
+            sent_from_cache.labels(site_code=self.sub_id.site_code).inc()
             return True
         except Exception as e:
             logger.warning("Failed to send from cache due to exception. Submission ID: %s", self.sub_id, exc_info=e)
