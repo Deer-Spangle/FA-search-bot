@@ -9,6 +9,16 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.2] - 2023-04-24
+
+### Added
+
+- Added new metric, `fasearchbot_sentsubmission_sent_from_cache_total` storing how many messages are sent from cache.
+
+### Fixed
+
+- Subscription watcher to handle PeerIdInvalidError by pausing all subscriptions to that peer.
+
 ## [1.13.1] - 2023-04-24
 
 ### Fixed
