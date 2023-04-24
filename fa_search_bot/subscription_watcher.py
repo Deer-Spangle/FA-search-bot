@@ -12,7 +12,7 @@ import dateutil.parser
 import heartbeat
 from prometheus_client import Gauge, Summary
 from prometheus_client.metrics import Counter
-from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
+from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError, PeerIdInvalidError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
@@ -294,7 +294,7 @@ class SubscriptionWatcher:
             sub_updates.inc()
             try:
                 await self._send_subscription_update(sendable, dest, prefix)
-            except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError):
+            except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
                 all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
