@@ -11,16 +11,17 @@ import pytest
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
-from fa_search_bot.sites.fa_export_api import CloudflareError
+from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.subscription_watcher import Subscription, SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_method import MockMethod
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 if TYPE_CHECKING:
     from typing import List
 
-    from fa_search_bot.sites.fa_submission import FASubmissionFull
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 
 
 class MockSubscription(Subscription):
@@ -49,7 +50,8 @@ async def watcher_killer(watcher: SubscriptionWatcher):
 
 def test_init(mock_client):
     api = MockExportAPI()
-    s = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    s = SubscriptionWatcher(api, mock_client, cache)
 
     assert s.api == api
     assert len(s.latest_ids) == 0
@@ -60,7 +62,8 @@ def test_init(mock_client):
 @pytest.mark.asyncio
 async def test_run__is_stopped_by_running_false(mock_client):
     api = MockExportAPI()
-    s = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    s = SubscriptionWatcher(api, mock_client, cache)
     # Shorten the wait
     s.BACK_OFF = 1
 
@@ -76,7 +79,8 @@ async def test_run__is_stopped_by_running_false(mock_client):
 @pytest.mark.asyncio
 async def test_run__calls_get_new_results(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     method_called = MockMethod([])
     watcher._get_new_results = method_called.async_call
     # Shorten the wait
@@ -95,7 +99,8 @@ async def test_run__calls_update_latest_ids(mock_client):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     mock_new_results = MockMethod([submission1, submission2])
     watcher._get_new_results = mock_new_results.async_call
     mock_update_latest = MockMethod()
@@ -117,7 +122,8 @@ async def test_run__updates_latest_ids(mock_client):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     mock_new_results = MockMethod([submission1, submission2])
     watcher._get_new_results = mock_new_results.async_call
     mock_save_json = MockMethod()
@@ -139,7 +145,8 @@ async def test_run__updates_latest_ids(mock_client):
 async def test_run__checks_all_subscriptions(mock_client):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_submission(submission)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     method_called = MockMethod([submission])
     watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
@@ -162,7 +169,8 @@ async def test_run__checks_all_new_results(mock_client):
     submission1 = MockSubmission("12322")
     submission2 = MockSubmission("12324")
     api = MockExportAPI().with_submissions([submission1, submission2])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     method_called = MockMethod([submission1, submission2])
     watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
@@ -182,7 +190,8 @@ async def test_run__checks_all_new_results(mock_client):
 @pytest.mark.asyncio
 async def test_run__sleeps_backoff_time(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     # Shorten the wait
     watcher.BACK_OFF = 3
 
@@ -200,7 +209,8 @@ async def test_run__sleeps_backoff_time(mock_client):
 @pytest.mark.asyncio
 async def test_run__can_exit_fast(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     # Shorten the wait
     watcher.BACK_OFF = 3
 
@@ -220,7 +230,8 @@ async def test_run__can_exit_fast(mock_client):
 async def test_run__failed_to_send_doesnt_kill_watcher(mock_client):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_browse_results([submission], 1)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     submission.send_message = lambda *args: (_ for _ in ()).throw(Exception)
     watcher.BACK_OFF = 3
     sub1 = MockSubscription("deer", 0)
@@ -240,7 +251,8 @@ async def test_run__failed_to_send_doesnt_kill_watcher(mock_client):
 async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
     submission = MockSubmission("12322")
     api = MockExportAPI().with_submission(submission)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     method_called = MockMethod([submission])
     watcher._get_new_results = method_called.async_call
     watcher.BACK_OFF = 1
@@ -270,7 +282,8 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
 async def test_get_new_results__handles_empty_latest_ids(mock_client):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.running = True
 
     results = await watcher._get_new_results()
@@ -286,7 +299,8 @@ async def test_get_new_results__handles_empty_latest_ids(mock_client):
 async def test_get_new_results__returns_new_results(mock_client):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.latest_ids.append("1220")
     watcher.running = True
 
@@ -301,7 +315,8 @@ async def test_get_new_results__returns_new_results(mock_client):
 async def test_get_new_results__includes_missing_ids(mock_client):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.latest_ids.append("1220")
     watcher.running = True
 
@@ -319,7 +334,8 @@ async def test_get_new_results__requests_only_page_one(mock_client):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1254")], page=1)
     api.call_after_x_browse = (lambda *args: (_ for _ in ()).throw(Exception), 2)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.latest_ids.append("1250")
     watcher.running = True
 
@@ -336,7 +352,8 @@ async def test_get_new_results__requests_only_page_one(mock_client):
 async def test_get_new_results__handles_sub_id_drop(mock_client):
     api = MockExportAPI()
     api.with_browse_results([MockSubmission("1220")])
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.latest_ids.append("1225")
     watcher.running = True
 
@@ -353,7 +370,8 @@ async def test_get_new_results__handles_cloudflare(mock_client):
         raise CloudflareError()
 
     api.get_browse_page = raise_cloudflare
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.BROWSE_RETRY_BACKOFF = 0.1
     watcher.latest_ids.append("1225")
     watcher.running = True
@@ -367,7 +385,8 @@ async def test_get_new_results__handles_cloudflare(mock_client):
 
 def test_update_latest_ids(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     id_list = ["1234", "1233", "1230", "1229"]
     submissions = [MockSubmission(x) for x in id_list]
     mock_save_json = MockMethod()
@@ -382,11 +401,12 @@ def test_update_latest_ids(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__sends_message(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
         await watcher._send_updates([subscription], submission)
 
     assert m.asset_called_once()
@@ -401,13 +421,14 @@ async def test_send_updates__sends_message(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__gathers_subscriptions(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription1 = Subscription("test", 12345)
     subscription2 = Subscription("test2", 12345)
     subscription3 = Subscription("test", 54321)
     submission = SubmissionBuilder().build_mock_submission()
 
-    with mock.patch("fa_search_bot.sites.fa_handler.SendableFASubmission.send_message") as m:
+    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
         await watcher._send_updates([subscription1, subscription2, subscription3], submission)
 
     assert m.call_count == 2
@@ -437,7 +458,8 @@ async def test_send_updates__gathers_subscriptions(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__updates_latest(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription = Subscription("test", 12345)
     submission = SubmissionBuilder().build_mock_submission()
 
@@ -449,7 +471,8 @@ async def test_send_updates__updates_latest(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__blocked_pauses_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription = Subscription("test", 12345)
     watcher.subscriptions.add(subscription)
     submission = SubmissionBuilder().build_mock_submission()
@@ -458,7 +481,7 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_blocked,
     ):
         await watcher._send_updates([subscription], submission)
@@ -469,7 +492,8 @@ async def test_send_updates__blocked_pauses_subs(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__deleted_pauses_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription = Subscription("test", 12345)
     watcher.subscriptions.add(subscription)
     submission = SubmissionBuilder().build_mock_submission()
@@ -478,7 +502,7 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
         raise InputUserDeactivatedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_deleted,
     ):
         await watcher._send_updates([subscription], submission)
@@ -489,7 +513,8 @@ async def test_send_updates__deleted_pauses_subs(mock_client):
 @pytest.mark.asyncio
 async def test_send_updates__blocked_pauses_other_subs(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     subscription1 = Subscription("test", 12345)
     subscription2 = Subscription("other", 12345)
     subscription3 = Subscription("not me", 54321)
@@ -500,7 +525,7 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
         raise UserIsBlockedError(None)
 
     with mock.patch(
-        "fa_search_bot.sites.fa_handler.SendableFASubmission.send_message",
+        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
         throw_blocked,
     ):
         await watcher._send_updates([subscription1], submission)
@@ -512,7 +537,8 @@ async def test_send_updates__blocked_pauses_other_subs(mock_client):
 
 def test_add_to_blocklist__new_blocklist(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
 
     watcher.add_to_blocklist(18749, "test")
 
@@ -523,7 +549,8 @@ def test_add_to_blocklist__new_blocklist(mock_client):
 
 def test_add_to_blocklist__append_blocklist(mock_client):
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.blocklists[18749] = {"example"}
 
     watcher.add_to_blocklist(18749, "test")
@@ -537,7 +564,8 @@ def test_migrate_no_block_queries(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
 
     watcher.migrate_chat(old_chat_id, new_chat_id)
@@ -552,7 +580,8 @@ def test_migrate_with_block_queries(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(MockSubscription("ych", old_chat_id))
     watcher.add_to_blocklist(old_chat_id, "test")
 
@@ -572,7 +601,8 @@ def test_migrate_nothing_matching(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
     watcher.add_to_blocklist(new_chat_id, "test")
 
@@ -592,7 +622,8 @@ def test_migrate_merge_blocklists(mock_client):
     old_chat_id = 12345
     new_chat_id = 54321
     api = MockExportAPI()
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher.subscriptions.add(MockSubscription("deer", old_chat_id))
     watcher.add_to_blocklist(old_chat_id, "test")
     watcher.subscriptions.add(MockSubscription("ych", new_chat_id))
@@ -622,7 +653,8 @@ def test_save_to_json(mock_client):
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher._update_latest_ids(latest_submissions)
     watcher.subscriptions.add(subscription1)
     watcher.subscriptions.add(subscription2)
@@ -687,8 +719,9 @@ def test_from_json(mock_client):
         with open(test_watcher_file, "w+") as f:
             json.dump(data, f)
         api = MockExportAPI()
+        cache = MockSubmissionCache()
 
-        watcher = SubscriptionWatcher.load_from_json(api, mock_client)
+        watcher = SubscriptionWatcher.load_from_json(api, mock_client, cache)
 
         assert len(watcher.latest_ids) == 3
         assert "12423" in watcher.latest_ids
@@ -738,7 +771,8 @@ def test_to_json_and_back(mock_client):
     ]
     subscription1 = Subscription("query", 1234)
     subscription2 = Subscription("example", 5678)
-    watcher = SubscriptionWatcher(api, mock_client)
+    cache = MockSubmissionCache()
+    watcher = SubscriptionWatcher(api, mock_client, cache)
     watcher._update_latest_ids(latest_submissions)
     watcher.subscriptions.add(subscription1)
     watcher.subscriptions.add(subscription2)
@@ -747,7 +781,7 @@ def test_to_json_and_back(mock_client):
 
     try:
         watcher.save_to_json()
-        new_watcher = SubscriptionWatcher.load_from_json(api, mock_client)
+        new_watcher = SubscriptionWatcher.load_from_json(api, mock_client, cache)
 
         assert len(new_watcher.latest_ids) == 3
         assert "123243" in new_watcher.latest_ids

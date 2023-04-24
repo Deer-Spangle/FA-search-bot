@@ -2,8 +2,10 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
@@ -13,7 +15,8 @@ async def test_submission_id():
     sub = MockSubmission(post_id)
     event = MockTelegramEvent.with_inline_query(query=str(post_id))
     handler = FAHandler(MockExportAPI().with_submissions([MockSubmission(12344), sub, MockSubmission(12346)]))
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -37,7 +40,8 @@ async def test_submission_id__no_result():
     post_id = 12345
     event = MockTelegramEvent.with_inline_query(query=str(post_id))
     handler = FAHandler(MockExportAPI().with_submissions([MockSubmission(12344), MockSubmission(12346)]))
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     await inline.call(event)
 
@@ -50,7 +54,8 @@ async def test_submission_link():
     sub = MockSubmission(post_id)
     event = MockTelegramEvent.with_inline_query(query=sub.link)
     handler = FAHandler(MockExportAPI().with_submissions([MockSubmission(12344), sub, MockSubmission(12346)]))
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -75,7 +80,8 @@ async def test_submission_link__no_result():
     sub = MockSubmission(post_id)
     event = MockTelegramEvent.with_inline_query(query=sub.link)
     handler = FAHandler(MockExportAPI().with_submissions([MockSubmission(12344), MockSubmission(12346)]))
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     await inline.call(event)
 
@@ -100,7 +106,8 @@ async def test_submission_direct_link():
             ],
         )
     )
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -128,7 +135,8 @@ async def test_submission_direct_link__not_found():
     handler = FAHandler(
         MockExportAPI().with_user_folder(username, "gallery", [MockSubmission(12344), MockSubmission(12346)])
     )
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     await inline.call(event)
 
@@ -141,7 +149,8 @@ async def test_query_not_id_or_link():
     sub = MockSubmission(post_id)
     event = MockTelegramEvent.with_inline_query(query="test")
     handler = FAHandler(MockExportAPI().with_submissions([MockSubmission(12344), sub, MockSubmission(12346)]))
-    inline = InlineNeatenFunctionality({handler.site_code: handler})
+    cache = MockSubmissionCache()
+    inline = InlineNeatenFunctionality(HandlerGroup([handler], cache))
 
     await inline.call(event)
 

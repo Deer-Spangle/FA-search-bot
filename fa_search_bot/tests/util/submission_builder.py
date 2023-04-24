@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import datetime
 import random
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort, FAUser, Rating
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort, FAUser, Rating
 from fa_search_bot.tests.util.mock_export_api import MockSubmission, _random_image_id, _random_string
 
 if TYPE_CHECKING:
@@ -26,6 +27,7 @@ class SubmissionBuilder:
         description: str = None,
         keywords: List[str] = None,
         rating: Rating = None,
+        posted_at: datetime.datetime = None,
     ):
         if submission_id is None:
             submission_id = random.randint(10_000, 100_000)
@@ -65,6 +67,9 @@ class SubmissionBuilder:
             keywords = [_random_string() for _ in range(3)]
         if rating is None:
             rating = Rating.GENERAL
+        if posted_at is None:
+            _age = datetime.timedelta(seconds=random.randint(0, 1_000_000))
+            posted_at = datetime.datetime.now(tz=datetime.timezone.utc) - _age
         # Set all the variables
         self.submission_id = submission_id
         self.link = f"https://furaffinity.net/view/{submission_id}/"
@@ -77,6 +82,7 @@ class SubmissionBuilder:
         self.rating = rating
         self.keywords = keywords
         self.fav_id = fav_id
+        self.posted_at = posted_at
         self._image_id = image_id
         self._file_ext = file_ext
         self._download_file_size = file_size
@@ -92,6 +98,7 @@ class SubmissionBuilder:
             self.description,
             self.keywords,
             self.rating,
+            self.posted_at,
         )
         sub._download_file_size = self._download_file_size
         return sub
@@ -136,6 +143,7 @@ class SubmissionBuilder:
                 Rating.ADULT: "Adult",
             }[self.rating],
             "keywords": self.keywords,
+            "posted_at": self.posted_at.isoformat(),
         }
 
     def build_search_json(self):

@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from typing import Coroutine, List
+    from typing import Awaitable, List
 
 T = TypeVar("T")
 
 
-async def gather_ignore_exceptions(coros: List[Coroutine[None, None, T]]) -> List[T]:
-    return list(
-        filter(
-            lambda x: not isinstance(x, Exception),
-            await asyncio.gather(*coros, return_exceptions=True),
-        )
-    )
+logger = logging.getLogger(__name__)
+
+
+async def gather_ignore_exceptions(coros: List[Awaitable[T]]) -> List[T]:
+    results = await asyncio.gather(*coros, return_exceptions=True)
+    answers = []
+    for result in results:
+        if isinstance(result, Exception):
+            logger.debug("Gathering results and hit exception, ignoring.", exc_info=result)
+        else:
+            answers.append(result)
+    return answers

@@ -9,7 +9,8 @@ import logging
 import os
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, TypeVar
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Callable, TypeVar, Generator
 
 import docker
 import requests
@@ -17,10 +18,11 @@ from PIL import Image
 from prometheus_client import Counter
 from prometheus_client.metrics import Histogram
 from telethon import Button
-from telethon.errors import BadRequestError
+
+from fa_search_bot.sites.sent_submission import SentSubmission
 
 if TYPE_CHECKING:
-    from typing import Any, BinaryIO, Coroutine, List, Optional, Union
+    from typing import Any, Awaitable, BinaryIO, List, Optional, Union
 
     from docker import DockerClient
     from docker.models.containers import Container
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
     from fa_search_bot.sites.site_handler import SiteHandler
-
+    from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +174,9 @@ inline_results = Counter(
 )
 
 
+SANDBOX_DIR = "sandbox"
+
+
 @dataclasses.dataclass
 class CaptionSettings:
     direct_link: bool = False
@@ -181,29 +186,14 @@ class CaptionSettings:
 
 def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
     for handler in handlers:
-        sendable_sent.labels(site_code=handler.site_code)
-        sendable_gif_to_png.labels(site_code=handler.site_code)
-        sendable_edit.labels(site_code=handler.site_code)
-        sendable_failure.labels(site_code=handler.site_code)
-        sendable_image.labels(site_code=handler.site_code)
-        sendable_animated.labels(site_code=handler.site_code)
-        sendable_auto_doc.labels(site_code=handler.site_code)
-        sendable_audio.labels(site_code=handler.site_code)
-        sendable_other.labels(site_code=handler.site_code)
-        sendable_animated_cached.labels(site_code=handler.site_code)
-        convert_video_total.labels(site_code=handler.site_code)
-        convert_video_failures.labels(site_code=handler.site_code)
-        convert_video_animated.labels(site_code=handler.site_code)
-        convert_video_no_audio.labels(site_code=handler.site_code)
-        convert_video_no_audio_gif.labels(site_code=handler.site_code)
-        convert_video_to_video.labels(site_code=handler.site_code)
-        convert_video_only_one_attempt.labels(site_code=handler.site_code)
-        convert_video_two_pass.labels(site_code=handler.site_code)
-        convert_gif_total.labels(site_code=handler.site_code)
-        convert_gif_failures.labels(site_code=handler.site_code)
-        convert_gif_only_one_attempt.labels(site_code=handler.site_code)
-        convert_gif_two_pass.labels(site_code=handler.site_code)
-        video_length.labels(site_code=handler.site_code)
+        for metric in [
+            sendable_sent, sendable_gif_to_png, sendable_edit, sendable_failure, sendable_image, sendable_animated,
+            sendable_auto_doc, sendable_audio, sendable_other, sendable_animated_cached, convert_video_total,
+            convert_video_failures, convert_video_animated, convert_video_no_audio, convert_video_no_audio_gif,
+            convert_video_to_video, convert_video_only_one_attempt, convert_video_two_pass, convert_gif_total,
+            convert_gif_failures, convert_gif_only_one_attempt, convert_gif_two_pass, video_length,
+        ]:
+            metric.labels(site_code=handler.site_code)
         for entrypoint in DockerEntrypoint:
             docker_run_time.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
             docker_failures.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
@@ -211,8 +201,20 @@ def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
 
 
 def random_sandbox_video_path(file_ext: str = "mp4") -> str:
-    os.makedirs("sandbox", exist_ok=True)
-    return f"sandbox/{uuid.uuid4()}.{file_ext}"
+    os.makedirs(SANDBOX_DIR, exist_ok=True)
+    return f"{SANDBOX_DIR}/{uuid.uuid4()}.{file_ext}"
+
+
+@contextmanager
+def temp_sandbox_file(file_ext: str = "mp4") -> Generator[str, None, None]:
+    temp_path = random_sandbox_video_path(file_ext)
+    try:
+        yield temp_path
+    finally:
+        try:
+            os.remove(temp_path)
+        except FileNotFoundError:
+            pass
 
 
 def _is_animated(file_url: str) -> bool:
@@ -274,7 +276,46 @@ def _format_input_path(input_path: str) -> str:
     return f"/{input_path}"
 
 
-class Sendable(ABC):
+class InlineSendable(ABC):
+
+    @property
+    def site_id(self) -> str:
+        return self.submission_id.site_code
+
+    @property
+    def id(self) -> str:
+        return self.submission_id.submission_id
+
+    @property
+    @abstractmethod
+    def submission_id(self) -> SubmissionID:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def thumbnail_url(self) -> str:
+        """
+        A scaled down thumbnail, of the full image, or of the preview image
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def link(self) -> str:
+        raise NotImplementedError
+
+    def to_inline_query_result(self, builder: InlineBuilder) -> Awaitable[InputBotInlineResultPhoto]:
+        inline_results.labels(site_code=self.site_id).inc()
+        return builder.photo(
+            file=self.thumbnail_url,
+            id=f"{self.site_id}:{self.id}",
+            text=self.link,
+            # Button is required such that the bot can get a callback with the message id, and edit it later.
+            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.submission_id.to_inline_code()}")],
+        )
+
+
+class Sendable(InlineSendable):
     EXTENSIONS_GIF = ["gif"]  # These should be converted to png, if not animated
     EXTENSIONS_ANIMATED = [
         "gif",
@@ -293,18 +334,7 @@ class Sendable(ABC):
     SIZE_LIMIT_DOCUMENT = 20 * 1000**2  # Maximum 20MB document size on telegram
     LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
 
-    CACHE_DIR = "video_cache"
     DOCKER_TIMEOUT = 5 * 60
-
-    @property
-    @abstractmethod
-    def site_id(self) -> str:
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def id(self) -> str:
-        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -330,19 +360,6 @@ class Sendable(ABC):
         """
         raise NotImplementedError
 
-    @property
-    @abstractmethod
-    def thumbnail_url(self) -> str:
-        """
-        A scaled down thumbnail, of the full image, or of the preview image
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def link(self) -> str:
-        raise NotImplementedError
-
     @_count_exceptions_with_labels(sendable_failure)
     async def send_message(
         self,
@@ -352,12 +369,12 @@ class Sendable(ABC):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> None:
+    ) -> SentSubmission:
         sendable_sent.labels(site_code=self.site_id).inc()
         settings = CaptionSettings()
         ext = self.download_file_ext
 
-        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> None:
+        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> SentSubmission:
             if isinstance(file, str):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
@@ -365,15 +382,15 @@ class Sendable(ABC):
                     file = _convert_gif_to_png(file)
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
-                await client.edit_message(
+                msg = await client.edit_message(
                     entity=chat,
                     file=file,
                     message=self.caption(settings, prefix),
                     force_document=force_doc,
                     parse_mode="html",
                 )
-                return
-            await client.send_message(
+                return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
+            msg = await client.send_message(
                 entity=chat,
                 file=file,
                 message=self.caption(settings, prefix),
@@ -381,19 +398,20 @@ class Sendable(ABC):
                 force_document=force_doc,
                 parse_mode="html",  # Markdown is not safe here, because of the prefix.
             )
-            return
+            return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
 
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             sendable_image.labels(site_code=self.site_id).inc()
-            if self.download_file_size > self.SIZE_LIMIT_IMAGE:
-                settings.direct_link = True
-                return await send_partial(self.thumbnail_url)
-            try:
-                return await send_partial(self.download_url)
-            except BadRequestError:
-                settings.direct_link = True
-                return await send_partial(self.thumbnail_url)
+            with temp_sandbox_file(ext) as dl_path:
+                resp = requests.get(self.download_url, stream=True)
+                with open(dl_path, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                # TODO: Check image resolution
+                if self.download_file_size > self.SIZE_LIMIT_IMAGE:
+                    settings.direct_link = True
+                return await send_partial(dl_path)
         # Handle animated gifs and videos, which can be made pretty
         if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
             sendable_animated.labels(site_code=self.site_id).inc()
@@ -419,18 +437,12 @@ class Sendable(ABC):
 
     async def _send_video(
         self,
-        send_partial: Callable[[Union[str, BinaryIO, bytes]], Coroutine[None, None, None]],
-    ) -> None:
+        send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[SentSubmission]],
+    ) -> SentSubmission:
         try:
-            logger.info("Sending video, site ID %s, submission ID %s", self.site_id, self.id)
-            filename = self._get_video_from_cache()
-            if filename is None:
-                logger.info("Video not in cache, converting to mp4. Submission ID %s", self.id)
-                output_path: str = await self._convert_video(self.download_url)
-                filename = self._save_video_to_cache(output_path)
-            else:
-                sendable_animated_cached.labels(site_code=self.site_id).inc()
-            await send_partial(filename)
+            logger.info("Sending video, site ID %s, submission ID %s, converting to mp4", self.site_id, self.id)
+            output_path: str = await self._convert_video(self.download_url)
+            return await send_partial(output_path)
         except Exception as e:
             logger.error(
                 "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
@@ -438,31 +450,11 @@ class Sendable(ABC):
                 self.id,
                 exc_info=e,
             )
-            await send_partial(self.download_url)
-        return
+            return await send_partial(self.download_url)
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
-        raise NotImplementedError
-
-    def _get_video_from_cache(self) -> Optional[str]:
-        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
-        filename = f"{cache_dir}/{self.id}.mp4"
-        if os.path.exists(filename):
-            logger.info(
-                "Loading video from cache, site ID %s, submission ID %s",
-                self.site_id,
-                self.id,
-            )
-            return filename
-        return None
-
-    def _save_video_to_cache(self, video_path: str) -> str:
-        cache_dir = f"{self.CACHE_DIR}/{self.site_id}"
-        filename = f"{cache_dir}/{self.id}.mp4"
-        os.makedirs(cache_dir, exist_ok=True)
-        os.rename(video_path, filename)
-        return filename
+        raise NotImplementedError  # TODO: Pull caption builder out, I guess? Three implementations of caption data?
 
     @_count_exceptions_with_labels(convert_gif_failures)
     async def _convert_gif(self, gif_url: str) -> str:
@@ -545,16 +537,16 @@ class Sendable(ABC):
                     self.id,
                 )
                 raise ValueError("Bitrate cannot be negative")
-        log_file = random_sandbox_video_path("log")
-        full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
-        await self._run_docker(
-            client,
-            f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
-        )
-        await self._run_docker(
-            client,
-            f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y",
-        )
+        with temp_sandbox_file("log") as log_file:
+            full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
+            await self._run_docker(
+                client,
+                f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
+            )
+            await self._run_docker(
+                client,
+                f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y",
+            )
         return two_pass_filename
 
     async def _video_has_audio_track(self, client: DockerClient, input_path: str) -> bool:
@@ -594,7 +586,7 @@ class Sendable(ABC):
         }
         with docker_run_time.labels(**labels).time():
             with docker_failures.labels(**labels).count_exceptions():
-                sandbox_dir = os.getcwd() + "/sandbox"
+                sandbox_dir = os.getcwd() + "/" + SANDBOX_DIR
                 logger.debug(
                     "Running docker container with args %s and entrypoint %s",
                     args,
@@ -621,13 +613,3 @@ class Sendable(ABC):
                 container.kill()
                 container.remove(force=True)
                 raise TimeoutError("Docker container timed out")
-
-    def to_inline_query_result(self, builder: InlineBuilder) -> Coroutine[None, None, InputBotInlineResultPhoto]:
-        inline_results.labels(site_code=self.site_id).inc()
-        return builder.photo(
-            file=self.thumbnail_url,
-            id=f"{self.site_id}:{self.id}",
-            text=self.link,
-            # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.site_id}:{self.id}")],
-        )

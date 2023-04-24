@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from re import Pattern
-    from typing import Coroutine, List, Optional, Union
+    from typing import List, Optional, Union
 
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
+
+    from fa_search_bot.sites.sendable import InlineSendable
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.sites.site_link import SiteLink
+    from fa_search_bot.sites.submission_id import SubmissionID
+
+logger = logging.getLogger(__name__)
 
 
 class HandlerException(Exception):
@@ -33,28 +42,28 @@ class SiteHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def find_links_in_str(self, haystack: str) -> List[str]:
+    def find_links_in_str(self, haystack: str) -> List[SiteLink]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_submission_id_from_link(self, link: str) -> Optional[int]:
+    async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         raise NotImplementedError
 
     @abstractmethod
-    def link_for_submission(self, submission_id: int) -> str:
+    def link_for_submission(self, submission_id: str) -> str:
         raise NotImplementedError
 
     @abstractmethod
     async def send_submission(
         self,
-        submission_id: int,
+        submission_id: str,
         client: TelegramClient,
         chat: Union[TypeInputPeer, InputBotInlineMessageID],
         *,
         reply_to: Optional[int] = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> None:
+    ) -> SentSubmission:
         raise NotImplementedError
 
     @abstractmethod
@@ -63,8 +72,8 @@ class SiteHandler(ABC):
 
     @abstractmethod
     async def submission_as_answer(
-        self, submission_id: Union[int, str], builder: InlineBuilder
-    ) -> Coroutine[None, None, InputBotInlineResultPhoto]:
+        self, submission_id: SubmissionID, builder: InlineBuilder
+    ) -> InputBotInlineResultPhoto:
         raise NotImplementedError
 
     @property
@@ -76,7 +85,5 @@ class SiteHandler(ABC):
         ]
 
     @abstractmethod
-    async def get_search_results(
-        self, builder: InlineBuilder, query: str, page: int
-    ) -> List[Coroutine[None, None, InputBotInlineResultPhoto]]:
+    async def get_search_results(self, query: str, page: int) -> List[InlineSendable]:
         raise NotImplementedError

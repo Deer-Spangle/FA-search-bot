@@ -2,8 +2,9 @@ from unittest import mock
 
 import pytest
 
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.site_handler import HandlerException
+from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
@@ -24,9 +25,9 @@ def test_find_links_in_str():
     results = handler.find_links_in_str(haystack)
 
     assert len(results) == 3
-    assert any(result in submission.link for result in results)
-    assert any(result in submission.thumbnail_url for result in results)
-    assert any(result in submission.download_url for result in results)
+    assert any(result.link in submission.link for result in results)
+    assert any(result.link in submission.thumbnail_url for result in results)
+    assert any(result.link in submission.download_url for result in results)
 
 
 @pytest.mark.asyncio
@@ -37,7 +38,7 @@ async def test_get_submission_id_from_link__sub_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert str(result) == submission.submission_id
+    assert str(result.submission_id) == submission.submission_id
 
 
 @pytest.mark.asyncio
@@ -48,7 +49,7 @@ async def test_get_submission_id_from_link__thumb_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert str(result) == submission.submission_id
+    assert str(result.submission_id) == submission.submission_id
 
 
 @pytest.mark.asyncio
@@ -61,7 +62,7 @@ async def test_get_submission_id_from_link__direct_link():
 
     result = await handler.get_submission_id_from_link(link)
 
-    assert str(result) == submission.submission_id
+    assert str(result.submission_id) == submission.submission_id
 
 
 @pytest.mark.asyncio
@@ -92,8 +93,9 @@ async def test_get_submission_id_from_link__direct_link_no_match():
 @pytest.mark.asyncio
 async def test_get_submission_id_from_link__no_link():
     handler = FAHandler(MockExportAPI())
+    link = SiteLink(handler.site_code, "hello world")
 
-    result = await handler.get_submission_id_from_link("hello world")
+    result = await handler.get_submission_id_from_link(link)
 
     assert result is None
 

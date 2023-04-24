@@ -1,3 +1,4 @@
+import datetime
 from contextlib import contextmanager
 
 from whoosh.fields import *
@@ -8,7 +9,7 @@ from whoosh.searching import Searcher
 
 from fa_search_bot.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, TitleField, DescriptionField, KeywordField
-from fa_search_bot.sites.fa_submission import FASubmissionFull, Rating, FAUser
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, Rating, FAUser
 from fa_search_bot.subscription_watcher import Subscription, rating_dict
 
 schema = Schema(title=TEXT, description=TEXT, keywords=KEYWORD)
@@ -107,7 +108,8 @@ if __name__ == "__main__":
         FAUser("uploader", "uploader"),
         "This is the first document we've added!",
         ["first", "document"],
-        Rating.GENERAL
+        Rating.GENERAL,
+        datetime.datetime.now(datetime.timezone.utc),
     )
     sub2 = FASubmissionFull(
         "234",
@@ -118,7 +120,8 @@ if __name__ == "__main__":
         FAUser("uploader", "uploader"),
         "The second one is even more interesting!",
         ["second", "document"],
-        Rating.GENERAL
+        Rating.GENERAL,
+        datetime.datetime.now(datetime.timezone.utc),
     )
 
     print("Whoosh time:")

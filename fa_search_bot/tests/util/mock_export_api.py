@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+import datetime
 import random
 import string
 from typing import TYPE_CHECKING
 
-from fa_search_bot.sites.fa_export_api import FAExportAPI, PageNotFound
-from fa_search_bot.sites.fa_submission import FASubmissionFull, FAUser, Rating
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI, PageNotFound
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FAUser, Rating
 
 if TYPE_CHECKING:
     from typing import List, Union
 
-    from fa_search_bot.sites.fa_submission import FASubmission
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
 
 def _random_image_id(submission_id: int) -> int:
@@ -47,6 +48,7 @@ class MockSubmission(FASubmissionFull):
         download_url: str = None,
         full_image_url: str = None,
         rating: Rating = None,
+        posted_at: datetime.datetime = None,
     ):
         # Internal variables
         if image_id is None:
@@ -84,6 +86,9 @@ class MockSubmission(FASubmissionFull):
             keywords = [_random_string() for _ in range(3)]
         if rating is None:
             rating = _random_rating()
+        if posted_at is None:
+            _age = datetime.timedelta(seconds=random.randint(0, 1_000_000))
+            posted_at = datetime.datetime.now(datetime.timezone.utc) - _age
         # Super
         super().__init__(
             str(submission_id),
@@ -95,6 +100,7 @@ class MockSubmission(FASubmissionFull):
             description,
             keywords,
             rating,
+            posted_at,
         )
         self.fav_id = fav_id
         self._download_file_size = file_size

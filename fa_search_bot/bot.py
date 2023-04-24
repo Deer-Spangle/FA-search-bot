@@ -11,6 +11,7 @@ from telethon import TelegramClient
 from yippi import AsyncYippiClient
 
 from fa_search_bot._version import __VERSION__
+from fa_search_bot.database import Database
 from fa_search_bot.functionalities.beep import BeepFunctionality
 from fa_search_bot.functionalities.functionalities import usage_counter
 from fa_search_bot.functionalities.image_hash_recommend import ImageHashRecommendFunctionality
@@ -24,10 +25,12 @@ from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality, 
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
 from fa_search_bot.functionalities.welcome import WelcomeFunctionality
-from fa_search_bot.sites.e621_handler import E621Handler
-from fa_search_bot.sites.fa_export_api import FAExportAPI
-from fa_search_bot.sites.fa_handler import FAHandler
+from fa_search_bot.sites.e621.e621_handler import E621Handler
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
+from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.sendable import initialise_metrics_labels
+from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
 if TYPE_CHECKING:
@@ -98,7 +101,11 @@ class FASearchBot:
         )
         self.alive = False
         self.functionalities: List[BotFunctionality] = []
-        self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(self.api, self.client)
+        self.db = Database()
+        self.submission_cache = SubmissionCache(self.db)
+        self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(
+            self.api, self.client, self.submission_cache
+        )
         self.log_task: Optional[Task] = None
         self.watcher_task: Optional[Task] = None
 
@@ -163,18 +170,19 @@ class FASearchBot:
             fa_handler.site_code: fa_handler,
             self.e6_handler.site_code: self.e6_handler,
         }
+        handler_group = HandlerGroup([fa_handler, self.e6_handler], self.submission_cache)
         initialise_metrics_labels(list(handlers.values()))
         functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),
             ImageHashRecommendFunctionality(),
-            NeatenFunctionality(handlers),
-            InlineFavsFunctionality(self.api),
-            InlineGalleryFunctionality(self.api),
-            InlineNeatenFunctionality(handlers),
-            InlineSearchFunctionality(handlers),
-            InlineEditFunctionality(handlers, self.client),
-            InlineEditButtonPress(handlers),
+            NeatenFunctionality(handler_group),
+            InlineFavsFunctionality(self.api, self.submission_cache),
+            InlineGalleryFunctionality(self.api, self.submission_cache),
+            InlineNeatenFunctionality(handler_group),
+            InlineSearchFunctionality(handler_group),
+            InlineEditFunctionality(handler_group, self.client),
+            InlineEditButtonPress(handler_group),
             SubscriptionFunctionality(self.subscription_watcher),
             BlocklistFunctionality(self.subscription_watcher),
             SupergroupUpgradeFunctionality(self.subscription_watcher),

@@ -2,9 +2,10 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
-from fa_search_bot.sites.fa_export_api import FAExportAPI
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
+from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 from fa_search_bot.tests.util.mock_telegram_event import MockTelegramEvent, _MockInlineBuilder
 
 
@@ -17,7 +18,8 @@ async def test_user_gallery(mock_client):
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_user_folder(username, "gallery", [submission1, submission2])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -51,7 +53,8 @@ async def test_user_gallery_short(mock_client):
     submission1 = MockSubmission(post_id1)
     submission2 = MockSubmission(post_id2)
     api = MockExportAPI().with_user_folder(username, "gallery", [submission1, submission2])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -83,7 +86,8 @@ async def test_user_scraps(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_folder(username, "scraps", [submission])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -109,7 +113,8 @@ async def test_second_page(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}", offset="2")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_folder(username, "scraps", [submission], page=2)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -133,7 +138,8 @@ async def test_empty_gallery(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     api = MockExportAPI().with_user_folder(username, "gallery", [])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -151,7 +157,8 @@ async def test_empty_scraps(mock_client):
     username = "fender"
     event = MockTelegramEvent.with_inline_query(query=f"scraps:{username}")
     api = MockExportAPI().with_user_folder(username, "scraps", [])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -171,7 +178,8 @@ async def test_hypens_in_username(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_folder(username, "gallery", [submission])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -197,7 +205,8 @@ async def test_weird_characters_in_username(mock_client):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     submission = MockSubmission(post_id)
     api = MockExportAPI().with_user_folder(username, "gallery", [submission])
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -222,7 +231,8 @@ async def test_no_user_exists(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
     requests_mock.get(f"https://example.com/user/{username}/gallery.json", status_code=404)
 
     with pytest.raises(StopPropagation):
@@ -243,7 +253,8 @@ async def test_username_with_colon(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
     requests_mock.get(f"https://example.com/user/{username}/gallery.json", status_code=404)
 
     with pytest.raises(StopPropagation):
@@ -261,7 +272,8 @@ async def test_username_with_colon(requests_mock):
 async def test_over_max_submissions(mock_client):
     username = "citrinelle"
     mock_api = MockExportAPI()
-    inline = InlineGalleryFunctionality(mock_api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(mock_api, cache)
     posts = inline.INLINE_MAX + 30
     post_ids = list(range(123456, 123456 + posts))
     submissions = [MockSubmission(x) for x in post_ids]
@@ -294,7 +306,8 @@ async def test_over_max_submissions_continue(mock_client):
     post_ids = list(range(123456, 123456 + posts))
     submissions = [MockSubmission(x) for x in post_ids]
     api = MockExportAPI().with_user_folder(username, "gallery", submissions)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{inline.INLINE_MAX}")
 
     with pytest.raises(StopPropagation):
@@ -327,7 +340,8 @@ async def test_over_max_submissions_continue_end(mock_client):
     submissions = [MockSubmission(x) for x in post_ids]
     mock_api = MockExportAPI()
     mock_api.with_user_folder(username, "gallery", submissions)
-    inline = InlineGalleryFunctionality(mock_api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(mock_api, cache)
     skip = posts - inline.INLINE_MAX + 3
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
@@ -358,7 +372,8 @@ async def test_over_max_submissions_continue_over_page(mock_client):
     skip = posts + 5
     submissions = [MockSubmission(x) for x in post_ids]
     api = MockExportAPI().with_user_folder(username, "gallery", submissions)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
     with pytest.raises(StopPropagation):
@@ -378,7 +393,8 @@ async def test_no_username_set(requests_mock):
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
     # mock export api doesn't do non-existent users, so mocking with requests
     api = FAExportAPI("https://example.com", ignore_status=True)
-    inline = InlineGalleryFunctionality(api)
+    cache = MockSubmissionCache()
+    inline = InlineGalleryFunctionality(api, cache)
     requests_mock.get(
         f"https://example.com/user/{username}/gallery.json?page=1&full=1",
         json={

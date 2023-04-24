@@ -20,14 +20,14 @@ from pyparsing import (
     printables,
 )
 
-from fa_search_bot.sites.fa_submission import Rating
+from fa_search_bot.sites.furaffinity.fa_submission import Rating
 
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Pattern, Sequence
 
     from pyparsing import ParserElement, ParseResults
 
-    from fa_search_bot.sites.fa_submission import FASubmissionFull
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 
 
 logger = logging.getLogger(__name__)

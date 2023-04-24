@@ -15,18 +15,21 @@ from prometheus_client.metrics import Counter
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
-from fa_search_bot.sites.fa_export_api import CloudflareError, PageNotFound
-from fa_search_bot.sites.fa_handler import SendableFASubmission
-from fa_search_bot.sites.fa_submission import FASubmission
+from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
+from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
 if TYPE_CHECKING:
     from typing import Any, Deque, Dict, List, Optional, Sequence, Set
 
     from telethon import TelegramClient
+    from telethon.tl.types import TypeInputPeer
 
     from fa_search_bot.query_parser import Query
-    from fa_search_bot.sites.fa_export_api import FAExportAPI
-    from fa_search_bot.sites.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.sent_submission import SentSubmission
+    from fa_search_bot.submission_cache import SubmissionCache
 
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
@@ -121,9 +124,10 @@ class SubscriptionWatcher:
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
 
-    def __init__(self, api: FAExportAPI, client: TelegramClient):
+    def __init__(self, api: FAExportAPI, client: TelegramClient, submission_cache: SubmissionCache):
         self.api = api
         self.client = client
+        self.submission_cache = submission_cache
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
         self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
@@ -276,18 +280,20 @@ class SubscriptionWatcher:
         self.save_to_json()
 
     async def _send_updates(self, subscriptions: List["Subscription"], result: FASubmissionFull) -> None:
+        sendable = SendableFASubmission(result)
+        # Map which subscriptions require this submission at each destination
         destination_map = collections.defaultdict(lambda: [])
         for sub in subscriptions:
             sub.latest_update = datetime.datetime.now()
             destination_map[sub.destination].append(sub)
+        # Send the submission to each location
         for dest, subs in destination_map.items():
             queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
+            logger.info("Sending submission %s to subscription", result.submission_id)
+            sub_updates.inc()
             try:
-                logger.info("Sending submission %s to subscription", result.submission_id)
-                sub_updates.inc()
-                sendable = SendableFASubmission(result)
-                await sendable.send_message(self.client, dest, prefix=prefix)
+                await self._send_subscription_update(sendable, dest, prefix)
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
@@ -302,6 +308,20 @@ class SubscriptionWatcher:
                     dest,
                     exc_info=e,
                 )
+
+    async def _send_subscription_update(
+        self,
+        sendable: SendableFASubmission,
+        chat: TypeInputPeer,
+        prefix: str,
+    ) -> SentSubmission:
+        cache_entry = self.submission_cache.load_cache(sendable.submission_id)
+        if cache_entry:
+            if cache_entry.try_to_send(self.client, chat, prefix=prefix):
+                return cache_entry
+        result = await sendable.send_message(self.client, chat, prefix=prefix)
+        self.submission_cache.save_cache(result)
+        return result
 
     def _get_blocklist_query(self, blocklist_str: str) -> Query:
         if blocklist_str not in self.blocklist_query_cache:
@@ -350,36 +370,53 @@ class SubscriptionWatcher:
             json.dump(data, f, indent=2)
         os.replace(self.FILENAME_TEMP, self.FILENAME)
 
-    @staticmethod  # TODO: make classmethod
-    def load_from_json(api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
+    @classmethod
+    def load_from_json(
+        cls,
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
+    ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file")
         try:
-            with open(SubscriptionWatcher.FILENAME, "r") as f:
+            with open(cls.FILENAME, "r") as f:
                 raw_data = f.read()
                 if not raw_data:
                     raise FileNotFoundError
                 data = json.loads(raw_data)
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
-            return SubscriptionWatcher(api, client)
+            return cls(api, client, submission_cache)
         if "destinations" not in data:
-            return SubscriptionWatcher.load_from_json_old_format(data, api, client)
-        return SubscriptionWatcher.load_from_json_new_format(data, api, client)
+            return cls.load_from_json_old_format(data, api, client, submission_cache)
+        return cls.load_from_json_new_format(data, api, client, submission_cache)
 
-    @staticmethod
-    def load_from_json_old_format(data: Dict, api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
+    @classmethod
+    def load_from_json_old_format(
+        cls,
+        data: Dict,
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
+    ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in old format")
-        new_watcher = SubscriptionWatcher(api, client)
+        new_watcher = cls(api, client, submission_cache)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         new_watcher.subscriptions = set(Subscription.from_json_old_format(x) for x in data["subscriptions"])
         new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
         return new_watcher
 
-    @staticmethod
-    def load_from_json_new_format(data: Dict, api: FAExportAPI, client: TelegramClient) -> "SubscriptionWatcher":
+    @classmethod
+    def load_from_json_new_format(
+        cls,
+        data: Dict,
+        api: FAExportAPI,
+        client: TelegramClient,
+        submission_cache: SubmissionCache,
+    ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in new format")
-        new_watcher = SubscriptionWatcher(api, client)
+        new_watcher = cls(api, client, submission_cache)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         subscriptions = set()
@@ -418,20 +455,20 @@ class Subscription:
             "paused": self.paused,
         }
 
-    @staticmethod
-    def from_json_old_format(saved_sub: Dict) -> "Subscription":
+    @classmethod
+    def from_json_old_format(cls, saved_sub: Dict) -> "Subscription":
         query = saved_sub["query"]
         destination = saved_sub["destination"]
-        new_sub = Subscription(query, destination)
+        new_sub = cls(query, destination)
         new_sub.latest_update = None
         if saved_sub["latest_update"] is not None:
             new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])
         return new_sub
 
-    @staticmethod
-    def from_json_new_format(saved_sub: Dict, dest_id: int) -> "Subscription":
+    @classmethod
+    def from_json_new_format(cls, saved_sub: Dict, dest_id: int) -> "Subscription":
         query = saved_sub["query"]
-        new_sub = Subscription(query, dest_id)
+        new_sub = cls(query, dest_id)
         new_sub.latest_update = None
         if saved_sub["latest_update"] is not None:
             new_sub.latest_update = dateutil.parser.parse(saved_sub["latest_update"])

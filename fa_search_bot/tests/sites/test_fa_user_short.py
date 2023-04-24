@@ -1,6 +1,6 @@
 import unittest
 
-from fa_search_bot.sites.fa_submission import FAUserShort
+from fa_search_bot.sites.furaffinity.fa_submission import FAUserShort
 
 
 class FAUserShortTest(unittest.TestCase):
