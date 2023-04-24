@@ -9,6 +9,14 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.0] - 2023-04-24
+
+### Added
+
+- Added a cache database that stores the file ID of all images sent in telegram, so that they can be sent much faster 
+  the second time. This also came with a big refactor of the internals and site handling and such. Should make inline
+  queries more reliable too! (By virtue of being faster)
+
 ## [1.12.6] - 2023-04-20
 
 ### Added
