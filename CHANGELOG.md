@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.1] - 2023-04-24
+
+### Fixed
+
+- Subscription watcher will now send from cache correctly
+
 ## [1.13.0] - 2023-04-24
 
 ### Added
