@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class InlineGalleryFunctionality(BotFunctionality):
     INLINE_MAX = 20
+    INLINE_FRESH = 5
     USE_CASE_GALLERY = "inline_gallery"
     USE_CASE_SCRAPS = "inline_scraps"
     PREFIX_GALLERY = ["gallery", "g"]
@@ -47,10 +48,11 @@ class InlineGalleryFunctionality(BotFunctionality):
     async def call(self, event: InlineQuery.Event) -> None:
         query_split = event.query.query.split(":", 1)
         offset = event.query.offset
-        logger.info("Got an inline query, page=%s", offset)
+        logger.info("Got an inline query, offset=%s", offset)
         if len(query_split) != 2 or query_split[0].lower() not in self.ALL_PREFIX:
             return
         prefix, username = query_split
+        # Determine which folder
         folder = "gallery"
         if prefix in self.PREFIX_SCRAPS:
             folder = "scraps"
@@ -73,9 +75,10 @@ class InlineGalleryFunctionality(BotFunctionality):
     ) -> Tuple[List[InputBotInlineResultPhoto], Optional[str]]:
         # Parse offset to page and skip
         page, skip = _parse_inline_offset(offset)
+        skip = skip or 0
         # Try and get results
         try:
-            results = await self._create_user_folder_results(event.builder, username, folder, page)
+            results, next_offset = await self._create_user_folder_results(event.builder, username, folder, page, skip)
         except PageNotFound:
             logger.warning("User not found for inline gallery query")
             await answer_with_error(
@@ -95,44 +98,53 @@ class InlineGalleryFunctionality(BotFunctionality):
             )
             raise StopPropagation
         # Handle paging of big result lists
-        return self._page_results(results, page, skip)
-
-    def _page_results(
-            self,
-            results: List[InputBotInlineResultPhoto],
-            page: int,
-            skip: Optional[int],
-    ) -> Tuple[List, str]:
-        next_offset = str(page + 1)
-        if skip:
-            results = results[skip:]
-        if len(results) > self.INLINE_MAX:
-            results = results[: self.INLINE_MAX]
-            if skip:
-                skip += self.INLINE_MAX
-            else:
-                skip = self.INLINE_MAX
-            next_offset = f"{page}:{skip}"
         return results, next_offset
 
     async def _create_user_folder_results(
-        self, builder: InlineBuilder, username: str, folder: str, page: int
-    ) -> List[InputBotInlineResultPhoto]:
-        return await gather_ignore_exceptions([
-            self.inline_query_photo(submission, builder)
-            for submission in await self.api.get_user_folder(username, folder, page)
-        ])
-
-    async def inline_query_photo(
             self,
-            submission: FASubmissionShort,
-            builder: InlineBuilder
+            builder: InlineBuilder,
+            username: str,
+            folder: str,
+            page: int,
+            offset: int,
+    ) -> Tuple[List[InputBotInlineResultPhoto], Optional[str]]:
+        # Get list of submissions
+        short_submissions = await self.api.get_user_folder(username, folder, page)
+        if not short_submissions:
+            return [], None
+        # Cut at offset
+        short_submissions = short_submissions[offset:]
+        # Gather a list of new results until we have the max count, or 5 non-cached ones
+        result_coros = []
+        fresh_results = 0
+        while len(result_coros) < self.INLINE_MAX and fresh_results < self.INLINE_FRESH:
+            # If none in page, fetch the next page
+            if not short_submissions:
+                page += 1
+                offset = 0
+                short_submissions = await self.api.get_user_folder(username, folder, page)
+                # If next page is empty, return from loop
+                if not short_submissions:
+                    break
+            # Pop submission from list and check cache
+            submission = short_submissions.pop(0)
+            offset += 1
+            sub_id = SubmissionID("fa", submission.submission_id)
+            cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
+            if cache_entry:
+                result_coros.append(cache_entry.as_inline_result(builder))
+            else:
+                result_coros.append(self._send_fresh_result(builder, submission))
+                fresh_results += 1
+        # Await all coros to send results and new offset
+        return await gather_ignore_exceptions(result_coros), f"{page}:{offset}"
+
+    async def _send_fresh_result(
+            self,
+            builder: InlineBuilder,
+            submission: FASubmissionShort
     ) -> InputBotInlineResultPhoto:
         sub_id = SubmissionID("fa", submission.submission_id)
-        cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
-        if cache_entry:
-            return await cache_entry.as_inline_result(builder)
-        # Send from source
         inline_photo = await submission.to_inline_query_result(builder)
         # Save to cache
         sent_sub = SentSubmission.from_inline_result(sub_id, inline_photo)
