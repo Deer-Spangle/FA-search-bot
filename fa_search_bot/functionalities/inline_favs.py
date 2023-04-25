@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class InlineFavsFunctionality(BotFunctionality):
     INLINE_MAX = 20
+    INLINE_FRESH = 5
     USE_CASE_FAVS = "inline_favourites"
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
 
@@ -62,38 +63,49 @@ class InlineFavsFunctionality(BotFunctionality):
     async def _favs_query_results(
         self, event: InlineQuery.Event, username: str, offset: Optional[str]
     ) -> Tuple[List[InputBotInlineResultPhoto], Optional[str]]:
-        # For fav listings, the offset can be the last ID
+        # For fav listings, the offset can be the last fav ID
         if offset == "":
             offset = None
+        # Fetch list of favs
         try:
-            submissions = (await self.api.get_user_favs(username, offset))[: self.INLINE_MAX]
+            fav_submissions = await self.api.get_user_favs(username, offset)
         except PageNotFound:
             logger.warning("User not found for inline favourites query")
             msg = f'FurAffinity user does not exist by the name: "{username}".'
             await answer_with_error(event, "User does not exist.", msg)
             raise StopPropagation
-        # If no results, send error
-        if len(submissions) == 0:
+        # If no results, send error or end results list
+        if len(fav_submissions) == 0:
             if offset is not None:
                 return [], None
             msg = f'There are no favourites for user "{username}".'
             await answer_with_error(event, "Nothing in favourites.", msg)
             raise StopPropagation
-        next_offset = str(submissions[-1].fav_id)
-        if next_offset == offset:
+        # If last offset in results is equal to previous offset, it's the end of the list
+        if str(fav_submissions[-1].fav_id) == offset:
             return [], None
-        results = await gather_ignore_exceptions(
-            [self.inline_query_photo(submission, event.builder) for submission in submissions]
-        )
-        return results, next_offset
+        # Generate results
+        results = []
+        fresh_results = 0
+        next_offset = None
+        while len(results) < self.INLINE_MAX and fresh_results < self.INLINE_FRESH:
+            submission = fav_submissions.pop(0)
+            next_offset = str(submission.fav_id)
+            sub_id = SubmissionID("fa", submission.submission_id)
+            cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
+            if cache_entry:
+                results.append(cache_entry.as_inline_result(event.builder))
+            else:
+                fresh_results += 1
+                results.append(self._send_fresh_result(submission, event.builder))
+        return await gather_ignore_exceptions(results), next_offset
 
-    async def inline_query_photo(
-            self, submission: FASubmissionShortFav, builder: InlineBuilder
+    async def _send_fresh_result(
+            self,
+            submission: FASubmissionShortFav,
+            builder: InlineBuilder,
     ) -> InputBotInlineResultPhoto:
         sub_id = SubmissionID("fa", submission.submission_id)
-        cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
-        if cache_entry:
-            return await cache_entry.as_inline_result(builder)
         # Send from source
         result = await submission.to_inline_query_result(builder)
         # Save to cache
