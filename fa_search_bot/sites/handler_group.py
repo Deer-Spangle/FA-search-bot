@@ -97,7 +97,7 @@ class HandlerGroup:
     async def answer_links(self, links: List[SiteLink], event: InlineQuery.Event) -> List[InputBotInlineResultPhoto]:
         return await gather_ignore_exceptions([self.answer_link(link, event) for link in links])
 
-    async def answer_search(self, query: str, event: InlineQuery.Event, page: int) -> List[InputBotInlineResultPhoto]:
+    async def search(self, query: str, page: int) -> List[InlineSendable]:
         search_handler = self.default
         if ":" in query:
             prefix, query = query.split(":", 1)
@@ -106,7 +106,10 @@ class HandlerGroup:
                 if prefix_clean in handler.search_prefixes:
                     search_handler = handler
                     break
-        results = await search_handler.get_search_results(query.strip(), page)
+        return await search_handler.get_search_results(query.strip(), page)
+
+    async def answer_search(self, query: str, event: InlineQuery.Event, page: int) -> List[InputBotInlineResultPhoto]:
+        results = await self.search(query, page)
         return await gather_ignore_exceptions([
             self._answer_inline_sendable(result, event.builder) for result in results
         ])
