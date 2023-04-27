@@ -118,7 +118,7 @@ class InlineGalleryFunctionality(BotFunctionality):
         result_coros = []
         fresh_results = 0
         while len(result_coros) < self.INLINE_MAX and fresh_results < self.INLINE_FRESH:
-            # If none in page, fetch the next page
+            # If none left in page, fetch the next page
             if not short_submissions:
                 page += 1
                 offset = 0

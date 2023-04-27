@@ -41,7 +41,7 @@ class InlineSearchFunctionality(BotFunctionality):
     async def call(self, event: InlineQuery.Event) -> None:
         query = event.query.query
         offset = event.query.offset
-        logger.info("Got an inline query, page=%s", offset)
+        logger.info("Got an inline search query, page=%s", offset)
         if query.strip() == "":
             await event.answer([])
             raise StopPropagation
