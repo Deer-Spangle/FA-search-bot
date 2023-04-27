@@ -9,6 +9,14 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.4] - 2023-04-27
+
+### Added
+
+- Added metrics on cache database size, `fasearchbot_db_cache_entries`
+- Added metrics on saving and loading cache, cache hits and misses, to submission cache, `fasearchbot_submissioncache_*`
+- Added metrics on inline query result counts, cached and fresh, `fasearchbot_inline_*_results_count`
+
 ## [1.13.3] - 2023-04-27
 
 ### Fixed
