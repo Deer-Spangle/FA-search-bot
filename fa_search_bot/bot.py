@@ -166,12 +166,9 @@ class FASearchBot:
 
     def initialise_functionalities(self) -> List[BotFunctionality]:
         fa_handler = FAHandler(self.api)
-        handlers = {
-            fa_handler.site_code: fa_handler,
-            self.e6_handler.site_code: self.e6_handler,
-        }
         handler_group = HandlerGroup([fa_handler, self.e6_handler], self.submission_cache)
-        initialise_metrics_labels(list(handlers.values()))
+        initialise_metrics_labels(handler_group)
+        self.submission_cache.initialise_metrics(handler_group)
         functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),

@@ -22,7 +22,7 @@ from telethon import Button
 from fa_search_bot.sites.sent_submission import SentSubmission, sent_from_cache
 
 if TYPE_CHECKING:
-    from typing import Any, Awaitable, BinaryIO, List, Optional, Union
+    from typing import Any, Awaitable, BinaryIO, Optional, Union
 
     from docker import DockerClient
     from docker.models.containers import Container
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
-    from fa_search_bot.sites.site_handler import SiteHandler
+    from fa_search_bot.sites.handler_group import HandlerGroup
     from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
@@ -184,8 +184,8 @@ class CaptionSettings:
     author: bool = False
 
 
-def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
-    for handler in handlers:
+def initialise_metrics_labels(handlers: HandlerGroup) -> None:
+    for site_code in handlers.site_codes():
         for metric in [
             sendable_sent, sendable_gif_to_png, sendable_edit, sendable_failure, sendable_image, sendable_animated,
             sendable_auto_doc, sendable_audio, sendable_other, sendable_animated_cached, convert_video_total,
@@ -193,11 +193,11 @@ def initialise_metrics_labels(handlers: List["SiteHandler"]) -> None:
             convert_video_to_video, convert_video_only_one_attempt, convert_video_two_pass, convert_gif_total,
             convert_gif_failures, convert_gif_only_one_attempt, convert_gif_two_pass, video_length, sent_from_cache,
         ]:
-            metric.labels(site_code=handler.site_code)
+            metric.labels(site_code=site_code)
         for entrypoint in DockerEntrypoint:
-            docker_run_time.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
-            docker_failures.labels(site_code=handler.site_code, entrypoint=entrypoint.value)
-        inline_results.labels(site_code=handler.site_code)
+            docker_run_time.labels(site_code=site_code, entrypoint=entrypoint.value)
+            docker_failures.labels(site_code=site_code, entrypoint=entrypoint.value)
+        inline_results.labels(site_code=site_code)
 
 
 def random_sandbox_video_path(file_ext: str = "mp4") -> str:
