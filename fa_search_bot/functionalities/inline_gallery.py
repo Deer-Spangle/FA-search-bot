@@ -4,6 +4,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from prometheus_client import Summary
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, _parse_inline_offset, answer_with_error
@@ -25,6 +26,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+inline_gallery_results = Summary(
+    "fasearchbot_inline_gallery_results_count",
+    "Number of inline results sent via the inline gallery search",
+    labelnames=["source"],
+)
+
 
 class InlineGalleryFunctionality(BotFunctionality):
     INLINE_MAX = 20
@@ -34,12 +41,18 @@ class InlineGalleryFunctionality(BotFunctionality):
     PREFIX_GALLERY = ["gallery", "g"]
     PREFIX_SCRAPS = ["scraps"]
     ALL_PREFIX = PREFIX_SCRAPS + PREFIX_GALLERY
+    LABEL_SOURCE_CACHE = "cache"
+    LABEL_SOURCE_FRESH = "fresh"
+    LABEL_SOURCE_TOTAL = "total"
 
     def __init__(self, api: FAExportAPI, submission_cache: SubmissionCache):
         prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.ALL_PREFIX) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
         self.cache = submission_cache
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_CACHE)
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_FRESH)
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_TOTAL)
 
     @property
     def usage_labels(self) -> List[str]:
@@ -136,6 +149,10 @@ class InlineGalleryFunctionality(BotFunctionality):
             else:
                 result_coros.append(self._send_fresh_result(builder, submission))
                 fresh_results += 1
+        # Record some metrics
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_TOTAL).observe(len(result_coros))
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_FRESH).observe(fresh_results)
+        inline_gallery_results.labels(source=self.LABEL_SOURCE_CACHE).observe(len(result_coros) - fresh_results)
         # Await all coros to send results and new offset
         return await gather_ignore_exceptions(result_coros), f"{page}:{offset}"
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prometheus_client import Summary
 from telethon.events import InlineQuery, StopPropagation
 from telethon.tl.custom import InlineBuilder
 
@@ -21,22 +22,32 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+inline_search_results = Summary(
+    "fasearchbot_inline_search_results_count",
+    "Number of inline results sent via the inline search",
+    labelnames=["source"],
+)
+
 
 class InlineSearchFunctionality(BotFunctionality):
     INLINE_MAX = 20
     INLINE_FRESH = 5
     USE_CASE_SEARCH = "inline_search"
-    USE_CASE_E621 = "inline_e621"
-    PREFIX_E621 = ["e621", "e6", "e"]
+    LABEL_SOURCE_CACHE = "cache"
+    LABEL_SOURCE_FRESH = "fresh"
+    LABEL_SOURCE_TOTAL = "total"
 
     def __init__(self, handlers: HandlerGroup, cache: SubmissionCache):
         super().__init__(InlineQuery())
         self.handlers = handlers
         self.cache = cache
+        inline_search_results.labels(source=self.LABEL_SOURCE_CACHE)
+        inline_search_results.labels(source=self.LABEL_SOURCE_FRESH)
+        inline_search_results.labels(source=self.LABEL_SOURCE_TOTAL)
 
     @property
     def usage_labels(self) -> List[str]:
-        return [self.USE_CASE_SEARCH, self.USE_CASE_E621]
+        return [self.USE_CASE_SEARCH]
 
     async def call(self, event: InlineQuery.Event) -> None:
         query = event.query.query
@@ -97,6 +108,10 @@ class InlineSearchFunctionality(BotFunctionality):
             else:
                 result_coros.append(self._send_fresh_result(event.builder, sendable))
                 fresh_results += 1
+        # Record some metrics
+        inline_search_results.labels(source=self.LABEL_SOURCE_TOTAL).observe(len(result_coros))
+        inline_search_results.labels(source=self.LABEL_SOURCE_FRESH).observe(fresh_results)
+        inline_search_results.labels(source=self.LABEL_SOURCE_CACHE).observe(len(result_coros) - fresh_results)
         # Await all coros to send results and new offset
         return await gather_ignore_exceptions(result_coros), f"{page}:{skip}"
 

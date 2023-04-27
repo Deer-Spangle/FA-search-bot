@@ -4,6 +4,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from prometheus_client import Summary
 from telethon.events import InlineQuery, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality, answer_with_error
@@ -24,18 +25,30 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+inline_fav_results = Summary(
+    "fasearchbot_inline_favs_results_count",
+    "Number of inline results sent via the inline favourites search",
+    labelnames=["source"],
+)
+
 
 class InlineFavsFunctionality(BotFunctionality):
     INLINE_MAX = 20
     INLINE_FRESH = 5
     USE_CASE_FAVS = "inline_favourites"
     PREFIX_FAVS = ["favourites", "favs", "favorites", "f"]
+    LABEL_SOURCE_CACHE = "cache"
+    LABEL_SOURCE_FRESH = "fresh"
+    LABEL_SOURCE_TOTAL = "total"
 
     def __init__(self, api: FAExportAPI, submission_cache: SubmissionCache):
         prefix_pattern = re.compile("^(" + "|".join(re.escape(pref) for pref in self.PREFIX_FAVS) + "):", re.I)
         super().__init__(InlineQuery(pattern=prefix_pattern))
         self.api = api
         self.cache = submission_cache
+        inline_fav_results.labels(source=self.LABEL_SOURCE_CACHE)
+        inline_fav_results.labels(source=self.LABEL_SOURCE_FRESH)
+        inline_fav_results.labels(source=self.LABEL_SOURCE_TOTAL)
 
     @property
     def usage_labels(self) -> List[str]:
@@ -98,6 +111,11 @@ class InlineFavsFunctionality(BotFunctionality):
             else:
                 fresh_results += 1
                 results.append(self._send_fresh_result(submission, event.builder))
+        # Record some metrics
+        inline_fav_results.labels(source=self.LABEL_SOURCE_TOTAL).observe(len(results))
+        inline_fav_results.labels(source=self.LABEL_SOURCE_FRESH).observe(fresh_results)
+        inline_fav_results.labels(source=self.LABEL_SOURCE_CACHE).observe(len(results) - fresh_results)
+        # Await all the coros and return them and the new offset
         return await gather_ignore_exceptions(results), next_offset
 
     async def _send_fresh_result(
