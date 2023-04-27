@@ -8,9 +8,20 @@ from threading import RLock
 from typing import Optional, Union, Tuple, Dict, ContextManager, TYPE_CHECKING
 
 import dateutil.parser
+from prometheus_client import Gauge
+
 
 if TYPE_CHECKING:
     from sqlite3 import Cursor
+
+    from fa_search_bot.sites.handler_group import HandlerGroup
+
+
+cache_entries = Gauge(
+    "fasearchbot_db_cache_entries",
+    "Number of cache entries in the database",
+    labelnames=["site_code"],
+)
 
 
 @dataclasses.dataclass
@@ -34,6 +45,10 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self._lock = RLock()
         self._create_db()
+
+    def initialise_metrics(self, handlers: HandlerGroup) -> None:
+        for site_code in handlers.site_codes():
+            cache_entries.labels(site_code=site_code).set_function(lambda s=site_code: self.count_cache_entries(s))
 
     def _create_db(self) -> None:
         cur = self.conn.cursor()
@@ -59,6 +74,16 @@ class Database:
     def _just_execute(self, query: str, args: Optional[Union[Tuple, Dict]] = None) -> None:
         with self._execute(query, args):
             pass
+
+    def count_cache_entries(self, site_code: str) -> int:
+        with self._execute(
+            "SELECT COUNT(*) FROM cache_entries WHERE site_code = ?",
+            (site_code,)
+        ) as cursor:
+            row = next(cursor, None)
+            if not row:
+                return 0
+            return row[0]
 
     def fetch_cache_entry(self, site_code: str, submission_id: str) -> Optional[DBCacheEntry]:
         with self._execute(
