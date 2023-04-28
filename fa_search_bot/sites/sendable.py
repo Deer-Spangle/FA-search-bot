@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Callable, TypeVar, Generator
 import docker
 import requests
 from PIL import Image
-from prometheus_client import Counter
+from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
 from telethon import Button
 
@@ -173,6 +173,17 @@ inline_results = Counter(
     labelnames=["site_code"],
 )
 
+time_taken = Summary(
+    "fasearchbot_sendable_time_taken",
+    "Amount of time taken (in seconds) doing various parts of sending a message",
+    labelnames=["task"],
+)
+time_taken_downloading_image = time_taken.labels(task="downloading image")
+time_taken_converting_static_gif = time_taken.labels(task="converting static gif to png")
+time_taken_editing_message = time_taken.labels(task="editing message")
+time_taken_sending_message = time_taken.labels(task="sending message")
+time_taken_converting_video = time_taken.labels(task="converting video")
+time_taken_fetching_filesize = time_taken.labels(task="fetching filesize")
 
 SANDBOX_DIR = "sandbox"
 
@@ -379,48 +390,63 @@ class Sendable(InlineSendable):
                 file_ext = file.split(".")[-1].lower()
                 if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
                     sendable_gif_to_png.labels(site_code=self.site_id).inc()
-                    file = _convert_gif_to_png(file)
+                    with time_taken_converting_static_gif.time():
+                        file = _convert_gif_to_png(file)
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
-                msg = await client.edit_message(
-                    entity=chat,
-                    file=file,
-                    message=self.caption(settings, prefix),
-                    force_document=force_doc,
-                    parse_mode="html",
-                )
-                return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
-            msg = await client.send_message(
-                entity=chat,
-                file=file,
-                message=self.caption(settings, prefix),
-                reply_to=reply_to,
-                force_document=force_doc,
-                parse_mode="html",  # Markdown is not safe here, because of the prefix.
-            )
+                with time_taken_editing_message.time():
+                    msg = await client.edit_message(
+                        entity=chat,
+                        file=file,
+                        message=self.caption(settings, prefix),
+                        force_document=force_doc,
+                        parse_mode="html",
+                    )
+            else:
+                with time_taken_sending_message.time():
+                    msg = await client.send_message(
+                        entity=chat,
+                        file=file,
+                        message=self.caption(settings, prefix),
+                        reply_to=reply_to,
+                        force_document=force_doc,
+                        parse_mode="html",  # Markdown is not safe here, because of the prefix.
+                    )
             return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
 
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
             sendable_image.labels(site_code=self.site_id).inc()
             with temp_sandbox_file(ext) as dl_path:
-                resp = requests.get(self.download_url, stream=True)
-                with open(dl_path, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=8192):
-                        f.write(chunk)
+                with time_taken_downloading_image.time():
+                    resp = requests.get(self.download_url, stream=True)
+                    dl_filesize = 0
+                    with open(dl_path, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                            dl_filesize += len(chunk)
                 # TODO: Check image resolution
-                if self.download_file_size > self.SIZE_LIMIT_IMAGE:
+                if dl_filesize > self.SIZE_LIMIT_IMAGE:
                     settings.direct_link = True
                 return await send_partial(dl_path)
         # Handle animated gifs and videos, which can be made pretty
         if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
             sendable_animated.labels(site_code=self.site_id).inc()
-            return await self._send_video(send_partial)
+            try:
+                logger.info("Sending video, submission ID %s, converting to mp4", self.submission_id)
+                with time_taken_converting_video.time():
+                    output_path: str = await self._convert_video(self.download_url)
+                return await send_partial(output_path)
+            except Exception as e:
+                logger.error("Failed to convert video to mp4. Submission ID: %s", self.submission_id, exc_info=e)
+                return await send_partial(self.download_url)
         # Everything else is a file, send with title and author
         settings.title = True
         settings.author = True
         # Special handling, if it's small enough
-        if self.download_file_size < self.SIZE_LIMIT_DOCUMENT:
+        with time_taken_fetching_filesize.time():
+            dl_filesize = self.download_file_size
+        if dl_filesize < self.SIZE_LIMIT_DOCUMENT:
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:
                 sendable_auto_doc.labels(site_code=self.site_id).inc()
