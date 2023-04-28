@@ -392,6 +392,43 @@ class Sendable(InlineSendable):
                     sendable_gif_to_png.labels(site_code=self.site_id).inc()
                     with time_taken_converting_static_gif.time():
                         file = _convert_gif_to_png(file)
+                if file.startswith("http"):
+                    if as_image:
+                        media = types.InputMediaPhotoExternal(file)
+                    else:
+                        media = types.InputMediaDocumentExternal(file)
+            with time_taken_uploading_file.time():
+                file_handle = await self.upload_file(
+                    _resize_photo_if_needed(file, as_image),
+                    file_size=dl_filesize
+                )
+                if as_image:
+                    media = types.InputMediaUploadedPhoto(file_handle, ttl_seconds=ttl)
+                else:
+                    attributes, mime_type = utils.get_attributes(
+                        file,
+                        mime_type=None?,
+                        attributes=None?,
+                        force_document=force_doc and not is_image,
+                        voice_note=False,
+                        video_note=False,
+                        supports_streaming=supports_streaming,
+                        thumb=thumb
+                    )
+
+                    # setting `nosound_video` to `True` doesn't affect videos with sound
+                    # instead it prevents sending silent videos as GIFs
+                    nosound_video = nosound_video if mime_type.split("/")[0] == 'video' else None
+
+                    media = types.InputMediaUploadedDocument(
+                        file=file_handle,
+                        mime_type=mime_type,
+                        attributes=attributes,
+                        thumb=thumb,
+                        force_file=force_document and not is_image,
+                        ttl_seconds=ttl,
+                        nosound_video=nosound_video
+                    )
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
                 with time_taken_editing_message.time():
