@@ -134,10 +134,36 @@ class SentSubmission:
             return False
 
     async def as_inline_result(self, builder: InlineBuilder) -> InputBotInlineResultPhoto:
-        return await builder.photo(
-            file=self.to_input_media(),
-            id=f"{self.sub_id.site_code}:{self.sub_id.submission_id}",
-            text=self.caption,
-            # Button is required such that the bot can get a callback with the message id, and edit it later.
-            buttons=[Button.inline("⏳ Optimising", f"neaten_me:{self.sub_id.site_code}:{self.sub_id.submission_id}")],
-        )
+        result_id = f"{self.sub_id.site_code}:{self.sub_id.submission_id}"
+        buttons = None
+        if not self.full_image:
+            # Button is required for non-full cache results, such that the bot can get a callback with the message id
+            # and edit it later.
+            buttons = [Button.inline("⏳ Optimising", f"neaten_me:{result_id}")]
+        if self.is_photo:
+            return await builder.photo(
+                file=self.to_input_media(),
+                id=result_id,
+                text=self.caption,
+                buttons=buttons,
+                parse_mode="html",
+            )
+        else:
+            file_ext = self.file_url.split(".")[-1].lower()
+            mime_type = {
+                "mp4": "video/mp4",
+                "gif": "video/mp4",
+                "webm": "video/mp4",
+                "mp3": "audio/mp3",
+                "pdf": "application/pdf",
+            }.get(file_ext)
+            return await builder.document(
+                file=self.to_input_media(),
+                title=self.sub_id.to_inline_code(),
+                mime_type=mime_type,
+                type="gif" if mime_type == "video/mp4" else None,
+                id=result_id,
+                text=self.caption,
+                buttons=buttons,
+                parse_mode="html",
+            )
