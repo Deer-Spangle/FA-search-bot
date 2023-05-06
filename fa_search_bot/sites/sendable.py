@@ -588,7 +588,7 @@ class Sendable(InlineSendable):
                 file=file_handle,
                 mime_type="video/mp4",
                 attributes=[
-                    DocumentAttributeFilename(f"{self.submission_id.to_inline_code()}.mp4"),
+                    DocumentAttributeFilename(f"{self.submission_id.to_filename()}.mp4"),
                     DocumentAttributeVideo(int(video_metadata.duration), video_metadata.width, video_metadata.height),
                 ],
                 thumb=None,
@@ -668,7 +668,7 @@ class Sendable(InlineSendable):
             file=file_handle,
             mime_type="audio/mp3",
             attributes=[
-                DocumentAttributeFilename(f"{self.submission_id.to_inline_code()}.mp3"),
+                DocumentAttributeFilename(f"{self.submission_id.to_filename()}.mp3"),
                 DocumentAttributeAudio(
                     duration=0,
                     title=self.title,
