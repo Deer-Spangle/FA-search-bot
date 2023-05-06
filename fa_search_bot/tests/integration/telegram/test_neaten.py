@@ -151,3 +151,27 @@ async def test_neaten_e621_link(controller: BotController):
     assert response.messages[0].text.startswith("⏳")
     assert "1092773" in response.messages[-1].caption
     assert response.messages[-1].photo
+
+
+async def test_neaten_audio_link(controller: BotController):
+    # - Send audio link, get neatened audio
+    async with controller.collect(count=2) as response:
+        await controller.client.send_message(controller.peer_id, "https://furaffinity.net/view/51778891/")
+
+    assert response.num_messages == 2
+    assert response.messages[0].text.startswith("⏳")
+    assert "51778891" in response.messages[-1].caption
+    assert response.messages[-1].audio
+    assert "Rosemary" in response.messages[-1].audio.title
+    assert "xSini" in response.messages[-1].audio.performer
+
+
+async def test_neaten_static_gif_link(controller: BotController):
+    # - send link to static gif, get neatened pic (not animation)
+    async with controller.collect(count=2) as response:
+        await controller.client.send_message(controller.peer_id, "https://furaffinity.net/view/27575057/")
+
+    assert response.num_messages == 2
+    assert response.messages[0].text.startswith("⏳")
+    assert "27575057" in response.messages[-1].caption
+    assert response.messages[-1].photo
