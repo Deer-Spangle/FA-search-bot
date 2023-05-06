@@ -644,7 +644,7 @@ class Sendable(InlineSendable):
                     kwargs = {}
                     if exif:
                         kwargs["exif"] = exif
-                    img.save(out_handle, 'JPEG', progressive=True, **kwargs)
+                    img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
 
             filesize = os.path.getsize(output_file)
             file_handle = await client.upload_file(
