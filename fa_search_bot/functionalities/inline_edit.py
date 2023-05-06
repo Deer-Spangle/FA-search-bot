@@ -39,6 +39,9 @@ class InlineEditFunctionality(BotFunctionality):
             sub_id,
             msg_id,
         )
+        if msg_id is None:
+            # If sent without a button, no message ID is provided, so no edit needed
+            return
         try:
             await self.handlers.edit_submission(sub_id, self.client, msg_id)
         except PageNotFound as e:
