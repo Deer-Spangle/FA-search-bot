@@ -6,7 +6,7 @@ from telethon.tl.custom import InlineBuilder
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
-from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR
+from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR, _url_to_media, SendSettings, CaptionSettings
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
@@ -280,18 +280,40 @@ async def test_send_pdf_just_over_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
+async def test_send_message__calls_upload(mock_client):
+    submission = SubmissionBuilder().build_full_submission()
+    sendable = SendableFASubmission(submission)
+    chat = MockChat(-92343222)
+    message_id = 765243
+    mock_media = _url_to_media(submission.download_url, True)
+    settings = SendSettings(CaptionSettings())
+
+    with mock.patch.object(sendable, "upload", return_value=(mock_media, settings)) as mock_upload:
+        await sendable.send_message(mock_client, chat, reply_to=message_id)
+
+    mock_upload.assert_called_once()
+    mock_upload.assert_called_with(mock_client)
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args.kwargs["file"] == mock_media
+    assert submission.link in mock_client.send_message.call_args[1]["message"]
+
+
+@pytest.mark.asyncio
 async def test_send_message__with_prefix(mock_client):
     submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
+    mock_media = _url_to_media(submission.download_url, True)
+    settings = SendSettings(CaptionSettings())
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id, prefix="Update on a search")
+    with mock.patch.object(sendable, "upload", return_value=(mock_media, settings)):
+        await sendable.send_message(mock_client, chat, reply_to=message_id, prefix="Update on a search")
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
+    assert mock_client.send_message.call_args.kwargs["file"] == mock_media
     assert submission.link in mock_client.send_message.call_args[1]["message"]
     assert "Update on a search\n" in mock_client.send_message.call_args[1]["message"]
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
@@ -303,13 +325,15 @@ async def test_send_message__without_prefix(mock_client):
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
+    mock_media = _url_to_media(submission.download_url, True)
+    settings = SendSettings(CaptionSettings())
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch.object(sendable, "upload", return_value=(mock_media, settings)):
+        await sendable.send_message(mock_client, chat, reply_to=message_id)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
+    assert mock_client.send_message.call_args.kwargs["file"] == mock_media
     assert mock_client.send_message.call_args[1]["message"] == submission.link
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
 
@@ -320,14 +344,16 @@ async def test_send_message__edit(mock_client):
     sendable = SendableFASubmission(submission)
     entity = MockInlineMessageId()
     message_id = 2873292
+    mock_media = _url_to_media(submission.download_url, True)
+    settings = SendSettings(CaptionSettings())
 
-    await sendable.send_message(mock_client, entity, reply_to=message_id, edit=True)
+    with mock.patch.object(sendable, "upload", return_value=(mock_media, settings)):
+        await sendable.send_message(mock_client, entity, reply_to=message_id, edit=True)
 
     mock_client.send_message.assert_not_called()
     mock_client.edit_message.assert_called_once()
     assert mock_client.edit_message.call_args.kwargs["entity"] == entity
-    assert mock_client.edit_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.edit_message.call_args.kwargs["file"].endswith(".jpg")
+    assert mock_client.edit_message.call_args.kwargs["file"] == mock_media
     assert mock_client.edit_message.call_args.kwargs["message"] == submission.link
     assert mock_client.edit_message.call_args.kwargs["parse_mode"] == "html"
     assert "reply_to" not in mock_client.edit_message.call_args[1]
