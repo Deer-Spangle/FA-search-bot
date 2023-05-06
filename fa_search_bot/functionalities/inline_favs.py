@@ -125,7 +125,7 @@ class InlineFavsFunctionality(BotFunctionality):
     ) -> InputBotInlineResultPhoto:
         sub_id = SubmissionID("fa", submission.submission_id)
         # Send from source
-        result = await submission.to_inline_query_result(builder)
+        result = await submission.to_inline_query_result(builder, sub_id.site_code)
         # Save to cache
         sent_sub = SentSubmission.from_inline_result(sub_id, result)
         self.cache.save_cache(sent_sub)
