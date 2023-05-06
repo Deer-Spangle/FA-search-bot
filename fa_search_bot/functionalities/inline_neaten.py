@@ -33,6 +33,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         # Check if it's a submission ID
         sub_ids = self.handlers.list_potential_submission_ids(query_clean)
         if sub_ids:
+            logger.debug("Got inline neaten query for %s", sub_ids)
             results = await self.handlers.answer_submission_ids(sub_ids, event)
             if results:
                 self.usage_counter.labels(function=f"{self.USE_CASE_ID}").inc()
@@ -42,6 +43,7 @@ class InlineNeatenFunctionality(BotFunctionality):
         # Check if it's a link
         links = self.handlers.list_potential_links(query_clean)
         if links:
+            logger.debug("Got inline neaten query for links: %s", links)
             results = await self.handlers.answer_links(links, event)
             if results:
                 self.usage_counter.labels(function=f"{self.USE_CASE_LINK}").inc()
