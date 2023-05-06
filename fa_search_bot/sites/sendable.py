@@ -490,7 +490,7 @@ class Sendable(InlineSendable):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> SentSubmission:
+    ) -> Optional[SentSubmission]:
         sendable_sent.labels(site_code=self.site_id).inc()
         send_partial = self._partial_sender(client, chat, reply_to, prefix, edit)
         media, settings = await self.upload(client)
@@ -504,7 +504,7 @@ class Sendable(InlineSendable):
             prefix: str,
             edit: bool,
     ) -> Callable[[TypeInputMedia, SendSettings], Awaitable[SentSubmission]]:
-        async def send_partial(input_media: TypeInputMedia, settings: SendSettings) -> SentSubmission:
+        async def send_partial(input_media: TypeInputMedia, settings: SendSettings) -> Optional[SentSubmission]:
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
                 with time_taken_editing_message.time():
@@ -526,7 +526,8 @@ class Sendable(InlineSendable):
                         parse_mode="html",  # Markdown is not safe here, because of the prefix.
                     )
             sent_sub = SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings.caption))
-            sent_sub.save_cache = settings.save_cache
+            if sent_sub:
+                sent_sub.save_cache = settings.save_cache
             return sent_sub
         return send_partial
 
