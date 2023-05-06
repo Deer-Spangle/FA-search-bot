@@ -52,6 +52,14 @@ class SendableFASubmission(Sendable):
         return self.submission.full_image_url
 
     @property
+    def author(self) -> Optional[str]:
+        return self.submission.author.name
+
+    @property
+    def title(self) -> Optional[str]:
+        return self.submission.title
+
+    @property
     def thumbnail_url(self) -> str:
         return self.submission.thumbnail_url
 

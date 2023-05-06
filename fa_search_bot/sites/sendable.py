@@ -371,6 +371,16 @@ class Sendable(InlineSendable):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def title(self) -> Optional[str]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def author(self) -> Optional[str]:
+        raise NotImplementedError
+
     @_count_exceptions_with_labels(sendable_failure)
     async def send_message(
         self,

@@ -39,6 +39,17 @@ class E621Post(Sendable):
         return self.download_url
 
     @property
+    def author(self):
+        artist_tags = self.post.tags.get("artist", [])
+        if artist_tags:
+            return ", ".join(artist_tags)
+        return None
+
+    @property
+    def title(self) -> Optional[str]:
+        return None
+
+    @property
     def thumbnail_url(self) -> str:
         if self.download_file_ext == "swf":
             return self.post.preview["url"]
