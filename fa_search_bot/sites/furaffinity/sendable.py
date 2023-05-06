@@ -28,6 +28,7 @@ class InlineSendableFASubmission(InlineSendable):
 
 class SendableFASubmission(Sendable):
     def __init__(self, submission: FASubmissionFull):
+        super().__init__()
         self.submission = submission
 
     @property

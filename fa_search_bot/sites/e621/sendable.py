@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 class E621Post(Sendable):
     def __init__(self, post: Post):
+        super().__init__()
         self.post = post
 
     @property
