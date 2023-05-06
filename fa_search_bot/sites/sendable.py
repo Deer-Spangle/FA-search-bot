@@ -663,7 +663,7 @@ class Sendable(InlineSendable):
         sendable_audio.labels(site_code=self.site_id).inc()
         file_handle = await client.upload_file(dl_file.dl_path)
         with _downloaded_file(self.thumbnail_url) as thumb_file:
-            thumb_handle = await client.upload_file(thumb_file)
+            thumb_handle = await client.upload_file(thumb_file.dl_path)
         media = InputMediaUploadedDocument(
             file=file_handle,
             mime_type="audio/mp3",
