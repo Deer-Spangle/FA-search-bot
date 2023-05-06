@@ -40,6 +40,7 @@ class SentSubmission:
     file_url: Optional[str]
     caption: str
     full_image: bool
+    save_cache: bool = True
 
     @classmethod
     def from_resp(
