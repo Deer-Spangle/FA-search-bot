@@ -9,6 +9,17 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.6] - 2023-05-06
+
+### Fixed
+
+- Fixed bug where gifs could not be sent via inline neatening. (Fixes sending audio and pdf also)
+
+### Changed
+
+- When sending submissions that have already been cached as full results, inline result will be sent correctly first
+  time, rather than having an optimise button and calling inline edit.
+
 ## [1.13.5] - 2023-04-28
 
 ### Added
