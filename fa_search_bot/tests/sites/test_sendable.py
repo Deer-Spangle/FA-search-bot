@@ -1,12 +1,15 @@
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock
 
 import pytest
 from telethon.tl.custom import InlineBuilder
+from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeFilename, DocumentAttributeVideo, \
+    InputMediaDocumentExternal, InputMediaUploadedPhoto
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
-from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR, _url_to_media, SendSettings, CaptionSettings
+from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR, _url_to_media, SendSettings, CaptionSettings, \
+    VideoMetadata
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
@@ -14,105 +17,319 @@ from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
 
 @pytest.mark.asyncio
-async def test_send_animated_gif_submission(mock_client):
+async def test_upload__animated_gif_submission(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-    output_filename = "output.mp4"
-    convert = MockMethod(output_filename)
-    sendable._convert_gif = convert.async_call
+    duration = 13.7
+    width, height = 512, 720
+    video_metadata = VideoMetadata(
+        {"format": {"duration": duration}, "streams": [{"codec_type": "video", "width": width, "height": height}]}
+    )
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-        await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch.object(sendable, "_convert_video", return_value=video_metadata) as convert:
+        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
+            media, settings = await sendable.upload(mock_client)
 
-    assert convert.called
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == output_filename
-    assert mock_client.send_message.call_args[1]["message"] == submission.link
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    # Check called functions
+    convert.assert_called_once()
+    mock_client.upload_file.assert_called_once()
+    # Check send settings
+    assert isinstance(settings, SendSettings)
+    assert settings.caption.direct_link is False
+    assert settings.save_cache is True
+    assert settings.force_doc is False
+    # Check media
+    assert isinstance(media, InputMediaUploadedDocument)
+    assert media.file == file_handle
+    assert media.mime_type == "video/mp4"
+    assert media.force_file is False
+    assert media.nosound_video is False
+    # Check media attributes
+    assert len(media.attributes) == 2
+    attr_filename = media.attributes[0]
+    attr_video = media.attributes[1]
+    if not isinstance(attr_filename, DocumentAttributeFilename):
+        attr_video = media.attributes[0]
+        attr_filename = media.attributes[1]
+    assert isinstance(attr_filename, DocumentAttributeFilename)
+    assert isinstance(attr_video, DocumentAttributeVideo)
+    assert "FASearchBot" in attr_filename.file_name
+    assert submission.submission_id in attr_filename.file_name
+    assert sendable.site_id in attr_filename.file_name
+    assert attr_video.duration == int(duration)
+    assert attr_video.w == width
+    assert attr_video.h == height
 
 
 @pytest.mark.asyncio
-async def test_send_static_gif_convert_to_png(mock_client):
+async def test_upload__animated_gif_convert_failure(mock_client):
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-    convert = MockMethod("output.mp4")
-    sendable._convert_gif = convert.async_call
-    png_output = b"png blah"
+    sendable._convert_video = lambda *args: (_ for _ in ()).throw(Exception)
+
+    with mock.patch.object(
+            sendable, "_convert_video", side_effect=lambda *args: (_ for _ in ()).throw(Exception)
+    ) as convert:
+        with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
+            media, settings = await sendable.upload(mock_client)
+
+    # Check called functions
+    convert.assert_called_once()
+    mock_client.upload_file.assert_not_called()
+    # Check send settings
+    assert isinstance(settings, SendSettings)
+    assert settings.caption.direct_link is True
+    assert settings.save_cache is False
+    assert settings.force_doc is False
+    # Check media
+    assert isinstance(media, InputMediaDocumentExternal)
+    assert media.url == submission.download_url
+
+
+@pytest.mark.asyncio
+async def test_upload__webm_submission(mock_client):
+    submission = SubmissionBuilder(file_ext="webm", file_size=47453).build_full_submission()
+    sendable = SendableFASubmission(submission)
+    duration = 173.5
+    width, height = 1280, 1080
+    video_metadata = VideoMetadata(
+        {"format": {"duration": duration}, "streams": [{"codec_type": "video", "width": width, "height": height}]}
+    )
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
+
+    with mock.patch.object(sendable, "_convert_video", return_value=video_metadata) as convert:
+        media, settings = await sendable.upload(mock_client)
+
+    # Check called functions
+    convert.assert_called_once()
+    mock_client.upload_file.assert_called_once()
+    # Check send settings
+    assert isinstance(settings, SendSettings)
+    assert settings.caption.direct_link is False
+    assert settings.save_cache is True
+    assert settings.force_doc is False
+    # Check media
+    assert isinstance(media, InputMediaUploadedDocument)
+    assert media.file == file_handle
+    assert media.mime_type == "video/mp4"
+    assert media.force_file is False
+    assert media.nosound_video is False
+    # Check media attributes
+    assert len(media.attributes) == 2
+    attr_filename = media.attributes[0]
+    attr_video = media.attributes[1]
+    if not isinstance(attr_filename, DocumentAttributeFilename):
+        attr_video = media.attributes[0]
+        attr_filename = media.attributes[1]
+    assert isinstance(attr_filename, DocumentAttributeFilename)
+    assert isinstance(attr_video, DocumentAttributeVideo)
+    assert "FASearchBot" in attr_filename.file_name
+    assert submission.submission_id in attr_filename.file_name
+    assert sendable.site_id in attr_filename.file_name
+    assert attr_video.duration == int(duration)
+    assert attr_video.w == width
+    assert attr_video.h == height
+
+
+@pytest.mark.asyncio
+async def test_upload__image_static_gif_converted_to_jpg(mock_client):
+    submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+    sendable = SendableFASubmission(submission)
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
     with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=False):
-        with mock.patch("fa_search_bot.sites.sendable._convert_gif_to_png", return_value=png_output):
-            await sendable.send_message(mock_client, chat, reply_to=message_id)
+        media, settings = await sendable.upload(mock_client)
 
-    assert not convert.called
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"] == png_output
-    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
-    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
+    # Check mock calls
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=False,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
-async def test_send_static_png_does_not_convert(mock_client):
-    submission = SubmissionBuilder(file_ext="png", file_size=47453).build_full_submission()
+async def test_upload__image_static_jpg_does_not_check_animated(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-    convert = MockMethod("output.mp4")
-    sendable._convert_gif = convert.async_call
-    png_output = b"png blah"
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=False):
-        with mock.patch("fa_search_bot.sites.sendable._convert_gif_to_png", return_value=png_output):
-            await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=False) as is_animated:
+        media, settings = await sendable.upload(mock_client)
 
-    assert not convert.called
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args.kwargs["file"].endswith(".png")
-    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
-    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
+    # Check mock calls
+    is_animated.assert_not_called()
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=False,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
-async def test_send_animated_gif_convert_failure(mock_client):
-    submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
+async def test_upload__image_just_under_size_limit(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg").build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-    sendable._convert_gif = lambda *args: (_ for _ in ()).throw(Exception)
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    with mock.patch("fa_search_bot.sites.sendable._is_animated", return_value=True):
-        await sendable.send_message(mock_client, chat, reply_to=message_id)
+    with mock.patch("os.path.getsize", return_value=Sendable.SIZE_LIMIT_IMAGE - 1):
+        media, settings = await sendable.upload(mock_client)
 
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args.kwargs["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"] == submission.download_url
-    assert mock_client.send_message.call_args.kwargs["message"] == submission.link
-    assert mock_client.send_message.call_args.kwargs["reply_to"] == message_id
+    # Check mock calls
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=False,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
-async def test_send_pdf_submission(mock_client):
+async def test_upload__image_just_over_size_limit(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg").build_full_submission()
+    sendable = SendableFASubmission(submission)
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
+
+    with mock.patch("os.path.getsize", return_value=Sendable.SIZE_LIMIT_IMAGE + 1):
+        media, settings = await sendable.upload(mock_client)
+
+    # Check mock calls
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=True,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_upload__image_just_over_semiperimeter(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg").build_full_submission()
+    sendable = SendableFASubmission(submission)
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
+    width, height = Sendable.SEMIPERIMETER_LIMIT_IMAGE // 2 + 1, Sendable.SEMIPERIMETER_LIMIT_IMAGE // 2 + 1
+
+    with mock.patch("fa_search_bot.sites.sendable._img_size", return_value=(width, height)):
+        media, settings = await sendable.upload(mock_client)
+
+    # Check mock calls
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=True,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_upload__image_has_transparency(mock_client):
+    submission = SubmissionBuilder(file_ext="jpg").build_full_submission()
+    sendable = SendableFASubmission(submission)
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
+
+    with mock.patch("fa_search_bot.sites.sendable._img_has_transparency", return_value=True):
+        media, settings = await sendable.upload(mock_client)
+
+    # Check mock calls
+    mock_client.upload_file.assert_called_once()
+    assert mock_client.upload_file.calls[0].args[0].endswith(".jpg")
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=True,
+            title=False,
+            author=False,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_upload__pdf_just_under_size_limit(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(file_ext="pdf", file_size=47453, title=title, author=author).build_full_submission()
+    submission = SubmissionBuilder(
+        file_ext="pdf",
+        file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1,
+        title=title,
+        author=author,
+    ).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
+    await sendable.upload(mock_client)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
     assert mock_client.send_message.call_args[1]["file"] == submission.download_url
     assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["force_document"] is True
     sent_message = mock_client.send_message.call_args[1]["message"]
     assert sent_message.endswith(submission.link)
     assert f'"{title}"' in sent_message
@@ -121,37 +338,20 @@ async def test_send_pdf_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_send_mp3_submission(mock_client):
-    title = "Example music"
-    author = FAUser("A musician", "amusician")
-    submission = SubmissionBuilder(file_ext="mp3", file_size=47453, title=title, author=author).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
-
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(submission.link)
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
-
-
-@pytest.mark.asyncio
-async def test_send_unrecognised_submission(mock_client):
+async def test_upload__pdf_just_over_size_limit(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_mock_submission()
+    submission = SubmissionBuilder(
+        file_ext="pdf",
+        file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1,
+        title=title,
+        author=author,
+    ).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
+    await sendable.upload(mock_client)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
@@ -166,79 +366,38 @@ async def test_send_unrecognised_submission(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_send_image_just_under_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE - 1).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
-
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args[1]["file"].endswith(".jpg")
-    assert mock_client.send_message.call_args[1]["message"] == submission.link
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-
-
-@pytest.mark.asyncio
-async def test_send_image_just_over_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_IMAGE + 1).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
-
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
-    assert (
-        mock_client.send_message.call_args[1]["message"]
-        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
-    )
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
-
-
-@pytest.mark.asyncio
-async def test_send_image_over_document_size_limit(mock_client):
-    submission = SubmissionBuilder(file_ext="jpg", file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
-
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args.kwargs["file"].startswith(f"{SANDBOX_DIR}/")
-    assert mock_client.send_message.call_args.kwargs["file"].endswith(".jpg")
-    assert (
-        mock_client.send_message.call_args[1]["message"]
-        == f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>'
-    )
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
-
-
-@pytest.mark.asyncio
-async def test_send_pdf_just_under_size_limit(mock_client):
+async def test_upload__pdf_submission(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(
-        file_ext="pdf",
-        file_size=Sendable.SIZE_LIMIT_DOCUMENT - 1,
-        title=title,
-        author=author,
-    ).build_full_submission()
+    submission = SubmissionBuilder(file_ext="pdf", file_size=47453, title=title, author=author).build_full_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
+    await sendable.upload(mock_client)
+
+    mock_client.send_message.assert_called_once()
+    assert mock_client.send_message.call_args[1]["entity"] == chat
+    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
+    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
+    assert mock_client.send_message.call_args[1]["force_document"] is True
+    sent_message = mock_client.send_message.call_args[1]["message"]
+    assert sent_message.endswith(submission.link)
+    assert f'"{title}"' in sent_message
+    assert author.name in sent_message
+    assert author.link in sent_message
+
+
+@pytest.mark.asyncio
+async def test_upload__mp3_submission(mock_client):
+    title = "Example music"
+    author = FAUser("A musician", "amusician")
+    submission = SubmissionBuilder(file_ext="mp3", file_size=47453, title=title, author=author).build_full_submission()
+    sendable = SendableFASubmission(submission)
+    chat = MockChat(-9327622)
+    message_id = 2873292
+
+    await sendable.upload(mock_client)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat
@@ -252,20 +411,15 @@ async def test_send_pdf_just_under_size_limit(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_send_pdf_just_over_size_limit(mock_client):
+async def test_upload__unrecognised_submission(mock_client):
     title = "Example title"
     author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(
-        file_ext="pdf",
-        file_size=Sendable.SIZE_LIMIT_DOCUMENT + 1,
-        title=title,
-        author=author,
-    ).build_full_submission()
+    submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_mock_submission()
     sendable = SendableFASubmission(submission)
     chat = MockChat(-9327622)
     message_id = 2873292
 
-    await sendable.send_message(mock_client, chat, reply_to=message_id)
+    await sendable.upload(mock_client)
 
     mock_client.send_message.assert_called_once()
     assert mock_client.send_message.call_args[1]["entity"] == chat

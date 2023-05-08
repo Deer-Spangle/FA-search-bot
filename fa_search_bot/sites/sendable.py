@@ -321,6 +321,25 @@ def _img_is_animated(img: Image) -> bool:
     return getattr(img, "is_animated", False)
 
 
+def _img_has_transparency(img: Image) -> bool:
+    if img.info.get("transparency", None) is not None:
+        return True
+    if img.mode == "P":
+        transparent = img.info.get("transparency", -1)
+        for _, index in img.getcolors():
+            if index == transparent:
+                return True
+    elif img.mode == "RGBA":
+        extrema = img.getextrema()
+        if extrema[3][0] < 255:
+            return True
+    return False
+
+
+def _img_size(img: Image) -> Tuple[int, int]:
+    return img.size
+
+
 def _is_animated(file_path: str) -> bool:
     if file_ext(file_path) not in Sendable.EXTENSIONS_ANIMATED:
         return False
@@ -600,6 +619,7 @@ class Sendable(InlineSendable):
         except Exception as e:
             logger.error("Failed to convert video to mp4. Submission ID: %s", self.submission_id, exc_info=e)
             settings.save_cache = False
+            settings.caption.direct_link = True
             media = _url_to_media(self.download_url, False)
             return media, settings
 
@@ -614,13 +634,13 @@ class Sendable(InlineSendable):
         if os.path.getsize(dl_file.dl_path) > self.SIZE_LIMIT_IMAGE:
             settings.caption.direct_link = True
         # Load as image and check things
-        with temp_sandbox_file(dl_file.file_ext()) as output_file:
+        with temp_sandbox_file("jpg") as output_file:
             with Image.open(dl_file.dl_path) as img:
                 # Get exif data
                 exif = img.info.get("exif")
 
                 # Check image resolution and scale
-                width, height = img.size
+                width, height = _img_size(img)
                 semiperimeter = width + height
                 if semiperimeter > self.SEMIPERIMETER_LIMIT_IMAGE:
                     settings.caption.direct_link = True
@@ -630,9 +650,12 @@ class Sendable(InlineSendable):
                     img = img.resize((new_width, new_height), Image.ANTIALIAS)
 
                 # Mask out transparency
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
                 alpha_index = img.mode.find('A')
                 if alpha_index != -1:
-                    settings.caption.direct_link = True
+                    if _img_has_transparency(img):
+                        settings.caption.direct_link = True
                     result = Image.new('RGB', img.size, self.IMG_TRANSPARENCY_COlOUR)
                     result.paste(img, mask=img.split()[alpha_index])
                     img = result
