@@ -579,6 +579,7 @@ class Sendable(InlineSendable):
         if dl_filesize < self.SIZE_LIMIT_DOCUMENT:
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:
+                settings.force_doc = True
                 return _url_to_media(self.download_url, False), settings
             # Handle audio
             if ext in self.EXTENSIONS_AUDIO:

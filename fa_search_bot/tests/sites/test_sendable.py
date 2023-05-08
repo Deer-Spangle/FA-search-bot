@@ -4,12 +4,12 @@ from unittest.mock import Mock, PropertyMock
 import pytest
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeFilename, DocumentAttributeVideo, \
-    InputMediaDocumentExternal, InputMediaUploadedPhoto
+    InputMediaDocumentExternal, InputMediaUploadedPhoto, DocumentAttributeAudio
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
 from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR, _url_to_media, SendSettings, CaptionSettings, \
-    VideoMetadata
+    VideoMetadata, _downloaded_file
 from fa_search_bot.tests.conftest import MockChat
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
@@ -321,20 +321,21 @@ async def test_upload__pdf_just_under_size_limit(mock_client):
         author=author,
     ).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
 
-    await sendable.upload(mock_client)
+    media, settings = await sendable.upload(mock_client)
 
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(submission.link)
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
+    assert isinstance(media, InputMediaDocumentExternal)
+    assert media.url == submission.download_url
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=False,
+            author=True,
+            title=True,
+        ),
+        force_doc=True,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -348,44 +349,23 @@ async def test_upload__pdf_just_over_size_limit(mock_client):
         author=author,
     ).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    await sendable.upload(mock_client)
+    media, settings = await sendable.upload(mock_client)
 
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>')
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
-
-
-@pytest.mark.asyncio
-async def test_upload__pdf_submission(mock_client):
-    title = "Example title"
-    author = FAUser("A writer", "awriter")
-    submission = SubmissionBuilder(file_ext="pdf", file_size=47453, title=title, author=author).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
-
-    await sendable.upload(mock_client)
-
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["force_document"] is True
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(submission.link)
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=True,
+            author=True,
+            title=True,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -394,20 +374,38 @@ async def test_upload__mp3_submission(mock_client):
     author = FAUser("A musician", "amusician")
     submission = SubmissionBuilder(file_ext="mp3", file_size=47453, title=title, author=author).build_full_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    await sendable.upload(mock_client)
+    media, settings = await sendable.upload(mock_client)
 
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.download_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(submission.link)
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
+    # Check media
+    assert isinstance(media, InputMediaUploadedDocument)
+    assert media.file == file_handle
+    assert len(media.attributes) == 2
+    attr_filename = media.attributes[0]
+    attr_audio = media.attributes[1]
+    if not isinstance(attr_filename, DocumentAttributeFilename):
+        attr_audio = media.attributes[0]
+        attr_filename = media.attributes[1]
+    assert isinstance(attr_filename, DocumentAttributeFilename)
+    assert "FASearchBot" in attr_filename.file_name
+    assert sendable.site_id in attr_filename.file_name
+    assert submission.submission_id in attr_filename.file_name
+    assert isinstance(attr_audio, DocumentAttributeAudio)
+    assert attr_audio.title == sendable.title
+    assert attr_audio.performer == sendable.author
+    # Check settings
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=False,
+            title=True,
+            author=True,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -416,21 +414,29 @@ async def test_upload__unrecognised_submission(mock_client):
     author = FAUser("A writer", "awriter")
     submission = SubmissionBuilder(file_ext="txt", title=title, author=author).build_mock_submission()
     sendable = SendableFASubmission(submission)
-    chat = MockChat(-9327622)
-    message_id = 2873292
+    file_handle = object()
+    mock_client.upload_file.return_value = file_handle
 
-    await sendable.upload(mock_client)
+    with mock.patch("fa_search_bot.sites.sendable._downloaded_file", wraps=_downloaded_file) as mock_dl:
+        media, settings = await sendable.upload(mock_client)
 
-    mock_client.send_message.assert_called_once()
-    assert mock_client.send_message.call_args[1]["entity"] == chat
-    assert mock_client.send_message.call_args[1]["file"] == submission.full_image_url
-    assert mock_client.send_message.call_args[1]["reply_to"] == message_id
-    assert mock_client.send_message.call_args[1]["parse_mode"] == "html"
-    sent_message = mock_client.send_message.call_args[1]["message"]
-    assert sent_message.endswith(f'{submission.link}\n<a href="{submission.download_url}">Direct download</a>')
-    assert f'"{title}"' in sent_message
-    assert author.name in sent_message
-    assert author.link in sent_message
+    # Check preview is downloaded
+    mock_dl.assert_called_once()
+    mock_dl.assert_called_with(sendable.preview_image_url)
+    # Check media
+    assert isinstance(media, InputMediaUploadedPhoto)
+    assert media.file == file_handle
+    # TODO: Check it was from preview image
+    assert isinstance(settings, SendSettings)
+    assert settings == SendSettings(
+        CaptionSettings(
+            direct_link=True,
+            title=True,
+            author=True,
+        ),
+        force_doc=False,
+        save_cache=True,
+    )
 
 
 @pytest.mark.asyncio
