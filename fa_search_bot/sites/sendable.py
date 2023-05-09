@@ -729,7 +729,7 @@ class Sendable(InlineSendable):
             return metadata
         # If it's too big, do a 2 pass run
         convert_gif_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(client, output_path, gif_path, metadata, ffmpeg_options)
+        return await self._convert_two_pass(client, gif_path, output_path, metadata, ffmpeg_options)
 
     @_count_exceptions_with_labels(convert_video_failures)
     async def _convert_video(self, video_path: str, output_path: str) -> VideoMetadata:
@@ -760,13 +760,13 @@ class Sendable(InlineSendable):
             return metadata
         # If it's too big, do a 2 pass run
         convert_video_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(client, output_path, video_path, metadata, ffmpeg_options, ffmpeg_prefix)
+        return await self._convert_two_pass(client, video_path, output_path, metadata, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
         self,
         client: DockerClient,
-        output_path: str,
         video_path: str,
+        output_path: str,
         metadata: VideoMetadata,
         ffmpeg_options: str,
         ffmpeg_prefix: str = "",
