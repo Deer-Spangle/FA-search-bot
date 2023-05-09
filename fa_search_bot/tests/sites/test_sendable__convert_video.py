@@ -1,4 +1,5 @@
 import abc
+import json
 from typing import Type, List
 from unittest import mock
 from unittest.mock import Mock
@@ -293,42 +294,52 @@ async def test_convert_video__two_pass():
 
 @pytest.mark.asyncio
 async def test_video_metadata():
-    assert False  # TODO
-
-
-@pytest.mark.asyncio
-async def test_video_metadata_has_audio():
     submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
     sendable = SendableFASubmission(submission)
-    mock_run = MockMethod("stream 1: some audio")
-    sendable._run_docker = mock_run.async_call
     client = DockerClient.from_env()
-    video_path = random_sandbox_video_path()
+    input_path = "sandbox/input_metadata_test.mp4"
+    duration = 127.5
+    width, height = 514, 512
+    audio_bitrate = 167000
+    metadata_dict = {
+        "format": {"duration": duration},
+        "streams": [
+            {"codec_type": "video", "height": height, "width": width},
+            {"codec_type": "audio", "bit_rate": audio_bitrate},
+        ]
+    }
 
-    audio = await sendable._video_has_audio_track(client, video_path)
+    with mock.patch.object(sendable, "_run_docker", return_value=json.dumps(metadata_dict)) as mock_run:
+        metadata = await sendable._video_metadata(client, input_path)
 
-    assert audio is True
-    assert mock_run.called
-    assert mock_run.args[0] == client
-    assert "-show_streams -select_streams a" in mock_run.args[1]
-    assert video_path in mock_run.args[1]
-    assert mock_run.kwargs["entrypoint"] == "ffprobe"
+    mock_run.assert_called_once_with(
+        client,
+        (
+                CallArgContains("format=duration:stream=width,height,bit_rate,codec_type")
+                & CallArgContains(f"/{input_path}")
+                & CallArgContains("-of json")
+        ),
+        entrypoint="ffprobe",
+    )
+    assert isinstance(metadata, VideoMetadata)
+    assert metadata.duration == duration
+    assert metadata.width == width
+    assert metadata.height == height
+    assert metadata.audio_bitrate == audio_bitrate
+    assert metadata.has_audio is True
 
 
 @pytest.mark.asyncio
 async def test_video_metadata_has_no_audio():
-    submission = SubmissionBuilder(file_ext="gif", file_size=47453).build_full_submission()
-    sendable = SendableFASubmission(submission)
-    mock_run = MockMethod("")
-    sendable._run_docker = mock_run.async_call
-    client = DockerClient.from_env()
-    video_path = random_sandbox_video_path()
+    duration = 127.5
+    width, height = 514, 512
+    metadata_dict = {
+        "format": {"duration": duration},
+        "streams": [
+            {"codec_type": "video", "height": height, "width": width},
+        ]
+    }
 
-    audio = await sendable._video_has_audio_track(client, video_path)
+    metadata = VideoMetadata.from_json_str(json.dumps(metadata_dict))
 
-    assert audio is False
-    assert mock_run.called
-    assert mock_run.args[0] == client
-    assert "-show_streams -select_streams a" in mock_run.args[1]
-    assert video_path in mock_run.args[1]
-    assert mock_run.kwargs["entrypoint"] == "ffprobe"
+    assert metadata.has_audio is False
