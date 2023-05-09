@@ -757,7 +757,7 @@ class Sendable(InlineSendable):
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
             convert_video_only_one_attempt.labels(site_code=self.site_id).inc()
-            return metadata
+            return await self._video_metadata(client, output_path)
         # If it's too big, do a 2 pass run
         convert_video_two_pass.labels(site_code=self.site_id).inc()
         return await self._convert_two_pass(client, video_path, output_path, metadata, ffmpeg_options, ffmpeg_prefix)
