@@ -391,12 +391,6 @@ class CantSendFileType(Exception):
     pass
 
 
-def _format_input_path(input_path: str) -> str:
-    if input_path.lower().startswith("http"):
-        return f"-i {input_path}"
-    return f"/{input_path}"
-
-
 class InlineSendable(ABC):
 
     @property
@@ -810,7 +804,6 @@ class Sendable(InlineSendable):
         return await self._video_metadata(client, output_path)
 
     async def _video_metadata(self, client: DockerClient, input_path: str) -> VideoMetadata:
-        input_path = _format_input_path(input_path)
         metadata_json_str = await self._run_docker(
             client,
             f"-show_entries format=duration:stream=width,height,bit_rate,codec_type /{input_path} -of json -v error",
