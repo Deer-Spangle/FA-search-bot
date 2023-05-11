@@ -109,6 +109,9 @@ class MockSubmission(FASubmissionFull):
     def download_file_size(self) -> int:
         return self._download_file_size
 
+    def __repr__(self):
+        return f"MockSubmission(id={self.submission_id}, ...)"
+
 
 class MockExportAPI(FAExportAPI):
     def __init__(self):
@@ -171,7 +174,7 @@ class MockExportAPI(FAExportAPI):
             return []
         if f"{folder}:{page}" not in self.user_folders[user]:
             return []
-        return self.user_folders[user][f"{folder}:{page}"]
+        return self.user_folders[user][f"{folder}:{page}"][:]
 
     async def get_user_favs(self, user: str, next_id: int = 1) -> List[FASubmission]:
         if user not in self.user_folders:
