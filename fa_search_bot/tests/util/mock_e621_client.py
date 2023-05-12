@@ -78,8 +78,11 @@ class MockPost(Post):
 
 
 class MockAsyncYippiClient(AsyncYippiClient):
-    def __init__(self, mock_posts: List[MockPost] = None, *args, **kwargs):
+    def __init__(self, mock_posts: List[MockPost] = None, page: int = None, *args, **kwargs):
         self._posts = mock_posts or []
+        self._paged_posts = None
+        if page is not None:
+            self._paged_posts = {page: mock_posts}
         super().__init__("MockYippiClient", 0.1, "dr-spangle", *args, **kwargs)
 
     async def post(self, post_id: int) -> Optional[Post]:
@@ -91,8 +94,11 @@ class MockAsyncYippiClient(AsyncYippiClient):
         limit: int = None,
         page: Union[int, str] = None,
     ) -> List[Post]:
+        posts = self._posts[:]
+        if page is not None and self._paged_posts is not None:
+            posts = self._paged_posts.get(page, [])[:]
         if not tags:
-            return self._posts
+            return posts[:]
         tags_split = tags
         if isinstance(tags, str):
             tags_split = tags.split()
@@ -103,4 +109,4 @@ class MockAsyncYippiClient(AsyncYippiClient):
                 filters.append(lambda post: post.md5 == md5)
                 continue
             filters.append(lambda post: tag in post.tags)
-        return list(filter(lambda post: all(f(post) for f in filters), self._posts))
+        return list(filter(lambda post: all(f(post) for f in filters), posts))
