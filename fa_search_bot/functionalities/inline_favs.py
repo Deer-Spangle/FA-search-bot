@@ -102,6 +102,10 @@ class InlineFavsFunctionality(BotFunctionality):
         fresh_results = 0
         next_offset = None
         while len(results) < self.INLINE_MAX and fresh_results < self.INLINE_FRESH:
+            if not fav_submissions:
+                fav_submissions = await self.api.get_user_favs(username, next_offset)
+                if not fav_submissions:
+                    break
             submission = fav_submissions.pop(0)
             next_offset = str(submission.fav_id)
             sub_id = SubmissionID("fa", submission.submission_id)
