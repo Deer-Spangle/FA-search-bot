@@ -181,12 +181,12 @@ class MockExportAPI(FAExportAPI):
             return []
         if f"favs:{next_id}" not in self.user_folders[user]:
             return []
-        return self.user_folders[user][f"favs:{next_id}"]
+        return self.user_folders[user][f"favs:{next_id}"][:]
 
     async def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
         if f"{query.lower()}:{page}" not in self.search_results:
             return []
-        return self.search_results[f"{query.lower()}:{page}"]
+        return self.search_results[f"{query.lower()}:{page}"][:]
 
     async def get_browse_page(self, page: int = 1) -> List[FASubmission]:
         self.browse_count += 1
@@ -194,4 +194,4 @@ class MockExportAPI(FAExportAPI):
             self.call_after_x_browse[0]()
         if page not in self.browse_results:
             return []
-        return self.browse_results[page]
+        return self.browse_results[page][:]
