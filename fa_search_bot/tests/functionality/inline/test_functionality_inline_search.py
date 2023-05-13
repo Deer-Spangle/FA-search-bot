@@ -18,7 +18,7 @@ async def test_empty_query_no_results(mock_client):
     event = MockTelegramEvent.with_inline_query(query="")
     handler = FAHandler(MockExportAPI())
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -35,14 +35,14 @@ async def test_simple_search(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) > 0
@@ -62,7 +62,7 @@ async def test_no_search_results(mock_client):
     api = MockExportAPI().with_search_results(search_term, [])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -75,13 +75,14 @@ async def test_no_search_results(mock_client):
 async def test_search_with_offset(mock_client):
     post_id = 234563
     search_term = "YCH"
-    offset = 2
+    page = 2
+    offset = f"{page}:0"
     event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
     submission = MockSubmission(post_id)
-    api = MockExportAPI().with_search_results(search_term, [submission], page=offset)
+    api = MockExportAPI().with_search_results(search_term, [submission], page=page)
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
@@ -102,20 +103,23 @@ async def test_search_with_offset(mock_client):
 @pytest.mark.asyncio
 async def test_search_with_offset_no_more_results(mock_client):
     search_term = "YCH"
-    offset = 2
-    event = MockTelegramEvent.with_inline_query(query=search_term, offset=str(offset))
-    api = MockExportAPI().with_search_results(search_term, [], page=offset)
+    page = 2
+    offset = f"{page}:0"
+    event = MockTelegramEvent.with_inline_query(query=search_term, offset=offset)
+    post_id = 234563
+    submission = MockSubmission(post_id)
+    api = MockExportAPI().with_search_results(search_term, [submission], page=page - 1)
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] is None
-    assert event.answer.call_args[1]["gallery"] is True
+    args = event.answer.call_args.args
+    assert event.answer.call_args.kwargs["next_offset"] is None
+    assert event.answer.call_args.kwargs["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 0
 
@@ -131,14 +135,14 @@ async def test_search_with_spaces(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission1, submission2])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 2
@@ -165,14 +169,14 @@ async def test_search_with_combo_characters(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -193,14 +197,14 @@ async def test_search_with_field(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -224,14 +228,14 @@ async def test_search_site_prefix__letter(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -254,14 +258,14 @@ async def test_search_site_prefix__code(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_code=site_code)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -284,14 +288,14 @@ async def test_search_site_prefix__name(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -314,14 +318,14 @@ async def test_search_site_prefix__name_lower(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = MockSiteHandler(api, site_name=site_name, site_code="fa")
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -340,17 +344,17 @@ async def test_search_site_prefix_e621(mock_client):
     event = MockTelegramEvent.with_inline_query(query=search_query)
     post_id = 213231
     post = MockPost(post_id=post_id, tags=["citrinelle"])
-    api = MockAsyncYippiClient([post])
+    api = MockAsyncYippiClient([post], page=1)
     handler = E621Handler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1
@@ -372,14 +376,14 @@ async def test_search_site_prefix_fa(mock_client):
     api = MockExportAPI().with_search_results(search_term, [submission])
     handler = FAHandler(api)
     cache = MockSubmissionCache()
-    inline = InlineSearchFunctionality(HandlerGroup([handler], cache))
+    inline = InlineSearchFunctionality(HandlerGroup([handler], cache), cache)
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
     args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
+    assert event.answer.call_args[1]["next_offset"] == "2:0"
     assert event.answer.call_args[1]["gallery"] is True
     assert isinstance(args[0], list)
     assert len(args[0]) == 1

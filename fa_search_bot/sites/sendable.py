@@ -5,12 +5,14 @@ import dataclasses
 import datetime
 import enum
 import io
+import json
 import logging
 import os
+import shutil
 import uuid
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Callable, TypeVar, Generator
+from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, List
 
 import docker
 import requests
@@ -18,17 +20,21 @@ from PIL import Image
 from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
 from telethon import Button
+from telethon.tl.types import (
+    InputBotInlineResultPhoto, TypeInputPeer, InputMediaPhotoExternal, InputMediaDocumentExternal, TypeInputMedia,
+    InputMediaUploadedPhoto, InputMediaUploadedDocument, DocumentAttributeFilename, DocumentAttributeVideo,
+    DocumentAttributeAudio
+)
 
 from fa_search_bot.sites.sent_submission import SentSubmission, sent_from_cache
 
 if TYPE_CHECKING:
-    from typing import Any, Awaitable, BinaryIO, Optional, Union
+    from typing import Any, Awaitable, Optional
 
     from docker import DockerClient
     from docker.models.containers import Container
     from telethon import TelegramClient
     from telethon.tl.custom import InlineBuilder
-    from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer
 
     from fa_search_bot.sites.handler_group import HandlerGroup
     from fa_search_bot.sites.submission_id import SubmissionID
@@ -180,8 +186,10 @@ time_taken = Summary(
 )
 time_taken_downloading_image = time_taken.labels(task="downloading image")
 time_taken_converting_static_gif = time_taken.labels(task="converting static gif to png")
+time_taken_uploading_file = time_taken.labels(task="uploading file")
 time_taken_editing_message = time_taken.labels(task="editing message")
 time_taken_sending_message = time_taken.labels(task="sending message")
+time_taken_converting_animated = time_taken.labels(task="converting animated image")
 time_taken_converting_video = time_taken.labels(task="converting video")
 time_taken_fetching_filesize = time_taken.labels(task="fetching filesize")
 
@@ -193,6 +201,65 @@ class CaptionSettings:
     direct_link: bool = False
     title: bool = False
     author: bool = False
+
+
+@dataclasses.dataclass
+class SendSettings:
+    caption: CaptionSettings
+    force_doc: bool = False
+    save_cache: bool = True
+
+
+@dataclasses.dataclass
+class VideoMetadata:
+    raw_data: Dict
+
+    @property
+    def audio_streams(self) -> List[Dict]:
+        return [stream for stream in self.raw_data.get("streams", []) if stream.get("codec_type") == "audio"]
+
+    @property
+    def video_streams(self) -> List[Dict]:
+        return [stream for stream in self.raw_data.get("streams", []) if stream.get("codec_type") == "video"]
+
+    @property
+    def duration(self) -> Optional[float]:
+        duration_str = self.raw_data.get("format", {}).get("duration")
+        if duration_str:
+            return float(duration_str)
+        return None
+
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.audio_streams)
+
+    @property
+    def audio_bitrate(self) -> Optional[int]:
+        audio_streams = self.audio_streams
+        if audio_streams:
+            bit_rate_str = audio_streams[0].get("bit_rate")
+            if bit_rate_str:
+                return int(bit_rate_str)
+        return None
+
+    @property
+    def width(self) -> Optional[int]:
+        video_streams = self.video_streams
+        if video_streams:
+            return video_streams[0].get("width")
+        return None
+
+    @property
+    def height(self) -> Optional[int]:
+        video_streams = self.video_streams
+        if video_streams:
+            return video_streams[0].get("height")
+        return None
+
+    @classmethod
+    def from_json_str(cls, json_str: str) -> "VideoMetadata":
+        json_data = json.loads(json_str)
+        return cls(json_data)
 
 
 def initialise_metrics_labels(handlers: HandlerGroup) -> None:
@@ -211,14 +278,14 @@ def initialise_metrics_labels(handlers: HandlerGroup) -> None:
         inline_results.labels(site_code=site_code)
 
 
-def random_sandbox_video_path(file_ext: str = "mp4") -> str:
-    os.makedirs(SANDBOX_DIR, exist_ok=True)
-    return f"{SANDBOX_DIR}/{uuid.uuid4()}.{file_ext}"
+def file_ext(file_path: str) -> str:
+    return file_path.split(".")[-1].lower()
 
 
 @contextmanager
-def temp_sandbox_file(file_ext: str = "mp4") -> Generator[str, None, None]:
-    temp_path = random_sandbox_video_path(file_ext)
+def temp_sandbox_file(ext: str = "mp4") -> Generator[str, None, None]:
+    os.makedirs(SANDBOX_DIR, exist_ok=True)
+    temp_path = f"{SANDBOX_DIR}/{uuid.uuid4()}.{ext}"
     try:
         yield temp_path
     finally:
@@ -228,14 +295,57 @@ def temp_sandbox_file(file_ext: str = "mp4") -> Generator[str, None, None]:
             pass
 
 
-def _is_animated(file_url: str) -> bool:
-    file_ext = file_url.split(".")[-1].lower()
-    if file_ext not in Sendable.EXTENSIONS_ANIMATED:
+@dataclasses.dataclass
+class DownloadedFile:
+    dl_path: str
+    filesize: int
+
+    def file_ext(self) -> str:
+        return file_ext(self.dl_path)
+
+
+@contextmanager
+def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
+    with temp_sandbox_file(file_ext(url)) as dl_path:
+        with time_taken_downloading_image.time():
+            resp = requests.get(url, stream=True)
+            dl_filesize = 0
+            with open(dl_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    dl_filesize += len(chunk)
+        yield DownloadedFile(dl_path, dl_filesize)
+
+
+def _img_is_animated(img: Image) -> bool:
+    return getattr(img, "is_animated", False)
+
+
+def _img_has_transparency(img: Image) -> bool:
+    if img.info.get("transparency", None) is not None:
+        return True
+    if img.mode == "P":
+        transparent = img.info.get("transparency", -1)
+        for _, index in img.getcolors():
+            if index == transparent:
+                return True
+    elif img.mode == "RGBA":
+        extrema = img.getextrema()
+        if extrema[3][0] < 255:
+            return True
+    return False
+
+
+def _img_size(img: Image) -> Tuple[int, int]:
+    return img.size
+
+
+def _is_animated(file_path: str) -> bool:
+    if file_ext(file_path) not in Sendable.EXTENSIONS_ANIMATED:
         return False
-    data = requests.get(file_url).content
-    with Image.open(io.BytesIO(data)) as img:
+    with Image.open(file_path) as img:
         # is_animated attribute might not exist, if file is a jpg named ".png"
-        return getattr(img, "is_animated", False)
+        return _img_is_animated(img)
 
 
 def _convert_gif_to_png(file_url: str) -> bytes:
@@ -281,12 +391,6 @@ class CantSendFileType(Exception):
     pass
 
 
-def _format_input_path(input_path: str) -> str:
-    if input_path.lower().startswith("http"):
-        return f"-i {input_path}"
-    return f"/{input_path}"
-
-
 class InlineSendable(ABC):
 
     @property
@@ -326,6 +430,13 @@ class InlineSendable(ABC):
         )
 
 
+def _url_to_media(url: str, as_img: bool) -> TypeInputMedia:
+    if as_img:
+        return InputMediaPhotoExternal(url)
+    else:
+        return InputMediaDocumentExternal(url)
+
+
 class Sendable(InlineSendable):
     EXTENSIONS_GIF = ["gif"]  # These should be converted to png, if not animated
     EXTENSIONS_ANIMATED = [
@@ -344,6 +455,8 @@ class Sendable(InlineSendable):
     SIZE_LIMIT_VIDEO = 10 * 1000**2  # Maximum 10MB video autodownload size on telegram
     SIZE_LIMIT_DOCUMENT = 20 * 1000**2  # Maximum 20MB document size on telegram
     LENGTH_LIMIT_GIF = 40  # Maximum 40 seconds for gifs, otherwise video, for ease
+    SEMIPERIMETER_LIMIT_IMAGE = 10_000  # Maximum 10,000 pixels semiperimeter for images on telegram
+    IMG_TRANSPARENCY_COlOUR = (255, 255, 255)  # Colour to mask out transparency with when sending images
 
     DOCKER_TIMEOUT = 5 * 60
 
@@ -371,6 +484,16 @@ class Sendable(InlineSendable):
         """
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def title(self) -> Optional[str]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def author(self) -> Optional[str]:
+        raise NotImplementedError
+
     @_count_exceptions_with_labels(sendable_failure)
     async def send_message(
         self,
@@ -380,110 +503,208 @@ class Sendable(InlineSendable):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
-    ) -> SentSubmission:
+    ) -> Optional[SentSubmission]:
         sendable_sent.labels(site_code=self.site_id).inc()
-        settings = CaptionSettings()
-        ext = self.download_file_ext
+        send_partial = self._partial_sender(client, chat, reply_to, prefix, edit)
+        media, settings = await self.upload(client)
+        return await send_partial(media, settings)
 
-        async def send_partial(file: Union[str, BinaryIO, bytes], force_doc: bool = False) -> SentSubmission:
-            if isinstance(file, str):
-                file_ext = file.split(".")[-1].lower()
-                if file_ext in self.EXTENSIONS_GIF and not _is_animated(file):
-                    sendable_gif_to_png.labels(site_code=self.site_id).inc()
-                    with time_taken_converting_static_gif.time():
-                        file = _convert_gif_to_png(file)
+    def _partial_sender(
+            self,
+            client: TelegramClient,
+            chat: TypeInputPeer,
+            reply_to: int,
+            prefix: str,
+            edit: bool,
+    ) -> Callable[[TypeInputMedia, SendSettings], Awaitable[SentSubmission]]:
+        async def send_partial(input_media: TypeInputMedia, settings: SendSettings) -> Optional[SentSubmission]:
             if edit:
                 sendable_edit.labels(site_code=self.site_id).inc()
                 with time_taken_editing_message.time():
                     msg = await client.edit_message(
                         entity=chat,
-                        file=file,
-                        message=self.caption(settings, prefix),
-                        force_document=force_doc,
+                        file=input_media,
+                        message=self.caption(settings.caption, prefix),
+                        force_document=settings.force_doc,
                         parse_mode="html",
                     )
             else:
                 with time_taken_sending_message.time():
                     msg = await client.send_message(
                         entity=chat,
-                        file=file,
-                        message=self.caption(settings, prefix),
+                        file=input_media,
+                        message=self.caption(settings.caption, prefix),
                         reply_to=reply_to,
-                        force_document=force_doc,
+                        force_document=settings.force_doc,
                         parse_mode="html",  # Markdown is not safe here, because of the prefix.
                     )
-            return SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings))
+            sent_sub = SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings.caption))
+            if sent_sub:
+                sent_sub.save_cache = settings.save_cache
+            return sent_sub
+        return send_partial
 
+    async def upload(self, client: TelegramClient) -> Tuple[TypeInputMedia, SendSettings]:
+        settings = SendSettings(CaptionSettings())
+        ext = self.download_file_ext
+
+        # Handle potentially animated formats
+        if ext in self.EXTENSIONS_ANIMATED:
+            with _downloaded_file(self.download_url) as dl_file:
+                if _is_animated(dl_file.dl_path):
+                    return await self._upload_video(client, dl_file, settings)
+                else:
+                    return await self._upload_image(client, dl_file, settings)
         # Handle photos
-        if ext in self.EXTENSIONS_PHOTO or (ext in self.EXTENSIONS_ANIMATED and not _is_animated(self.download_url)):
-            sendable_image.labels(site_code=self.site_id).inc()
-            with temp_sandbox_file(ext) as dl_path:
-                with time_taken_downloading_image.time():
-                    resp = requests.get(self.download_url, stream=True)
-                    dl_filesize = 0
-                    with open(dl_path, "wb") as f:
-                        for chunk in resp.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                            dl_filesize += len(chunk)
-                # TODO: Check image resolution
-                if dl_filesize > self.SIZE_LIMIT_IMAGE:
-                    settings.direct_link = True
-                return await send_partial(dl_path)
-        # Handle animated gifs and videos, which can be made pretty
-        if ext in self.EXTENSIONS_ANIMATED + self.EXTENSIONS_VIDEO:
-            sendable_animated.labels(site_code=self.site_id).inc()
-            try:
-                logger.info("Sending video, submission ID %s, converting to mp4", self.submission_id)
-                with time_taken_converting_video.time():
-                    output_path: str = await self._convert_video(self.download_url)
-                return await send_partial(output_path)
-            except Exception as e:
-                logger.error("Failed to convert video to mp4. Submission ID: %s", self.submission_id, exc_info=e)
-                return await send_partial(self.download_url)
+        if ext in self.EXTENSIONS_PHOTO:
+            with _downloaded_file(self.download_url) as dl_file:
+                return await self._upload_image(client, dl_file, settings)
+        # Handle videos, which can be made pretty
+        if ext in self.EXTENSIONS_VIDEO:
+            with _downloaded_file(self.download_url) as dl_file:
+                sendable_animated.labels(site_code=self.site_id).inc()
+                return await self._upload_video(client, dl_file, settings)
         # Everything else is a file, send with title and author
-        settings.title = True
-        settings.author = True
+        settings.caption.title = True
+        settings.caption.author = True
         # Special handling, if it's small enough
         with time_taken_fetching_filesize.time():
             dl_filesize = self.download_file_size
         if dl_filesize < self.SIZE_LIMIT_DOCUMENT:
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:
-                sendable_auto_doc.labels(site_code=self.site_id).inc()
-                return await send_partial(self.download_url, force_doc=True)
+                settings.force_doc = True
+                return _url_to_media(self.download_url, False), settings
             # Handle audio
             if ext in self.EXTENSIONS_AUDIO:
-                sendable_audio.labels(site_code=self.site_id).inc()
-                # TODO: can we support setting title, performer, thumb?
-                return await send_partial(self.download_url)
+                with _downloaded_file(self.download_url) as dl_file:
+                    return await self._upload_audio(client, dl_file, settings)
         # Handle files telegram can't handle
         sendable_other.labels(site_code=self.site_id).inc()
-        settings.direct_link = True
-        return await send_partial(self.preview_image_url)
+        settings.caption.direct_link = True
+        with _downloaded_file(self.preview_image_url) as dl_file:
+            return await self._upload_image(client, dl_file, settings)
 
-    async def _send_video(
-        self,
-        send_partial: Callable[[Union[str, BinaryIO, bytes]], Awaitable[SentSubmission]],
-    ) -> SentSubmission:
+    async def _upload_video(
+            self,
+            client: TelegramClient,
+            dl_file: DownloadedFile,
+            settings: SendSettings
+    ) -> Tuple[TypeInputMedia, SendSettings]:
+        sendable_animated.labels(site_code=self.site_id).inc()
         try:
-            logger.info("Sending video, site ID %s, submission ID %s, converting to mp4", self.site_id, self.id)
-            output_path: str = await self._convert_video(self.download_url)
-            return await send_partial(output_path)
-        except Exception as e:
-            logger.error(
-                "Failed to convert video to mp4. Site ID: %s, Submission ID: %s",
-                self.site_id,
-                self.id,
-                exc_info=e,
+            logger.info("Sending video, submission ID %s, converting to mp4", self.submission_id)
+            with temp_sandbox_file("mp4") as output_path:
+                with time_taken_converting_video.time():
+                    video_metadata = await self._convert_video(dl_file.dl_path, output_path)
+                with time_taken_uploading_file.time():
+                    file_handle = await client.upload_file(output_path)
+            media = InputMediaUploadedDocument(
+                file=file_handle,
+                mime_type="video/mp4",
+                attributes=[
+                    DocumentAttributeFilename(f"{self.submission_id.to_filename()}.mp4"),
+                    DocumentAttributeVideo(int(video_metadata.duration), video_metadata.width, video_metadata.height),
+                ],
+                thumb=None,
+                force_file=False,
+                nosound_video=False,
             )
-            return await send_partial(self.download_url)
+            return media, settings
+        except Exception as e:
+            logger.error("Failed to convert video to mp4. Submission ID: %s", self.submission_id, exc_info=e)
+            settings.save_cache = False
+            settings.caption.direct_link = True
+            media = _url_to_media(self.download_url, False)
+            return media, settings
+
+    async def _upload_image(
+            self,
+            client: TelegramClient,
+            dl_file: DownloadedFile,
+            settings: SendSettings
+    ) -> Tuple[TypeInputMedia, SendSettings]:
+        sendable_image.labels(site_code=self.site_id).inc()
+        # If filesize is too big, set caption to true
+        if os.path.getsize(dl_file.dl_path) > self.SIZE_LIMIT_IMAGE:
+            settings.caption.direct_link = True
+        # Load as image and check things
+        with temp_sandbox_file("jpg") as output_file:
+            with Image.open(dl_file.dl_path) as img:
+                # Get exif data
+                exif = img.info.get("exif")
+
+                # Check image resolution and scale
+                width, height = _img_size(img)
+                semiperimeter = width + height
+                if semiperimeter > self.SEMIPERIMETER_LIMIT_IMAGE:
+                    settings.caption.direct_link = True
+                    scale_factor = self.SEMIPERIMETER_LIMIT_IMAGE / semiperimeter
+                    new_width = int(width * scale_factor)
+                    new_height = int(height * scale_factor)
+                    img = img.resize((new_width, new_height), Image.ANTIALIAS)
+
+                # Mask out transparency
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                alpha_index = img.mode.find('A')
+                if alpha_index != -1:
+                    if _img_has_transparency(img):
+                        settings.caption.direct_link = True
+                    result = Image.new('RGB', img.size, self.IMG_TRANSPARENCY_COlOUR)
+                    result.paste(img, mask=img.split()[alpha_index])
+                    img = result
+
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+
+                # Save image as jpg
+                with open(output_file, "wb") as out_handle:
+                    kwargs = {}
+                    if exif:
+                        kwargs["exif"] = exif
+                    img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
+
+            filesize = os.path.getsize(output_file)
+            file_handle = await client.upload_file(
+                output_file,
+                file_size=filesize
+            )
+        media = InputMediaUploadedPhoto(file_handle)
+        return media, settings
+
+    async def _upload_audio(
+            self,
+            client: TelegramClient,
+            dl_file: DownloadedFile,
+            settings: SendSettings
+    ) -> Tuple[TypeInputMedia, SendSettings]:
+        sendable_audio.labels(site_code=self.site_id).inc()
+        file_handle = await client.upload_file(dl_file.dl_path)
+        with _downloaded_file(self.thumbnail_url) as thumb_file:
+            thumb_handle = await client.upload_file(thumb_file.dl_path)
+        media = InputMediaUploadedDocument(
+            file=file_handle,
+            mime_type="audio/mp3",
+            attributes=[
+                DocumentAttributeFilename(f"{self.submission_id.to_filename()}.mp3"),
+                DocumentAttributeAudio(
+                    duration=0,
+                    title=self.title,
+                    performer=self.author
+                ),
+            ],
+            thumb=thumb_handle,
+            force_file=False,
+        )
+        return media, settings
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
         raise NotImplementedError  # TODO: Pull caption builder out, I guess? Three implementations of caption data?
 
     @_count_exceptions_with_labels(convert_gif_failures)
-    async def _convert_gif(self, gif_url: str) -> str:
+    async def _convert_gif(self, gif_path: str, output_path: str) -> VideoMetadata:
         convert_gif_total.labels(site_code=self.site_id).inc()
         ffmpeg_options = (
             " -an -vcodec libx264 -tune animation -preset veryslow -movflags faststart -pix_fmt yuv420p "
@@ -493,69 +714,70 @@ class Sendable(InlineSendable):
         crf_option = " -crf 18"
         # first pass
         client = docker.from_env()
-        output_path = random_sandbox_video_path("mp4")
-        await self._run_docker(client, f"-i {gif_url} {ffmpeg_options} {crf_option} /{output_path}")
+        await self._run_docker(client, f"-i /{gif_path} {ffmpeg_options} {crf_option} /{output_path}")
+        # Get metadata
+        metadata = await self._video_metadata(client, output_path)
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_GIF:
             convert_gif_only_one_attempt.labels(site_code=self.site_id).inc()
-            return output_path
+            return metadata
         # If it's too big, do a 2 pass run
         convert_gif_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(client, output_path, gif_url, ffmpeg_options)
+        return await self._convert_two_pass(client, gif_path, output_path, metadata, ffmpeg_options)
 
     @_count_exceptions_with_labels(convert_video_failures)
-    async def _convert_video(self, video_url: str) -> str:
+    async def _convert_video(self, video_path: str, output_path: str) -> VideoMetadata:
         convert_video_total.labels(site_code=self.site_id).inc()
         # If it's a gif, it has no audio track
-        if video_url.split(".")[-1].lower() in self.EXTENSIONS_ANIMATED:
+        if file_ext(video_path) in self.EXTENSIONS_ANIMATED:
             convert_video_animated.labels(site_code=self.site_id).inc()
-            return await self._convert_gif(video_url)
+            return await self._convert_gif(video_path, output_path)
         client = docker.from_env()
         ffmpeg_options = "-qscale 0"
         ffmpeg_prefix = ""
+        # Get video metadata
+        metadata = await self._video_metadata(client, video_path)
         # Check if it has audio
-        has_audio = await self._video_has_audio_track(client, video_url)
-        if not has_audio:
+        if not metadata.has_audio:
             convert_video_no_audio.labels(site_code=self.site_id).inc()
             ffmpeg_options = "-qscale:v 0 -acodec aac -map 0:0 -map 1:0 -shortest"
             ffmpeg_prefix = "-f lavfi -i aevalsrc=0"
-            if await self._video_duration(client, video_url) < self.LENGTH_LIMIT_GIF:
+            if metadata.duration < self.LENGTH_LIMIT_GIF:
                 convert_video_no_audio_gif.labels(site_code=self.site_id).inc()
-                return await self._convert_gif(video_url)
+                return await self._convert_gif(video_path, output_path)
         # first pass
         convert_video_to_video.labels(site_code=self.site_id).inc()
-        output_path = random_sandbox_video_path("mp4")
-        await self._run_docker(client, f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} /{output_path}")
+        await self._run_docker(client, f"{ffmpeg_prefix} -i /{video_path} {ffmpeg_options} /{output_path}")
         # Check file size
         if os.path.getsize(output_path) < self.SIZE_LIMIT_VIDEO:
             convert_video_only_one_attempt.labels(site_code=self.site_id).inc()
-            return output_path
+            return await self._video_metadata(client, output_path)
         # If it's too big, do a 2 pass run
         convert_video_two_pass.labels(site_code=self.site_id).inc()
-        return await self._convert_two_pass(client, output_path, video_url, ffmpeg_options, ffmpeg_prefix)
+        return await self._convert_two_pass(client, video_path, output_path, metadata, ffmpeg_options, ffmpeg_prefix)
 
     async def _convert_two_pass(
         self,
         client: DockerClient,
-        sandbox_path: str,
-        video_url: str,
+        video_path: str,
+        output_path: str,
+        metadata: VideoMetadata,
         ffmpeg_options: str,
         ffmpeg_prefix: str = "",
-    ) -> str:
+    ) -> VideoMetadata:
         logger.info(
             "Doing a two pass video conversion on site ID %s, submission ID %s",
             self.site_id,
             self.id,
         )
-        two_pass_filename = random_sandbox_video_path("mp4")
-        # Get video duration from ffprobe
-        duration = await self._video_duration(client, sandbox_path)
+        # Get video metadata
+        if metadata is None:
+            metadata = await self._video_metadata(client, video_path)
         # 2 pass run
-        bitrate = (self.SIZE_LIMIT_VIDEO / duration) * 8
+        bitrate = (self.SIZE_LIMIT_VIDEO / metadata.duration) * 8
         # If it has an audio stream, subtract audio bitrate from total bitrate to get video bitrate
-        if await self._video_has_audio_track(client, sandbox_path):
-            audio_bitrate = await self._video_audio_bitrate(client, sandbox_path)
-            bitrate = bitrate - audio_bitrate
+        if metadata.has_audio:
+            bitrate = bitrate - metadata.audio_bitrate
             if bitrate < 0:
                 logger.error(
                     "Desired bitrate for submission (site id %s sub id %s) is higher than the audio bitrate alone.",
@@ -563,47 +785,31 @@ class Sendable(InlineSendable):
                     self.id,
                 )
                 raise ValueError("Bitrate cannot be negative")
-        with temp_sandbox_file("log") as log_file:
-            full_ffmpeg_options = f"{ffmpeg_prefix} -i {video_url} {ffmpeg_options} -b:v {bitrate}"
-            await self._run_docker(
-                client,
-                f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
-            )
-            await self._run_docker(
-                client,
-                f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_filename} -y",
-            )
-        return two_pass_filename
+        with temp_sandbox_file("mp4") as two_pass_file:
+            with temp_sandbox_file("log") as log_file:
+                full_ffmpeg_options = f"{ffmpeg_prefix} -i /{video_path} {ffmpeg_options} -b:v {bitrate}"
+                await self._run_docker(
+                    client,
+                    f"{full_ffmpeg_options} -pass 1 -f mp4 -passlogfile /{log_file} /dev/null -y",
+                )
+                await self._run_docker(
+                    client,
+                    f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_file} -y",
+                )
+            # Copy output to output file
+            with open(output_path, "wb") as output_handle:
+                with open(two_pass_file, "rb") as input_handle:
+                    shutil.copyfileobj(input_handle, output_handle)
+        # Get new metadata
+        return await self._video_metadata(client, output_path)
 
-    async def _video_has_audio_track(self, client: DockerClient, input_path: str) -> bool:
-        input_path = _format_input_path(input_path)
-        audio_track_str = await self._run_docker(
+    async def _video_metadata(self, client: DockerClient, input_path: str) -> VideoMetadata:
+        metadata_json_str = await self._run_docker(
             client,
-            f"-show_streams -select_streams a -loglevel error {input_path} -v error ",
+            f"-show_entries format=duration:stream=width,height,bit_rate,codec_type /{input_path} -of json -v error",
             entrypoint="ffprobe",
         )
-        return bool(len(audio_track_str))
-
-    async def _video_audio_bitrate(self, client: DockerClient, input_path: str) -> float:
-        input_path = _format_input_path(input_path)
-        audio_bitrate_str = await self._run_docker(
-            client,
-            f"-v error -select_streams a -show_entries stream=bit_rate -of default=noprint_wrappers=1:nokey=1 "
-            f"{input_path}",
-            entrypoint="ffprobe",
-        )
-        return float(audio_bitrate_str)
-
-    async def _video_duration(self, client: DockerClient, input_path: str) -> float:
-        input_path = _format_input_path(input_path)
-        duration_str = await self._run_docker(
-            client,
-            f"-show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {input_path} -v error ",
-            entrypoint="ffprobe",
-        )
-        duration = float(duration_str)
-        video_length.labels(site_code=self.site_id).observe(duration)
-        return duration
+        return VideoMetadata.from_json_str(metadata_json_str)
 
     async def _run_docker(self, client: DockerClient, args: str, entrypoint: Optional[str] = None) -> str:
         labels = {

@@ -62,16 +62,14 @@ class InlineSearchFunctionality(BotFunctionality):
         logger.info(f"There are {len(results)} results.")
         # If no results, and no offset, return an error
         if len(results) == 0:
-            if next_offset:
-                next_offset = None
-            else:
+            if not offset:
                 msg = f'No results for search "{query}".'
                 await answer_with_error(event, "No results found.", msg)
                 raise StopPropagation
         # Send results
         await event.answer(
             results,
-            next_offset=str(next_offset) if next_offset else None,
+            next_offset=next_offset,
             gallery=True,
         )
         raise StopPropagation

@@ -1,8 +1,10 @@
 import pytest
 from telethon.events import StopPropagation
+from telethon.tl.types import InputPhoto
 
 from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
 from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
+from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.tests.functionality.inline.utils import assert_answer_is_error
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
@@ -25,23 +27,23 @@ async def test_user_gallery(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 2
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission1.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id1)
-    assert args[0][0].kwargs["text"] == submission1.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission1.submission_id}".encode()
-    assert args[0][1].kwargs["file"] == submission2.thumbnail_url
-    assert args[0][1].kwargs["id"] == str(post_id2)
-    assert args[0][1].kwargs["text"] == submission2.link
-    assert len(args[0][1].kwargs["buttons"]) == 1
-    assert args[0][1].kwargs["buttons"][0].data == f"neaten_me:{submission2.submission_id}".encode()
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    results = event.answer.call_args.args[0]
+    assert isinstance(results, list)
+    assert len(results) == 2
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission1.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id1}"
+    assert results[0].kwargs["text"] == submission1.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission1.submission_id}".encode()
+    assert results[1].kwargs["file"] == submission2.thumbnail_url
+    assert results[1].kwargs["id"] == f"fa:{post_id2}"
+    assert results[1].kwargs["text"] == submission2.link
+    assert len(results[1].kwargs["buttons"]) == 1
+    assert results[1].kwargs["buttons"][0].data == f"neaten_me:fa:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -60,23 +62,23 @@ async def test_user_gallery_short(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 2
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission1.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id1)
-    assert args[0][0].kwargs["text"] == submission1.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission1.submission_id}".encode()
-    assert args[0][1].kwargs["file"] == submission2.thumbnail_url
-    assert args[0][1].kwargs["id"] == str(post_id2)
-    assert args[0][1].kwargs["text"] == submission2.link
-    assert len(args[0][1].kwargs["buttons"]) == 1
-    assert args[0][1].kwargs["buttons"][0].data == f"neaten_me:{submission2.submission_id}".encode()
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    results = event.answer.call_args.args[0]
+    assert isinstance(results, list)
+    assert len(results) == 2
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission1.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id1}"
+    assert results[0].kwargs["text"] == submission1.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission1.submission_id}".encode()
+    assert results[1].kwargs["file"] == submission2.thumbnail_url
+    assert results[1].kwargs["id"] == f"fa:{post_id2}"
+    assert results[1].kwargs["text"] == submission2.link
+    assert len(results[1].kwargs["buttons"]) == 1
+    assert results[1].kwargs["buttons"][0].data == f"neaten_me:fa:{submission2.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -93,17 +95,17 @@ async def test_user_scraps(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id)
-    assert args[0][0].kwargs["text"] == submission.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission.submission_id}".encode()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == 1
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id}"
+    assert results[0].kwargs["text"] == submission.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -120,17 +122,17 @@ async def test_second_page(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "3"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id)
-    assert args[0][0].kwargs["text"] == submission.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission.submission_id}".encode()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "3:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == 1
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id}"
+    assert results[0].kwargs["text"] == submission.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -185,17 +187,17 @@ async def test_hypens_in_username(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id)
-    assert args[0][0].kwargs["text"] == submission.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission.submission_id}".encode()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == 1
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id}"
+    assert results[0].kwargs["text"] == submission.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -212,17 +214,17 @@ async def test_weird_characters_in_username(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 1
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert args[0][0].kwargs["file"] == submission.thumbnail_url
-    assert args[0][0].kwargs["id"] == str(post_id)
-    assert args[0][0].kwargs["text"] == submission.link
-    assert len(args[0][0].kwargs["buttons"]) == 1
-    assert args[0][0].kwargs["buttons"][0].data == f"neaten_me:{submission.submission_id}".encode()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == 1
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert results[0].kwargs["file"] == submission.thumbnail_url
+    assert results[0].kwargs["id"] == f"fa:{post_id}"
+    assert results[0].kwargs["text"] == submission.link
+    assert len(results[0].kwargs["buttons"]) == 1
+    assert results[0].kwargs["buttons"][0].data == f"neaten_me:fa:{submission.submission_id}".encode()
 
 
 @pytest.mark.asyncio
@@ -284,19 +286,97 @@ async def test_over_max_submissions(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == f"1:{inline.INLINE_MAX}"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == inline.INLINE_MAX
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == f"1:{inline.INLINE_FRESH}"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == inline.INLINE_FRESH
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    for x in range(inline.INLINE_FRESH):
+        assert results[x].kwargs["file"] == submissions[x].thumbnail_url
+        assert results[x].kwargs["id"] == f"fa:{post_ids[x]}"
+        assert results[x].kwargs["text"] == submissions[x].link
+        assert len(results[x].kwargs["buttons"]) == 1
+        assert results[x].kwargs["buttons"][0].data == f"neaten_me:fa:{submissions[x].submission_id}".encode()
+
+
+@pytest.mark.asyncio
+async def test_over_max_submissions_cached(mock_client):
+    username = "citrinelle"
+    mock_api = MockExportAPI()
+    posts = InlineGalleryFunctionality.INLINE_MAX + 30
+    post_ids = list(range(123456, 123456 + posts))
+    sub_ids = [SubmissionID("fa", f"{post_id}") for post_id in post_ids]
+    cache = MockSubmissionCache.with_submission_ids(sub_ids, username=username)
+    inline = InlineGalleryFunctionality(mock_api, cache)
+    submissions = [MockSubmission(x) for x in post_ids]
+    mock_api.with_user_folder(username, "gallery", submissions)
+    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == f"1:{inline.INLINE_MAX}"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == inline.INLINE_MAX
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
     for x in range(inline.INLINE_MAX):
-        assert args[0][x].kwargs["file"] == submissions[x].thumbnail_url
-        assert args[0][x].kwargs["id"] == str(post_ids[x])
-        assert args[0][x].kwargs["text"] == submissions[x].link
-        assert len(args[0][x].kwargs["buttons"]) == 1
-        assert args[0][x].kwargs["buttons"][0].data == f"neaten_me:{submissions[x].submission_id}".encode()
+        sent_sub = cache.load_cache(sub_ids[x])
+        assert isinstance(results[x].kwargs["file"], InputPhoto)
+        assert results[x].kwargs["file"].id == sent_sub.media_id
+        assert results[x].kwargs["file"].access_hash == sent_sub.access_hash
+        assert results[x].kwargs["id"] == f"fa:{post_ids[x]}"
+        assert results[x].kwargs["text"] == submissions[x].link
+        assert results[x].kwargs["buttons"] is None
+
+
+@pytest.mark.asyncio
+async def test_over_max_submissions_mix_cache(mock_client):
+    username = "citrinelle"
+    mock_api = MockExportAPI()
+    num_posts = InlineGalleryFunctionality.INLINE_MAX + 30
+    post_ids = list(range(123456, 123456 + num_posts))
+    sub_ids = [SubmissionID("fa", f"{post_id}") for post_id in post_ids]
+    cache_id_indexes = [0, 1, 2, 4, 7, 8]
+    cache_sub_ids = [sub_ids[n] for n in cache_id_indexes]
+    cache = MockSubmissionCache.with_submission_ids(cache_sub_ids, username=username)
+    inline = InlineGalleryFunctionality(mock_api, cache)
+    submissions = [MockSubmission(x) for x in post_ids]
+    mock_api.with_user_folder(username, "gallery", submissions)
+    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}")
+
+    with pytest.raises(StopPropagation):
+        await inline.call(event)
+
+    event.answer.assert_called_once()
+    result_count = len(cache_id_indexes) + inline.INLINE_FRESH
+    assert event.answer.call_args.kwargs["next_offset"] == f"1:{result_count}"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    results = event.answer.call_args.args[0]
+    assert isinstance(results, list)
+    assert len(results) == result_count
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    for n, result in enumerate(results):
+        if n in cache_id_indexes:
+            sent_sub = cache.load_cache(sub_ids[n])
+            assert isinstance(result.kwargs["file"], InputPhoto)
+            assert result.kwargs["file"].id == sent_sub.media_id
+            assert result.kwargs["file"].access_hash == sent_sub.access_hash
+            assert result.kwargs["id"] == sub_ids[n].to_inline_code()
+            assert result.kwargs["text"] == submissions[n].link
+            assert result.kwargs["buttons"] is None
+        else:
+            assert result.kwargs["file"] == submissions[n].thumbnail_url
+            assert result.kwargs["id"] == sub_ids[n].to_inline_code()
+            assert result.kwargs["text"] == submissions[n].link
+            assert len(result.kwargs["buttons"]) == 1
+            assert result.kwargs["buttons"][0].data == f"neaten_me:{sub_ids[n].to_inline_code()}".encode()
 
 
 @pytest.mark.asyncio
@@ -308,27 +388,27 @@ async def test_over_max_submissions_continue(mock_client):
     api = MockExportAPI().with_user_folder(username, "gallery", submissions)
     cache = MockSubmissionCache()
     inline = InlineGalleryFunctionality(api, cache)
-    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{inline.INLINE_MAX}")
+    event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{inline.INLINE_FRESH}")
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == f"1:{2 * inline.INLINE_MAX}"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == inline.INLINE_MAX
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(inline.INLINE_MAX):
-        assert args[0][x].kwargs["file"] == submissions[x + inline.INLINE_MAX].thumbnail_url
-        assert args[0][x].kwargs["id"] == str(post_ids[x + inline.INLINE_MAX])
-        assert args[0][x].kwargs["text"] == submissions[x + inline.INLINE_MAX].link
-        assert len(args[0][x].kwargs["buttons"]) == 1
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == f"1:{2 * inline.INLINE_FRESH}"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == inline.INLINE_FRESH
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    for x in range(inline.INLINE_FRESH):
+        assert results[x].kwargs["file"] == submissions[x + inline.INLINE_FRESH].thumbnail_url
+        assert results[x].kwargs["id"] == f"fa:{post_ids[x + inline.INLINE_FRESH]}"
+        assert results[x].kwargs["text"] == submissions[x + inline.INLINE_FRESH].link
+        assert len(results[x].kwargs["buttons"]) == 1
         assert (
-            args[0][x].kwargs["buttons"][0].data
-            == f"neaten_me:{submissions[x + inline.INLINE_MAX].submission_id}".encode()
+            results[x].kwargs["buttons"][0].data
+            == f"neaten_me:fa:{submissions[x + inline.INLINE_FRESH].submission_id}".encode()
         )
 
 
@@ -342,36 +422,42 @@ async def test_over_max_submissions_continue_end(mock_client):
     mock_api.with_user_folder(username, "gallery", submissions)
     cache = MockSubmissionCache()
     inline = InlineGalleryFunctionality(mock_api, cache)
-    skip = posts - inline.INLINE_MAX + 3
+    skip = posts - inline.INLINE_FRESH + 3
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
 
     with pytest.raises(StopPropagation):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == inline.INLINE_MAX - 3
-    assert isinstance(args[0][0], _MockInlineBuilder._MockInlinePhoto)
-    assert isinstance(args[0][1], _MockInlineBuilder._MockInlinePhoto)
-    for x in range(inline.INLINE_MAX - 3):
-        assert args[0][x].kwargs["file"] == submissions[x + skip].thumbnail_url
-        assert args[0][x].kwargs["id"] == str(post_ids[x + skip])
-        assert args[0][x].kwargs["text"] == submissions[x + skip].link
-        assert len(args[0][x].kwargs["buttons"]) == 1
-        assert args[0][x].kwargs["buttons"][0].data == f"neaten_me:{submissions[x + skip].submission_id}".encode()
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "2:0"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == inline.INLINE_FRESH - 3
+    assert isinstance(results[0], _MockInlineBuilder._MockInlinePhoto)
+    assert isinstance(results[1], _MockInlineBuilder._MockInlinePhoto)
+    for x in range(inline.INLINE_FRESH - 3):
+        assert results[x].kwargs["file"] == submissions[x + skip].thumbnail_url
+        assert results[x].kwargs["id"] == f"fa:{post_ids[x + skip]}"
+        assert results[x].kwargs["text"] == submissions[x + skip].link
+        assert len(results[x].kwargs["buttons"]) == 1
+        assert results[x].kwargs["buttons"][0].data == f"neaten_me:fa:{submissions[x + skip].submission_id}".encode()
 
 
 @pytest.mark.asyncio
 async def test_over_max_submissions_continue_over_page(mock_client):
     username = "citrinelle"
-    posts = 72
-    post_ids = list(range(123456, 123456 + posts))
-    skip = posts + 5
-    submissions = [MockSubmission(x) for x in post_ids]
-    api = MockExportAPI().with_user_folder(username, "gallery", submissions)
+    page_1_count = 72
+    page_1_ids = list(range(123456, 123456 + page_1_count))
+    page_1_max = max(page_1_ids)
+    page_2_count = 25
+    page_2_ids = list(range(page_1_max, page_1_max + page_2_count))
+    page_1_submissions = [MockSubmission(x) for x in page_1_ids]
+    page_2_submissions = [MockSubmission(x) for x in page_2_ids]
+    skip = page_1_count + 5
+    api = MockExportAPI()\
+        .with_user_folder(username, "gallery", page_1_submissions, page=1)\
+        .with_user_folder(username, "gallery", page_2_submissions, page=2)
     cache = MockSubmissionCache()
     inline = InlineGalleryFunctionality(api, cache)
     event = MockTelegramEvent.with_inline_query(query=f"gallery:{username}", offset=f"1:{skip}")
@@ -380,11 +466,17 @@ async def test_over_max_submissions_continue_over_page(mock_client):
         await inline.call(event)
 
     event.answer.assert_called_once()
-    args = event.answer.call_args[0]
-    assert event.answer.call_args[1]["next_offset"] == "2"
-    assert event.answer.call_args[1]["gallery"] is True
-    assert isinstance(args[0], list)
-    assert len(args[0]) == 0
+    results = event.answer.call_args.args[0]
+    assert event.answer.call_args.kwargs["next_offset"] == "2:5"
+    assert event.answer.call_args.kwargs["gallery"] is True
+    assert isinstance(results, list)
+    assert len(results) == 5
+    for n, result in enumerate(results):
+        assert result.kwargs["file"] == page_2_submissions[n].thumbnail_url
+        assert result.kwargs["id"] == f"fa:{page_2_ids[n]}"
+        assert result.kwargs["text"] == page_2_submissions[n].link
+        assert len(result.kwargs["buttons"]) == 1
+        assert result.kwargs["buttons"][0].data == f"neaten_me:fa:{page_2_submissions[n].submission_id}".encode()
 
 
 @pytest.mark.asyncio

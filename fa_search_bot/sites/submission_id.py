@@ -18,5 +18,8 @@ class SubmissionID:
     def to_inline_code(self) -> str:
         return f"{self.site_code}:{self.submission_id}"
 
+    def to_filename(self) -> str:
+        return f"FASearchBot_{self.site_code}_{self.submission_id}"
+
     def __repr__(self) -> str:
         return f"SubID({self.site_code}: {self.submission_id})"

@@ -162,7 +162,7 @@ class InlineGalleryFunctionality(BotFunctionality):
             submission: FASubmissionShort
     ) -> InputBotInlineResultPhoto:
         sub_id = SubmissionID("fa", submission.submission_id)
-        inline_photo = await submission.to_inline_query_result(builder)
+        inline_photo = await submission.to_inline_query_result(builder, sub_id.site_code)
         # Save to cache
         sent_sub = SentSubmission.from_inline_result(sub_id, inline_photo)
         self.cache.save_cache(sent_sub)

@@ -50,6 +50,8 @@ class SubmissionCache:
     def save_cache(self, sent_submission: Optional[SentSubmission]) -> None:
         if sent_submission is None:
             return
+        if not sent_submission.save_cache:
+            return
         cache_entry = DBCacheEntry(
             sent_submission.sub_id.site_code,
             str(sent_submission.sub_id.submission_id),

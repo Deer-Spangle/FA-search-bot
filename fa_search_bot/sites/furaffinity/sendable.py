@@ -28,6 +28,7 @@ class InlineSendableFASubmission(InlineSendable):
 
 class SendableFASubmission(Sendable):
     def __init__(self, submission: FASubmissionFull):
+        super().__init__()
         self.submission = submission
 
     @property
@@ -49,6 +50,14 @@ class SendableFASubmission(Sendable):
     @property
     def preview_image_url(self) -> str:
         return self.submission.full_image_url
+
+    @property
+    def author(self) -> Optional[str]:
+        return self.submission.author.name
+
+    @property
+    def title(self) -> Optional[str]:
+        return self.submission.title
 
     @property
     def thumbnail_url(self) -> str:

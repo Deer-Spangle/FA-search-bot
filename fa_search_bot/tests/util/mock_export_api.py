@@ -109,6 +109,9 @@ class MockSubmission(FASubmissionFull):
     def download_file_size(self) -> int:
         return self._download_file_size
 
+    def __repr__(self):
+        return f"MockSubmission(id={self.submission_id}, ...)"
+
 
 class MockExportAPI(FAExportAPI):
     def __init__(self):
@@ -171,19 +174,19 @@ class MockExportAPI(FAExportAPI):
             return []
         if f"{folder}:{page}" not in self.user_folders[user]:
             return []
-        return self.user_folders[user][f"{folder}:{page}"]
+        return self.user_folders[user][f"{folder}:{page}"][:]
 
     async def get_user_favs(self, user: str, next_id: int = 1) -> List[FASubmission]:
         if user not in self.user_folders:
             return []
         if f"favs:{next_id}" not in self.user_folders[user]:
             return []
-        return self.user_folders[user][f"favs:{next_id}"]
+        return self.user_folders[user][f"favs:{next_id}"][:]
 
     async def get_search_results(self, query: str, page: int = 1) -> List[FASubmission]:
         if f"{query.lower()}:{page}" not in self.search_results:
             return []
-        return self.search_results[f"{query.lower()}:{page}"]
+        return self.search_results[f"{query.lower()}:{page}"][:]
 
     async def get_browse_page(self, page: int = 1) -> List[FASubmission]:
         self.browse_count += 1
@@ -191,4 +194,4 @@ class MockExportAPI(FAExportAPI):
             self.call_after_x_browse[0]()
         if page not in self.browse_results:
             return []
-        return self.browse_results[page]
+        return self.browse_results[page][:]

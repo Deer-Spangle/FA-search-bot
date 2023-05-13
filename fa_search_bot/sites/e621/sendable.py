@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 class E621Post(Sendable):
     def __init__(self, post: Post):
+        super().__init__()
         self.post = post
 
     @property
@@ -36,6 +37,17 @@ class E621Post(Sendable):
         if self.download_file_ext == "webm":
             return self.post.sample["url"]
         return self.download_url
+
+    @property
+    def author(self):
+        artist_tags = self.post.tags.get("artist", [])
+        if artist_tags:
+            return ", ".join(artist_tags)
+        return None
+
+    @property
+    def title(self) -> Optional[str]:
+        return None
 
     @property
     def thumbnail_url(self) -> str:

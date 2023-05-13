@@ -34,6 +34,9 @@ async def test_neaten_gif(controller: BotController):
     assert response.messages[0].text.startswith("⏳")
     assert submission_id in response.messages[-1].caption
     assert response.messages[-1].animation
+    assert response.messages[-1].animation.width != 0
+    assert response.messages[-1].animation.height != 0
+    assert response.messages[-1].animation.duration != 0
 
 
 @pytest.mark.asyncio
@@ -80,3 +83,6 @@ async def test_neaten_webm(controller: BotController):
     assert response.messages[0].text.startswith("⏳")
     assert post_id in response.messages[-1].caption
     assert response.messages[-1].video
+    assert response.messages[-1].video.width != 0
+    assert response.messages[-1].video.height != 0
+    assert response.messages[-1].video.duration != 0
