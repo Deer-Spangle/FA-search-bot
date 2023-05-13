@@ -9,6 +9,21 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.7] - 2023-05-14
+
+### Fixed
+
+- Fixed bug where inline search might report no results exist at the end of a search
+- Fixed bug where submissions sent by fallback methods would be cached
+- Only download images once when sending them, hopefully speeding things up
+
+### Changed
+
+- Setting better filenames on videos and gifs (with site and submission ID)
+- Setting title and performer on audio files sent by the bot
+- Separating the methods for uploading media to telegram and sending it as a message, allowing future performance
+  improvements
+
 ## [1.13.6] - 2023-05-06
 
 ### Fixed
