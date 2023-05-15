@@ -9,6 +9,16 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.8] - 2023-05-15
+
+### Fixed
+
+- Fixed two pass video conversion
+
+### Added
+
+- Added thumbnails to sent videos
+
 ## [1.13.7] - 2023-05-14
 
 ### Fixed
