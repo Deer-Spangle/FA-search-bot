@@ -138,6 +138,11 @@ convert_gif_total = Counter(
     "Number of animated images or short silent videos we tried to convert into telegram gifs",
     labelnames=["site_code"],
 )
+thumbnail_video_failures = Counter(
+    "fasearchbot_thumbnail_video_exception_total",
+    "Number of attempts to get a video thumbnail which raised an exception",
+    labelnames=["site_code"],
+)
 convert_gif_failures = Counter(
     "fasearchbot_convert_gif_exception_total",
     "Number of telegram gif conversions which raised an exception",
@@ -594,11 +599,19 @@ class Sendable(InlineSendable):
         sendable_animated.labels(site_code=self.site_id).inc()
         try:
             logger.info("Sending video, submission ID %s, converting to mp4", self.submission_id)
+            thumb_handle = None
             with temp_sandbox_file("mp4") as output_path:
-                with time_taken_converting_video.time():
-                    video_metadata = await self._convert_video(dl_file.dl_path, output_path)
-                with time_taken_uploading_file.time():
-                    file_handle = await client.upload_file(output_path)
+                with temp_sandbox_file("jpg") as thumb_path:
+                    thumbnail = False
+                    with time_taken_converting_video.time():
+                        video_metadata = await self._convert_video(dl_file.dl_path, output_path)
+                        if video_metadata.has_audio or video_metadata.duration > self.LENGTH_LIMIT_GIF:
+                            await self._thumbnail_video(output_path, thumb_path)
+                            thumbnail = True
+                    with time_taken_uploading_file.time():
+                        file_handle = await client.upload_file(output_path)
+                        if thumbnail:
+                            thumb_handle = await client.upload_file(thumb_path)
             media = InputMediaUploadedDocument(
                 file=file_handle,
                 mime_type="video/mp4",
@@ -606,7 +619,7 @@ class Sendable(InlineSendable):
                     DocumentAttributeFilename(f"{self.submission_id.to_filename()}.mp4"),
                     DocumentAttributeVideo(int(video_metadata.duration), video_metadata.width, video_metadata.height),
                 ],
-                thumb=None,
+                thumb=thumb_handle,
                 force_file=False,
                 nosound_video=False,
             )
@@ -703,6 +716,11 @@ class Sendable(InlineSendable):
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
         raise NotImplementedError  # TODO: Pull caption builder out, I guess? Three implementations of caption data?
 
+    @_count_exceptions_with_labels(thumbnail_video_failures)
+    async def _thumbnail_video(self, video_path: str, thumbnail_path: str) -> None:
+        client = docker.from_env()
+        await self._run_docker(client, f"-i /{video_path} -ss 00:00:01.000 -vframes 1 /{thumbnail_path}")
+
     @_count_exceptions_with_labels(convert_gif_failures)
     async def _convert_gif(self, gif_path: str, output_path: str) -> VideoMetadata:
         convert_gif_total.labels(site_code=self.site_id).inc()
@@ -777,7 +795,7 @@ class Sendable(InlineSendable):
         bitrate = (self.SIZE_LIMIT_VIDEO / metadata.duration) * 8
         # If it has an audio stream, subtract audio bitrate from total bitrate to get video bitrate
         if metadata.has_audio:
-            bitrate = bitrate - metadata.audio_bitrate
+            bitrate = bitrate - (metadata.audio_bitrate or 0)
             if bitrate < 0:
                 logger.error(
                     "Desired bitrate for submission (site id %s sub id %s) is higher than the audio bitrate alone.",
@@ -797,6 +815,10 @@ class Sendable(InlineSendable):
                     f"{full_ffmpeg_options} -pass 2 -passlogfile /{log_file} /{two_pass_file} -y",
                 )
             # Copy output to output file
+            try:
+                os.remove(output_path)
+            except FileNotFoundError:
+                pass
             with open(output_path, "wb") as output_handle:
                 with open(two_pass_file, "rb") as input_handle:
                     shutil.copyfileobj(input_handle, output_handle)
