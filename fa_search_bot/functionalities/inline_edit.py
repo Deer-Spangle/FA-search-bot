@@ -61,8 +61,9 @@ class InlineEditButtonPress(BotFunctionality):
         data = event.data.decode()
         if not data.startswith("neaten_me:"):
             return
+        sub_id_str = data[len("neaten_me:"):]
         self.usage_counter.labels(function="inline_edit_button").inc()
-        sub_id = SubmissionID.from_inline_code(data.removeprefix("neaten_me:"))
+        sub_id = SubmissionID.from_inline_code(sub_id_str)
         msg_id = event.original_update.msg_id
         logger.debug(
             "Optimise button pressed for sub_id=%s msg_id=%s",
