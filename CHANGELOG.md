@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.13.9] - 2023-05-15
+
+### Fixed
+
+- Correctly handling submission links which have been deleted from e621
+- Removed call to `str.removeprefix()` which caused issues with older python versions
+
 ## [1.13.8] - 2023-05-15
 
 ### Fixed
