@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from prometheus_client.metrics import Counter, Histogram
 
 from fa_search_bot.sites.e621.sendable import E621Post
-from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler, NotFound
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -120,6 +120,8 @@ class E621Handler(SiteHandler):
         edit: bool = False,
     ) -> SentSubmission:
         post = await self._get_post_by_id(SubmissionID(self.site_code, submission_id))
+        if post.flags.get("deleted", False):
+            raise NotFound("This e621 post has been deleted")
         sendable = E621Post(post)
         return await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 

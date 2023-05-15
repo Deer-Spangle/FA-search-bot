@@ -25,6 +25,10 @@ class HandlerException(Exception):
     pass
 
 
+class NotFound(HandlerException):
+    pass
+
+
 class SiteHandler(ABC):
     @property
     @abstractmethod

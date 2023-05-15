@@ -4,8 +4,9 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI, PageNotFound
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission, InlineSendableFASubmission
-from fa_search_bot.sites.site_handler import HandlerException, SiteHandler
+from fa_search_bot.sites.site_handler import HandlerException, SiteHandler, NotFound
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
 
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
     from telethon.tl.custom import InlineBuilder
     from telethon.tl.types import InputBotInlineMessageID, InputBotInlineResultPhoto, TypeInputPeer
 
-    from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionShort
     from fa_search_bot.sites.sendable import InlineSendable
     from fa_search_bot.sites.sent_submission import SentSubmission
@@ -133,7 +133,10 @@ class FAHandler(SiteHandler):
         prefix: str = None,
         edit: bool = False,
     ) -> SentSubmission:
-        submission = await self.api.get_full_submission(str(submission_id))
+        try:
+            submission = await self.api.get_full_submission(str(submission_id))
+        except PageNotFound as e:
+            raise NotFound(e)
         sendable = SendableFASubmission(submission)
         return await sendable.send_message(client, chat, reply_to=reply_to, prefix=prefix, edit=edit)
 

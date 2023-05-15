@@ -8,8 +8,9 @@ from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.filters import filter_regex
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
-from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
+from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.sendable import CantSendFileType
+from fa_search_bot.sites.site_handler import NotFound
 
 if TYPE_CHECKING:
     from typing import List, Optional
@@ -90,7 +91,7 @@ class NeatenFunctionality(BotFunctionality):
         except CantSendFileType as e:
             logger.warning("Can't send file type. Submission ID: %s", sub_id)
             await _return_error_in_privmsg(event, str(e))
-        except PageNotFound:
+        except NotFound:
             logger.warning("Submission invalid or deleted. Submission ID: %s", sub_id)
             handler = self.handlers.handler_for_sub_id(sub_id)
             if handler:

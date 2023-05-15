@@ -7,7 +7,7 @@ from telethon.events import CallbackQuery, Raw
 from telethon.tl.types import UpdateBotInlineSend
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
+from fa_search_bot.sites.site_handler import NotFound
 from fa_search_bot.sites.submission_id import SubmissionID
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ class InlineEditFunctionality(BotFunctionality):
             return
         try:
             await self.handlers.edit_submission(sub_id, self.client, msg_id)
-        except PageNotFound as e:
+        except NotFound as e:
             logger.error("Failed to edit inline query response: ", exc_info=e)
 
 

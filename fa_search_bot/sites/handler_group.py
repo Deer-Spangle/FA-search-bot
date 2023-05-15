@@ -3,10 +3,10 @@ import logging
 from typing import List, Optional, Dict, TYPE_CHECKING
 
 
-from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.utils import gather_ignore_exceptions
 from fa_search_bot.sites.sent_submission import SentSubmission
+from fa_search_bot.sites.site_handler import SiteHandler, NotFound
 
 if TYPE_CHECKING:
     from telethon import TelegramClient
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from telethon.tl.types import InputBotInlineResultPhoto, InputBotInlineMessageID
 
     from fa_search_bot.sites.sendable import InlineSendable
-    from fa_search_bot.sites.site_handler import SiteHandler
     from fa_search_bot.sites.site_link import SiteLink
     from fa_search_bot.submission_cache import SubmissionCache
 
@@ -61,7 +60,7 @@ class HandlerGroup:
             return await cache_entry.as_inline_result(event.builder)
         handler = self.handlers.get(sub_id.site_code)
         if not handler:
-            raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+            raise NotFound(f"Handler not found matching site code: {sub_id.site_code}")
         # Send from source
         inline_photo = await handler.submission_as_answer(sub_id, event.builder)
         # Save to cache
@@ -79,10 +78,10 @@ class HandlerGroup:
     async def answer_link(self, link: SiteLink, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
         handler = self.handlers.get(link.site_code)
         if not handler:
-            raise PageNotFound(f"Handler not found matching site code: {link.site_code}")
+            raise NotFound(f"Handler not found matching site code: {link.site_code}")
         sub_id = await handler.get_submission_id_from_link(link)
         if sub_id is None:
-            raise PageNotFound(f"Could not find submission ID for link: {link.link}")
+            raise NotFound(f"Could not find submission ID for link: {link.link}")
         # Check cache
         cache_entry = self.cache.load_cache(sub_id, allow_inline=True)
         if cache_entry:
@@ -134,7 +133,7 @@ class HandlerGroup:
         handler = self.handlers.get(sub_id.site_code)
         if handler is None:
             logger.error("Unrecognised site code (%s) trying to send submission: %s")
-            raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+            raise NotFound(f"Handler not found matching site code: {sub_id.site_code}")
         cache_entry = self.cache.load_cache(sub_id)
         if cache_entry:
             if await cache_entry.try_to_reply(reply_to):
@@ -157,7 +156,7 @@ class HandlerGroup:
         handler = self.handlers.get(sub_id.site_code)
         if handler is None:
             logger.error("Unrecognised site code (%s) trying to edit submission: %s")
-            raise PageNotFound(f"Handler not found matching site code: {sub_id.site_code}")
+            raise NotFound(f"Handler not found matching site code: {sub_id.site_code}")
         cache_entry = self.cache.load_cache(sub_id)
         if cache_entry:
             if await cache_entry.try_to_edit(client, msg_id):

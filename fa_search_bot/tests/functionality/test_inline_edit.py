@@ -1,8 +1,8 @@
 import pytest
 
 from fa_search_bot.functionalities.inline_edit import InlineEditButtonPress, InlineEditFunctionality
-from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound
 from fa_search_bot.sites.handler_group import HandlerGroup
+from fa_search_bot.sites.site_handler import NotFound
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
 from fa_search_bot.tests.util.mock_site_handler import MockSiteHandler
 from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
@@ -120,7 +120,7 @@ async def test_inline_button_press__unknown_site_code(mock_client):
     cache = MockSubmissionCache()
     func = InlineEditButtonPress(HandlerGroup([handler], cache))
 
-    with pytest.raises(PageNotFound):
+    with pytest.raises(NotFound):
         await func.call(callback)
 
     handler._send_submission.assert_not_called()
