@@ -679,10 +679,11 @@ class Sendable(InlineSendable):
                     img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
 
             filesize = os.path.getsize(output_file)
-            file_handle = await client.upload_file(
-                output_file,
-                file_size=filesize
-            )
+            with time_taken_uploading_file.time():
+                file_handle = await client.upload_file(
+                    output_file,
+                    file_size=filesize
+                )
         media = InputMediaUploadedPhoto(file_handle)
         return media, settings
 
@@ -693,9 +694,10 @@ class Sendable(InlineSendable):
             settings: SendSettings
     ) -> Tuple[TypeInputMedia, SendSettings]:
         sendable_audio.labels(site_code=self.site_id).inc()
-        file_handle = await client.upload_file(dl_file.dl_path)
         with _downloaded_file(self.thumbnail_url) as thumb_file:
-            thumb_handle = await client.upload_file(thumb_file.dl_path)
+            with time_taken_uploading_file.time():
+                file_handle = await client.upload_file(dl_file.dl_path)
+                thumb_handle = await client.upload_file(thumb_file.dl_path)
         media = InputMediaUploadedDocument(
             file=file_handle,
             mime_type="audio/mp3",
