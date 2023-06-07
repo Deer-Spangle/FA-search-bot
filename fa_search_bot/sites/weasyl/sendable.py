@@ -63,4 +63,4 @@ class WeasylPost(Sendable):
 
     @property
     def link(self) -> str:
-        return f"https://www.weasyl.com/submission/{self.submission_id}/"
+        return f"https://www.weasyl.com/submission/{self.submission_id.submission_id}/"
