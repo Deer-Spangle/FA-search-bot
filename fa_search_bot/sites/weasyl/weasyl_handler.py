@@ -37,7 +37,8 @@ class Endpoint(enum.Enum):
 class WeasylHandler(SiteHandler):
     LINK_REGEX = re.compile("weasyl.com/~[^/]+/submissions/([0-9]+)", re.I)
 
-    def __init__(self):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
         self._session: aiohttp.ClientSession = aiohttp.ClientSession()
         for endpoint in Endpoint:
             api_request_times.labels(endpoint=endpoint.value)
@@ -100,9 +101,12 @@ class WeasylHandler(SiteHandler):
 
     async def _get_post_by_id(self, submission_id: str) -> Dict:
         url = f"https://www.weasyl.com/api/submissions/{submission_id}/view"
+        headers = {
+            "X-Weasyl-API-Key": self.api_key
+        }
         with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
             with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
-                async with self._session.get(url) as resp:
+                async with self._session.get(url, headers=headers) as resp:
                     post_data = await resp.json()
         if "error" in post_data:
             if post_data["error"].get("name") == "submissionRecordMissing":
