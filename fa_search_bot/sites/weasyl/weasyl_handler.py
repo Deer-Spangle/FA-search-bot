@@ -35,7 +35,7 @@ class Endpoint(enum.Enum):
 
 
 class WeasylHandler(SiteHandler):
-    LINK_REGEX = re.compile("weasyl.com/~[^/]+/submissions/([0-9]+)", re.I)
+    LINK_REGEX = re.compile("weasyl.com/(~[^/]+/)?(view|submissions?)/([0-9]+)", re.I)
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -63,7 +63,7 @@ class WeasylHandler(SiteHandler):
         # Handle submission page link matches
         sub_match = self.LINK_REGEX.match(link.link)
         if sub_match:
-            sub_id = SubmissionID(self.site_code, sub_match.group(1))
+            sub_id = SubmissionID(self.site_code, sub_match.group(3))
             logger.info("weasyl link format: post link: %s", sub_id)
             return sub_id
         return None
