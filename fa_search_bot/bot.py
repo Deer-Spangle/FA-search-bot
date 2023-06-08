@@ -30,6 +30,7 @@ from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
 from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.sendable import initialise_metrics_labels
+from fa_search_bot.sites.weasyl.weasyl_handler import WeasylHandler
 from fa_search_bot.submission_cache import SubmissionCache
 from fa_search_bot.subscription_watcher import SubscriptionWatcher
 
@@ -67,18 +68,33 @@ class E621Config:
 
 
 @dataclasses.dataclass
+class WeasylConfig:
+    api_key: str
+
+    @classmethod
+    def from_dict(cls, conf: Dict) -> "WeasylConfig":
+        return cls(conf["api_key"])
+
+
+@dataclasses.dataclass
 class Config:
     fa_api_url: str
     telegram: TelegramConfig
     e621: E621Config
+    weasyl: Optional[WeasylConfig]
     prometheus_port: Optional[int]
 
     @classmethod
     def from_dict(cls, conf: Dict) -> "Config":
+        weasyl_data = conf.get("weasyl")
+        weasyl_config = None
+        if weasyl_data:
+            weasyl_config = WeasylConfig.from_dict(weasyl_data)
         return cls(
             conf["api_url"],
             TelegramConfig.from_dict(conf),
             E621Config.from_dict(conf["e621"]),
+            weasyl_config,
             conf.get("prometheus_port", 7065),
         )
 
@@ -166,7 +182,10 @@ class FASearchBot:
 
     def initialise_functionalities(self) -> List[BotFunctionality]:
         fa_handler = FAHandler(self.api)
-        handler_group = HandlerGroup([fa_handler, self.e6_handler], self.submission_cache)
+        handlers = [fa_handler, self.e6_handler]
+        if self.config.weasyl:
+            handlers.append(WeasylHandler(self.config.weasyl.api_key))
+        handler_group = HandlerGroup(handlers, self.submission_cache)
         self.db.initialise_metrics(handler_group)
         initialise_metrics_labels(handler_group)
         self.submission_cache.initialise_metrics(handler_group)
