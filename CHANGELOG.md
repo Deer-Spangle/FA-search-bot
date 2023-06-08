@@ -9,6 +9,16 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.14.0] - 2023-06-08
+
+### Added
+
+- Added support for neatening and embedding Weasyl submission links
+
+### Fixed
+
+- Correctly record metrics for how long it takes to upload audio and image submissions, rather than just videos
+
 ## [1.13.9] - 2023-05-15
 
 ### Fixed
