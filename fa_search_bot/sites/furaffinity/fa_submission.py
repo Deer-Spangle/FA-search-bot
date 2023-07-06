@@ -4,7 +4,7 @@ import logging
 import re
 from abc import ABC
 from enum import Enum
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, Dict
 
 import dateutil.parser
 import requests
@@ -274,4 +274,33 @@ class FAStatus:
             status_dict["online"]["other"],
             status_dict["online"]["total"],
             dateutil.parser.parse(status_dict["fa_server_time_at"]),
+        )
+
+
+class FAHomeCategory:
+    def __init__(self, name: str, submissions: List[FASubmissionShort]):
+        self.name = name
+        self.submissions = submissions
+
+
+class FAHomePage:
+    def __init__(self, categories: List[FAHomeCategory]):
+        self.categories = categories
+
+    def all_submissions(self) -> List[FASubmissionShort]:
+        all_subs = []
+        for category in self.categories:
+            all_subs.extend(category.submissions)
+        return all_subs
+
+    @classmethod
+    def from_dict(cls, home_dict: Dict[str, List[Dict]]) -> "FAHomePage":
+        return cls(
+            [
+                FAHomeCategory(
+                    key,
+                    [FASubmission.from_short_dict(sub) for sub in sub_list]
+                )
+                for key, sub_list in home_dict.items()
+            ]
         )
