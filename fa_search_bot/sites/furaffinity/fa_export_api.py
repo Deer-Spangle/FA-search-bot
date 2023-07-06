@@ -193,8 +193,10 @@ class FAExportAPI:
         resp = await self._api_request_with_retry("home.json", Endpoint.HOME)
         data = resp.json()
         home_page = FAHomePage.from_dict(data)
-        latest_id = max(home_page.all_submissions(), key=lambda sub: int(sub.submission_id))
-        site_latest_id.set(latest_id)
+        submissions = home_page.all_submissions()
+        if submissions:
+            latest_sub = max(submissions, key=lambda sub: int(sub.submission_id))
+            site_latest_id.set(latest_sub.submission_id)
         return home_page
 
     def status(self) -> FAStatus:
