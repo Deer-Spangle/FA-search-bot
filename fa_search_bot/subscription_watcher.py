@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     from fa_search_bot.query_parser import Query
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
-    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FASubmissionShort
+    from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
     from fa_search_bot.sites.sent_submission import SentSubmission
     from fa_search_bot.submission_cache import SubmissionCache
 
@@ -240,17 +240,26 @@ class SubscriptionWatcher:
                 break
             await asyncio.sleep(0.1)
 
-    async def _get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
+    async def _get_newest_submission(self) -> Optional[FASubmission]:
         while self.running:
             try:
-                return await self.api.get_browse_page(page)
+                browse_results = await self.api.get_browse_page(1)
+                return _latest_submission_in_list(browse_results)
+            except CloudflareError:
+                logger.warning("FA is under cloudflare protection, waiting before retry")
+                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
+            except Exception as e:
+                logger.warning("Failed to get browse page, attempting home page", exc_info=e)
+            try:
+                home_page = await self.api.get_home_page()
+                return _latest_submission_in_list(home_page.all_submissions())
             except ValueError as e:
-                logger.warning("Failed to get browse page, retrying", exc_info=e)
+                logger.warning("Failed to get browse or home page, retrying", exc_info=e)
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
             except CloudflareError:
                 logger.warning("FA is under cloudflare protection, waiting before retry")
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
-        return []
+        return None
 
     async def _get_new_results(self) -> List[FASubmission]:
         """
@@ -258,15 +267,15 @@ class SubscriptionWatcher:
         """
         if len(self.latest_ids) == 0:
             logger.info("First time checking subscriptions, getting initial submissions")
-            first_page = await self._get_browse_page()
-            if not first_page:
+            newest_submission = await self._get_newest_submission()
+            if not newest_submission:
                 return []
-            self._update_latest_ids(first_page[::-1])
+            self._update_latest_ids([newest_submission])
             return []
-        first_page = await self._get_browse_page()
-        if not first_page:
+        newest_submission = await self._get_newest_submission()
+        if not newest_submission:
             return []
-        newest_id = int(first_page[0].submission_id)
+        newest_id = int(newest_submission.submission_id)
         latest_recorded_id = int(self.latest_ids[-1])
         logger.info("Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id)
         new_results = [FASubmission(str(x)) for x in range(newest_id, latest_recorded_id, -1)]
@@ -492,3 +501,9 @@ class Subscription:
             f"{'paused' if self.paused else ''}"
             f")"
         )
+
+
+def _latest_submission_in_list(submissions: List[FASubmission]) -> Optional[FASubmission]:
+    if not submissions:
+        return None
+    return max(submissions, key=lambda sub: int(sub.submission_id))

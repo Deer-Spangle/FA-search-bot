@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import requests
 from prometheus_client import Counter, Enum, Gauge, Histogram
 
-from fa_search_bot.sites.furaffinity.fa_submission import FAStatus, FASubmission
+from fa_search_bot.sites.furaffinity.fa_submission import FAStatus, FASubmission, FAHomePage
 
 if TYPE_CHECKING:
     from typing import List, Optional
@@ -61,6 +61,7 @@ class Endpoint(enum.Enum):
     USER_FAVS = "user_favs"
     SEARCH = "search"
     BROWSE = "browse"
+    HOME = "home"
     STATUS = "status"
 
 
@@ -186,6 +187,17 @@ class FAExportAPI:
         if submissions:
             site_latest_id.set(submissions[0].submission_id)
         return submissions
+
+    async def get_home_page(self) -> FAHomePage:
+        logger.debug("Getting home page")
+        resp = await self._api_request_with_retry("home.json", Endpoint.HOME)
+        data = resp.json()
+        home_page = FAHomePage.from_dict(data)
+        submissions = home_page.all_submissions()
+        if submissions:
+            latest_sub = max(submissions, key=lambda sub: int(sub.submission_id))
+            site_latest_id.set(latest_sub.submission_id)
+        return home_page
 
     def status(self) -> FAStatus:
         logger.debug("Getting status page")
