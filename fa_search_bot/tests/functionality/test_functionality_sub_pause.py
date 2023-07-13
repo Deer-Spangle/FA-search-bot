@@ -2,7 +2,8 @@ import pytest
 from telethon.events import StopPropagation
 
 from fa_search_bot.functionalities.subscriptions import SubscriptionFunctionality
-from fa_search_bot.subscriptions.subscription_watcher import Subscription, SubscriptionWatcher
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
+from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
