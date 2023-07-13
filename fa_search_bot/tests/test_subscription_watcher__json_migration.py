@@ -1,6 +1,6 @@
 from unittest import mock
 
-from fa_search_bot.subscription_watcher import SubscriptionWatcher
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI
 from fa_search_bot.tests.util.mock_submission_cache import MockSubmissionCache
 

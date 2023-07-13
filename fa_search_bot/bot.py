@@ -32,7 +32,7 @@ from fa_search_bot.sites.handler_group import HandlerGroup
 from fa_search_bot.sites.sendable import initialise_metrics_labels
 from fa_search_bot.sites.weasyl.weasyl_handler import WeasylHandler
 from fa_search_bot.submission_cache import SubmissionCache
-from fa_search_bot.subscription_watcher import SubscriptionWatcher
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 
 if TYPE_CHECKING:
     from asyncio import Task

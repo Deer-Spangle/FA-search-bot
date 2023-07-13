@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from telethon.tl.types import UpdateNewChannelMessage
 
-    from fa_search_bot.subscription_watcher import SubscriptionWatcher
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 

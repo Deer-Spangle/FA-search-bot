@@ -9,12 +9,12 @@ from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
 from fa_search_bot.query_parser import InvalidQueryException
-from fa_search_bot.subscription_watcher import Subscription
+from fa_search_bot.subscriptions.subscription_watcher import Subscription
 
 if TYPE_CHECKING:
     from typing import List
 
-    from fa_search_bot.subscription_watcher import SubscriptionWatcher
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 
 logger = logging.getLogger(__name__)
 
