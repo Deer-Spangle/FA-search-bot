@@ -64,8 +64,6 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
-time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
-time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
 class SubscriptionWatcher:

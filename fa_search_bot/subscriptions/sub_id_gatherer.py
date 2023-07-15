@@ -11,6 +11,7 @@ from fa_search_bot.subscriptions.utils import time_taken, _latest_submission_in_
 
 logger = logging.getLogger(__name__)
 time_taken_listing_api = time_taken.labels(task="listing submissions to check")
+time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
 class SubIDGatherer(Runnable):
@@ -30,7 +31,8 @@ class SubIDGatherer(Runnable):
                 sub_id = SubmissionID("fa", result.submission_id)
                 await self.watcher.wait_pool.add_sub_id(sub_id)
                 await self.watcher.fetch_data_queue.put(sub_id)
-            await self._wait_while_running(self.NEW_ID_BACKOFF)
+            with time_taken_waiting.time():
+                await self._wait_while_running(self.NEW_ID_BACKOFF)
 
     async def _get_new_results(self) -> List[FASubmission]:
         """

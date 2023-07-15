@@ -22,8 +22,9 @@ logger = logging.getLogger(__name__)
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
 
-time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
+time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
 time_taken_saving_config = time_taken.labels(task="updating configuration")
+time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
 sub_updates = Counter("fasearchbot_fasubwatcher_updates_sent_total", "Number of subscription updates sent")
 sub_blocked = Counter(
     "fasearchbot_fasubwatcher_dest_blocked_total",
@@ -43,11 +44,12 @@ class Sender(Runnable):
         while self.running:
             next_state = await self.watcher.wait_pool.pop_next_ready_to_send()
             # TODO: handle cache entries
-            await self._send_updates(
-                next_state.matching_subscriptions,
-                SendableFASubmission(next_state.full_data),
-                next_state.uploaded_media,
-            )
+            with time_taken_sending_messages.time():
+                await self._send_updates(
+                    next_state.matching_subscriptions,
+                    SendableFASubmission(next_state.full_data),
+                    next_state.uploaded_media,
+                )
             sent_count += 1
             # Update latest ids with the submission we just checked, and save config
             with time_taken_saving_config.time():
