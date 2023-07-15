@@ -6,7 +6,7 @@ import datetime
 import json
 import logging
 import os
-from asyncio import Queue, Task, QueueEmpty
+from asyncio import Queue, Task
 from typing import TYPE_CHECKING
 
 import heartbeat
@@ -20,6 +20,7 @@ from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
+from fa_search_bot.subscriptions.media_fetcher import MediaFetcher
 from fa_search_bot.subscriptions.sub_id_gatherer import SubIDGatherer
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.subscriptions.utils import time_taken
@@ -117,25 +118,8 @@ class SubscriptionWatcher:
         self.upload_queue: Queue[FASubmissionFull] = Queue()
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
         self.data_fetchers: List[DataFetcher] = []
+        self.media_fetchers: List[MediaFetcher] = []
         self.sub_tasks: List[Task] = []
-
-    async def _run_media_fetcher(self) -> None:
-        while self.running:
-            try:
-                full_data = self.upload_queue.get_nowait()
-            except QueueEmpty:
-                await asyncio.sleep(self.QUEUE_BACKOFF)
-                continue
-            sendable = SendableFASubmission(full_data)
-            sub_id = sendable.submission_id
-            # Check if cache entry exists
-            cache_entry = self.submission_cache.load_cache(sub_id)
-            if cache_entry:
-                await self.wait_pool.set_cached(sub_id, cache_entry)
-                continue
-            # Upload the file
-            uploaded_media = await sendable.upload(self.client)
-            await self.wait_pool.set_uploaded(sub_id, uploaded_media)
 
     async def _run_sender(self) -> None:
         sent_count = 0
@@ -175,7 +159,9 @@ class SubscriptionWatcher:
             self.sub_tasks.append(data_fetcher_task)
         # Start the media fetchers
         for _ in range(self.MEDIA_FETCHER_POOL_SIZE):
-            media_fetcher_task = event_loop.create_task(self._run_media_fetcher())
+            media_fetcher = MediaFetcher(self)
+            self.media_fetchers.append(media_fetcher)
+            media_fetcher_task = event_loop.create_task(media_fetcher.run())
             self.sub_tasks.append(media_fetcher_task)
         # Start the submission sender
         task_sender = event_loop.create_task(self._run_sender())
@@ -187,10 +173,14 @@ class SubscriptionWatcher:
             self.sub_id_gatherer.stop()
         for data_fetcher in self.data_fetchers:
             data_fetcher.stop()
+        for media_fetcher in self.media_fetchers:
+            media_fetcher.stop()
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
             event_loop.run_until_complete(task)
             self.sub_tasks.remove(task)
+        self.data_fetchers.clear()
+        self.media_fetchers.clear()
 
     async def run(self) -> None:
         """
