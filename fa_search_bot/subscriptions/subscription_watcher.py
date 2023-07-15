@@ -19,6 +19,7 @@ from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageN
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.subscriptions.data_fetcher import DataFetcher
 from fa_search_bot.subscriptions.sub_id_gatherer import SubIDGatherer
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.subscriptions.utils import time_taken
@@ -44,30 +45,6 @@ subs_processed = Counter(
     "fasearchbot_fasubwatcher_submissions_total",
     "Total number of submissions processed by the subscription watcher",
 )
-subs_failed = Counter(
-    "fasearchbot_fasubwatcher_submissions_failed_total",
-    "Number of submissions for which the sub watcher failed to get data, for any reason",
-)
-subs_not_found = Counter(
-    "fasearchbot_fasubwatcher_not_found_total",
-    "Number of submissions which disappeared before processing",
-)
-subs_cloudflare = Counter(
-    "fasearchbot_fasubwatcher_cloudflare_errors_total",
-    "Number of submissions which returned cloudflare errors",
-)
-subs_other_failed = Counter(
-    "fasearchbot_fasubwatcher_failed_total",
-    "Number of submissions for which the sub watcher failed to get data, for reasons other than 404 or cloudflare",
-)
-sub_matches = Counter(
-    "fasearchbot_fasubwatcher_subs_which_match_total",
-    "Number of submissions which match at least one subscription",
-)
-sub_total_matches = Counter(
-    "fasearchbot_fasubwatcher_sub_matches_total",
-    "Total number of subscriptions matches",
-)
 sub_updates = Counter("fasearchbot_fasubwatcher_updates_sent_total", "Number of subscription updates sent")
 sub_blocked = Counter(
     "fasearchbot_fasubwatcher_dest_blocked_total",
@@ -80,10 +57,6 @@ sub_update_send_failures = Counter(
 latest_sub_processed = Gauge(
     "fasearchbot_fasubwatcher_latest_processed_unixtime",
     "Time that the latest submission was processed",
-)
-latest_sub_posted_at = Gauge(
-    "fasearchbot_fasubwatcher_latest_posted_at_unixtime",
-    "Time that the latest processed submission was posted on FA",
 )
 gauge_sub = Gauge("fasearchbot_fasubwatcher_subscription_count", "Total number of subscriptions")
 gauge_subs_active = Gauge(
@@ -106,10 +79,8 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
-time_taken_submission_api = time_taken.labels(task="fetching submission data")
 time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
 time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
-time_taken_checking_matches = time_taken.labels(task="checking whether submission matches subscriptions")
 time_taken_saving_config = time_taken.labels(task="updating configuration")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
@@ -117,8 +88,6 @@ time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
-    FETCH_CLOUDFLARE_BACKOFF = 60
-    FETCH_EXCEPTION_BACKOFF = 20
     UPDATE_PER_HEARTBEAT = 10
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
@@ -147,75 +116,8 @@ class SubscriptionWatcher:
         self.fetch_data_queue: Queue[SubmissionID] = Queue()
         self.upload_queue: Queue[FASubmissionFull] = Queue()
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
+        self.data_fetchers: List[DataFetcher] = []
         self.sub_tasks: List[Task] = []
-
-    async def _run_data_fetcher(self) -> None:
-        while self.running:
-            try:
-                sub_id = self.fetch_data_queue.get_nowait()
-            except QueueEmpty:
-                await asyncio.sleep(self.QUEUE_BACKOFF)
-                continue
-            # Keep trying to fetch data
-            while self.running:
-                try:
-                    with time_taken_submission_api.time():
-                        full_result = await self.api.get_full_submission(sub_id.submission_id)
-                    logger.debug("Got full data for submission %s", sub_id.submission_id)
-                except PageNotFound:
-                    logger.warning(
-                        "Submission %s, disappeared before I could check it.",
-                        sub_id.submission_id,
-                    )
-                    subs_not_found.inc()
-                    subs_failed.inc()
-                    await self.wait_pool.remove_state(sub_id)
-                    continue
-                except CloudflareError:
-                    logger.warning(
-                        "Submission %s, returned a cloudflare error, will retry in %s seconds",
-                        sub_id.submission_id,
-                        self.FETCH_CLOUDFLARE_BACKOFF
-                    )
-                    subs_cloudflare.inc()
-                    subs_failed.inc()
-                    await asyncio.sleep(self.FETCH_CLOUDFLARE_BACKOFF)
-                    continue
-                except Exception as e:
-                    logger.error(
-                        "Failed to get submission %s, will retry in %s seconds",
-                        sub_id,
-                        self.FETCH_EXCEPTION_BACKOFF,
-                        exc_info=e
-                    )
-                    subs_other_failed.inc()
-                    subs_failed.inc()
-                    await asyncio.sleep(self.FETCH_EXCEPTION_BACKOFF)
-                    continue
-            # Log the posting date of the latest checked submission
-            latest_sub_posted_at.set(full_result.posted_at.timestamp())  # TODO: make sure it's the latest
-            # Copy subscriptions, to avoid "changed size during iteration" issues
-            subscriptions = self.subscriptions.copy()
-            # Check which subscriptions match
-            with time_taken_checking_matches.time():
-                matching_subscriptions = []
-                for subscription in subscriptions:
-                    blocklist = self.blocklists.get(subscription.destination, set())
-                    blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
-                    if subscription.matches_result(full_result, blocklist_query):
-                        matching_subscriptions.append(subscription)
-            logger.debug(
-                "Submission %s matches %s subscriptions",
-                sub_id,
-                len(matching_subscriptions),
-            )
-            if matching_subscriptions:
-                sub_matches.inc()
-                sub_total_matches.inc(len(matching_subscriptions))
-                await self.wait_pool.set_fetched(sub_id, full_result, matching_subscriptions)
-                await self.upload_queue.put(full_result)
-            else:
-                await self.wait_pool.remove_state(sub_id)
 
     async def _run_media_fetcher(self) -> None:
         while self.running:
@@ -262,12 +164,14 @@ class SubscriptionWatcher:
         self.running = True
         event_loop = asyncio.get_event_loop()
         # Start the submission ID gatherer
-        self.sub_id_gatherer = SubIDGatherer(self.wait_pool, self.fetch_data_queue)
+        self.sub_id_gatherer = SubIDGatherer(self)
         sub_id_gatherer_task = event_loop.create_task(self.sub_id_gatherer.run())
         self.sub_tasks.append(sub_id_gatherer_task)
         # Start the data fetchers
         for _ in range(self.DATA_FETCHER_POOL_SIZE):
-            data_fetcher_task = event_loop.create_task(self._run_data_fetcher())
+            data_fetcher = DataFetcher(self)
+            self.data_fetchers.append(data_fetcher)
+            data_fetcher_task = event_loop.create_task(data_fetcher.run())
             self.sub_tasks.append(data_fetcher_task)
         # Start the media fetchers
         for _ in range(self.MEDIA_FETCHER_POOL_SIZE):
@@ -281,6 +185,8 @@ class SubscriptionWatcher:
         self.running = False
         if self.sub_id_gatherer:
             self.sub_id_gatherer.stop()
+        for data_fetcher in self.data_fetchers:
+            data_fetcher.stop()
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
             event_loop.run_until_complete(task)
@@ -347,7 +253,7 @@ class SubscriptionWatcher:
                     matching_subscriptions = []
                     for subscription in subscriptions:
                         blocklist = self.blocklists.get(subscription.destination, set())
-                        blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
+                        blocklist_query = AndQuery([NotQuery(self.get_blocklist_query(block)) for block in blocklist])
                         if subscription.matches_result(full_result, blocklist_query):
                             matching_subscriptions.append(subscription)
                 logger.debug(
@@ -434,7 +340,7 @@ class SubscriptionWatcher:
         self.submission_cache.save_cache(result)
         return result
 
-    def _get_blocklist_query(self, blocklist_str: str) -> Query:
+    def get_blocklist_query(self, blocklist_str: str) -> Query:
         if blocklist_str not in self.blocklist_query_cache:
             self.blocklist_query_cache[blocklist_str] = parse_query(blocklist_str)
         return self.blocklist_query_cache[blocklist_str]

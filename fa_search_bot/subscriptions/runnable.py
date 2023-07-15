@@ -6,11 +6,13 @@ from abc import ABC, abstractmethod
 
 
 class Runnable(ABC):
+    QUEUE_BACKOFF = 0.5
+
     def __init__(self):
         self.running = False
 
     @abstractmethod
-    def run(self) -> None:
+    async def run(self) -> None:
         pass
 
     def stop(self) -> None:
