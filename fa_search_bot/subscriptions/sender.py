@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import datetime
 import logging
-from typing import List
+from typing import Union, Dict, List
 
 import heartbeat
 from prometheus_client import Counter
@@ -11,11 +11,10 @@ from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, Chann
 from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
-from fa_search_bot.sites.sendable import UploadedMedia
-from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.subscriptions.utils import time_taken
+from fa_search_bot.subscriptions.wait_pool import SubmissionCheckState
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +42,9 @@ class Sender(Runnable):
         sent_count = 0
         while self.running:
             next_state = await self.watcher.wait_pool.pop_next_ready_to_send()
-            # TODO: handle cache entries
+            # Send out messages
             with time_taken_sending_messages.time():
-                await self._send_updates(
-                    next_state.matching_subscriptions,
-                    SendableFASubmission(next_state.full_data),
-                    next_state.uploaded_media,
-                )
+                await self._send_updates(next_state)
             sent_count += 1
             # Update latest ids with the submission we just checked, and save config
             with time_taken_saving_config.time():
@@ -60,14 +55,11 @@ class Sender(Runnable):
                     heartbeat.update_heartbeat(heartbeat_app_name)
                 logger.debug("Heartbeat")
 
-    async def _send_updates(
-            self,
-            subscriptions: List["Subscription"],
-            sendable: SendableFASubmission,
-            uploaded_media: UploadedMedia,
-    ) -> None:
+    async def _send_updates(self, state: SubmissionCheckState) -> None:
+        subscriptions = state.matching_subscriptions
+        sendable = SendableFASubmission(state.full_data)
         # Map which subscriptions require this submission at each destination
-        destination_map = collections.defaultdict(lambda: [])
+        destination_map: Dict[int, List[Subscription]] = collections.defaultdict(lambda: [])
         for sub in subscriptions:
             sub.latest_update = datetime.datetime.now()
             destination_map[sub.destination].append(sub)
@@ -78,7 +70,7 @@ class Sender(Runnable):
             logger.info("Sending submission %s to subscription", sendable.submission_id)
             sub_updates.inc()
             try:
-                await self._send_subscription_update(sendable, uploaded_media, dest, prefix)
+                await self._send_subscription_update(sendable, state, dest, prefix)
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
@@ -97,14 +89,20 @@ class Sender(Runnable):
     async def _send_subscription_update(
         self,
         sendable: SendableFASubmission,
-        uploaded: UploadedMedia,
-        chat: TypeInputPeer,
+        state: SubmissionCheckState,
+        chat: Union[int, TypeInputPeer],
         prefix: str,
-    ) -> SentSubmission:
-        cache_entry = self.watcher.submission_cache.load_cache(sendable.submission_id)
-        if cache_entry:
-            if await cache_entry.try_to_send(self.watcher.client, chat, prefix=prefix):
-                return cache_entry
-        result = await sendable.send_message(self.watcher.client, chat, prefix=prefix, uploaded_media=uploaded)
+    ) -> None:
+        if state.cache_entry:
+            if await state.cache_entry.try_to_send(self.watcher.client, chat, prefix=prefix):
+                return
+            # TODO: Need to re-upload, instrument that
+        # Send message. (If uploaded media isn't set, it'll re-upload
+        result = await sendable.send_message(
+            self.watcher.client,
+            chat,
+            prefix=prefix,
+            uploaded_media=state.uploaded_media
+        )
         self.watcher.submission_cache.save_cache(result)
         return result
