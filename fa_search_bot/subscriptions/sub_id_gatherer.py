@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission

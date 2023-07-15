@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio import QueueEmpty
-from typing import TYPE_CHECKING
 
 from prometheus_client import Counter
 from prometheus_client.metrics import Gauge
