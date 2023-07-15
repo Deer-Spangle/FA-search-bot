@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import collections
+import dataclasses
 import datetime
 import json
 import logging
 import os
+from asyncio import Lock, Queue, Task, QueueEmpty
 from typing import TYPE_CHECKING
 
 import heartbeat
@@ -17,6 +19,8 @@ from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
+from fa_search_bot.sites.sendable import UploadedMedia
+from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.subscription import Subscription
 
 if TYPE_CHECKING:
@@ -29,8 +33,7 @@ if TYPE_CHECKING:
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
     from fa_search_bot.sites.sent_submission import SentSubmission
-    from fa_search_bot.submission_cache import SubmissionCache
-
+    from fa_search_bot.submission_cache import SubmissionCache, CacheEntry
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
@@ -116,13 +119,86 @@ time_taken_saving_config = time_taken.labels(task="updating configuration")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
+@dataclasses.dataclass
+class SubmissionCheckState:
+    sub_id: SubmissionID
+    full_data: Optional[FASubmissionFull] = None
+    matching_subscriptions: Optional[List[Subscription]] = None
+    cache_entry: Optional[SentSubmission] = None
+    uploaded_media: Optional[UploadedMedia] = None
+
+    def key(self) -> int:
+        return int(self.sub_id.submission_id)
+
+    def is_ready_to_send(self) -> bool:
+        return self.uploaded_media is not None or self.cache_entry is not None
+
+
+class WaitPool:
+    def __init__(self):
+        self.submission_state: Dict[SubmissionID, SubmissionCheckState] = {}
+        self._lock = Lock()
+
+    async def add_sub_id(self, sub_id: SubmissionID) -> None:
+        async with self._lock:
+            state = SubmissionCheckState(sub_id)
+            self.submission_state[sub_id] = state
+
+    async def set_fetched(self, sub_id: SubmissionID, full_data: FASubmissionFull, matching_subs: List[Subscription]) -> None:
+        async with self._lock:
+            if sub_id not in self.submission_state:
+                return
+            self.submission_state[sub_id].full_data = full_data
+            self.submission_state[sub_id].matching_subscriptions = matching_subs
+
+    async def set_cached(self, sub_id: SubmissionID, cache_entry: SentSubmission) -> None:
+        async with self._lock:
+            if sub_id not in self.submission_state:
+                return
+            self.submission_state[sub_id].cache_entry = cache_entry
+
+    async def set_uploaded(self, sub_id: SubmissionID, uploaded: UploadedMedia) -> None:
+        async with self._lock:
+            if sub_id not in self.submission_state:
+                return
+            self.submission_state[sub_id].uploaded_media = uploaded
+
+    async def remove_state(self, sub_id: SubmissionID) -> None:
+        async with self._lock:
+            if sub_id not in self.submission_state:
+                raise ValueError("This state cannot be removed because it is not in the wait pool")
+            del self.submission_state[sub_id]
+
+    async def next_submission_state(self) -> Optional[SubmissionCheckState]:
+        async with self._lock:
+            if not self.submission_state:
+                return None
+            submission_states = self.submission_state.values()
+            return min(submission_states, key=lambda state: state.key())
+
+    async def pop_next_ready_to_send(self) -> Optional[SubmissionCheckState]:
+        async with self._lock:
+            next_state = await self.next_submission_state()
+            if not next_state:
+                return None
+            if not next_state.is_ready_to_send():
+                return None
+            await self.remove_state(next_state.sub_id)
+            return next_state
+
+
 class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
     BROWSE_RETRY_BACKOFF = 20
+    FETCH_CLOUDFLARE_BACKOFF = 60
+    FETCH_EXCEPTION_BACKOFF = 20
     UPDATE_PER_HEARTBEAT = 10
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
+    QUEUE_BACKOFF = 0.5
+    DATA_FETCHER_POOL_SIZE = 2
+    MEDIA_FETCHER_POOL_SIZE = 2
 
     def __init__(self, api: FAExportAPI, client: TelegramClient, submission_cache: SubmissionCache):
         self.api = api
@@ -140,12 +216,165 @@ class SubscriptionWatcher:
             lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
         )
         gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
+        # TODO: document, instrument
+        self.wait_pool = WaitPool()
+        self.fetch_data_queue: Queue[SubmissionID] = Queue()
+        self.upload_queue: Queue[FASubmissionFull] = Queue()
+        self.sub_tasks: List[Task] = []
+
+    async def _run_id_gatherer(self) -> None:
+        while self.running:
+            try:
+                with time_taken_listing_api.time():
+                    new_results = await self._get_new_results()
+            except Exception as e:
+                logger.error("Failed to get new results", exc_info=e)
+                continue
+            for result in new_results:
+                sub_id = SubmissionID("fa", result.submission_id)
+                await self.wait_pool.add_sub_id(sub_id)
+                await self.fetch_data_queue.put(sub_id)
+
+    async def _run_data_fetcher(self) -> None:
+        while self.running:
+            try:
+                sub_id = self.fetch_data_queue.get_nowait()
+            except QueueEmpty:
+                await asyncio.sleep(self.QUEUE_BACKOFF)
+                continue
+            # Keep trying to fetch data
+            while self.running:
+                try:
+                    with time_taken_submission_api.time():
+                        full_result = await self.api.get_full_submission(sub_id.submission_id)
+                    logger.debug("Got full data for submission %s", sub_id.submission_id)
+                except PageNotFound:
+                    logger.warning(
+                        "Submission %s, disappeared before I could check it.",
+                        sub_id.submission_id,
+                    )
+                    subs_not_found.inc()
+                    subs_failed.inc()
+                    await self.wait_pool.remove_state(sub_id)
+                    continue
+                except CloudflareError:
+                    logger.warning(
+                        "Submission %s, returned a cloudflare error, will retry in %s seconds",
+                        sub_id.submission_id,
+                        self.FETCH_CLOUDFLARE_BACKOFF
+                    )
+                    subs_cloudflare.inc()
+                    subs_failed.inc()
+                    await asyncio.sleep(self.FETCH_CLOUDFLARE_BACKOFF)
+                    continue
+                except Exception as e:
+                    logger.error(
+                        "Failed to get submission %s, will retry in %s seconds",
+                        sub_id,
+                        self.FETCH_EXCEPTION_BACKOFF,
+                        exc_info=e
+                    )
+                    subs_other_failed.inc()
+                    subs_failed.inc()
+                    await asyncio.sleep(self.FETCH_EXCEPTION_BACKOFF)
+                    continue
+            # Log the posting date of the latest checked submission
+            latest_sub_posted_at.set(full_result.posted_at.timestamp())  # TODO: make sure it's the latest
+            # Copy subscriptions, to avoid "changed size during iteration" issues
+            subscriptions = self.subscriptions.copy()
+            # Check which subscriptions match
+            with time_taken_checking_matches.time():
+                matching_subscriptions = []
+                for subscription in subscriptions:
+                    blocklist = self.blocklists.get(subscription.destination, set())
+                    blocklist_query = AndQuery([NotQuery(self._get_blocklist_query(block)) for block in blocklist])
+                    if subscription.matches_result(full_result, blocklist_query):
+                        matching_subscriptions.append(subscription)
+            logger.debug(
+                "Submission %s matches %s subscriptions",
+                sub_id,
+                len(matching_subscriptions),
+            )
+            if matching_subscriptions:
+                sub_matches.inc()
+                sub_total_matches.inc(len(matching_subscriptions))
+                await self.wait_pool.set_fetched(sub_id, full_result, matching_subscriptions)
+                await self.upload_queue.put(full_result)
+            else:
+                await self.wait_pool.remove_state(sub_id)
+
+    async def _run_media_fetcher(self) -> None:
+        while self.running:
+            try:
+                full_data = self.upload_queue.get_nowait()
+            except QueueEmpty:
+                await asyncio.sleep(self.QUEUE_BACKOFF)
+                continue
+            sendable = SendableFASubmission(full_data)
+            sub_id = sendable.submission_id
+            # Check if cache entry exists
+            cache_entry = self.submission_cache.load_cache(sub_id)
+            if cache_entry:
+                await self.wait_pool.set_cached(sub_id, cache_entry)
+                continue
+            # Upload the file
+            uploaded_media = await sendable.upload(self.client)
+            await self.wait_pool.set_uploaded(sub_id, uploaded_media)
+
+    async def _run_sender(self) -> None:
+        sent_count = 0
+        while self.running:
+            next_state = await self.wait_pool.pop_next_ready_to_send()
+            # TODO: handle cache entries
+            await self._send_updates(
+                next_state.matching_subscriptions,
+                SendableFASubmission(next_state.full_data),
+                next_state.uploaded_media,
+            )
+            sent_count += 1
+            # Update latest ids with the submission we just checked, and save config
+            with time_taken_saving_config.time():
+                self._update_latest_ids([next_state.full_data])
+            # If we've done ten, update heartbeat
+            if sent_count % self.UPDATE_PER_HEARTBEAT == 0:
+                with time_taken_updating_heartbeat.time():
+                    heartbeat.update_heartbeat(heartbeat_app_name)
+                logger.debug("Heartbeat")
+
+    async def start_tasks(self) -> None:
+        # TODO: Pull all these out into separate classes please, along with their helper methods
+        if self.running or self.sub_tasks:
+            raise ValueError("Already running")
+        self.running = True
+        event_loop = asyncio.get_event_loop()
+        # Start the submission ID gatherer
+        task_id_gatherer = event_loop.create_task(self._run_id_gatherer())
+        self.sub_tasks.append(task_id_gatherer)
+        # Start the data fetchers
+        for _ in range(self.DATA_FETCHER_POOL_SIZE):
+            data_fetcher_task = event_loop.create_task(self._run_data_fetcher())
+            self.sub_tasks.append(data_fetcher_task)
+        # Start the media fetchers
+        for _ in range(self.MEDIA_FETCHER_POOL_SIZE):
+            media_fetcher_task = event_loop.create_task(self._run_media_fetcher())
+            self.sub_tasks.append(media_fetcher_task)
+        # Start the submission sender
+        task_sender = event_loop.create_task(self._run_sender())
+        self.sub_tasks.append(task_sender)
+
+    def stop_tasks(self) -> None:
+        self.running = False
+        event_loop = asyncio.get_event_loop()
+        for task in self.sub_tasks[:]:
+            event_loop.run_until_complete(task)
+            self.sub_tasks.remove(task)
 
     async def run(self) -> None:
         """
         This method is launched as a task, it reads the browse endpoint for new submissions, and checks if they
         match existing subscriptions
         """
+        # TODO: remove this
         self.running = True
         while self.running:
             try:
@@ -213,7 +442,9 @@ class SubscriptionWatcher:
                     sub_matches.inc()
                     sub_total_matches.inc(len(matching_subscriptions))
                     with time_taken_sending_messages.time():
-                        await self._send_updates(matching_subscriptions, full_result)
+                        sendable = SendableFASubmission(full_result)
+                        uploaded = await sendable.upload(self.client)
+                        await self._send_updates(matching_subscriptions, sendable, uploaded)
                 # Update latest ids with the submission we just checked, and save config
                 with time_taken_saving_config.time():
                     self._update_latest_ids([result])
@@ -288,8 +519,12 @@ class SubscriptionWatcher:
             self.latest_ids.append(result.submission_id)
         self.save_to_json()
 
-    async def _send_updates(self, subscriptions: List["Subscription"], result: FASubmissionFull) -> None:
-        sendable = SendableFASubmission(result)
+    async def _send_updates(
+            self,
+            subscriptions: List["Subscription"],
+            sendable: SendableFASubmission,
+            uploaded_media: UploadedMedia,
+    ) -> None:
         # Map which subscriptions require this submission at each destination
         destination_map = collections.defaultdict(lambda: [])
         for sub in subscriptions:
@@ -299,10 +534,10 @@ class SubscriptionWatcher:
         for dest, subs in destination_map.items():
             queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
-            logger.info("Sending submission %s to subscription", result.submission_id)
+            logger.info("Sending submission %s to subscription", sendable.submission_id)
             sub_updates.inc()
             try:
-                await self._send_subscription_update(sendable, dest, prefix)
+                await self._send_subscription_update(sendable, uploaded_media, dest, prefix)
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
@@ -313,7 +548,7 @@ class SubscriptionWatcher:
                 sub_update_send_failures.inc()
                 logger.error(
                     "Failed to send submission: %s to %s",
-                    result.submission_id,
+                    sendable.submission_id,
                     dest,
                     exc_info=e,
                 )
@@ -321,6 +556,7 @@ class SubscriptionWatcher:
     async def _send_subscription_update(
         self,
         sendable: SendableFASubmission,
+        uploaded: UploadedMedia,
         chat: TypeInputPeer,
         prefix: str,
     ) -> SentSubmission:
@@ -328,7 +564,7 @@ class SubscriptionWatcher:
         if cache_entry:
             if await cache_entry.try_to_send(self.client, chat, prefix=prefix):
                 return cache_entry
-        result = await sendable.send_message(self.client, chat, prefix=prefix)
+        result = await sendable.send_message(self.client, chat, prefix=prefix, uploaded_media=uploaded)
         self.submission_cache.save_cache(result)
         return result
 

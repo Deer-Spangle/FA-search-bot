@@ -150,7 +150,7 @@ class FASearchBot:
         # Log every couple seconds so we know the bot is still running
         self.log_task = event_loop.create_task(self.periodic_log())
         # Start the sub watcher
-        self.watcher_task = event_loop.create_task(self.subscription_watcher.run())
+        self.subscription_watcher.start_tasks()
 
     def run(self) -> None:
         try:
@@ -161,10 +161,8 @@ class FASearchBot:
     def close(self) -> None:
         # Shut down sub watcher
         self.alive = False
-        self.subscription_watcher.running = False
+        self.subscription_watcher.stop_tasks()
         event_loop = asyncio.get_event_loop()
-        if self.watcher_task is not None:
-            event_loop.run_until_complete(self.watcher_task)
         if self.log_task is not None:
             event_loop.run_until_complete(self.log_task)
         if self.e6_api is not None:
