@@ -216,6 +216,13 @@ class SendSettings:
 
 
 @dataclasses.dataclass
+class UploadedMedia:
+    sub_id: SubmissionID
+    media: TypeInputMedia
+    settings: SendSettings
+
+
+@dataclasses.dataclass
 class VideoMetadata:
     raw_data: Dict
 
@@ -508,11 +515,13 @@ class Sendable(InlineSendable):
         reply_to: int = None,
         prefix: str = None,
         edit: bool = False,
+        uploaded_media: UploadedMedia = None
     ) -> Optional[SentSubmission]:
         sendable_sent.labels(site_code=self.site_id).inc()
         send_partial = self._partial_sender(client, chat, reply_to, prefix, edit)
-        media, settings = await self.upload(client)
-        return await send_partial(media, settings)
+        if not uploaded_media:
+            uploaded_media = await self.upload(client)
+        return await send_partial(uploaded_media.media, uploaded_media.settings)
 
     def _partial_sender(
             self,
@@ -549,7 +558,7 @@ class Sendable(InlineSendable):
             return sent_sub
         return send_partial
 
-    async def upload(self, client: TelegramClient) -> Tuple[TypeInputMedia, SendSettings]:
+    async def upload(self, client: TelegramClient) -> UploadedMedia:
         settings = SendSettings(CaptionSettings())
         ext = self.download_file_ext
 
@@ -579,7 +588,7 @@ class Sendable(InlineSendable):
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:
                 settings.force_doc = True
-                return _url_to_media(self.download_url, False), settings
+                return UploadedMedia(self.submission_id, _url_to_media(self.download_url, False), settings)
             # Handle audio
             if ext in self.EXTENSIONS_AUDIO:
                 with _downloaded_file(self.download_url) as dl_file:
@@ -595,7 +604,7 @@ class Sendable(InlineSendable):
             client: TelegramClient,
             dl_file: DownloadedFile,
             settings: SendSettings
-    ) -> Tuple[TypeInputMedia, SendSettings]:
+    ) -> UploadedMedia:
         sendable_animated.labels(site_code=self.site_id).inc()
         try:
             logger.info("Sending video, submission ID %s, converting to mp4", self.submission_id)
@@ -623,20 +632,20 @@ class Sendable(InlineSendable):
                 force_file=False,
                 nosound_video=False,
             )
-            return media, settings
+            return UploadedMedia(self.submission_id, media, settings)
         except Exception as e:
             logger.error("Failed to convert video to mp4. Submission ID: %s", self.submission_id, exc_info=e)
             settings.save_cache = False
             settings.caption.direct_link = True
             media = _url_to_media(self.download_url, False)
-            return media, settings
+            return UploadedMedia(self.submission_id, media, settings)
 
     async def _upload_image(
             self,
             client: TelegramClient,
             dl_file: DownloadedFile,
             settings: SendSettings
-    ) -> Tuple[TypeInputMedia, SendSettings]:
+    ) -> UploadedMedia:
         sendable_image.labels(site_code=self.site_id).inc()
         # If filesize is too big, set caption to true
         if os.path.getsize(dl_file.dl_path) > self.SIZE_LIMIT_IMAGE:
@@ -685,14 +694,14 @@ class Sendable(InlineSendable):
                     file_size=filesize
                 )
         media = InputMediaUploadedPhoto(file_handle)
-        return media, settings
+        return UploadedMedia(self.submission_id, media, settings)
 
     async def _upload_audio(
             self,
             client: TelegramClient,
             dl_file: DownloadedFile,
             settings: SendSettings
-    ) -> Tuple[TypeInputMedia, SendSettings]:
+    ) -> UploadedMedia:
         sendable_audio.labels(site_code=self.site_id).inc()
         with _downloaded_file(self.thumbnail_url) as thumb_file:
             with time_taken_uploading_file.time():
@@ -712,7 +721,7 @@ class Sendable(InlineSendable):
             thumb=thumb_handle,
             force_file=False,
         )
-        return media, settings
+        return UploadedMedia(self.submission_id, media, settings)
 
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
