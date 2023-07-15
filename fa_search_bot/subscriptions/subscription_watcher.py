@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import collections
-import datetime
 import json
 import logging
 import os
@@ -12,15 +11,14 @@ from typing import TYPE_CHECKING
 import heartbeat
 from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
-from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError, PeerIdInvalidError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
-from fa_search_bot.sites.sendable import UploadedMedia
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
 from fa_search_bot.subscriptions.media_fetcher import MediaFetcher
+from fa_search_bot.subscriptions.sender import Sender
 from fa_search_bot.subscriptions.sub_id_gatherer import SubIDGatherer
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.subscriptions.utils import time_taken
@@ -30,30 +28,16 @@ if TYPE_CHECKING:
     from typing import Deque, Dict, List, Optional, Set
 
     from telethon import TelegramClient
-    from telethon.tl.types import TypeInputPeer
 
     from fa_search_bot.query_parser import Query
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
-    from fa_search_bot.sites.sent_submission import SentSubmission
     from fa_search_bot.submission_cache import SubmissionCache
-
-heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
-heartbeat_app_name = "FASearchBot_sub_thread"
 
 logger = logging.getLogger(__name__)
 subs_processed = Counter(
     "fasearchbot_fasubwatcher_submissions_total",
     "Total number of submissions processed by the subscription watcher",
-)
-sub_updates = Counter("fasearchbot_fasubwatcher_updates_sent_total", "Number of subscription updates sent")
-sub_blocked = Counter(
-    "fasearchbot_fasubwatcher_dest_blocked_total",
-    "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first",
-)
-sub_update_send_failures = Counter(
-    "fasearchbot_fasubwatcher_updates_failed_total",
-    "Number of subscription updates which failed for unknown reason",
 )
 latest_sub_processed = Gauge(
     "fasearchbot_fasubwatcher_latest_processed_unixtime",
@@ -81,18 +65,13 @@ gauge_backlog = Gauge(
     "Length of the latest list of new submissions to check",
 )
 time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
-time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
-time_taken_saving_config = time_taken.labels(task="updating configuration")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
 class SubscriptionWatcher:
-    PAGE_CAP = 900
     BACK_OFF = 20
-    UPDATE_PER_HEARTBEAT = 10
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
-    QUEUE_BACKOFF = 0.5
     DATA_FETCHER_POOL_SIZE = 2
     MEDIA_FETCHER_POOL_SIZE = 2
 
@@ -119,27 +98,8 @@ class SubscriptionWatcher:
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
         self.data_fetchers: List[DataFetcher] = []
         self.media_fetchers: List[MediaFetcher] = []
+        self.sender: Optional[Sender] = None
         self.sub_tasks: List[Task] = []
-
-    async def _run_sender(self) -> None:
-        sent_count = 0
-        while self.running:
-            next_state = await self.wait_pool.pop_next_ready_to_send()
-            # TODO: handle cache entries
-            await self._send_updates(
-                next_state.matching_subscriptions,
-                SendableFASubmission(next_state.full_data),
-                next_state.uploaded_media,
-            )
-            sent_count += 1
-            # Update latest ids with the submission we just checked, and save config
-            with time_taken_saving_config.time():
-                self.update_latest_id(next_state.sub_id)
-            # If we've done ten, update heartbeat
-            if sent_count % self.UPDATE_PER_HEARTBEAT == 0:
-                with time_taken_updating_heartbeat.time():
-                    heartbeat.update_heartbeat(heartbeat_app_name)
-                logger.debug("Heartbeat")
 
     async def start_tasks(self) -> None:
         # TODO: Pull all these out into separate classes please, along with their helper methods
@@ -164,7 +124,8 @@ class SubscriptionWatcher:
             media_fetcher_task = event_loop.create_task(media_fetcher.run())
             self.sub_tasks.append(media_fetcher_task)
         # Start the submission sender
-        task_sender = event_loop.create_task(self._run_sender())
+        self.sender = Sender(self)
+        task_sender = event_loop.create_task(self.sender.run())
         self.sub_tasks.append(task_sender)
 
     def stop_tasks(self) -> None:
@@ -280,55 +241,6 @@ class SubscriptionWatcher:
     def update_latest_id(self, sub_id: SubmissionID) -> None:
         self.latest_ids.append(sub_id.submission_id)
         self.save_to_json()
-
-    async def _send_updates(
-            self,
-            subscriptions: List["Subscription"],
-            sendable: SendableFASubmission,
-            uploaded_media: UploadedMedia,
-    ) -> None:
-        # Map which subscriptions require this submission at each destination
-        destination_map = collections.defaultdict(lambda: [])
-        for sub in subscriptions:
-            sub.latest_update = datetime.datetime.now()
-            destination_map[sub.destination].append(sub)
-        # Send the submission to each location
-        for dest, subs in destination_map.items():
-            queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
-            prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
-            logger.info("Sending submission %s to subscription", sendable.submission_id)
-            sub_updates.inc()
-            try:
-                await self._send_subscription_update(sendable, uploaded_media, dest, prefix)
-            except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
-                sub_blocked.inc()
-                logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
-                all_subs = [sub for sub in self.subscriptions if sub.destination == dest]
-                for sub in all_subs:
-                    sub.paused = True
-            except Exception as e:
-                sub_update_send_failures.inc()
-                logger.error(
-                    "Failed to send submission: %s to %s",
-                    sendable.submission_id,
-                    dest,
-                    exc_info=e,
-                )
-
-    async def _send_subscription_update(
-        self,
-        sendable: SendableFASubmission,
-        uploaded: UploadedMedia,
-        chat: TypeInputPeer,
-        prefix: str,
-    ) -> SentSubmission:
-        cache_entry = self.submission_cache.load_cache(sendable.submission_id)
-        if cache_entry:
-            if await cache_entry.try_to_send(self.client, chat, prefix=prefix):
-                return cache_entry
-        result = await sendable.send_message(self.client, chat, prefix=prefix, uploaded_media=uploaded)
-        self.submission_cache.save_cache(result)
-        return result
 
     def get_blocklist_query(self, blocklist_str: str) -> Query:
         if blocklist_str not in self.blocklist_query_cache:
