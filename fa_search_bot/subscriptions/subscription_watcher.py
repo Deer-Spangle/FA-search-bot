@@ -8,20 +8,16 @@ import os
 from asyncio import Queue, Task
 from typing import TYPE_CHECKING
 
-import heartbeat
 from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
 
-from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
-from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
-from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
+from fa_search_bot.query_parser import parse_query
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
 from fa_search_bot.subscriptions.media_fetcher import MediaFetcher
 from fa_search_bot.subscriptions.sender import Sender
 from fa_search_bot.subscriptions.sub_id_gatherer import SubIDGatherer
 from fa_search_bot.subscriptions.subscription import Subscription
-from fa_search_bot.subscriptions.utils import time_taken
 from fa_search_bot.subscriptions.wait_pool import WaitPool
 
 if TYPE_CHECKING:
@@ -78,18 +74,10 @@ class SubscriptionWatcher:
         self.client = client
         self.submission_cache = submission_cache
         self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
-        self.running = False
         self.subscriptions = set()  # type: Set[Subscription]
         self.blocklists = dict()  # type: Dict[int, Set[str]]
         self.blocklist_query_cache = dict()  # type: Dict[str, Query]
-        gauge_sub.set_function(lambda: len(self.subscriptions))
-        gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
-        gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
-        gauge_sub_active_destinations.set_function(
-            lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
-        )
-        gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
-        # TODO: document, instrument
+        # Initialise tasks and sharing data structure
         self.wait_pool = WaitPool()
         self.fetch_data_queue: Queue[SubmissionID] = Queue()
         self.upload_queue: Queue[FASubmissionFull] = Queue()
@@ -98,12 +86,19 @@ class SubscriptionWatcher:
         self.media_fetchers: List[MediaFetcher] = []
         self.sender: Optional[Sender] = None
         self.sub_tasks: List[Task] = []
+        # Initialise gauges
+        gauge_sub.set_function(lambda: len(self.subscriptions))
+        gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
+        gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))
+        gauge_sub_active_destinations.set_function(
+            lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
+        )
+        gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
 
     async def start_tasks(self) -> None:
         # TODO: Pull all these out into separate classes please, along with their helper methods
-        if self.running or self.sub_tasks:
-            raise ValueError("Already running")
-        self.running = True
+        if self.sub_tasks:
+            raise RuntimeError("Already running")
         event_loop = asyncio.get_event_loop()
         # Start the submission ID gatherer
         self.sub_id_gatherer = SubIDGatherer(self)
@@ -127,114 +122,23 @@ class SubscriptionWatcher:
         self.sub_tasks.append(task_sender)
 
     def stop_tasks(self) -> None:
-        self.running = False
+        # Ask runnables to stop
         if self.sub_id_gatherer:
             self.sub_id_gatherer.stop()
         for data_fetcher in self.data_fetchers:
             data_fetcher.stop()
         for media_fetcher in self.media_fetchers:
             media_fetcher.stop()
+        if self.sender:
+            self.sender.stop()
+        # Shut down running tasks
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
             event_loop.run_until_complete(task)
             self.sub_tasks.remove(task)
+        # Clean up fetchers
         self.data_fetchers.clear()
         self.media_fetchers.clear()
-
-    async def run(self) -> None:
-        """
-        This method is launched as a task, it reads the browse endpoint for new submissions, and checks if they
-        match existing subscriptions
-        """
-        # TODO: remove this
-        self.running = True
-        while self.running:
-            try:
-                with time_taken_listing_api.time():
-                    new_results = await self._get_new_results()
-            except Exception as e:
-                logger.error("Failed to get new results", exc_info=e)
-                continue
-            count = 0
-            gauge_backlog.set(len(new_results))
-            with time_taken_updating_heartbeat.time():
-                heartbeat.update_heartbeat(heartbeat_app_name)
-            # Check for subscription updates
-            for result in new_results:
-                count += 1
-                # If we've been told to stop, stop
-                if not self.running:
-                    break
-                # Try and get the full data
-                subs_processed.inc()
-                latest_sub_processed.set_to_current_time()
-                try:
-                    with time_taken_submission_api.time():
-                        full_result = await self.api.get_full_submission(result.submission_id)
-                    logger.debug("Got full data for submission %s", result.submission_id)
-                except PageNotFound:
-                    logger.warning(
-                        "Submission %s, disappeared before I could check it.",
-                        result.submission_id,
-                    )
-                    subs_not_found.inc()
-                    subs_failed.inc()
-                    continue
-                except CloudflareError:
-                    logger.warning(
-                        "Submission %s, returned a cloudflare error",
-                        result.submission_id,
-                    )
-                    subs_cloudflare.inc()
-                    subs_failed.inc()
-                    continue
-                except Exception as e:
-                    logger.error("Failed to get submission %s", result.submission_id, exc_info=e)
-                    subs_other_failed.inc()
-                    subs_failed.inc()
-                    continue
-                # Log the posting date of the latest checked submission
-                latest_sub_posted_at.set(full_result.posted_at.timestamp())
-                # Copy subscriptions, to avoid "changed size during iteration" issues
-                subscriptions = self.subscriptions.copy()
-                # Check which subscriptions match
-                with time_taken_checking_matches.time():
-                    matching_subscriptions = []
-                    for subscription in subscriptions:
-                        blocklist = self.blocklists.get(subscription.destination, set())
-                        blocklist_query = AndQuery([NotQuery(self.get_blocklist_query(block)) for block in blocklist])
-                        if subscription.matches_result(full_result, blocklist_query):
-                            matching_subscriptions.append(subscription)
-                logger.debug(
-                    "Submission %s matches %s subscriptions",
-                    result.submission_id,
-                    len(matching_subscriptions),
-                )
-                if matching_subscriptions:
-                    sub_matches.inc()
-                    sub_total_matches.inc(len(matching_subscriptions))
-                    with time_taken_sending_messages.time():
-                        sendable = SendableFASubmission(full_result)
-                        uploaded = await sendable.upload(self.client)
-                        await self._send_updates(matching_subscriptions, sendable, uploaded)
-                # Update latest ids with the submission we just checked, and save config
-                with time_taken_saving_config.time():
-                    self.update_latest_id(sendable.submission_id)
-                # Lower the backlog remaining count
-                gauge_backlog.dec(1)
-                # If we've done ten, update heartbeat
-                if count % self.UPDATE_PER_HEARTBEAT == 0:
-                    with time_taken_updating_heartbeat.time():
-                        heartbeat.update_heartbeat(heartbeat_app_name)
-                    logger.debug("Heartbeat")
-            # Wait
-            with time_taken_waiting.time():
-                await self._wait_while_running(self.BACK_OFF)
-        logger.info("Subscription watcher shutting down")
-
-    def stop(self) -> None:
-        logger.info("Stopping subscription watcher")
-        self.running = False
 
     def update_latest_id(self, sub_id: SubmissionID) -> None:
         self.latest_ids.append(sub_id.submission_id)
