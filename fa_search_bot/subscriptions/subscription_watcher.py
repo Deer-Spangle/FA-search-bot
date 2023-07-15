@@ -2,29 +2,30 @@ from __future__ import annotations
 
 import asyncio
 import collections
-import dataclasses
 import datetime
 import json
 import logging
 import os
-from asyncio import Lock, Queue, Task, QueueEmpty
+from asyncio import Queue, Task, QueueEmpty
 from typing import TYPE_CHECKING
 
 import heartbeat
-from prometheus_client import Gauge, Summary
+from prometheus_client import Gauge
 from prometheus_client.metrics import Counter
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError, ChannelPrivateError, PeerIdInvalidError
 
 from fa_search_bot.query_parser import AndQuery, NotQuery, parse_query
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError, PageNotFound
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
-from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 from fa_search_bot.sites.sendable import UploadedMedia
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.subscriptions.sub_id_gatherer import SubIDGatherer
 from fa_search_bot.subscriptions.subscription import Subscription
+from fa_search_bot.subscriptions.utils import time_taken
+from fa_search_bot.subscriptions.wait_pool import WaitPool
 
 if TYPE_CHECKING:
-    from typing import Deque, Dict, List, Optional, Sequence, Set
+    from typing import Deque, Dict, List, Optional, Set
 
     from telethon import TelegramClient
     from telethon.tl.types import TypeInputPeer
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
     from fa_search_bot.sites.sent_submission import SentSubmission
-    from fa_search_bot.submission_cache import SubmissionCache, CacheEntry
+    from fa_search_bot.submission_cache import SubmissionCache
 
 heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
 heartbeat_app_name = "FASearchBot_sub_thread"
@@ -105,12 +106,6 @@ gauge_backlog = Gauge(
     "fasearchbot_fasubwatcher_backlog",
     "Length of the latest list of new submissions to check",
 )
-time_taken = Summary(
-    "fasearchbot_fasubwatcher_time_taken",
-    "Amount of time taken (in seconds) doing various tasks of the subscription watcher",
-    labelnames=["task"],
-)
-time_taken_listing_api = time_taken.labels(task="listing submissions to check")
 time_taken_submission_api = time_taken.labels(task="fetching submission data")
 time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
 time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat")
@@ -119,78 +114,9 @@ time_taken_saving_config = time_taken.labels(task="updating configuration")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking")
 
 
-@dataclasses.dataclass
-class SubmissionCheckState:
-    sub_id: SubmissionID
-    full_data: Optional[FASubmissionFull] = None
-    matching_subscriptions: Optional[List[Subscription]] = None
-    cache_entry: Optional[SentSubmission] = None
-    uploaded_media: Optional[UploadedMedia] = None
-
-    def key(self) -> int:
-        return int(self.sub_id.submission_id)
-
-    def is_ready_to_send(self) -> bool:
-        return self.uploaded_media is not None or self.cache_entry is not None
-
-
-class WaitPool:
-    def __init__(self):
-        self.submission_state: Dict[SubmissionID, SubmissionCheckState] = {}
-        self._lock = Lock()
-
-    async def add_sub_id(self, sub_id: SubmissionID) -> None:
-        async with self._lock:
-            state = SubmissionCheckState(sub_id)
-            self.submission_state[sub_id] = state
-
-    async def set_fetched(self, sub_id: SubmissionID, full_data: FASubmissionFull, matching_subs: List[Subscription]) -> None:
-        async with self._lock:
-            if sub_id not in self.submission_state:
-                return
-            self.submission_state[sub_id].full_data = full_data
-            self.submission_state[sub_id].matching_subscriptions = matching_subs
-
-    async def set_cached(self, sub_id: SubmissionID, cache_entry: SentSubmission) -> None:
-        async with self._lock:
-            if sub_id not in self.submission_state:
-                return
-            self.submission_state[sub_id].cache_entry = cache_entry
-
-    async def set_uploaded(self, sub_id: SubmissionID, uploaded: UploadedMedia) -> None:
-        async with self._lock:
-            if sub_id not in self.submission_state:
-                return
-            self.submission_state[sub_id].uploaded_media = uploaded
-
-    async def remove_state(self, sub_id: SubmissionID) -> None:
-        async with self._lock:
-            if sub_id not in self.submission_state:
-                raise ValueError("This state cannot be removed because it is not in the wait pool")
-            del self.submission_state[sub_id]
-
-    async def next_submission_state(self) -> Optional[SubmissionCheckState]:
-        async with self._lock:
-            if not self.submission_state:
-                return None
-            submission_states = self.submission_state.values()
-            return min(submission_states, key=lambda state: state.key())
-
-    async def pop_next_ready_to_send(self) -> Optional[SubmissionCheckState]:
-        async with self._lock:
-            next_state = await self.next_submission_state()
-            if not next_state:
-                return None
-            if not next_state.is_ready_to_send():
-                return None
-            await self.remove_state(next_state.sub_id)
-            return next_state
-
-
 class SubscriptionWatcher:
     PAGE_CAP = 900
     BACK_OFF = 20
-    BROWSE_RETRY_BACKOFF = 20
     FETCH_CLOUDFLARE_BACKOFF = 60
     FETCH_EXCEPTION_BACKOFF = 20
     UPDATE_PER_HEARTBEAT = 10
@@ -220,20 +146,8 @@ class SubscriptionWatcher:
         self.wait_pool = WaitPool()
         self.fetch_data_queue: Queue[SubmissionID] = Queue()
         self.upload_queue: Queue[FASubmissionFull] = Queue()
+        self.sub_id_gatherer: Optional[SubIDGatherer] = None
         self.sub_tasks: List[Task] = []
-
-    async def _run_id_gatherer(self) -> None:
-        while self.running:
-            try:
-                with time_taken_listing_api.time():
-                    new_results = await self._get_new_results()
-            except Exception as e:
-                logger.error("Failed to get new results", exc_info=e)
-                continue
-            for result in new_results:
-                sub_id = SubmissionID("fa", result.submission_id)
-                await self.wait_pool.add_sub_id(sub_id)
-                await self.fetch_data_queue.put(sub_id)
 
     async def _run_data_fetcher(self) -> None:
         while self.running:
@@ -334,7 +248,7 @@ class SubscriptionWatcher:
             sent_count += 1
             # Update latest ids with the submission we just checked, and save config
             with time_taken_saving_config.time():
-                self._update_latest_ids([next_state.full_data])
+                self.update_latest_id(next_state.sub_id)
             # If we've done ten, update heartbeat
             if sent_count % self.UPDATE_PER_HEARTBEAT == 0:
                 with time_taken_updating_heartbeat.time():
@@ -348,8 +262,9 @@ class SubscriptionWatcher:
         self.running = True
         event_loop = asyncio.get_event_loop()
         # Start the submission ID gatherer
-        task_id_gatherer = event_loop.create_task(self._run_id_gatherer())
-        self.sub_tasks.append(task_id_gatherer)
+        self.sub_id_gatherer = SubIDGatherer(self.wait_pool, self.fetch_data_queue)
+        sub_id_gatherer_task = event_loop.create_task(self.sub_id_gatherer.run())
+        self.sub_tasks.append(sub_id_gatherer_task)
         # Start the data fetchers
         for _ in range(self.DATA_FETCHER_POOL_SIZE):
             data_fetcher_task = event_loop.create_task(self._run_data_fetcher())
@@ -364,6 +279,8 @@ class SubscriptionWatcher:
 
     def stop_tasks(self) -> None:
         self.running = False
+        if self.sub_id_gatherer:
+            self.sub_id_gatherer.stop()
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
             event_loop.run_until_complete(task)
@@ -447,7 +364,7 @@ class SubscriptionWatcher:
                         await self._send_updates(matching_subscriptions, sendable, uploaded)
                 # Update latest ids with the submission we just checked, and save config
                 with time_taken_saving_config.time():
-                    self._update_latest_ids([result])
+                    self.update_latest_id(sendable.submission_id)
                 # Lower the backlog remaining count
                 gauge_backlog.dec(1)
                 # If we've done ten, update heartbeat
@@ -464,59 +381,8 @@ class SubscriptionWatcher:
         logger.info("Stopping subscription watcher")
         self.running = False
 
-    async def _wait_while_running(self, seconds: float) -> None:
-        sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-        while datetime.datetime.now() < sleep_end:
-            if not self.running:
-                break
-            await asyncio.sleep(0.1)
-
-    async def _get_newest_submission(self) -> Optional[FASubmission]:
-        while self.running:
-            try:
-                browse_results = await self.api.get_browse_page(1)
-                return _latest_submission_in_list(browse_results)
-            except CloudflareError:
-                logger.warning("FA is under cloudflare protection, waiting before retry")
-                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
-            except Exception as e:
-                logger.warning("Failed to get browse page, attempting home page", exc_info=e)
-            try:
-                home_page = await self.api.get_home_page()
-                return _latest_submission_in_list(home_page.all_submissions())
-            except ValueError as e:
-                logger.warning("Failed to get browse or home page, retrying", exc_info=e)
-                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
-            except CloudflareError:
-                logger.warning("FA is under cloudflare protection, waiting before retry")
-                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
-        return None
-
-    async def _get_new_results(self) -> List[FASubmission]:
-        """
-        Gets new results since last scan, returning them in order from oldest to newest.
-        """
-        if len(self.latest_ids) == 0:
-            logger.info("First time checking subscriptions, getting initial submissions")
-            newest_submission = await self._get_newest_submission()
-            if not newest_submission:
-                return []
-            self._update_latest_ids([newest_submission])
-            return []
-        newest_submission = await self._get_newest_submission()
-        if not newest_submission:
-            return []
-        newest_id = int(newest_submission.submission_id)
-        latest_recorded_id = int(self.latest_ids[-1])
-        logger.info("Newest ID on FA: %s, latest recorded ID: %s", newest_id, latest_recorded_id)
-        new_results = [FASubmission(str(x)) for x in range(newest_id, latest_recorded_id, -1)]
-        logger.info("New submissions: %s", len(new_results))
-        # Return oldest result first
-        return new_results[::-1]
-
-    def _update_latest_ids(self, browse_results: Sequence[FASubmission]) -> None:
-        for result in browse_results:
-            self.latest_ids.append(result.submission_id)
+    def update_latest_id(self, sub_id: SubmissionID) -> None:
+        self.latest_ids.append(sub_id.submission_id)
         self.save_to_json()
 
     async def _send_updates(
@@ -674,9 +540,3 @@ class SubscriptionWatcher:
         logger.debug(f"Loaded {len(subscriptions)} subscriptions")
         new_watcher.subscriptions = subscriptions
         return new_watcher
-
-
-def _latest_submission_in_list(submissions: List[FASubmission]) -> Optional[FASubmission]:
-    if not submissions:
-        return None
-    return max(submissions, key=lambda sub: int(sub.submission_id))
