@@ -13,9 +13,6 @@ from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, Cloudfla
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.utils import time_taken
 
-if TYPE_CHECKING:
-    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
-
 logger = logging.getLogger(__name__)
 time_taken_submission_api = time_taken.labels(task="fetching submission data")
 time_taken_checking_matches = time_taken.labels(task="checking whether submission matches subscriptions")

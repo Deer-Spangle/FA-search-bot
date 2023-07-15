@@ -9,9 +9,6 @@ from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.utils import time_taken, _latest_submission_in_list
 
-if TYPE_CHECKING:
-    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
-
 logger = logging.getLogger(__name__)
 time_taken_listing_api = time_taken.labels(task="listing submissions to check")
 
