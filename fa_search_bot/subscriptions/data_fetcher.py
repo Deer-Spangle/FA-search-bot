@@ -53,10 +53,6 @@ class DataFetcher(Runnable):
     FETCH_CLOUDFLARE_BACKOFF = 60
     FETCH_EXCEPTION_BACKOFF = 20
 
-    def __init__(self, watcher: "SubscriptionWatcher") -> None:
-        super().__init__()
-        self.watcher = watcher
-
     async def run(self) -> None:
         while self.running:
             try:

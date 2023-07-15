@@ -3,12 +3,17 @@ from __future__ import annotations
 import asyncio
 import datetime
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 
 
 class Runnable(ABC):
     QUEUE_BACKOFF = 0.5
 
-    def __init__(self):
+    def __init__(self, watcher: "SubscriptionWatcher"):
+        self.watcher = watcher
         self.running = False
 
     @abstractmethod

@@ -19,11 +19,6 @@ time_taken_listing_api = time_taken.labels(task="listing submissions to check")
 class SubIDGatherer(Runnable):
     BROWSE_RETRY_BACKOFF = 20
 
-    def __init__(self, watcher: "SubscriptionWatcher") -> None:
-        super().__init__()
-        self.watcher = watcher
-        self.running = False
-
     async def run(self) -> None:
         self.running = True
         while self.running:
