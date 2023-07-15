@@ -15,6 +15,7 @@ time_taken_listing_api = time_taken.labels(task="listing submissions to check")
 
 class SubIDGatherer(Runnable):
     BROWSE_RETRY_BACKOFF = 20
+    NEW_ID_BACKOFF = 20
 
     async def run(self) -> None:
         self.running = True
@@ -29,6 +30,7 @@ class SubIDGatherer(Runnable):
                 sub_id = SubmissionID("fa", result.submission_id)
                 await self.watcher.wait_pool.add_sub_id(sub_id)
                 await self.watcher.fetch_data_queue.put(sub_id)
+            await self._wait_while_running(self.NEW_ID_BACKOFF)
 
     async def _get_new_results(self) -> List[FASubmission]:
         """
