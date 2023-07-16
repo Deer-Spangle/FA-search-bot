@@ -9,7 +9,6 @@ from asyncio import Queue, Task
 from typing import TYPE_CHECKING
 
 from prometheus_client import Gauge
-from prometheus_client.metrics import Counter
 
 from fa_search_bot.query_parser import parse_query
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -31,14 +30,14 @@ if TYPE_CHECKING:
     from fa_search_bot.submission_cache import SubmissionCache
 
 logger = logging.getLogger(__name__)
-subs_processed = Counter(
-    "fasearchbot_fasubwatcher_submissions_total",
-    "Total number of submissions processed by the subscription watcher",
-)
-latest_sub_processed = Gauge(
-    "fasearchbot_fasubwatcher_latest_processed_unixtime",
-    "Time that the latest submission was processed",
-)
+# subs_processed = Counter(
+#     "fasearchbot_fasubwatcher_submissions_total",
+#     "Total number of submissions processed by the subscription watcher",
+# )
+# latest_sub_processed = Gauge(
+#     "fasearchbot_fasubwatcher_latest_processed_unixtime",
+#     "Time that the latest submission was processed",
+# )
 gauge_sub = Gauge("fasearchbot_fasubwatcher_subscription_count", "Total number of subscriptions")
 gauge_subs_active = Gauge(
     "fasearchbot_fasubwatcher_subscription_count_active",
@@ -56,9 +55,29 @@ gauge_sub_blocks = Gauge(
     "fasearchbot_fasubwatcher_subscription_block_query_count",
     "Total number of blocklist queries",
 )
-gauge_backlog = Gauge(
-    "fasearchbot_fasubwatcher_backlog",
-    "Length of the latest list of new submissions to check",
+# gauge_backlog = Gauge(
+#     "fasearchbot_fasubwatcher_backlog",
+#     "Length of the latest list of new submissions to check",
+# )
+gauge_fetch_queue_size = Gauge(
+    "fasearchbot_fasubwatcher_fetch_data_queue_size",
+    "Total number of submission IDs in the fetch data queue",
+)
+gauge_upload_queue_size = Gauge(
+    "fasearchbot_fasubwatcher_upload_queue_size",
+    "Total number of submissions in the upload queue",
+)
+gauge_running_data_fetcher_count = Gauge(
+    "fasearchbot_fasubwatcher_running_data_fetcher_count",
+    "Number of running data fetcher tasks",
+)
+gauge_running_media_fetcher_count = Gauge(
+    "fasearchbot_fasubwatcher_running_media_fetcher_count",
+    "Number of running media fetcher tasks",
+)
+gauge_running_task_count = Gauge(
+    "fasearchbot_fasubwatcher_running_task_count",
+    "Number of running tasks",
 )
 
 
@@ -94,9 +113,13 @@ class SubscriptionWatcher:
             lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
         )
         gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
+        gauge_fetch_queue_size.set_function(lambda: self.fetch_data_queue.qsize())
+        gauge_upload_queue_size.set_function(lambda: self.upload_queue.qsize())
+        gauge_running_data_fetcher_count.set_function(lambda: len([f for f in self.data_fetchers if f.running]))
+        gauge_running_media_fetcher_count.set_function(lambda: len([f for f in self.media_fetchers if f.running]))
+        gauge_running_task_count.set_function(lambda: len([t for t in self.sub_tasks if not t.done()]))
 
     async def start_tasks(self) -> None:
-        # TODO: Pull all these out into separate classes please, along with their helper methods
         if self.sub_tasks:
             raise RuntimeError("Already running")
         event_loop = asyncio.get_event_loop()
