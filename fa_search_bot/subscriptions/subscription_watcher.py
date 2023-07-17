@@ -118,7 +118,7 @@ class SubscriptionWatcher:
         gauge_running_media_fetcher_count.set_function(lambda: len([f for f in self.media_fetchers if f.running]))
         gauge_running_task_count.set_function(lambda: len([t for t in self.sub_tasks if not t.done()]))
 
-    async def start_tasks(self) -> None:
+    def start_tasks(self) -> None:
         if self.sub_tasks:
             raise RuntimeError("Already running")
         event_loop = asyncio.get_event_loop()
