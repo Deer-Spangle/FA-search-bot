@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
-import heartbeat
+from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
@@ -16,6 +16,22 @@ logger = logging.getLogger(__name__)
 time_taken_listing_api = time_taken.labels(task="listing submissions to check", runnable="SubIDGatherer")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking", runnable="SubIDGatherer")
 time_taken_publishing = time_taken.labels(task="publishing results to queues", runnable="SubIDGatherer")
+counter_browse_requests = Counter(
+    "fasearchbot_subidgatherer_browse_page_request_count",
+    "Number of times the browse page has been requested by the submission ID gatherer",
+    labelnames=["result"],
+)
+browse_request_success = counter_browse_requests.labels(result="success")
+browse_request_cloudflare = counter_browse_requests.labels(result="cloudflare_error")
+browse_request_error = counter_browse_requests.labels(result="error")
+counter_home_requests = Counter(
+    "fasearchbot_subidgatherer_home_page_request_count",
+    "Number of times the home page has been requested by the submission ID gatherer",
+    labelnames=["result"]
+)
+home_request_success = counter_home_requests.labels(result="success")
+home_request_cloudflare = counter_home_requests.labels(result="cloudflare_error")
+home_request_error = counter_home_requests.labels(result="error")
 
 
 class SubIDGatherer(Runnable):
@@ -65,22 +81,27 @@ class SubIDGatherer(Runnable):
 
     async def _get_newest_submission(self) -> Optional[FASubmission]:
         while self.running:
-            # TODO: counters?
             try:
                 browse_results = await self.watcher.api.get_browse_page(1)
+                browse_request_success.inc()
                 return _latest_submission_in_list(browse_results)
             except CloudflareError:
+                browse_request_cloudflare.inc()
                 logger.warning("FA is under cloudflare protection, waiting before retry")
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
             except Exception as e:
+                browse_request_error.inc()
                 logger.warning("Failed to get browse page, attempting home page", exc_info=e)
             try:
                 home_page = await self.watcher.api.get_home_page()
+                home_request_success.inc()
                 return _latest_submission_in_list(home_page.all_submissions())
-            except ValueError as e:
-                logger.warning("Failed to get browse or home page, retrying", exc_info=e)
-                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
             except CloudflareError:
+                home_request_cloudflare.inc()
                 logger.warning("FA is under cloudflare protection, waiting before retry")
+                await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
+            except Exception as e:
+                home_request_error.inc()
+                logger.warning("Failed to get browse or home page, retrying", exc_info=e)
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
         return None
