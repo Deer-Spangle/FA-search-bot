@@ -17,9 +17,9 @@ from fa_search_bot.subscriptions.wait_pool import SubmissionCheckState
 
 logger = logging.getLogger(__name__)
 
-time_taken_waiting = time_taken.labels(task="waiting for new events in queue")
-time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions")
-time_taken_saving_config = time_taken.labels(task="updating configuration")
+time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="Sender")
+time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions", runnable="Sender")
+time_taken_saving_config = time_taken.labels(task="updating configuration", runnable="Sender")
 sub_updates = Counter("fasearchbot_subscriptionsender_updates_sent_total", "Number of subscription updates sent")
 sub_blocked = Counter(
     "fasearchbot_subscriptionsender_dest_blocked_total",
