@@ -17,9 +17,6 @@ from fa_search_bot.subscriptions.utils import time_taken
 
 logger = logging.getLogger(__name__)
 
-heartbeat.heartbeat_app_url = "https://heartbeat.spangle.org.uk/"
-heartbeat_app_name = "FASearchBot_task_DataFetcher"
-
 # Time usage metrics
 time_taken_queue_waiting = time_taken.labels(task="waiting for new events in queue", runnable="DataFetcher")
 time_taken_submission_api = time_taken.labels(task="fetching submission data", runnable="DataFetcher")
@@ -71,45 +68,36 @@ sub_total_matches = Counter(
 class DataFetcher(Runnable):
     FETCH_CLOUDFLARE_BACKOFF = 60
     FETCH_EXCEPTION_BACKOFF = 20
-    UPDATE_PER_HEARTBEAT = 20
 
-    async def run(self) -> None:
-        subs_processed = 0
-        while self.running:
-            try:
-                sub_id = self.watcher.fetch_data_queue.get_nowait()
-            except QueueEmpty:
-                with time_taken_queue_waiting.time():
-                    await asyncio.sleep(self.QUEUE_BACKOFF)
-                continue
-            # Fetch data
-            full_result = await self.fetch_data(sub_id)
-            if full_result is None:
-                counter_subs_missed.inc()
-                continue
-            counter_subs_found.inc()
-            latest_fetched.set_to_current_time()
-            # Log the posting date of the latest checked submission
-            self.watcher.update_latest_observed(full_result.posted_at)
-            # See which subscriptions match the submission
-            with time_taken_checking_matches.time():
-                matching_subscriptions = await self.check_subscriptions(full_result)
-            logger.debug("Submission %s matches %s subscriptions", sub_id, len(matching_subscriptions))
-            # Publish results
-            if matching_subscriptions:
-                sub_matches.inc()
-                sub_total_matches.inc(len(matching_subscriptions))
-                with time_taken_publishing.time():
-                    await self.watcher.wait_pool.set_fetched(sub_id, full_result, matching_subscriptions)
-                    await self.watcher.upload_queue.put(full_result)
-            else:
-                with time_taken_publishing.time():
-                    await self.watcher.wait_pool.remove_state(sub_id)
-            # Update heartbeat  # TODO: pull to parent class
-            subs_processed += 1
-            if subs_processed % self.UPDATE_PER_HEARTBEAT == 0:
-                heartbeat.update_heartbeat(heartbeat_app_name)
-                logger.debug("Sending heartbeat from DataFetcher")
+    async def do_process(self) -> None:
+        try:
+            sub_id = self.watcher.fetch_data_queue.get_nowait()
+        except QueueEmpty:
+            with time_taken_queue_waiting.time():
+                await asyncio.sleep(self.QUEUE_BACKOFF)
+            return
+        # Fetch data
+        full_result = await self.fetch_data(sub_id)
+        if full_result is None:
+            counter_subs_missed.inc()
+            return
+        counter_subs_found.inc()
+        # Log the posting date of the latest checked submission
+        self.watcher.update_latest_observed(full_result.posted_at)
+        # See which subscriptions match the submission
+        with time_taken_checking_matches.time():
+            matching_subscriptions = await self.check_subscriptions(full_result)
+        logger.debug("Submission %s matches %s subscriptions", sub_id, len(matching_subscriptions))
+        # Publish results
+        if matching_subscriptions:
+            sub_matches.inc()
+            sub_total_matches.inc(len(matching_subscriptions))
+            with time_taken_publishing.time():
+                await self.watcher.wait_pool.set_fetched(sub_id, full_result, matching_subscriptions)
+                await self.watcher.upload_queue.put(full_result)
+        else:
+            with time_taken_publishing.time():
+                await self.watcher.wait_pool.remove_state(sub_id)
 
     async def fetch_data(self, sub_id: SubmissionID) -> Optional[FASubmissionFull]:
         # Keep trying to fetch data, unless it is gone
