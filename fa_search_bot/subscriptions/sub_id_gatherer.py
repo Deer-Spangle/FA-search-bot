@@ -23,7 +23,7 @@ time_taken_publishing = time_taken.labels(task="publishing results to queues", r
 time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat", runnable="SubIDGatherer")
 latest_id_published = Gauge(
     "fasearchbot_subidgatherer_latest_id_published_unixtime",
-    "UNIX timestamp that the latest submission ID got published to queues",
+    "UNIX timestamp of when the latest submission ID got published to queues",
 )
 published_ID_counter = Counter(
     "fasearchbot_subidgatherer_total_published_sub_id_count",
