@@ -77,3 +77,6 @@ class WaitPool:
                 return None
             await self.remove_state(next_state.sub_id)
             return next_state
+
+    def size(self) -> int:
+        return len(self.submission_state)

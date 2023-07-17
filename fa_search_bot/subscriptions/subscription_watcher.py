@@ -59,6 +59,10 @@ gauge_sub_blocks = Gauge(
 #     "fasearchbot_fasubwatcher_backlog",
 #     "Length of the latest list of new submissions to check",
 # )
+gauge_wait_pool_size = Gauge(
+    "fasearchbot_fasubwatcher_wait_pool_size",
+    "Total number of submissions in the wait pool",
+)
 gauge_fetch_queue_size = Gauge(
     "fasearchbot_fasubwatcher_fetch_data_queue_size",
     "Total number of submission IDs in the fetch data queue",
@@ -92,10 +96,10 @@ class SubscriptionWatcher:
         self.api = api
         self.client = client
         self.submission_cache = submission_cache
-        self.latest_ids = collections.deque(maxlen=15)  # type: Deque[str]
-        self.subscriptions = set()  # type: Set[Subscription]
-        self.blocklists = dict()  # type: Dict[int, Set[str]]
-        self.blocklist_query_cache = dict()  # type: Dict[str, Query]
+        self.latest_ids: Deque[str] = collections.deque(maxlen=15)
+        self.subscriptions: Set[Subscription] = set()
+        self.blocklists: Dict[int, Set[str]] = dict()
+        self.blocklist_query_cache: Dict[str, Query] = dict()
         # Initialise tasks and sharing data structure
         self.wait_pool = WaitPool()
         self.fetch_data_queue: Queue[SubmissionID] = Queue()
