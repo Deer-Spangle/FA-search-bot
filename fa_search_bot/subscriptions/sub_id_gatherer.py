@@ -19,7 +19,7 @@ heartbeat_app_name = "FASearchBot_task_SubIDGatherer"
 
 time_taken_listing_api = time_taken.labels(task="listing submissions to check", runnable="SubIDGatherer")
 time_taken_waiting = time_taken.labels(task="waiting before re-checking", runnable="SubIDGatherer")
-time_taken_publishing = time_taken.labels(task="publishing IDs to queues", runnable="SubIDGatherer")
+time_taken_publishing = time_taken.labels(task="publishing results to queues", runnable="SubIDGatherer")
 time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat", runnable="SubIDGatherer")
 latest_id_published = Gauge(
     "fasearchbot_subidgatherer_latest_id_published_unixtime",
@@ -107,4 +107,4 @@ class SubIDGatherer(Runnable):
         if published_count % self.UPDATE_PER_HEARTBEAT == 0:
             with time_taken_updating_heartbeat.time():
                 heartbeat.update_heartbeat(heartbeat_app_name)
-            logger.debug("Heartbeat")
+            logger.debug("Heartbeat from SubIDGatherer")
