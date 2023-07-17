@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import collections
+import datetime
 import json
 import logging
 import os
@@ -71,6 +72,10 @@ gauge_running_task_count = Gauge(
     "fasearchbot_fasubwatcher_running_task_count",
     "Number of running tasks",
 )
+latest_sub_posted_at = Gauge(
+    "fasearchbot_fasubwatcher_latest_posted_at_unixtime",
+    "Time that the latest processed submission was posted on FA",
+)
 
 
 class SubscriptionWatcher:
@@ -84,6 +89,7 @@ class SubscriptionWatcher:
         self.api = api
         self.client = client
         self.submission_cache = submission_cache
+        # Initialise stored data structures
         self.latest_ids: Deque[str] = collections.deque(maxlen=15)
         self.subscriptions: Set[Subscription] = set()
         self.blocklists: Dict[int, Set[str]] = dict()
@@ -97,6 +103,7 @@ class SubscriptionWatcher:
         self.media_fetchers: List[MediaFetcher] = []
         self.sender: Optional[Sender] = None
         self.sub_tasks: List[Task] = []
+        self.latest_observed_submission: Optional[datetime.datetime] = None
         # Initialise gauges
         gauge_sub.set_function(lambda: len(self.subscriptions))
         gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
@@ -154,6 +161,11 @@ class SubscriptionWatcher:
         # Clean up fetchers
         self.data_fetchers.clear()
         self.media_fetchers.clear()
+
+    def update_latest_observed(self, post_datetime: datetime.datetime) -> None:
+        if post_datetime > self.latest_observed_submission:
+            self.latest_observed_submission = post_datetime
+            latest_sub_posted_at.set(post_datetime.timestamp())
 
     def update_latest_id(self, sub_id: SubmissionID) -> None:
         self.latest_ids.append(sub_id.submission_id)
