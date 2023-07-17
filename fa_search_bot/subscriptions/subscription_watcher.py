@@ -30,14 +30,6 @@ if TYPE_CHECKING:
     from fa_search_bot.submission_cache import SubmissionCache
 
 logger = logging.getLogger(__name__)
-# subs_processed = Counter(
-#     "fasearchbot_fasubwatcher_submissions_total",
-#     "Total number of submissions processed by the subscription watcher",
-# )
-# latest_sub_processed = Gauge(
-#     "fasearchbot_fasubwatcher_latest_processed_unixtime",
-#     "Time that the latest submission was processed",
-# )
 gauge_sub = Gauge("fasearchbot_fasubwatcher_subscription_count", "Total number of subscriptions")
 gauge_subs_active = Gauge(
     "fasearchbot_fasubwatcher_subscription_count_active",
@@ -55,10 +47,6 @@ gauge_sub_blocks = Gauge(
     "fasearchbot_fasubwatcher_subscription_block_query_count",
     "Total number of blocklist queries",
 )
-# gauge_backlog = Gauge(
-#     "fasearchbot_fasubwatcher_backlog",
-#     "Length of the latest list of new submissions to check",
-# )
 gauge_wait_pool_size = Gauge(
     "fasearchbot_fasubwatcher_wait_pool_size",
     "Total number of submissions in the wait pool",
