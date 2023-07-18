@@ -61,21 +61,15 @@ class WaitPool:
                 raise ValueError("This state cannot be removed because it is not in the wait pool")
             del self.submission_state[sub_id]
 
-    async def next_submission_state(self) -> Optional[SubmissionCheckState]:
-        async with self._lock:
-            if not self.submission_state:
-                return None
-            submission_states = self.submission_state.values()
-            return min(submission_states, key=lambda state: state.key())
-
     async def pop_next_ready_to_send(self) -> Optional[SubmissionCheckState]:
         async with self._lock:
-            next_state = await self.next_submission_state()
-            if not next_state:
+            submission_states = self.submission_state.values()
+            if not submission_states:
                 return None
+            next_state = min(submission_states, key=lambda state: state.key())
             if not next_state.is_ready_to_send():
                 return None
-            await self.remove_state(next_state.sub_id)
+            del self.submission_state[next_state.sub_id]
             return next_state
 
     def size(self) -> int:
