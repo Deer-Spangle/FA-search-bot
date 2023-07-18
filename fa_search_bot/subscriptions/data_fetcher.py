@@ -139,6 +139,7 @@ class DataFetcher(Runnable):
                 with time_taken_error_backoff.time():
                     await self._wait_while_running(self.FETCH_EXCEPTION_BACKOFF)
                 continue
+        raise RuntimeError("Data fetcher has shutdown while trying to fetch data")
 
     async def check_subscriptions(self, full_result):
         # Copy subscriptions, to avoid "changed size during iteration" issues
