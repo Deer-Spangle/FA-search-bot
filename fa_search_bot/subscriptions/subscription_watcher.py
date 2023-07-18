@@ -246,25 +246,7 @@ class SubscriptionWatcher:
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
             return cls(api, client, submission_cache)
-        if "destinations" not in data:
-            return cls.load_from_json_old_format(data, api, client, submission_cache)
         return cls.load_from_json_new_format(data, api, client, submission_cache)
-
-    @classmethod
-    def load_from_json_old_format(
-        cls,
-        data: Dict,
-        api: FAExportAPI,
-        client: TelegramClient,
-        submission_cache: SubmissionCache,
-    ) -> "SubscriptionWatcher":
-        logger.debug("Loading subscription config from file in old format")
-        new_watcher = cls(api, client, submission_cache)
-        for old_id in data["latest_ids"]:
-            new_watcher.latest_ids.append(old_id)
-        new_watcher.subscriptions = set(Subscription.from_json_old_format(x) for x in data["subscriptions"])
-        new_watcher.blocklists = {int(k): set(v) for k, v in data["blacklists"].items()}
-        return new_watcher
 
     @classmethod
     def load_from_json_new_format(

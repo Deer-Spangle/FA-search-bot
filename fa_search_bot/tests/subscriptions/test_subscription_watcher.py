@@ -469,19 +469,47 @@ def test_from_json(mock_client):
     try:
         data = {
             "latest_ids": ["12423", "12422", "12420"],
-            "subscriptions": [
-                {
-                    "query": "test",
-                    "destination": 87238,
-                    "latest_update": "2019-10-26T18:57:09",
+            "destinations": {
+                "87238": {
+                    "subscriptions": [
+                        {
+                            "query": "test",
+                            "latest_update": "2019-10-26T18:57:09",
+                            "paused": False,
+                        },
+                    ],
+                    "blocks": [],
                 },
-                {
-                    "query": "example",
-                    "destination": -87023,
-                    "latest_update": "2019-10-25T17:34:08",
+                "-87023": {
+                    "subscriptions": [
+                        {
+                            "query": "example",
+                            "latest_update": "2019-10-25T17:34:08",
+                            "paused": False,
+                        },
+                    ],
+                    "blocks": [],
                 },
-            ],
-            "blacklists": {"8732": ["example", "ych"], "-123": ["fred"]},
+                "8732": {
+                    "subscriptions": [],
+                    "blocks": [
+                        {
+                            "query": "example"
+                        },
+                        {
+                            "query": "ych",
+                        },
+                    ],
+                },
+                "-123": {
+                    "subscriptions": [],
+                    "blocks": [
+                        {
+                            "query": "fred",
+                        },
+                    ],
+                },
+            },
         }
         with open(test_watcher_file, "w+") as f:
             json.dump(data, f)
