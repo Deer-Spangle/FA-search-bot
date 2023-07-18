@@ -161,12 +161,16 @@ class FASearchBot:
     def close(self) -> None:
         # Shut down sub watcher
         self.alive = False
+        logger.debug("Shutting down subscription watcher")
         self.subscription_watcher.stop_tasks()
         event_loop = asyncio.get_event_loop()
+        logger.debug("Shutting down periodic logger task")
         if self.log_task is not None:
             event_loop.run_until_complete(self.log_task)
+        logger.debug("Shutting down e621 client")
         if self.e6_api is not None:
             event_loop.run_until_complete(self.e6_api.close())
+        logger.debug("Shutdown complete")
 
     async def periodic_log(self) -> None:
         while self.alive:
