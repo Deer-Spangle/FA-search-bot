@@ -57,6 +57,7 @@ class Runnable(ABC):
             # Update metrics
             self.update_processed_metrics()
             # Update heartbeat
+            processed_count += 1
             self.update_heartbeat(processed_count)
 
     @abstractmethod
@@ -71,7 +72,6 @@ class Runnable(ABC):
         self.runnable_processed_count.inc()
 
     def update_heartbeat(self, processed_count: int):
-        processed_count += 1
         if processed_count % self.UPDATES_PER_HEARTBEAT == 0:
             with self.time_taken_updating_heartbeat.time():
                 heartbeat.update_heartbeat(f"FASearchBot_task_{self.class_name}")
