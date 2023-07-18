@@ -46,14 +46,13 @@ class Runnable(ABC):
 
     async def run(self) -> None:
         processed_count = 0
-        # Setup metrics
         # Start the subscription task
         self.running = True
         while self.running:
             try:
                 await self.do_process()
             except Exception as e:
-                logger.critical("Runnable task %s has failed with exception:", class_name, exc_info=e)
+                logger.critical("Runnable task %s has failed with exception:", self.class_name, exc_info=e)
                 raise e
             # Update metrics
             self.update_processed_metrics()
