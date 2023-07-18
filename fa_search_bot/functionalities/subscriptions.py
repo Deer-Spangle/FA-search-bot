@@ -88,6 +88,7 @@ class SubscriptionFunctionality(BotFunctionality):
         if new_sub in self.watcher.subscriptions:
             return f'A subscription already exists for "{html.escape(query)}".'
         self.watcher.subscriptions.add(new_sub)
+        self.watcher.save_to_json()
         return f'Added subscription: "{html.escape(query)}".\n{self._list_subs(destination)}'
 
     def _remove_sub(self, destination: int, query: str) -> str:
@@ -95,6 +96,7 @@ class SubscriptionFunctionality(BotFunctionality):
         old_sub = Subscription(query, destination)
         try:
             self.watcher.subscriptions.remove(old_sub)
+            self.watcher.save_to_json()
             return f'Removed subscription: "{html.escape(query)}".\n{self._list_subs(destination)}'
         except KeyError:
             return f'There is not a subscription for "{html.escape(query)}" in this chat.'
@@ -122,6 +124,7 @@ class SubscriptionFunctionality(BotFunctionality):
             return "All subscriptions are already paused."
         for sub in running_subs:
             sub.paused = True
+        self.watcher.save_to_json()
         return f"Paused all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _pause_subscription(self, chat_id: int, sub_name: str) -> str:
@@ -133,6 +136,7 @@ class SubscriptionFunctionality(BotFunctionality):
         if matching.paused:
             return f'Subscription for "{html.escape(sub_name)}" is already paused.'
         matching.paused = True
+        self.watcher.save_to_json()
         return f'Paused subscription: "{html.escape(sub_name)}".\n{self._list_subs(chat_id)}'
 
     def _resume_destination(self, chat_id: int) -> str:
@@ -145,6 +149,7 @@ class SubscriptionFunctionality(BotFunctionality):
             return "All subscriptions are already running."
         for sub in running_subs:
             sub.paused = False
+        self.watcher.save_to_json()
         return f"Resumed all subscriptions.\n{self._list_subs(chat_id)}"
 
     def _resume_subscription(self, chat_id: int, sub_name: str) -> str:
@@ -156,6 +161,7 @@ class SubscriptionFunctionality(BotFunctionality):
         if not matching.paused:
             return f'Subscription for "{html.escape(sub_name)}" is already running.'
         matching.paused = False
+        self.watcher.save_to_json()
         return f'Resumed subscription: "{html.escape(sub_name)}".\n{self._list_subs(chat_id)}'
 
 
@@ -204,12 +210,14 @@ class BlocklistFunctionality(BotFunctionality):
             self.watcher.add_to_blocklist(destination, query)
         except InvalidQueryException as e:
             return f"Failed to parse blocklist query: {e}"
+        self.watcher.save_to_json()
         return f'Added tag to blocklist: "{query}".\n{self._list_blocklisted_tags(destination)}'
 
     def _remove_from_blocklist(self, destination: int, query: str) -> str:
         self.usage_counter.labels(function=self.USE_CASE_REMOVE).inc()
         try:
             self.watcher.blocklists.get(destination, set()).remove(query)
+            self.watcher.save_to_json()
             return f'Removed tag from blocklist: "{query}".\n{self._list_blocklisted_tags(destination)}'
         except KeyError:
             return f'The tag "{query}" is not on the blocklist for this chat.'
