@@ -126,7 +126,7 @@ class DataFetcher(Runnable):
                 )
                 fetch_attempts_cloudflare.inc()
                 with time_taken_cloudflare_backoff.time():
-                    await asyncio.sleep(self.FETCH_CLOUDFLARE_BACKOFF)
+                    await self._wait_while_running(self.FETCH_CLOUDFLARE_BACKOFF)
                 continue
             except Exception as e:
                 logger.error(
@@ -137,7 +137,7 @@ class DataFetcher(Runnable):
                 )
                 fetch_attempts_error.inc()
                 with time_taken_error_backoff.time():
-                    await asyncio.sleep(self.FETCH_EXCEPTION_BACKOFF)
+                    await self._wait_while_running(self.FETCH_EXCEPTION_BACKOFF)
                 continue
 
     async def check_subscriptions(self, full_result):
