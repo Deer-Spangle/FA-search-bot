@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 
 import dateutil.parser
 
-from fa_search_bot.query_parser import parse_query, Query, AndQuery
+from subscriptions.fa_search_bot.query_parser import parse_query, Query, AndQuery
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 
 

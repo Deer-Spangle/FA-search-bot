@@ -1,6 +1,6 @@
 import pytest
 
-from fa_search_bot.query_parser import (
+from subscriptions.fa_search_bot.query_parser import (
     AndQuery,
     ArtistField,
     DescriptionField,

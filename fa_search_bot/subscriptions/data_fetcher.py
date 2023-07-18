@@ -7,7 +7,7 @@ from typing import Optional
 
 from prometheus_client import Counter, Histogram, Gauge
 
-from fa_search_bot.query_parser import AndQuery, NotQuery
+from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.submission_id import SubmissionID

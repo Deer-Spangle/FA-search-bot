@@ -1,9 +1,8 @@
-import os
 from pathlib import Path
 
 from pyparsing.diagram import to_railroad, railroad_to_html
 
-from fa_search_bot.query_parser import query_parser
+from subscriptions.fa_search_bot.query_parser import query_parser
 
 
 def create_railroad_diagram() -> None:

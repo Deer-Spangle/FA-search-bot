@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
-from fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
+from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.subscription import Subscription

@@ -7,7 +7,7 @@ from whoosh.qparser import MultifieldParser
 from whoosh.query import Query, Or, Term, Prefix, Wildcard, And, Phrase
 from whoosh.searching import Searcher
 
-from fa_search_bot.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
+from subscriptions.fa_search_bot.query_parser import Query, OrQuery, AndQuery, RatingQuery, WordQuery, PrefixQuery, RegexQuery, \
     PhraseQuery, TitleField, DescriptionField, KeywordField
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, Rating, FAUser
 from fa_search_bot.subscriptions.subscription_watcher import rating_dict
