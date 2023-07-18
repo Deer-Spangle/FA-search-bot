@@ -146,22 +146,29 @@ class SubscriptionWatcher:
 
     def stop_tasks(self) -> None:
         # Ask runnables to stop
+        logger.info("Shutting down subscription watcher")
         if self.sub_id_gatherer:
+            logger.debug("Stopping Sub ID gatherer")
             self.sub_id_gatherer.stop()
         for data_fetcher in self.data_fetchers:
+            logger.debug("Stopping data fetcher")
             data_fetcher.stop()
         for media_fetcher in self.media_fetchers:
+            logger.debug("Stopping media fetcher")
             media_fetcher.stop()
         if self.sender:
+            logger.debug("Stopping sender")
             self.sender.stop()
         # Shut down running tasks
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
+            logger.debug("Waiting for task shutdown")
             event_loop.run_until_complete(task)
             self.sub_tasks.remove(task)
         # Clean up fetchers
         self.data_fetchers.clear()
         self.media_fetchers.clear()
+        logger.info("Subscription watcher shutdown complete")
 
     def update_latest_observed(self, post_datetime: datetime.datetime) -> None:
         if self.latest_observed_submission is None or post_datetime > self.latest_observed_submission:
