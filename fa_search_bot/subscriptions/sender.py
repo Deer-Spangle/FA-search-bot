@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import collections
 import datetime
 import logging
@@ -17,6 +18,7 @@ from fa_search_bot.subscriptions.wait_pool import SubmissionCheckState
 
 logger = logging.getLogger(__name__)
 
+time_taken_reading_queue = time_taken.labels(task="reading wait-pool for new data", runnable="Sender")
 time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="Sender")
 time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions", runnable="Sender")
 time_taken_saving_config = time_taken.labels(task="updating configuration", runnable="Sender")
@@ -43,11 +45,17 @@ updates_sent_re_upload = total_updates_sent.labels(media_type="re_upload")
 class Sender(Runnable):
 
     async def do_process(self) -> None:
-        with time_taken_waiting.time():
+        with time_taken_reading_queue.time():
             next_state = await self.watcher.wait_pool.pop_next_ready_to_send()
+        if not next_state:
+            with time_taken_waiting.time():
+                await asyncio.sleep(self.QUEUE_BACKOFF)
+            return
+        logger.debug("Got submission ready to send: %s", next_state.sub_id)
         # Send out messages
         with time_taken_sending_messages.time():
             await self._send_updates(next_state)
+        logger.debug("Sent messages for submission %s", next_state.sub_id)
         # Update latest ids with the submission we just checked, and save config
         with time_taken_saving_config.time():
             self.watcher.update_latest_id(next_state.sub_id)
