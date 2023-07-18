@@ -5,7 +5,6 @@ import logging
 from asyncio import QueueEmpty
 from typing import Optional
 
-import heartbeat
 from prometheus_client import Counter, Histogram, Gauge
 
 from fa_search_bot.query_parser import AndQuery, NotQuery
@@ -77,6 +76,7 @@ class DataFetcher(Runnable):
                 await asyncio.sleep(self.QUEUE_BACKOFF)
             return
         # Fetch data
+        logger.debug("Got %s from queue, fetching data", sub_id)
         full_result = await self.fetch_data(sub_id)
         if full_result is None:
             counter_subs_missed.inc()
@@ -109,11 +109,14 @@ class DataFetcher(Runnable):
                     full_result = await self.watcher.api.get_full_submission(sub_id.submission_id)
                 logger.debug("Got full data for submission %s", sub_id.submission_id)
                 fetch_attempts_success.inc()
+                histogram_fetch_attempts.observe(attempts)
+                return full_result
             except PageNotFound:
                 logger.warning("Submission %s, disappeared before I could check it.", sub_id)
                 fetch_attempts_not_found.inc()
                 with time_taken_publishing.time():
                     await self.watcher.wait_pool.remove_state(sub_id)
+                histogram_fetch_attempts.observe(attempts)
                 return None
             except CloudflareError:
                 logger.warning(
@@ -136,8 +139,6 @@ class DataFetcher(Runnable):
                 with time_taken_error_backoff.time():
                     await asyncio.sleep(self.FETCH_EXCEPTION_BACKOFF)
                 continue
-        histogram_fetch_attempts.observe(attempts)
-        return full_result
 
     async def check_subscriptions(self, full_result):
         # Copy subscriptions, to avoid "changed size during iteration" issues
