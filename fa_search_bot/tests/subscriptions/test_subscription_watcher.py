@@ -5,13 +5,11 @@ import datetime
 import json
 import os
 from typing import TYPE_CHECKING
-from unittest import mock
 
 import pytest
-from telethon.errors import InputUserDeactivatedError, UserIsBlockedError
 
+from fa_search_bot.sites.submission_id import SubmissionID
 from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
-from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission
@@ -56,7 +54,6 @@ def test_init(mock_client):
 
     assert s.api == api
     assert len(s.latest_ids) == 0
-    assert s.running is False
     assert len(s.subscriptions) == 0
 
 
@@ -279,261 +276,19 @@ async def test_run__passes_correct_blocklists_to_subscriptions(mock_client):
     assert method_called.called
 
 
-@pytest.mark.asyncio
-async def test_get_new_results__handles_empty_latest_ids(mock_client):
-    api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1223"), MockSubmission("1222"), MockSubmission("1220")])
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.running = True
-
-    results = await watcher._get_new_results()
-
-    assert len(results) == 0
-    assert len(watcher.latest_ids) == 3
-    assert watcher.latest_ids[0] == "1220"
-    assert watcher.latest_ids[1] == "1222"
-    assert watcher.latest_ids[2] == "1223"
-
-
-@pytest.mark.asyncio
-async def test_get_new_results__returns_new_results(mock_client):
-    api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1222"), MockSubmission("1221"), MockSubmission("1220")])
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.latest_ids.append("1220")
-    watcher.running = True
-
-    results = await watcher._get_new_results()
-
-    assert len(results) == 2
-    assert results[0].submission_id == "1221"
-    assert results[1].submission_id == "1222"
-
-
-@pytest.mark.asyncio
-async def test_get_new_results__includes_missing_ids(mock_client):
-    api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1224"), MockSubmission("1221"), MockSubmission("1220")])
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.latest_ids.append("1220")
-    watcher.running = True
-
-    results = await watcher._get_new_results()
-
-    assert len(results) == 4
-    assert results[0].submission_id == "1221"
-    assert results[1].submission_id == "1222"
-    assert results[2].submission_id == "1223"
-    assert results[3].submission_id == "1224"
-
-
-@pytest.mark.asyncio
-async def test_get_new_results__requests_only_page_one(mock_client):
-    api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1254")], page=1)
-    api.call_after_x_browse = (lambda *args: (_ for _ in ()).throw(Exception), 2)
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.latest_ids.append("1250")
-    watcher.running = True
-
-    results = await watcher._get_new_results()
-
-    assert len(results) == 4
-    assert results[0].submission_id == "1251"
-    assert results[1].submission_id == "1252"
-    assert results[2].submission_id == "1253"
-    assert results[3].submission_id == "1254"
-
-
-@pytest.mark.asyncio
-async def test_get_new_results__handles_sub_id_drop(mock_client):
-    api = MockExportAPI()
-    api.with_browse_results([MockSubmission("1220")])
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.latest_ids.append("1225")
-    watcher.running = True
-
-    results = await watcher._get_new_results()
-
-    assert len(results) == 0
-
-
-@pytest.mark.asyncio
-async def test_get_new_results__handles_cloudflare(mock_client):
-    api = MockExportAPI()
-
-    def raise_cloudflare(*_, **__):
-        raise CloudflareError()
-
-    api.get_browse_page = raise_cloudflare
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    watcher.BROWSE_RETRY_BACKOFF = 0.1
-    watcher.latest_ids.append("1225")
-    watcher.running = True
-
-    task = asyncio.get_event_loop().create_task(watcher_killer(watcher))
-    results = await watcher._get_new_results()
-    await task
-
-    assert len(results) == 0
-
-
 def test_update_latest_ids(mock_client):
     api = MockExportAPI()
     cache = MockSubmissionCache()
     watcher = SubscriptionWatcher(api, mock_client, cache)
-    id_list = ["1234", "1233", "1230", "1229"]
-    submissions = [MockSubmission(x) for x in id_list]
+    sub_id_str = "12345"
+    sub_id = SubmissionID("xx", sub_id_str)
     mock_save_json = MockMethod()
     watcher.save_to_json = mock_save_json.call
 
-    watcher._update_latest_ids(submissions)
+    watcher.update_latest_id(sub_id)
 
-    assert list(watcher.latest_ids) == id_list
+    assert sub_id_str in list(watcher.latest_ids)
     assert mock_save_json.called
-
-
-@pytest.mark.asyncio
-async def test_send_updates__sends_message(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription = Subscription("test", 12345)
-    submission = SubmissionBuilder().build_mock_submission()
-
-    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
-        await watcher._send_updates([subscription], submission)
-
-    assert m.asset_called_once()
-    args, kwargs = m.call_args
-    assert args[0] == mock_client
-    assert args[1] == 12345
-    assert "update" in kwargs["prefix"].lower()
-    assert '"test"' in kwargs["prefix"]
-    assert "subscription" in kwargs["prefix"].lower()
-
-
-@pytest.mark.asyncio
-async def test_send_updates__gathers_subscriptions(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription1 = Subscription("test", 12345)
-    subscription2 = Subscription("test2", 12345)
-    subscription3 = Subscription("test", 54321)
-    submission = SubmissionBuilder().build_mock_submission()
-
-    with mock.patch("fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message") as m:
-        await watcher._send_updates([subscription1, subscription2, subscription3], submission)
-
-    assert m.call_count == 2
-    call_list = m.call_args_list
-    # Indifferent to call order, so figure out the order here
-    call1 = call_list[0]
-    call2 = call_list[1]
-    if call1[0][1] != 12345:
-        call1 = call_list[1]
-        call2 = call_list[0]
-    args1, kwargs1 = call1
-    args2, kwargs2 = call2
-    # Check call matching two subscriptions
-    assert args1[0] == mock_client
-    assert args2[0] == mock_client
-    assert args1[1] == 12345
-    assert args2[1] == 54321
-    assert "update" in kwargs1["prefix"].lower()
-    assert '"test", "test2"' in kwargs1["prefix"]
-    assert "subscriptions:" in kwargs1["prefix"].lower()
-    # And check the one subscription call
-    assert "update" in kwargs2["prefix"].lower()
-    assert '"test"' in kwargs2["prefix"]
-    assert "subscription:" in kwargs2["prefix"].lower()
-
-
-@pytest.mark.asyncio
-async def test_send_updates__updates_latest(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription = Subscription("test", 12345)
-    submission = SubmissionBuilder().build_mock_submission()
-
-    await watcher._send_updates([subscription], submission)
-
-    assert subscription.latest_update is not None
-
-
-@pytest.mark.asyncio
-async def test_send_updates__blocked_pauses_subs(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription = Subscription("test", 12345)
-    watcher.subscriptions.add(subscription)
-    submission = SubmissionBuilder().build_mock_submission()
-
-    def throw_blocked(*args, **kwargs):
-        raise UserIsBlockedError(None)
-
-    with mock.patch(
-        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
-        throw_blocked,
-    ):
-        await watcher._send_updates([subscription], submission)
-
-    assert subscription.paused
-
-
-@pytest.mark.asyncio
-async def test_send_updates__deleted_pauses_subs(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription = Subscription("test", 12345)
-    watcher.subscriptions.add(subscription)
-    submission = SubmissionBuilder().build_mock_submission()
-
-    def throw_deleted(*args, **kwargs):
-        raise InputUserDeactivatedError(None)
-
-    with mock.patch(
-        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
-        throw_deleted,
-    ):
-        await watcher._send_updates([subscription], submission)
-
-    assert subscription.paused
-
-
-@pytest.mark.asyncio
-async def test_send_updates__blocked_pauses_other_subs(mock_client):
-    api = MockExportAPI()
-    cache = MockSubmissionCache()
-    watcher = SubscriptionWatcher(api, mock_client, cache)
-    subscription1 = Subscription("test", 12345)
-    subscription2 = Subscription("other", 12345)
-    subscription3 = Subscription("not me", 54321)
-    watcher.subscriptions = {subscription1, subscription2, subscription3}
-    submission = SubmissionBuilder().build_mock_submission()
-
-    def throw_blocked(*_, **__):
-        raise UserIsBlockedError(None)
-
-    with mock.patch(
-        "fa_search_bot.sites.furaffinity.fa_handler.SendableFASubmission.send_message",
-        throw_blocked,
-    ):
-        await watcher._send_updates([subscription1], submission)
-
-    assert subscription1.paused
-    assert subscription2.paused
-    assert not subscription3.paused
 
 
 def test_add_to_blocklist__new_blocklist(mock_client):
