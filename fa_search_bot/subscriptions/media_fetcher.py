@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from asyncio import QueueEmpty
 
 from prometheus_client import Counter
@@ -9,6 +10,7 @@ from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.utils import time_taken
 
+logger = logging.getLogger(__name__)
 
 time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="MediaFetcher")
 time_taken_uploading = time_taken.labels(task="uploading media to telegram", runnable="MediaFetcher")
@@ -33,16 +35,20 @@ class MediaFetcher(Runnable):
             return
         sendable = SendableFASubmission(full_data)
         sub_id = sendable.submission_id
+        logger.debug("Got %s from queue, uploading media", sub_id)
         # Check if cache entry exists
         cache_entry = self.watcher.submission_cache.load_cache(sub_id)
         if cache_entry:
             cache_hits.inc()
+            logger.debug("Got cache entry for %s, setting in waitpool", sub_id)
             with time_taken_publishing.time():
                 await self.watcher.wait_pool.set_cached(sub_id, cache_entry)
             return
         cache_misses.inc()
         # Upload the file
+        logger.debug("Uploading submission media: %s", sub_id)
         with time_taken_uploading.time():
             uploaded_media = await sendable.upload(self.watcher.client)
+        logger.debug("Upload complete for %s, publishing to wait pool", sub_id)
         with time_taken_publishing.time():
             await self.watcher.wait_pool.set_uploaded(sub_id, uploaded_media)
