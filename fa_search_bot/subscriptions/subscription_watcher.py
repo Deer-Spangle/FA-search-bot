@@ -162,6 +162,9 @@ class SubscriptionWatcher:
         # Shut down running tasks
         event_loop = asyncio.get_event_loop()
         for task in self.sub_tasks[:]:
+            if task.done():
+                logger.debug("Task already shut down")
+                continue
             logger.debug("Waiting for task shutdown")
             event_loop.run_until_complete(task)
             self.sub_tasks.remove(task)
