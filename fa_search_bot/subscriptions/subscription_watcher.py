@@ -164,7 +164,7 @@ class SubscriptionWatcher:
         self.media_fetchers.clear()
 
     def update_latest_observed(self, post_datetime: datetime.datetime) -> None:
-        if post_datetime > self.latest_observed_submission:
+        if self.latest_observed_submission is None or post_datetime > self.latest_observed_submission:
             self.latest_observed_submission = post_datetime
             latest_sub_posted_at.set(post_datetime.timestamp())
 
