@@ -112,6 +112,7 @@ class SubscriptionWatcher:
             lambda: len(set(s.destination for s in self.subscriptions if not s.paused))
         )
         gauge_sub_blocks.set_function(lambda: sum(len(blocks) for blocks in self.blocklists.values()))
+        gauge_wait_pool_size.set_function(lambda: self.wait_pool.size())
         gauge_fetch_queue_size.set_function(lambda: self.fetch_data_queue.qsize())
         gauge_upload_queue_size.set_function(lambda: self.upload_queue.qsize())
         gauge_running_data_fetcher_count.set_function(lambda: len([f for f in self.data_fetchers if f.running]))
