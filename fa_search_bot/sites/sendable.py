@@ -4,7 +4,6 @@ import asyncio
 import dataclasses
 import datetime
 import enum
-import io
 import json
 import logging
 import os
@@ -473,9 +472,8 @@ class Sendable(InlineSendable):
     def download_file_ext(self) -> str:
         raise NotImplementedError
 
-    @property
     @abstractmethod
-    def download_file_size(self) -> int:
+    async def download_file_size(self) -> int:
         raise NotImplementedError
 
     @property
@@ -574,7 +572,7 @@ class Sendable(InlineSendable):
         settings.caption.author = True
         # Special handling, if it's small enough
         with time_taken_fetching_filesize.time():
-            dl_filesize = self.download_file_size
+            dl_filesize = await self.download_file_size()
         if dl_filesize < self.SIZE_LIMIT_DOCUMENT:
             # Handle pdfs, which can be sent as documents
             if ext in self.EXTENSIONS_AUTO_DOCUMENT:

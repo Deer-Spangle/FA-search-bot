@@ -43,9 +43,8 @@ class SendableFASubmission(Sendable):
     def download_file_ext(self) -> str:
         return self.submission.download_file_ext
 
-    @property
-    def download_file_size(self) -> int:
-        return self.submission.download_file_size
+    async def download_file_size(self) -> int:
+        return await self.submission.download_file_size()
 
     @property
     def preview_image_url(self) -> str:

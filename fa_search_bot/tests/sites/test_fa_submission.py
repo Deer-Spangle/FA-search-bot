@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from fa_search_bot.sites.furaffinity.fa_handler import FAHandler
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission, FASubmissionFull, FASubmissionShort
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
@@ -122,12 +124,13 @@ def test_id_from_link():
     assert new_id == post_id
 
 
-def test_get_file_size(requests_mock):
+@pytest.mark.asyncio
+async def test_get_file_size(requests_mock):
     url = "http://example.com/file.jpg"
     size = 7567
     requests_mock.head(url, headers={"content-length": str(size)})
 
-    file_size = FASubmission._get_file_size(url)
+    file_size = await FASubmission._get_file_size(url)
 
     assert isinstance(size, int)
     assert file_size == size

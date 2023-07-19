@@ -1,5 +1,7 @@
 import datetime
 
+import pytest
+
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull, FAUser, Rating
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
@@ -43,19 +45,20 @@ def test_constructor():
     assert submission.rating == rating
 
 
-def test_download_file_size(requests_mock):
+@pytest.mark.asyncio
+async def test_download_file_size(requests_mock):
     submission = SubmissionBuilder().build_full_submission()
     size = 23124
     requests_mock.head(submission.full_image_url, headers={"content-length": str(size)})
 
-    file_size = submission.download_file_size
+    file_size = await submission.download_file_size()
 
     assert isinstance(file_size, int)
     assert file_size == size
 
     requests_mock.head(submission.full_image_url, status_code=404)
 
-    file_size2 = submission.download_file_size
+    file_size2 = await submission.download_file_size()
 
     assert isinstance(file_size2, int)
     assert file_size2 == size

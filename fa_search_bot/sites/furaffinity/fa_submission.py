@@ -6,8 +6,8 @@ from abc import ABC
 from enum import Enum
 from typing import TYPE_CHECKING, TypedDict, Dict
 
+import aiohttp
 import dateutil.parser
-import requests
 from telethon import Button
 
 if TYPE_CHECKING:
@@ -177,9 +177,10 @@ class FASubmission(ABC):
         return id_match.group(1)
 
     @staticmethod
-    def _get_file_size(url: str) -> int:
-        resp = requests.head(url)
-        return int(resp.headers.get("content-length", 0))
+    async def _get_file_size(url: str) -> int:
+        async with aiohttp.ClientSession() as session:
+            async with session.head(url) as resp:
+                return int(resp.headers.get("content-length", 0))
 
 
 class FASubmissionShort(FASubmission):
@@ -240,8 +241,7 @@ class FASubmissionFull(FASubmissionShort):
         self.posted_at = posted_at
         self._download_file_size: Optional[int] = None
 
-    @property
-    def download_file_size(self) -> int:
+    async def download_file_size(self) -> int:
         if self._download_file_size is None:
             self._download_file_size = FASubmission._get_file_size(self.download_url)
         return self._download_file_size

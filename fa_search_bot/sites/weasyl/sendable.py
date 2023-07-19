@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 
-import requests
+import aiohttp
 
 from fa_search_bot.sites.sendable import Sendable, CaptionSettings
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -24,11 +24,11 @@ class WeasylPost(Sendable):
     def download_file_ext(self) -> str:
         return self.download_url.split(".")[-1].lower()
 
-    @property
-    def download_file_size(self) -> int:
+    async def download_file_size(self) -> int:
         if self._download_file_size is None:
-            resp = requests.head(self.download_url)
-            self._download_file_size = int(resp.headers.get("content-length", 0))
+            async with aiohttp.ClientSession() as session:
+                async with session.head(self.download_url) as resp:
+                    self._download_file_size = int(resp.headers.get("content-length", 0))
         return self._download_file_size
 
     @property
