@@ -9,6 +9,22 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.0] - 2023-07-19
+
+### Changed
+
+- Huge rewrite of the logic of the subscription watcher. Instead of doing everything sequentially, it now has a 4 part
+  process of different tasks passing data across in queues. First task gathers new submission IDs, second task fetches
+  the data for those IDs and checks subscriptions, third task downloads media and uploads to telegram, fourth task sends
+  telegram messages. The fourth task always ensures messages are sent to telegram in the order they are published to FA,
+  while allowing the second and third tasks to be scaled out to run in parallel to multiple copies of eachother. This
+  should improve throughput a fair bit!
+- FAExportAPI web requests are all async now, rather than blocking.
+- Metrics will have changed a lot in the fasearchbot_fasubwatcher_* area.
+- Four heartbeats, one for each task.
+- If a submission fails to process, the subscription watcher shuts down rather than skipping one. Hopefully it shouldn't
+  fail to process!
+
 ## [1.14.1] - 2023-07-06
 
 ### Changed
