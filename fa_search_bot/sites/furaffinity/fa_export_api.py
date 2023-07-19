@@ -93,7 +93,7 @@ class FAExportAPI:
         return resp
 
     async def _api_request_with_retry(self, path: str, endpoint_label: Endpoint) -> aiohttp.ClientResponse:
-        if self._is_site_slowdown():
+        if await self._is_site_slowdown():
             await asyncio.sleep(self.SLOWDOWN_BACKOFF)
         resp = await self._api_request(path, endpoint_label)
         tries = 0
@@ -106,7 +106,7 @@ class FAExportAPI:
         api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
         return resp
 
-    def _is_site_slowdown(self) -> bool:
+    async def _is_site_slowdown(self) -> bool:
         if self.ignore_status:
             return False
         now = datetime.datetime.now()
@@ -114,7 +114,7 @@ class FAExportAPI:
             self.last_status_check is None
             or (self.last_status_check + datetime.timedelta(seconds=self.STATUS_CHECK_BACKOFF)) < now
         ):
-            status = self.status()
+            status = await self.status()
             self.last_status_check = now
             self.slow_down_status = status.online_registered > self.STATUS_LIMIT_REGISTERED
         site_slowdown.state("slow" if self.slow_down_status else "not_slow")
@@ -201,7 +201,7 @@ class FAExportAPI:
             site_latest_id.set(latest_sub.submission_id)
         return home_page
 
-    def status(self) -> FAStatus:
+    async def status(self) -> FAStatus:
         logger.debug("Getting status page")
         path = "status.json"
         resp = await self._api_request(path, Endpoint.STATUS)
