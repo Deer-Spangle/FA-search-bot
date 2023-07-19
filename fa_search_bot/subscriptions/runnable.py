@@ -52,6 +52,7 @@ class Runnable(ABC):
             try:
                 await self.do_process()
             except Exception as e:
+                self.running = False
                 logger.critical("Runnable task %s has failed with exception:", self.class_name, exc_info=e)
                 raise e
             # Update metrics
