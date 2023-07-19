@@ -170,6 +170,7 @@ class FASearchBot:
         logger.debug("Shutting down e621 client")
         if self.e6_api is not None:
             event_loop.run_until_complete(self.e6_api.close())
+        logger.debug("Shutting down FA client")
         if self.api is not None:
             event_loop.run_until_complete(self.api.close())
         logger.debug("Shutdown complete")
