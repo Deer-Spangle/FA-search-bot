@@ -360,15 +360,6 @@ def _is_animated(file_path: str) -> bool:
         return _img_is_animated(img)
 
 
-def _convert_gif_to_png(file_url: str) -> bytes:
-    data = requests.get(file_url).content
-    img = Image.open(io.BytesIO(data))
-    img = img.convert("RGB")
-    byte_arr = io.BytesIO()
-    img.save(byte_arr, format="PNG")
-    return byte_arr.getvalue()
-
-
 WrapReturn = TypeVar("WrapReturn", covariant=True)
 WrapFunc = Callable[..., WrapReturn]
 
