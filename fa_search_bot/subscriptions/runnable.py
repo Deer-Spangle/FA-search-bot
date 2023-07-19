@@ -42,18 +42,18 @@ class ShutdownError(RuntimeError):
 
 class Runnable(ABC):
     QUEUE_BACKOFF = 0.5
-    UPDATES_PER_HEARTBEAT = 20
+    SECONDS_PER_HEARTBEAT = 60
 
     def __init__(self, watcher: "SubscriptionWatcher"):
         self.watcher = watcher
         self.running = False
+        self.heartbeat_expiry = datetime.datetime.now()
         self.class_name = self.__class__.__name__
         self.time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat", runnable=self.class_name)
         self.runnable_latest_processed = latest_processed_time.labels(runnable=self.class_name)
         self.runnable_processed_count = total_processed_count.labels(runnable=self.class_name)
 
     async def run(self) -> None:
-        processed_count = 0
         # Start the subscription task
         self.running = True
         while self.running:
@@ -66,8 +66,7 @@ class Runnable(ABC):
             # Update metrics
             self.update_processed_metrics()
             # Update heartbeat
-            processed_count += 1
-            self.update_heartbeat(processed_count)
+            self.update_heartbeat()
 
     @abstractmethod
     async def do_process(self) -> None:
@@ -80,11 +79,12 @@ class Runnable(ABC):
         self.runnable_latest_processed.set_to_current_time()
         self.runnable_processed_count.inc()
 
-    def update_heartbeat(self, processed_count: int):
-        if processed_count % self.UPDATES_PER_HEARTBEAT == 0:
+    def update_heartbeat(self):
+        if datetime.datetime.now() > self.heartbeat_expiry:
             with self.time_taken_updating_heartbeat.time():
                 heartbeat.update_heartbeat(f"FASearchBot_task_{self.class_name}")
             logger.debug("Heartbeat from %s", self.class_name)
+            self.heartbeat_expiry = datetime.datetime.now() + datetime.timedelta(seconds=self.SECONDS_PER_HEARTBEAT)
 
     async def _wait_while_running(self, seconds: float) -> None:
         sleep_end = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
