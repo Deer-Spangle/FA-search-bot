@@ -40,6 +40,7 @@ home_request_error = counter_home_requests.labels(result="error")
 class SubIDGatherer(Runnable):
     BROWSE_RETRY_BACKOFF = 20
     NEW_ID_BACKOFF = 20
+    UPDATES_PER_HEARTBEAT = 10
 
     def __init__(self, watcher: "SubscriptionWatcher"):
         super().__init__(watcher)
