@@ -6,7 +6,7 @@ import enum
 import logging
 from typing import TYPE_CHECKING
 
-import requests
+import aiohttp
 from prometheus_client import Counter, Enum, Gauge, Histogram
 
 from fa_search_bot.sites.furaffinity.fa_submission import FAStatus, FASubmission, FAHomePage
@@ -76,31 +76,33 @@ class FAExportAPI:
         self.last_status_check: Optional[datetime.datetime] = None
         self.slow_down_status = False
         self.ignore_status = ignore_status
+        self.session = aiohttp.ClientSession(self.base_url)
         for endpoint in Endpoint:
             cloudflare_errors.labels(endpoint=endpoint.value)
             api_request_times.labels(endpoint=endpoint.value)
             api_retry_counts.labels(endpoint=endpoint.value)
 
-    def _api_request(self, path: str, endpoint_label: Endpoint) -> requests.Response:
+    async def _api_request(self, path: str, endpoint_label: Endpoint) -> aiohttp.ClientResponse:
         path = path.lstrip("/")
         with api_request_times.labels(endpoint=endpoint_label.value).time():
-            resp = requests.get(f"{self.base_url}/{path}")
-        if resp.status_code == 503:
+            async with self.session.get(f"/{path}") as resp:
+                await resp.read()
+        if resp.status == 503:
             cloudflare_errors.labels(endpoint=endpoint_label.value).inc()
             raise CloudflareError()
         return resp
 
-    async def _api_request_with_retry(self, path: str, endpoint_label: Endpoint) -> requests.Response:
+    async def _api_request_with_retry(self, path: str, endpoint_label: Endpoint) -> aiohttp.ClientResponse:
         if self._is_site_slowdown():
             await asyncio.sleep(self.SLOWDOWN_BACKOFF)
-        resp = self._api_request(path, endpoint_label)
+        resp = await self._api_request(path, endpoint_label)
         tries = 0
         for tries in range(self.MAX_RETRIES):
-            if str(resp.status_code)[0] != "5":
+            if str(resp.status)[0] != "5":
                 api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
                 return resp
             await asyncio.sleep(tries**2)
-            resp = self._api_request(path, endpoint_label)
+            resp = await self._api_request(path, endpoint_label)
         api_retry_counts.labels(endpoint=endpoint_label.value).observe(tries)
         return resp
 
@@ -122,8 +124,8 @@ class FAExportAPI:
         logger.debug("Getting full submission for submission ID %s", submission_id)
         sub_resp = await self._api_request_with_retry(f"submission/{submission_id}.json", Endpoint.SUBMISSION)
         # If API returns fine
-        if sub_resp.status_code == 200:
-            submission = FASubmission.from_full_dict(sub_resp.json())
+        if sub_resp.status == 200:
+            submission = FASubmission.from_full_dict(await sub_resp.json())
             return submission
         else:
             raise PageNotFound(f"Submission not found with ID: {submission_id}")
@@ -138,8 +140,8 @@ class FAExportAPI:
         if user.strip() == "":
             raise PageNotFound(f"User not found by name: {user}")
         resp = await self._api_request_with_retry(f"user/{user}/{folder}.json?page={page}&full=1", Endpoint.USER_FOLDER)
-        if resp.status_code == 200:
-            data = resp.json()
+        if resp.status == 200:
+            data = await resp.json()
             submissions = []
             for submission_data in data:
                 submissions.append(FASubmission.from_short_dict(submission_data))
@@ -156,8 +158,8 @@ class FAExportAPI:
         if next_id is not None:
             next_str = f"next={next_id}&"
         resp = await self._api_request_with_retry(f"user/{user}/favorites.json?{next_str}full=1", Endpoint.USER_FAVS)
-        if resp.status_code == 200:
-            data = resp.json()
+        if resp.status == 200:
+            data = await resp.json()
             submissions = []
             for submission_data in data:
                 submissions.append(FASubmission.from_short_fav_dict(submission_data))
@@ -171,7 +173,7 @@ class FAExportAPI:
         resp = await self._api_request_with_retry(
             f"search.json?full=1&perpage=48&q={query}&page={page}", Endpoint.SEARCH
         )
-        data = resp.json()
+        data = await resp.json()
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
@@ -180,7 +182,7 @@ class FAExportAPI:
     async def get_browse_page(self, page: int = 1) -> List[FASubmissionShort]:
         logger.debug("Getting browse page %s", page)
         resp = await self._api_request_with_retry(f"browse.json?page={page}", Endpoint.BROWSE)
-        data = resp.json()
+        data = await resp.json()
         submissions = []
         for submission_data in data:
             submissions.append(FASubmission.from_short_dict(submission_data))
@@ -191,7 +193,7 @@ class FAExportAPI:
     async def get_home_page(self) -> FAHomePage:
         logger.debug("Getting home page")
         resp = await self._api_request_with_retry("home.json", Endpoint.HOME)
-        data = resp.json()
+        data = await resp.json()
         home_page = FAHomePage.from_dict(data)
         submissions = home_page.all_submissions()
         if submissions:
@@ -202,10 +204,13 @@ class FAExportAPI:
     def status(self) -> FAStatus:
         logger.debug("Getting status page")
         path = "status.json"
-        resp = self._api_request(path, Endpoint.STATUS)
+        resp = await self._api_request(path, Endpoint.STATUS)
         for tries in range(self.MAX_RETRIES):
-            if str(resp.status_code)[0] != "5":
+            if str(resp.status)[0] != "5":
                 break
-            resp = self._api_request(path, Endpoint.STATUS)
-        data = resp.json()
+            resp = await self._api_request(path, Endpoint.STATUS)
+        data = await resp.json()
         return FAStatus.from_dict(data)
+
+    async def close(self) -> None:
+        await self.session.close()

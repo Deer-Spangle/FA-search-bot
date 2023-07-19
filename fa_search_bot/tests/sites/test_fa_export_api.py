@@ -15,19 +15,21 @@ def test_constructor():
     assert api.base_url == "https://example.com"
 
 
-def test_api_request(requests_mock):
+@pytest.mark.asyncio
+async def test_api_request(requests_mock):
     api_url = "https://example.com/"
     path = "/resources/123"
     api = FAExportAPI(api_url, ignore_status=True)
     test_obj = {"key": "value"}
     requests_mock.get("https://example.com/resources/123", json=test_obj)
 
-    resp = api._api_request(path, Endpoint.BROWSE)
+    resp = await api._api_request(path, Endpoint.BROWSE)
 
-    assert resp.json() == test_obj
+    assert (await resp.json()) == test_obj
 
 
-def test_api_request__detects_cloudflare(requests_mock):
+@pytest.mark.asyncio
+async def test_api_request__detects_cloudflare(requests_mock):
     api_url = "https://example.com/"
     path = "/resources/123"
     api = FAExportAPI(api_url, ignore_status=True)
@@ -41,7 +43,7 @@ def test_api_request__detects_cloudflare(requests_mock):
     )
 
     try:
-        api._api_request(path, Endpoint.BROWSE)
+        await api._api_request(path, Endpoint.BROWSE)
         assert False, "Should have thrown cloudflare error"
     except CloudflareError:
         pass
@@ -67,8 +69,8 @@ async def test_api_request_with_retry__does_not_retry_200(requests_mock):
 
     time_waited = end_time - start_time
     assert time_waited.seconds <= 1
-    assert resp.status_code == 200
-    assert resp.json() == test_obj
+    assert resp.status == 200
+    assert (await resp.json()) == test_obj
 
 
 @pytest.mark.asyncio
@@ -90,8 +92,8 @@ async def test_api_request_with_retry__does_not_retry_400_error(requests_mock):
 
     time_waited = end_time - start_time
     assert time_waited.seconds <= 1
-    assert resp.status_code == 400
-    assert resp.text == "400 error, you messed up."
+    assert resp.status == 400
+    assert (await resp.text()) == "400 error, you messed up."
 
 
 @pytest.mark.asyncio
@@ -115,8 +117,8 @@ async def test_api_request_with_retry__retries_500_error(requests_mock):
 
     time_waited = end_time - start_time
     assert 0.5 <= time_waited.seconds <= 5
-    assert resp.status_code == 200
-    assert resp.json() == test_obj
+    assert resp.status == 200
+    assert (await resp.json()) == test_obj
 
 
 @pytest.mark.asyncio
@@ -470,8 +472,8 @@ async def test_get_status_api_retry(requests_mock):
 
     assert api.last_status_check is not None
     assert api.slow_down_status is False
-    assert resp.status_code == 200
-    assert resp.json() == test_obj
+    assert resp.status == 200
+    assert (await resp.json()) == test_obj
 
 
 @pytest.mark.asyncio
@@ -507,5 +509,5 @@ async def test_get_status_turns_on_slowdown(requests_mock):
     assert api.slow_down_status is True
     time_waited = end_time - start_time
     assert time_waited.seconds >= 1
-    assert resp.status_code == 200
-    assert resp.json() == test_obj
+    assert resp.status == 200
+    assert (await resp.json()) == test_obj
