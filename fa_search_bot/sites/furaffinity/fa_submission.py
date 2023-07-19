@@ -243,7 +243,7 @@ class FASubmissionFull(FASubmissionShort):
 
     async def download_file_size(self) -> int:
         if self._download_file_size is None:
-            self._download_file_size = FASubmission._get_file_size(self.download_url)
+            self._download_file_size = await FASubmission._get_file_size(self.download_url)
         return self._download_file_size
 
     @property
