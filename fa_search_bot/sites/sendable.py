@@ -10,7 +10,7 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, List
 
 import aiohttp
@@ -315,7 +315,7 @@ class DownloadedFile:
         return file_ext(self.dl_path)
 
 
-@contextmanager
+@asynccontextmanager
 async def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
     with temp_sandbox_file(file_ext(url)) as dl_path:
         with time_taken_downloading_image.time():
