@@ -4,6 +4,7 @@ import asyncio
 import dataclasses
 import json
 import logging
+from math import ceil
 from typing import TYPE_CHECKING
 
 from prometheus_client import Gauge, Info, start_http_server  # type: ignore
@@ -176,10 +177,16 @@ class FASearchBot:
         logger.debug("Shutdown complete")
 
     async def periodic_log(self) -> None:
+        sleep_seconds = 20
+        sleep_increment = 0.1
         while self.alive:
             logger.info("Main thread alive")
             try:
-                await asyncio.sleep(20)
+                # Sleep with one eye open
+                for _ in range(ceil(sleep_seconds/sleep_increment)):
+                    await asyncio.sleep(sleep_increment)
+                    if not self.alive:
+                        break
             except KeyboardInterrupt:
                 logger.info("Received keyboard interrupt")
                 self.alive = False
