@@ -11,7 +11,7 @@ from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.submission_id import SubmissionID
-from fa_search_bot.subscriptions.runnable import Runnable
+from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
 from fa_search_bot.subscriptions.utils import time_taken
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class DataFetcher(Runnable):
                 with time_taken_error_backoff.time():
                     await self._wait_while_running(self.FETCH_EXCEPTION_BACKOFF)
                 continue
-        raise RuntimeError("Data fetcher has shutdown while trying to fetch data")
+        raise ShutdownError("Data fetcher has shutdown while trying to fetch data")
 
     async def check_subscriptions(self, full_result):
         # Copy subscriptions, to avoid "changed size during iteration" issues

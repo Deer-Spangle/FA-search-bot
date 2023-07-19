@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from prometheus_client import Gauge
 
+from fa_search_bot.subscriptions.runnable import ShutdownError
 from subscriptions.fa_search_bot.query_parser import parse_query
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
@@ -166,7 +167,10 @@ class SubscriptionWatcher:
                 logger.debug("Task already shut down")
                 continue
             logger.debug("Waiting for task shutdown")
-            event_loop.run_until_complete(task)
+            try:
+                event_loop.run_until_complete(task)
+            except ShutdownError:
+                pass
             self.sub_tasks.remove(task)
         # Clean up fetchers
         self.data_fetchers.clear()

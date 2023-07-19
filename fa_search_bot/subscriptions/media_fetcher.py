@@ -9,7 +9,7 @@ from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia
-from fa_search_bot.subscriptions.runnable import Runnable
+from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
 from fa_search_bot.subscriptions.utils import time_taken
 
 logger = logging.getLogger(__name__)
@@ -64,4 +64,4 @@ class MediaFetcher(Runnable):
                 logger.warning("Upload failed, telegram has disconnected, trying again in %s", self.CONNECTION_BACKOFF)
                 await self._wait_while_running(self.CONNECTION_BACKOFF)
                 continue
-        raise RuntimeError("Media fetcher has shutdown while trying to upload media")
+        raise ShutdownError("Media fetcher has shutdown while trying to upload media")

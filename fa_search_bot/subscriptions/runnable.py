@@ -32,6 +32,14 @@ total_processed_count = Counter(
 )
 
 
+class ShutdownError(RuntimeError):
+    """
+    Used if the runnable was shut down while trying to do something.
+    Exists such that it can be ignored during proper shutdown.
+    """
+    pass
+
+
 class Runnable(ABC):
     QUEUE_BACKOFF = 0.5
     UPDATES_PER_HEARTBEAT = 20
