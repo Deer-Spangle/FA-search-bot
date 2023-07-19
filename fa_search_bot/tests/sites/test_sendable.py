@@ -8,10 +8,9 @@ from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeFilen
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.furaffinity.fa_submission import FAUser
-from fa_search_bot.sites.sendable import Sendable, SANDBOX_DIR, _url_to_media, SendSettings, CaptionSettings, \
+from fa_search_bot.sites.sendable import Sendable, _url_to_media, SendSettings, CaptionSettings, \
     VideoMetadata, _downloaded_file
 from fa_search_bot.tests.conftest import MockChat
-from fa_search_bot.tests.util.mock_method import MockMethod
 from fa_search_bot.tests.util.mock_telegram_event import MockInlineMessageId
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder
 
