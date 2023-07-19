@@ -13,8 +13,8 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, List
 
+import aiohttp
 import docker
-import requests
 from PIL import Image
 from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
@@ -316,15 +316,16 @@ class DownloadedFile:
 
 
 @contextmanager
-def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
+async def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
     with temp_sandbox_file(file_ext(url)) as dl_path:
         with time_taken_downloading_image.time():
-            resp = requests.get(url, stream=True)
+            session = aiohttp.ClientSession()
             dl_filesize = 0
-            with open(dl_path, "wb") as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
-                    dl_filesize += len(chunk)
+            async with session.get(url) as resp:
+                with open(dl_path, "wb") as f:
+                    async for chunk in resp.content.iter_chunked(8192):
+                        f.write(chunk)
+                        dl_filesize += len(chunk)
         yield DownloadedFile(dl_path, dl_filesize)
 
 
@@ -553,18 +554,18 @@ class Sendable(InlineSendable):
 
         # Handle potentially animated formats
         if ext in self.EXTENSIONS_ANIMATED:
-            with _downloaded_file(self.download_url) as dl_file:
+            async with _downloaded_file(self.download_url) as dl_file:
                 if _is_animated(dl_file.dl_path):
                     return await self._upload_video(client, dl_file, settings)
                 else:
                     return await self._upload_image(client, dl_file, settings)
         # Handle photos
         if ext in self.EXTENSIONS_PHOTO:
-            with _downloaded_file(self.download_url) as dl_file:
+            async with _downloaded_file(self.download_url) as dl_file:
                 return await self._upload_image(client, dl_file, settings)
         # Handle videos, which can be made pretty
         if ext in self.EXTENSIONS_VIDEO:
-            with _downloaded_file(self.download_url) as dl_file:
+            async with _downloaded_file(self.download_url) as dl_file:
                 sendable_animated.labels(site_code=self.site_id).inc()
                 return await self._upload_video(client, dl_file, settings)
         # Everything else is a file, send with title and author
@@ -580,12 +581,12 @@ class Sendable(InlineSendable):
                 return UploadedMedia(self.submission_id, _url_to_media(self.download_url, False), settings)
             # Handle audio
             if ext in self.EXTENSIONS_AUDIO:
-                with _downloaded_file(self.download_url) as dl_file:
+                async with _downloaded_file(self.download_url) as dl_file:
                     return await self._upload_audio(client, dl_file, settings)
         # Handle files telegram can't handle
         sendable_other.labels(site_code=self.site_id).inc()
         settings.caption.direct_link = True
-        with _downloaded_file(self.preview_image_url) as dl_file:
+        async with _downloaded_file(self.preview_image_url) as dl_file:
             return await self._upload_image(client, dl_file, settings)
 
     async def _upload_video(
@@ -674,7 +675,12 @@ class Sendable(InlineSendable):
                     kwargs = {}
                     if exif:
                         kwargs["exif"] = exif
-                    img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
+                    try:
+                        img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
+                    except OSError as e:
+                        os.makedirs("debug", exist_ok=True)
+                        shutil.copy(dl_file.dl_path, f"debug/{self.submission_id.site_code}_{self.submission_id.submission_id}.{dl_file.file_ext()}")
+                        raise e
 
             filesize = os.path.getsize(output_file)
             with time_taken_uploading_file.time():
@@ -692,7 +698,7 @@ class Sendable(InlineSendable):
             settings: SendSettings
     ) -> UploadedMedia:
         sendable_audio.labels(site_code=self.site_id).inc()
-        with _downloaded_file(self.thumbnail_url) as thumb_file:
+        async with _downloaded_file(self.thumbnail_url) as thumb_file:
             with time_taken_uploading_file.time():
                 file_handle = await client.upload_file(dl_file.dl_path)
                 thumb_handle = await client.upload_file(thumb_file.dl_path)
