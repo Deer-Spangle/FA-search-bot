@@ -2,20 +2,18 @@ from __future__ import annotations
 
 import dataclasses
 from asyncio import Lock
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.sendable import UploadedMedia
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.submission_id import SubmissionID
-from fa_search_bot.subscriptions.subscription import Subscription
 
 
 @dataclasses.dataclass
 class SubmissionCheckState:
     sub_id: SubmissionID
     full_data: Optional[FASubmissionFull] = None
-    matching_subscriptions: Optional[List[Subscription]] = None
     cache_entry: Optional[SentSubmission] = None
     uploaded_media: Optional[UploadedMedia] = None
 
@@ -36,12 +34,11 @@ class WaitPool:
             state = SubmissionCheckState(sub_id)
             self.submission_state[sub_id] = state
 
-    async def set_fetched(self, sub_id: SubmissionID, full_data: FASubmissionFull, matching_subs: List[Subscription]) -> None:
+    async def set_fetched(self, sub_id: SubmissionID, full_data: FASubmissionFull) -> None:
         async with self._lock:
             if sub_id not in self.submission_state:
                 return
             self.submission_state[sub_id].full_data = full_data
-            self.submission_state[sub_id].matching_subscriptions = matching_subs
 
     async def set_cached(self, sub_id: SubmissionID, cache_entry: SentSubmission) -> None:
         async with self._lock:

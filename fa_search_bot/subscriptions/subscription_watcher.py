@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from prometheus_client import Gauge
 
 from fa_search_bot.subscriptions.runnable import ShutdownError
-from subscriptions.fa_search_bot.query_parser import parse_query
+from subscriptions.fa_search_bot.query_parser import parse_query, AndQuery, NotQuery
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
 from fa_search_bot.subscriptions.media_fetcher import MediaFetcher
@@ -199,6 +199,20 @@ class SubscriptionWatcher:
             self.blocklists[destination].add(tag)
         else:
             self.blocklists[destination] = {tag}
+
+    def check_subscriptions(self, full_result: FASubmissionFull) -> List[Subscription]:
+        # Copy subscriptions, to avoid "changed size during iteration" issues
+        subscriptions = self.subscriptions.copy()
+        # Check which subscriptions match
+        matching_subscriptions = []
+        for subscription in subscriptions:
+            blocklist = self.blocklists.get(subscription.destination, set())
+            blocklist_query = AndQuery(
+                [NotQuery(self.get_blocklist_query(block)) for block in blocklist]
+            )
+            if subscription.matches_result(full_result, blocklist_query):
+                matching_subscriptions.append(subscription)
+        return matching_subscriptions
 
     def migrate_chat(self, old_chat_id: int, new_chat_id: int) -> None:
         # Migrate blocklist

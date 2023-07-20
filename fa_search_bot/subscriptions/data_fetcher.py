@@ -7,7 +7,6 @@ from typing import Optional
 
 from prometheus_client import Counter, Histogram, Gauge
 
-from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery
 from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, CloudflareError
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -84,16 +83,16 @@ class DataFetcher(Runnable):
         counter_subs_found.inc()
         # Log the posting date of the latest checked submission
         self.watcher.update_latest_observed(full_result.posted_at)
-        # See which subscriptions match the submission
+        # See if any subscriptions match the submission
         with time_taken_checking_matches.time():
-            matching_subscriptions = await self.check_subscriptions(full_result)
+            matching_subscriptions = self.watcher.check_subscriptions(full_result)
         logger.debug("Submission %s matches %s subscriptions", sub_id, len(matching_subscriptions))
         # Publish results
         if matching_subscriptions:
             sub_matches.inc()
             sub_total_matches.inc(len(matching_subscriptions))
             with time_taken_publishing.time():
-                await self.watcher.wait_pool.set_fetched(sub_id, full_result, matching_subscriptions)
+                await self.watcher.wait_pool.set_fetched(sub_id, full_result)
                 await self.watcher.upload_queue.put(full_result)
         else:
             with time_taken_publishing.time():
@@ -140,17 +139,3 @@ class DataFetcher(Runnable):
                     await self._wait_while_running(self.FETCH_EXCEPTION_BACKOFF)
                 continue
         raise ShutdownError("Data fetcher has shutdown while trying to fetch data")
-
-    async def check_subscriptions(self, full_result):
-        # Copy subscriptions, to avoid "changed size during iteration" issues
-        subscriptions = self.watcher.subscriptions.copy()
-        # Check which subscriptions match
-        matching_subscriptions = []
-        for subscription in subscriptions:
-            blocklist = self.watcher.blocklists.get(subscription.destination, set())
-            blocklist_query = AndQuery(
-                [NotQuery(self.watcher.get_blocklist_query(block)) for block in blocklist]
-            )
-            if subscription.matches_result(full_result, blocklist_query):
-                matching_subscriptions.append(subscription)
-        return matching_subscriptions
