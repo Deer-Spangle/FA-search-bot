@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.1] - 2023-07-21
+
+### Fixed
+
+- Fixed slow heartbeat from SubIDGatherer which was leading to excess alerts.
+- Fixed race condition where submissions could be delivered to deleted subscriptions if they were still in the queue.
+
 ## [1.15.0] - 2023-07-19
 
 ### Changed
