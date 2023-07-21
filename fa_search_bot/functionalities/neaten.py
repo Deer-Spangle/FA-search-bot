@@ -11,6 +11,7 @@ from fa_search_bot.functionalities.functionalities import BotFunctionality, in_p
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.sendable import CantSendFileType
 from fa_search_bot.sites.site_handler import NotFound
+from fa_search_bot.utils import regex_combine
 
 if TYPE_CHECKING:
     from typing import List, Optional
@@ -31,10 +32,7 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
 class NeatenFunctionality(BotFunctionality):
     def __init__(self, handler_group: HandlerGroup):
         self.handlers = handler_group
-        link_regex = re.compile(
-            "(" + "|".join(handler.link_regex.pattern for handler in handler_group.handlers.values()) + ")",
-            re.IGNORECASE,
-        )
+        link_regex = regex_combine(*[handler.link_regex for handler in handler_group.handlers.values()])
         super().__init__(NewMessage(func=lambda e: filter_regex(e, link_regex), incoming=True))
 
     @property

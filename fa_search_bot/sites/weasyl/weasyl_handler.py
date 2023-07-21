@@ -57,7 +57,7 @@ class WeasylHandler(SiteHandler):
         return self.LINK_REGEX
 
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
-        return [SiteLink(self.site_code, match.group(0)) for match in self.LINK_REGEX.finditer(haystack)]
+        return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
 
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches

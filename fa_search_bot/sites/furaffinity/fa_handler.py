@@ -9,6 +9,7 @@ from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission, Inlin
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler, NotFound
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.utils import regex_combine
 
 if TYPE_CHECKING:
     from re import Pattern
@@ -33,11 +34,11 @@ def _get_image_id_from_submission(submission: FASubmissionShort) -> int:
 class FAHandler(SiteHandler):
     FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(
-        r"d2?\.(?:facdn|furaffinity)\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/([0-9]+)[^\s]+",
+        r"d2?\.(?:facdn|furaffinity)\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/([0-9]+)\S+",
         re.I,
     )
     FA_THUMB_LINK = re.compile(r"t2?\.(?:facdn|furaffinity)\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg", re.I)
-    FA_LINKS = re.compile(f"({FA_SUB_LINK.pattern}|{FA_DIRECT_LINK.pattern}|{FA_THUMB_LINK.pattern})", re.I)
+    FA_LINKS = regex_combine(FA_SUB_LINK, FA_DIRECT_LINK, FA_THUMB_LINK)
 
     def __init__(self, api: FAExportAPI) -> None:
         self.api = api

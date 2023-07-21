@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
@@ -22,3 +23,7 @@ async def gather_ignore_exceptions(coros: List[Awaitable[T]]) -> List[T]:
         else:
             answers.append(result)
     return answers
+
+
+def regex_combine(*patterns: re.Pattern) -> re.Pattern:
+    return re.compile("(" + "|".join(p.pattern for p in patterns) + ")", re.I)

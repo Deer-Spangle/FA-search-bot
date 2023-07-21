@@ -11,6 +11,7 @@ from fa_search_bot.sites.e621.sendable import E621Post
 from fa_search_bot.sites.site_handler import HandlerException, SiteHandler, NotFound
 from fa_search_bot.sites.site_link import SiteLink
 from fa_search_bot.sites.submission_id import SubmissionID
+from fa_search_bot.utils import regex_combine
 
 if TYPE_CHECKING:
     from typing import List, Optional, Pattern, Union
@@ -47,7 +48,7 @@ class E621Handler(SiteHandler):
     POST_LINK = re.compile(r"e(?:621|926)\.net/posts/([0-9]+)", re.I)
     OLD_POST_LINK = re.compile(r"e(?:621|926)\.net/post/show/([0-9]+)", re.I)
     DIRECT_LINK = re.compile(r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
-    E6_LINKS = re.compile(f"({POST_LINK.pattern}|{OLD_POST_LINK.pattern}|{DIRECT_LINK.pattern})")
+    E6_LINKS = regex_combine(POST_LINK, OLD_POST_LINK, DIRECT_LINK)
     POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
     def __init__(self, api: AsyncYippiClient):
