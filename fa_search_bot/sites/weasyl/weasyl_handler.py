@@ -56,8 +56,15 @@ class WeasylHandler(SiteHandler):
     def link_regex(self) -> Pattern:
         return self.LINK_REGEX
 
+    @property
+    def filename_regex(self) -> Pattern:
+        return self._fasearchbot_filename_regex
+
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
         return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
+
+    def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
+        return [SiteLink(self.site_code, match.group(0)) for match in self.filename_regex.finditer(haystack)]
 
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches
@@ -65,6 +72,15 @@ class WeasylHandler(SiteHandler):
         if sub_match:
             sub_id = SubmissionID(self.site_code, sub_match.group(3))
             logger.info("weasyl link format: post link: %s", sub_id)
+            return sub_id
+        return None
+
+    async def get_submission_id_from_filename(self, filename: SiteLink) -> Optional[SubmissionID]:
+        # Handle FASearchBot filenames
+        fas_filename = self._fasearchbot_filename_regex.match(filename.link)
+        if fas_filename:
+            sub_id = SubmissionID(self.site_code, fas_filename.group(1))
+            logger.info("weasyl filename format: FASearchBot filename: %s", sub_id)
             return sub_id
         return None
 

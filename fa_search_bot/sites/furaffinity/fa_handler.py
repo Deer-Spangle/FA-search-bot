@@ -39,6 +39,7 @@ class FAHandler(SiteHandler):
     )
     FA_THUMB_LINK = re.compile(r"t2?\.(?:facdn|furaffinity)\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg", re.I)
     FA_LINKS = regex_combine(FA_SUB_LINK, FA_DIRECT_LINK, FA_THUMB_LINK)
+    FA_FILES = re.compile(r"([0-9]+)\.([^_]+)_\S.gif(\.mp4)?", re.I)
 
     def __init__(self, api: FAExportAPI) -> None:
         self.api = api
@@ -55,20 +56,29 @@ class FAHandler(SiteHandler):
     def link_regex(self) -> Pattern:
         return self.FA_LINKS
 
+    @property
+    def filename_regex(self) -> Pattern:
+        return regex_combine(self.FA_FILES, self._fasearchbot_filename_regex)
+
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
-        return [SiteLink(self.site_code, match.group(0)) for match in self.FA_LINKS.finditer(haystack)]
+        return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
+
+    def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
+        return [SiteLink(self.site_code, match.group(0)) for match in self.filename_regex.finditer(haystack)]
 
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link.link)
         if sub_match:
-            logger.info("FA link: submission link")
-            return SubmissionID(self.site_code, sub_match.group(1))
+            sub_id = SubmissionID(self.site_code, sub_match.group(1))
+            logger.info("FA link: submission link: %s", sub_id)
+            return sub_id
         # Handle thumbnail link matches
         thumb_match = self.FA_THUMB_LINK.match(link.link)
         if thumb_match:
-            logger.info("FA link: thumbnail link")
-            return SubmissionID(self.site_code, thumb_match.group(1))
+            sub_id = SubmissionID(self.site_code, thumb_match.group(1))
+            logger.info("FA link: thumbnail link: %s", sub_id)
+            return sub_id
         # Handle direct file link matches
         direct_match = self.FA_DIRECT_LINK.match(link.link)
         if not direct_match:
@@ -83,8 +93,28 @@ class FAHandler(SiteHandler):
                 raise HandlerException(
                     f"Could not locate the image by {username} with image id {image_id_1} or {image_id_2}."
                 )
-        logger.info("FA link: direct image link")
-        return SubmissionID(self.site_code, submission_id)
+        sub_id = SubmissionID(self.site_code, submission_id)
+        logger.info("FA link: direct image link: %s", sub_id)
+        return sub_id
+
+    async def get_submission_id_from_filename(self, filename: SiteLink) -> Optional[SubmissionID]:
+        # Handle FASearchBot filenames
+        fas_filename = self._fasearchbot_filename_regex.match(filename.link)
+        if fas_filename:
+            sub_id = SubmissionID(self.site_code, fas_filename.group(1))
+            logger.info("FA filename format: FASearchBot filename: %s", sub_id)
+            return sub_id
+        # Handle FurAffinity filenames
+        fa_filename = self.FA_FILES.match(filename.link)
+        if fa_filename:
+            username = fa_filename.group(2)
+            image_id = fa_filename.group(1)
+            submission_id = await self._find_submission(username, image_id)
+            if submission_id:
+                sub_id = SubmissionID(self.site_code, submission_id)
+                logger.info("FA filename format: FA direct document link: %s", sub_id)
+                return sub_id
+        return None
 
     async def _find_submission(self, username: str, image_id: int) -> Optional[str]:
         folders = ["gallery", "scraps"]

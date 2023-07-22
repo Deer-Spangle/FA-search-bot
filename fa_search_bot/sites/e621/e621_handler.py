@@ -49,6 +49,7 @@ class E621Handler(SiteHandler):
     OLD_POST_LINK = re.compile(r"e(?:621|926)\.net/post/show/([0-9]+)", re.I)
     DIRECT_LINK = re.compile(r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
     E6_LINKS = regex_combine(POST_LINK, OLD_POST_LINK, DIRECT_LINK)
+    E6_FILES = re.compile(r"([0-9a-z]{32})\.(webm|gif|gif\.mp4)")
     POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
     def __init__(self, api: AsyncYippiClient):
@@ -69,8 +70,15 @@ class E621Handler(SiteHandler):
     def link_regex(self) -> Pattern:
         return self.E6_LINKS
 
+    @property
+    def filename_regex(self) -> Pattern:
+        return regex_combine(self.E6_FILES, self._fasearchbot_filename_regex)
+
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
-        return [SiteLink(self.site_code, match.group(0)) for match in self.E6_LINKS.finditer(haystack)]
+        return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
+
+    def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
+        return [SiteLink(self.site_code, match.group(0)) for match in self.filename_regex.finditer(haystack)]
 
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches
@@ -96,6 +104,24 @@ class E621Handler(SiteHandler):
         sub_id = SubmissionID(self.site_code, str(post.id))
         logger.info("e621 link format: direct image link: %s", sub_id)
         return sub_id
+
+    async def get_submission_id_from_filename(self, filename: SiteLink) -> Optional[SubmissionID]:
+        # Handle FASearchBot filenames
+        fas_filename = self._fasearchbot_filename_regex.match(filename.link)
+        if fas_filename:
+            sub_id = SubmissionID(self.site_code, fas_filename.group(1))
+            logger.info("e621 filename format: FASearchBot filename: %s", sub_id)
+            return sub_id
+        # Handle e621 filenames
+        e6_filename = self.E6_FILES.match(filename.link)
+        if e6_filename:
+            md5_hash = e6_filename.group(1)
+            post = await self._find_post_by_hash(md5_hash)
+            if post:
+                sub_id = SubmissionID(self.site_code, str(post.id))
+                logger.info("e621 filename format: e621 filename: %s", sub_id)
+                return sub_id
+        return None
 
     async def _find_post_by_hash(self, md5_hash: str) -> Optional[Post]:
         with api_request_times.labels(endpoint=Endpoint.SEARCH_MD5.value).time():

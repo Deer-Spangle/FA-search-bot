@@ -47,12 +47,25 @@ class HandlerGroup:
             links += handler.find_links_in_str(query)
         return links
 
+    def list_potential_filenames(self, query: str) -> List[SiteLink]:
+        filenames = []
+        for handler in self.handlers.values():
+            filenames += handler.find_filenames_in_str(query)
+        return filenames
+
     async def get_sub_ids_from_links(self, links: List[SiteLink]) -> List[SubmissionID]:
         return [sub_id for sub_id in await gather_ignore_exceptions([
             self.handlers[link.site_code].get_submission_id_from_link(link)
             for link in links
             if link.site_code in self.handlers
         ]) if sub_id is not None]
+
+    async def get_sub_ids_from_filenames(self, filenames: List[SiteLink]) -> List[SubmissionID]:
+        return [sub_id for sub_id in await gather_ignore_exceptions([
+            self.handlers[filename.site_code].get_submission_id_from_filename(filename)
+            for filename in filenames
+            if filename.site_code in self.handlers
+        ])]
 
     async def answer_submission(self, sub_id: SubmissionID, event: InlineQuery.Event) -> InputBotInlineResultPhoto:
         cache_entry = self.cache.load_cache(sub_id, allow_inline=True)

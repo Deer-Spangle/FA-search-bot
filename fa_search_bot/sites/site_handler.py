@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -45,12 +46,32 @@ class SiteHandler(ABC):
     def link_regex(self) -> Pattern:
         raise NotImplementedError
 
+    @property
+    def _fasearchbot_filename_regex(self) -> Pattern:
+        """
+        This is the pattern that should match videos created by FASearchBot
+        """
+        return re.compile(r"FASearchBot_" + self.site_code + r"_([0-9]+).mp4")
+
+    @property
+    @abstractmethod
+    def filename_regex(self) -> Pattern:
+        raise NotImplementedError
+
     @abstractmethod
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
         raise NotImplementedError
 
     @abstractmethod
+    def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_submission_id_from_filename(self, filename: SiteLink) -> Optional[SubmissionID]:
         raise NotImplementedError
 
     @abstractmethod
