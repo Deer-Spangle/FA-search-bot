@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
-import re
 from typing import TYPE_CHECKING
 
 from telethon.events import NewMessage, StopPropagation
+from telethon.tl.types import DocumentAttributeFilename
 
-from fa_search_bot.filters import filter_regex
+from fa_search_bot.filters import filter_regex, filter_document_name
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.sendable import CantSendFileType
@@ -115,4 +115,92 @@ class NeatenFunctionality(BotFunctionality):
             )
         except Exception as e:
             logger.error("Unhandled exception trying to neaten submission %s", sub_id, exc_info=e)
+            raise e
+
+
+class NeatenDocumentFilenameFunctionality(BotFunctionality):
+    def __init__(self, handler_group: HandlerGroup):
+        self.handlers = handler_group
+        filename_patterns = [
+            handler.filename_regex for handler in handler_group.handlers.values() if handler.filename_regex
+        ]
+        filename_regex = regex_combine(*filename_patterns)
+        super().__init__(NewMessage(func=lambda e: filter_document_name(e, filename_regex), incoming=True))
+
+    @property
+    def usage_labels(self) -> List[str]:
+        return [f"neaten_doc_{site_code}" for site_code in self.handlers.site_codes()]
+
+    async def call(self, event: NewMessage.Event) -> None:
+        # Only deal with messages, not channel posts
+        if event.is_channel and not event.is_group:
+            return
+        if not event.message.document or not event.message.document.attributes:
+            return
+        # Collect up raw filenames
+        filenames = [
+            attr.file_name for attr in event.message.document.attributes if isinstance(attr, DocumentAttributeFilename)
+        ]
+        if not filenames:
+            return
+        # Gather which ones match sites
+        site_filenames = []
+        for filename in filenames:
+            site_filenames += self.handlers.list_potential_filenames(filename)
+        if not site_filenames:
+            return
+        # Try and find source
+        async with in_progress_msg(event, "Trying to find a source from filename"):
+            logger.info("Neatening document from filename")
+            submission_ids = await self.handlers.get_sub_ids_from_filenames(site_filenames)
+            if not submission_ids:
+                await _return_error_in_privmsg(
+                    event,
+                    f"Cannot find a source for this document. For gifs you could try @reverseSearchBot."
+                )
+                raise StopPropagation
+            # Remove duplicates, preserving order
+            submission_ids = list(dict.fromkeys(submission_ids))
+            # Handle each submission
+            for submission_id in submission_ids:
+                await self._handle_submission_link(event, submission_id)
+            raise StopPropagation
+
+    async def _handle_submission_link(self, event: NewMessage.Event, sub_id: SubmissionID) -> None:
+        logger.info("Found a submission matching the document, ID: %s", sub_id)
+        self.usage_counter.labels(function=f"neaten_doc_{sub_id.site_code}").inc()
+        try:
+            await self.handlers.send_submission(sub_id, event)
+        except CantSendFileType as e:
+            logger.warning("Can't send file type. Submission ID: %s", sub_id)
+            await _return_error_in_privmsg(event, str(e))
+        except NotFound:
+            logger.warning("Submission invalid or deleted. Submission ID: %s", sub_id)
+            handler = self.handlers.handler_for_sub_id(sub_id)
+            if handler:
+                link = handler.link_for_submission(sub_id.submission_id)
+                await _return_error_in_privmsg(
+                    event,
+                    f"This seems to match submission {link}, but it does not exist on {handler.site_name}."
+                )
+            else:
+                await _return_error_in_privmsg(
+                    event,
+                    f"This document matched something, but I can't neaten links from that site."
+                )
+        except CloudflareError:
+            logger.warning("Cloudflare error")
+            site_name = "The site"
+            handler = self.handlers.handler_for_sub_id(sub_id)
+            link_suffix = ""
+            if handler:
+                site_name = handler.site_name
+                link = handler.link_for_submission(sub_id.submission_id)
+                link_suffix = f" The submission link is: {link}"
+            await _return_error_in_privmsg(
+                event,
+                f"{site_name} returned a cloudflare error, so I cannot embed that document at the moment.{link_suffix}",
+            )
+        except Exception as e:
+            logger.error("Unhandled exception trying to embed document for submission: %s", sub_id, exc_info=e)
             raise e

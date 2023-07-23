@@ -21,7 +21,8 @@ from fa_search_bot.functionalities.inline_favs import InlineFavsFunctionality
 from fa_search_bot.functionalities.inline_gallery import InlineGalleryFunctionality
 from fa_search_bot.functionalities.inline_neaten import InlineNeatenFunctionality
 from fa_search_bot.functionalities.inline_search import InlineSearchFunctionality
-from fa_search_bot.functionalities.neaten import NeatenFunctionality
+from fa_search_bot.functionalities.neaten import NeatenFunctionality, \
+    NeatenDocumentFilenameFunctionality
 from fa_search_bot.functionalities.subscriptions import BlocklistFunctionality, SubscriptionFunctionality
 from fa_search_bot.functionalities.supergroup_upgrade import SupergroupUpgradeFunctionality
 from fa_search_bot.functionalities.unhandled import UnhandledMessageFunctionality
@@ -204,6 +205,7 @@ class FASearchBot:
         functionalities = [
             BeepFunctionality(),
             WelcomeFunctionality(),
+            NeatenDocumentFilenameFunctionality(handler_group),
             ImageHashRecommendFunctionality(),
             NeatenFunctionality(handler_group),
             InlineFavsFunctionality(self.api, self.submission_cache),
