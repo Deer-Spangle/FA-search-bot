@@ -108,7 +108,7 @@ class FAHandler(SiteHandler):
         fa_filename = self.FA_FILES.match(filename.link)
         if fa_filename:
             username = fa_filename.group(2)
-            image_id = fa_filename.group(1)
+            image_id = int(fa_filename.group(1))
             submission_id = await self._find_submission(username, image_id)
             if submission_id:
                 sub_id = SubmissionID(self.site_code, submission_id)
