@@ -39,7 +39,7 @@ class FAHandler(SiteHandler):
     )
     FA_THUMB_LINK = re.compile(r"t2?\.(?:facdn|furaffinity)\.net/([0-9]+)@[0-9]+-[0-9]+\.jpg", re.I)
     FA_LINKS = regex_combine(FA_SUB_LINK, FA_DIRECT_LINK, FA_THUMB_LINK)
-    FA_FILES = re.compile(r"([0-9]+)\.([^_]+)_\S.gif(\.mp4)?", re.I)
+    FA_FILES = re.compile(r"([0-9]+)\.([^_]+)_\S+\.gif(\.mp4)?", re.I)
 
     def __init__(self, api: FAExportAPI) -> None:
         self.api = api
