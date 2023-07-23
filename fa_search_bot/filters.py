@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from telethon.tl.types import DocumentAttributeFilename
+
 if TYPE_CHECKING:
     import re
 
@@ -30,3 +32,14 @@ def filter_image_no_caption(event: NewMessage.Event) -> bool:
     text = event.message.text
     media = event.message.photo or event.message.document
     return not (text or has_buttons) and media
+
+
+def filter_document_name(event: NewMessage.Event, pattern: re.Pattern) -> bool:
+    if not event.message.document:
+        return False
+    filename_attrs = [
+        attr for attr in event.message.document.attributes if isinstance(attr, DocumentAttributeFilename)
+    ]
+    if not filename_attrs:
+        return False
+    return any([pattern.search(attr.file_name) for attr in filename_attrs])
