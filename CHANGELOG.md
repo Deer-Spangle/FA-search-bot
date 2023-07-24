@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.2] - 2023-07-24
+
+### Added
+
+- Added the ability for the bot to lookup some submissions by filename, allowing automatically embedded FA gifs to be
+  optimised, or downloaded e621 files to be looked up.
+
 ## [1.15.1] - 2023-07-21
 
 ### Fixed
