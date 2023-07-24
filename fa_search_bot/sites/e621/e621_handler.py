@@ -49,7 +49,7 @@ class E621Handler(SiteHandler):
     OLD_POST_LINK = re.compile(r"e(?:621|926)\.net/post/show/([0-9]+)", re.I)
     DIRECT_LINK = re.compile(r"e(?:621|926).net/data/(?:sample/)?[0-9a-f]{2}/[0-9a-f]{2}/([0-9a-f]+)")
     E6_LINKS = regex_combine(POST_LINK, OLD_POST_LINK, DIRECT_LINK)
-    E6_FILES = re.compile(r"([0-9a-z]{32})\.(webm|gif|gif\.mp4)")
+    E6_FILES = re.compile(r"([0-9a-z]{32})\.")
     POST_HASH = re.compile(r"^[0-9a-f]{32}$", re.I)
 
     def __init__(self, api: AsyncYippiClient):
