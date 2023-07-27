@@ -9,6 +9,14 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.3] - 2023-0-27
+
+### Modified
+
+- Change `fasearchbot_fasubwatcher_latest_posted_at_unixtime` metric to record the FA posted timestamp of the last
+  submission sent by the subscription Sender, rather than the last one whose data was fetched by the DataFetcher.
+- MediaFetcher will attempt to re-upload to Telegram if it gets a ClientPayloadError during upload
+
 ## [1.15.2] - 2023-07-24
 
 ### Added
