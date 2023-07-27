@@ -75,7 +75,7 @@ gauge_running_task_count = Gauge(
 )
 latest_sub_posted_at = Gauge(
     "fasearchbot_fasubwatcher_latest_posted_at_unixtime",
-    "Time that the latest processed submission was posted on FA",
+    "Time that the latest posted submission was posted on FA",
 )
 
 

@@ -81,8 +81,6 @@ class DataFetcher(Runnable):
             counter_subs_missed.inc()
             return
         counter_subs_found.inc()
-        # Log the posting date of the latest checked submission
-        self.watcher.update_latest_observed(full_result.posted_at)
         # See if any subscriptions match the submission
         with time_taken_checking_matches.time():
             matching_subscriptions = self.watcher.check_subscriptions(full_result)

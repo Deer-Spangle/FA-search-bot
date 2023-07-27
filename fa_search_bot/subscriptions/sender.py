@@ -56,6 +56,8 @@ class Sender(Runnable):
         with time_taken_sending_messages.time():
             await self._send_updates(next_state)
         logger.debug("Sent messages for submission %s", next_state.sub_id)
+        # Log the posting date of the latest sent submission
+        self.watcher.update_latest_observed(next_state.full_data.posted_at)
         # Update latest ids with the submission we just checked, and save config
         with time_taken_saving_config.time():
             self.watcher.update_latest_id(next_state.sub_id)
