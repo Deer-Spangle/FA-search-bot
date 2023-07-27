@@ -5,6 +5,7 @@ import logging
 from asyncio import QueueEmpty
 from typing import Optional
 
+from aiohttp import ClientPayloadError
 from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
@@ -62,6 +63,14 @@ class MediaFetcher(Runnable):
                 return await sendable.upload(self.watcher.client)
             except ConnectionError as e:
                 logger.warning("Upload failed, telegram has disconnected, trying again in %s", self.CONNECTION_BACKOFF)
+                await self._wait_while_running(self.CONNECTION_BACKOFF)
+                continue
+            except ClientPayloadError as e:
+                logger.warning(
+                    "Upload failed, telegram response incomplete, trying again in %s",
+                    self.CONNECTION_BACKOFF,
+                    exc_info=e,
+                )
                 await self._wait_while_running(self.CONNECTION_BACKOFF)
                 continue
         raise ShutdownError("Media fetcher has shutdown while trying to upload media")
