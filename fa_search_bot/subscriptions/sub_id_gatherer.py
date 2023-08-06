@@ -45,7 +45,7 @@ class SubIDGatherer(Runnable):
         super().__init__(watcher)
         self.latest_recorded_id: Optional[int] = None
         if self.watcher.latest_ids:
-            self.latest_recorded_id = int(self.watcher.latest_ids[-1])
+            self.latest_recorded_id = max(int(x) for x in self.watcher.latest_ids)
 
     async def do_process(self) -> None:
         try:
