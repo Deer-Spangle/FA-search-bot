@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, Lis
 
 import aiohttp
 import docker
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
 from telethon import Button
@@ -329,10 +329,6 @@ async def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
         yield DownloadedFile(dl_path, dl_filesize)
 
 
-def _img_is_animated(img: Image) -> bool:
-    return getattr(img, "is_animated", False)
-
-
 def _img_has_transparency(img: Image) -> bool:
     if img.info.get("transparency", None) is not None:
         return True
@@ -357,7 +353,7 @@ def _is_animated(file_path: str) -> bool:
         return False
     with Image.open(file_path) as img:
         # is_animated attribute might not exist, if file is a jpg named ".png"
-        return _img_is_animated(img)
+        return getattr(img, "is_animated", False)
 
 
 WrapReturn = TypeVar("WrapReturn", covariant=True)
@@ -542,7 +538,9 @@ class Sendable(InlineSendable):
                         force_document=settings.force_doc,
                         parse_mode="html",  # Markdown is not safe here, because of the prefix.
                     )
-            sent_sub = SentSubmission.from_resp(self.submission_id, msg, self.download_url, self.caption(settings.caption))
+            sent_sub = SentSubmission.from_resp(
+                self.submission_id, msg, self.download_url, self.caption(settings.caption)
+            )
             if sent_sub:
                 sent_sub.save_cache = settings.save_cache
             return sent_sub
@@ -555,7 +553,7 @@ class Sendable(InlineSendable):
         # Handle potentially animated formats
         if ext in self.EXTENSIONS_ANIMATED:
             async with _downloaded_file(self.download_url) as dl_file:
-                if _is_animated(dl_file.dl_path):
+                if self._is_animated(dl_file.dl_path):
                     return await self._upload_video(client, dl_file, settings)
                 else:
                     return await self._upload_image(client, dl_file, settings)
@@ -588,6 +586,18 @@ class Sendable(InlineSendable):
         settings.caption.direct_link = True
         async with _downloaded_file(self.preview_image_url) as dl_file:
             return await self._upload_image(client, dl_file, settings)
+
+    def _save_to_debug(self, file_path: str) -> None:
+        os.makedirs("debug", exist_ok=True)
+        ext = file_ext(file_path)
+        shutil.copy(file_path, f"debug/{self.submission_id.site_code}_{self.submission_id.submission_id}.{ext}")
+
+    def _is_animated(self, file_path: str) -> bool:
+        try:
+            return _is_animated(file_path)
+        except UnidentifiedImageError as e:
+            self._save_to_debug(file_path)
+            raise e
 
     async def _upload_video(
             self,
@@ -678,8 +688,7 @@ class Sendable(InlineSendable):
                     try:
                         img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
                     except OSError as e:
-                        os.makedirs("debug", exist_ok=True)
-                        shutil.copy(dl_file.dl_path, f"debug/{self.submission_id.site_code}_{self.submission_id.submission_id}.{dl_file.file_ext()}")
+                        self._save_to_debug(dl_file.dl_path)
                         raise e
 
             filesize = os.path.getsize(output_file)
