@@ -10,12 +10,13 @@ import os
 import shutil
 import uuid
 from abc import ABC, abstractmethod
+from asyncio import Lock
 from contextlib import contextmanager, asynccontextmanager
-from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, List
+from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, List, ContextManager
 
 import aiohttp
 import docker
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, ImageFile
 from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
 from telethon import Button
@@ -135,6 +136,11 @@ convert_video_two_pass = Counter(
 convert_gif_total = Counter(
     "fasearchbot_convert_gif_total",
     "Number of animated images or short silent videos we tried to convert into telegram gifs",
+    labelnames=["site_code"],
+)
+convert_image_failures = Counter(
+    "fasearchbot_convert_image_exception_total",
+    "Number of telegram image conversions/resize attempts which raised an exception",
     labelnames=["site_code"],
 )
 thumbnail_video_failures = Counter(
@@ -348,12 +354,31 @@ def _img_size(img: Image) -> Tuple[int, int]:
     return img.size
 
 
+IMG_EDIT_LOCK = Lock()
+
+
+@asynccontextmanager
+def open_image(img_path: str, *, load_truncated: bool = False) -> ContextManager[Image]:
+    async with IMG_EDIT_LOCK:
+        try:
+            ImageFile.LOAD_TRUNCATED_IMAGES = load_truncated
+            with Image.open(img_path) as img:
+                yield img
+        finally:
+            ImageFile.LOAD_TRUNCATED_IMAGES = False
+
+
 def _is_animated(file_path: str) -> bool:
     if file_ext(file_path) not in Sendable.EXTENSIONS_ANIMATED:
         return False
-    with Image.open(file_path) as img:
-        # is_animated attribute might not exist, if file is a jpg named ".png"
-        return getattr(img, "is_animated", False)
+    try:
+        with open_image(file_path) as img:
+            # is_animated attribute might not exist, if file is a jpg named ".png"
+            return getattr(img, "is_animated", False)
+    except (OSError, UnidentifiedImageError) as e:
+        logger.warning("Failed to load image %s, trying with truncated image flag", file_path, exc_info=e)
+        with open_image(file_path, load_truncated=True) as img:
+            return getattr(img, "is_animated", False)
 
 
 WrapReturn = TypeVar("WrapReturn", covariant=True)
@@ -652,44 +677,26 @@ class Sendable(InlineSendable):
             settings.caption.direct_link = True
         # Load as image and check things
         with temp_sandbox_file("jpg") as output_file:
-            with Image.open(dl_file.dl_path) as img:
-                # Get exif data
-                exif = img.info.get("exif")
-
-                # Check image resolution and scale
-                width, height = _img_size(img)
-                semiperimeter = width + height
-                if semiperimeter > self.SEMIPERIMETER_LIMIT_IMAGE:
-                    settings.caption.direct_link = True
-                    scale_factor = self.SEMIPERIMETER_LIMIT_IMAGE / semiperimeter
-                    new_width = int(width * scale_factor)
-                    new_height = int(height * scale_factor)
-                    img = img.resize((new_width, new_height), Image.ANTIALIAS)
-
-                # Mask out transparency
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                alpha_index = img.mode.find('A')
-                if alpha_index != -1:
-                    if _img_has_transparency(img):
-                        settings.caption.direct_link = True
-                    result = Image.new('RGB', img.size, self.IMG_TRANSPARENCY_COlOUR)
-                    result.paste(img, mask=img.split()[alpha_index])
-                    img = result
-
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-
-                # Save image as jpg
-                with open(output_file, "wb") as out_handle:
-                    kwargs = {}
-                    if exif:
-                        kwargs["exif"] = exif
-                    try:
-                        img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
-                    except OSError as e:
-                        self._save_to_debug(dl_file.dl_path)
-                        raise e
+            try:
+                with open_image(dl_file.dl_path) as img:
+                    settings = await self._convert_image(img, output_file)
+            except (OSError, UnidentifiedImageError) as e:
+                logger.warning(
+                    "Failed to convert image %s, trying with truncated image flag",
+                    self.submission_id,
+                    exc_info=e
+                )
+                try:
+                    with open_image(dl_file.dl_path, load_truncated=True) as img:
+                        settings = await self._convert_image(img, output_file)
+                except (OSError, UnidentifiedImageError) as e2:
+                    logger.error(
+                        "Failed to convert image %s, even with truncated image flag",
+                        self.submission_id,
+                        exc_info=e2
+                    )
+                    self._save_to_debug(dl_file.dl_path)
+                    raise e2
 
             filesize = os.path.getsize(output_file)
             with time_taken_uploading_file.time():
@@ -730,6 +737,43 @@ class Sendable(InlineSendable):
     @abstractmethod
     def caption(self, settings: CaptionSettings, prefix: Optional[str] = None) -> str:
         raise NotImplementedError  # TODO: Pull caption builder out, I guess? Three implementations of caption data?
+
+    @_count_exceptions_with_labels(convert_image_failures)
+    async def _convert_image(self, img: Image, output_path: str, settings: SendSettings) -> SendSettings:
+        # Get exif data
+        exif = img.info.get("exif")
+
+        # Check image resolution and scale
+        width, height = _img_size(img)
+        semiperimeter = width + height
+        if semiperimeter > self.SEMIPERIMETER_LIMIT_IMAGE:
+            settings.caption.direct_link = True
+            scale_factor = self.SEMIPERIMETER_LIMIT_IMAGE / semiperimeter
+            new_width = int(width * scale_factor)
+            new_height = int(height * scale_factor)
+            img = img.resize((new_width, new_height), Image.ANTIALIAS)
+
+        # Mask out transparency
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        alpha_index = img.mode.find('A')
+        if alpha_index != -1:
+            if _img_has_transparency(img):
+                settings.caption.direct_link = True
+            result = Image.new('RGB', img.size, self.IMG_TRANSPARENCY_COlOUR)
+            result.paste(img, mask=img.split()[alpha_index])
+            img = result
+
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # Save image as jpg
+        with open(output_path, "wb") as out_handle:
+            kwargs = {}
+            if exif:
+                kwargs["exif"] = exif
+            img.save(out_handle, 'JPEG', progressive=True, quality=95, **kwargs)
+        return settings
 
     @_count_exceptions_with_labels(thumbnail_video_failures)
     async def _thumbnail_video(self, video_path: str, thumbnail_path: str) -> None:
