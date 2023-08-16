@@ -358,7 +358,7 @@ IMG_EDIT_LOCK = Lock()
 
 
 @asynccontextmanager
-def open_image(img_path: str, *, load_truncated: bool = False) -> ContextManager[Image]:
+async def open_image(img_path: str, *, load_truncated: bool = False) -> ContextManager[Image]:
     async with IMG_EDIT_LOCK:
         try:
             ImageFile.LOAD_TRUNCATED_IMAGES = load_truncated
@@ -368,16 +368,16 @@ def open_image(img_path: str, *, load_truncated: bool = False) -> ContextManager
             ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 
-def _is_animated(file_path: str) -> bool:
+async def _is_animated(file_path: str) -> bool:
     if file_ext(file_path) not in Sendable.EXTENSIONS_ANIMATED:
         return False
     try:
-        with open_image(file_path) as img:
+        async with open_image(file_path) as img:
             # is_animated attribute might not exist, if file is a jpg named ".png"
             return getattr(img, "is_animated", False)
     except (OSError, UnidentifiedImageError) as e:
         logger.warning("Failed to load image %s, trying with truncated image flag", file_path, exc_info=e)
-        with open_image(file_path, load_truncated=True) as img:
+        async with open_image(file_path, load_truncated=True) as img:
             return getattr(img, "is_animated", False)
 
 
@@ -578,7 +578,7 @@ class Sendable(InlineSendable):
         # Handle potentially animated formats
         if ext in self.EXTENSIONS_ANIMATED:
             async with _downloaded_file(self.download_url) as dl_file:
-                if self._is_animated(dl_file.dl_path):
+                if await self._is_animated(dl_file.dl_path):
                     return await self._upload_video(client, dl_file, settings)
                 else:
                     return await self._upload_image(client, dl_file, settings)
@@ -617,9 +617,9 @@ class Sendable(InlineSendable):
         ext = file_ext(file_path)
         shutil.copy(file_path, f"debug/{self.submission_id.site_code}_{self.submission_id.submission_id}.{ext}")
 
-    def _is_animated(self, file_path: str) -> bool:
+    async def _is_animated(self, file_path: str) -> bool:
         try:
-            return _is_animated(file_path)
+            return await _is_animated(file_path)
         except UnidentifiedImageError as e:
             self._save_to_debug(file_path)
             raise e
@@ -678,8 +678,8 @@ class Sendable(InlineSendable):
         # Load as image and check things
         with temp_sandbox_file("jpg") as output_file:
             try:
-                with open_image(dl_file.dl_path) as img:
-                    settings = await self._convert_image(img, output_file)
+                async with open_image(dl_file.dl_path) as img:
+                    settings = await self._convert_image(img, output_file, settings)
             except (OSError, UnidentifiedImageError) as e:
                 logger.warning(
                     "Failed to convert image %s, trying with truncated image flag",
@@ -687,8 +687,8 @@ class Sendable(InlineSendable):
                     exc_info=e
                 )
                 try:
-                    with open_image(dl_file.dl_path, load_truncated=True) as img:
-                        settings = await self._convert_image(img, output_file)
+                    async with open_image(dl_file.dl_path, load_truncated=True) as img:
+                        settings = await self._convert_image(img, output_file, settings)
                 except (OSError, UnidentifiedImageError) as e2:
                     logger.error(
                         "Failed to convert image %s, even with truncated image flag",
