@@ -87,7 +87,11 @@ class FAExportAPI:
         with api_request_times.labels(endpoint=endpoint_label.value).time():
             async with self.session.get(f"/{path}") as resp:
                 await resp.read()
-        if resp.status == 503:
+        error_type = None
+        if resp.status != 200:
+            error_data = await resp.json()
+            error_type = error_data.get("error_type")
+        if resp.status in [429, 503] or error_type in ["fa_cloudflare", "fa_slowdown"]:
             cloudflare_errors.labels(endpoint=endpoint_label.value).inc()
             raise CloudflareError()
         return resp
