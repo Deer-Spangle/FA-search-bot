@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,7 @@ from fa_search_bot.filters import filter_regex, filter_document_name
 from fa_search_bot.functionalities.functionalities import BotFunctionality, in_progress_msg
 from fa_search_bot.sites.furaffinity.fa_export_api import CloudflareError
 from fa_search_bot.sites.sendable import CantSendFileType
+from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_handler import NotFound
 from fa_search_bot.utils import regex_combine
 
@@ -30,6 +32,8 @@ async def _return_error_in_privmsg(event: NewMessage.Event, error_message: str) 
 
 
 class NeatenFunctionality(BotFunctionality):
+    CLOUDFLARE_BACKOFFS = [1, 5, 5, 10, 20, 60]
+
     def __init__(self, handler_group: HandlerGroup):
         self.handlers = handler_group
         link_regex = regex_combine(*[handler.link_regex for handler in handler_group.handlers.values()])
@@ -85,7 +89,7 @@ class NeatenFunctionality(BotFunctionality):
         logger.info("Found a link, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_{sub_id.site_code}").inc()
         try:
-            await self.handlers.send_submission(sub_id, event)
+            await self._send_retry_cloudflare(event, sub_id)
         except CantSendFileType as e:
             logger.warning("Can't send file type. Submission ID: %s", sub_id)
             await _return_error_in_privmsg(event, str(e))
@@ -117,8 +121,19 @@ class NeatenFunctionality(BotFunctionality):
             logger.error("Unhandled exception trying to neaten submission %s", sub_id, exc_info=e)
             raise e
 
+    async def _send_retry_cloudflare(self, event: NewMessage.Event, sub_id: SubmissionID) -> SentSubmission:
+        for backoff_time in self.CLOUDFLARE_BACKOFFS:
+            try:
+                return await self.handlers.send_submission(sub_id, event)
+            except CloudflareError:
+                logger.warning("Cloudflare error sending %s, retrying in %s seconds", sub_id, backoff_time)
+                await asyncio.sleep(backoff_time)
+        return await self.handlers.send_submission(sub_id, event)
+
 
 class NeatenDocumentFilenameFunctionality(BotFunctionality):
+    CLOUDFLARE_BACKOFFS = [1, 5, 5, 10, 20, 60]
+
     def __init__(self, handler_group: HandlerGroup):
         self.handlers = handler_group
         filename_patterns = [
@@ -170,7 +185,7 @@ class NeatenDocumentFilenameFunctionality(BotFunctionality):
         logger.info("Found a submission matching the document, ID: %s", sub_id)
         self.usage_counter.labels(function=f"neaten_doc_{sub_id.site_code}").inc()
         try:
-            await self.handlers.send_submission(sub_id, event)
+            await self._send_retry_cloudflare(event, sub_id)
         except CantSendFileType as e:
             logger.warning("Can't send file type. Submission ID: %s", sub_id)
             await _return_error_in_privmsg(event, str(e))
@@ -204,3 +219,12 @@ class NeatenDocumentFilenameFunctionality(BotFunctionality):
         except Exception as e:
             logger.error("Unhandled exception trying to embed document for submission: %s", sub_id, exc_info=e)
             raise e
+
+    async def _send_retry_cloudflare(self, event: NewMessage.Event, sub_id: SubmissionID) -> SentSubmission:
+        for backoff_time in self.CLOUDFLARE_BACKOFFS:
+            try:
+                return await self.handlers.send_submission(sub_id, event)
+            except CloudflareError:
+                logger.warning("Cloudflare error sending %s, retrying in %s seconds", sub_id, backoff_time)
+                await asyncio.sleep(backoff_time)
+        return await self.handlers.send_submission(sub_id, event)
