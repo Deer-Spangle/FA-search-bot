@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.7] - 2023-08-31
+
+### Changed
+
+- Raise exception if unexpected status code received while downloading image. (May lower reliability until we find out
+  where these exceptions get raised)
+
 ## [1.15.6] - 2023-08-24
 
 ### Changed
