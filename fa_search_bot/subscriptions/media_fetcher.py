@@ -9,7 +9,7 @@ from aiohttp import ClientPayloadError
 from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
-from fa_search_bot.sites.sendable import UploadedMedia
+from fa_search_bot.sites.sendable import UploadedMedia, DownloadError
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
 from fa_search_bot.subscriptions.utils import time_taken
 
@@ -51,8 +51,15 @@ class MediaFetcher(Runnable):
         cache_misses.inc()
         # Upload the file
         logger.debug("Uploading submission media: %s", sub_id)
-        with time_taken_uploading.time():
-            uploaded_media = await self.upload_sendable(sendable)
+        try:
+            with time_taken_uploading.time():
+                uploaded_media = await self.upload_sendable(sendable)
+        except DownloadError as e:
+            if e.exc.status == 404:
+                logger.debug("Submission %s disappeared before it could be uploaded, removing from waitpool", sub_id)
+                await self.watcher.wait_pool.remove_state(sub_id)
+                return
+            raise e
         logger.debug("Upload complete for %s, publishing to wait pool", sub_id)
         with time_taken_publishing.time():
             await self.watcher.wait_pool.set_uploaded(sub_id, uploaded_media)
