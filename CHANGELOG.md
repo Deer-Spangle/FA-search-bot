@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.9] - 2023-08-31
+
+### Changed
+
+- Instead of skipping submissions when the media returns 404, the media fetcher will push them back to the data fetcher
+  to fetch the data again, in case the submission's media URL has changed, rather than the submission being deleted.
+
 ## [1.15.8] - 2023-08-31
 
 ### Fixed
