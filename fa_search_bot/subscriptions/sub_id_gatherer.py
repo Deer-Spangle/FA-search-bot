@@ -60,7 +60,7 @@ class SubIDGatherer(Runnable):
             # Publish submission ID to queues for the other tasks
             with time_taken_publishing.time():
                 await self.watcher.wait_pool.add_sub_id(sub_id)
-                await self.watcher.fetch_data_queue.put(sub_id)
+                await self.watcher.fetch_data_queue.put_new(sub_id)
         # Wait before checking for more
         with time_taken_waiting.time():
             await self._wait_while_running(self.NEW_ID_BACKOFF)

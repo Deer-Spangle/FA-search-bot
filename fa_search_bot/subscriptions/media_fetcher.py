@@ -10,6 +10,7 @@ from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia, DownloadError
+from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
 from fa_search_bot.subscriptions.utils import time_taken
 
@@ -56,13 +57,16 @@ class MediaFetcher(Runnable):
                 uploaded_media = await self.upload_sendable(sendable)
         except DownloadError as e:
             if e.exc.status == 404:
-                logger.debug("Submission %s disappeared before it could be uploaded, removing from waitpool", sub_id)
-                await self.watcher.wait_pool.remove_state(sub_id)
+                await self.handle_deleted(sub_id)
                 return
             raise e
         logger.debug("Upload complete for %s, publishing to wait pool", sub_id)
         with time_taken_publishing.time():
             await self.watcher.wait_pool.set_uploaded(sub_id, uploaded_media)
+
+    async def handle_deleted(self, sub_id: SubmissionID) -> None:
+        logger.debug("Media for %s disappeared before it could be uploaded, throwing back to the fetch queue", sub_id)
+        await self.watcher.fetch_data_queue.put_refresh(sub_id)
 
     async def upload_sendable(self, sendable: SendableFASubmission) -> Optional[UploadedMedia]:
         while self.running:
