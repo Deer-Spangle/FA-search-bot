@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Callable, TypeVar, Generator, Tuple, Dict, Lis
 import aiohttp
 import docker
 from PIL import Image, UnidentifiedImageError, ImageFile
+from aiohttp import ClientError
 from prometheus_client import Counter, Summary
 from prometheus_client.metrics import Histogram
 from telethon import Button
@@ -312,6 +313,12 @@ def temp_sandbox_file(ext: str = "mp4") -> Generator[str, None, None]:
             pass
 
 
+class DownloadError(Exception):
+    def __init__(self, url: str, exc: ClientError) -> None:
+        self.url = url
+        self.exc = exc
+
+
 @dataclasses.dataclass
 class DownloadedFile:
     dl_path: str
@@ -328,6 +335,10 @@ async def _downloaded_file(url: str) -> Generator[DownloadedFile, None, None]:
             session = aiohttp.ClientSession()
             dl_filesize = 0
             async with session.get(url) as resp:
+                try:
+                    resp.raise_for_status()
+                except ClientError as e:
+                    raise DownloadError(url, e)
                 with open(dl_path, "wb") as f:
                     async for chunk in resp.content.iter_chunked(8192):
                         f.write(chunk)
