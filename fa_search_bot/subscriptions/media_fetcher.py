@@ -73,7 +73,11 @@ class MediaFetcher(Runnable):
             try:
                 return await sendable.upload(self.watcher.client)
             except ConnectionError as e:
-                logger.warning("Upload failed, telegram has disconnected, trying again in %s", self.CONNECTION_BACKOFF)
+                logger.warning(
+                    "Upload failed, telegram has disconnected, trying again in %s",
+                    self.CONNECTION_BACKOFF,
+                    exc_info=e
+                )
                 await self._wait_while_running(self.CONNECTION_BACKOFF)
                 continue
             except ClientPayloadError as e:
