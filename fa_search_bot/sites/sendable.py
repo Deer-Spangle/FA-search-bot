@@ -620,8 +620,15 @@ class Sendable(InlineSendable):
         # Handle files telegram can't handle
         sendable_other.labels(site_code=self.site_id).inc()
         settings.caption.direct_link = True
-        async with _downloaded_file(self.preview_image_url) as dl_file:
-            return await self._upload_image(client, dl_file, settings)
+        try:
+            async with _downloaded_file(self.preview_image_url) as dl_file:
+                return await self._upload_image(client, dl_file, settings)
+        except DownloadError as e:
+            # Sometimes with stories, the preview image does not exist, so use thumbnail
+            if e.exc.status == 404:
+                async with _downloaded_file(self.thumbnail_url) as dl_file:
+                    return await self._upload_image(client, dl_file, settings)
+            raise e
 
     def _save_to_debug(self, file_path: str) -> None:
         os.makedirs("debug", exist_ok=True)
