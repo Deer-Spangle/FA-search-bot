@@ -10,6 +10,11 @@ import requests
 # 50, 75, 100, 120, 150, 200, 250, 300, 320, 400, 600
 # There are no other valid thumbnail sizes under 2000 pixels
 ###
+# Results (2023-09-03)
+# Re-running this script now, the set of thumbnail sizes has been reduced once again.
+# Now the only valid sizes are:
+# 200, 300, 400, 600
+###
 
 for size in range(5, 2000, 5):
     thumb_url = f"https://t.furaffinity.net/19925704@{size}-1462827244.jpg"
