@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.10] - 2023-09-03
+
+### Fixed
+
+- If a story submission lacks a preview image, try using the thumbnail image instead. This should avoid the subscription
+  watcher ending up in a cycle passing a submission back and forth between data fetcher and media fetcher.
+
 ## [1.15.9] - 2023-08-31
 
 ### Changed
