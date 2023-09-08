@@ -88,4 +88,10 @@ class MediaFetcher(Runnable):
                 )
                 await self._wait_while_running(self.CONNECTION_BACKOFF)
                 continue
+            except DownloadError as e:
+                if e.exc.status == 502:
+                    logger.warning("Media download failed with 502 error. Trying again in %s", self.CONNECTION_BACKOFF)
+                    await self._wait_while_running(self.CONNECTION_BACKOFF)
+                    continue
+                raise e
         raise ShutdownError("Media fetcher has shutdown while trying to upload media")
