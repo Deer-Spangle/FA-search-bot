@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.11] - 2023-09-08
+
+### Fixed
+
+- If subscription watcher gets 502 error while downloading media, backoff and try again
+
 ## [1.15.10] - 2023-09-03
 
 ### Fixed
