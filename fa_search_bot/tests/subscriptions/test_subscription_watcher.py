@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from fa_search_bot.sites.submission_id import SubmissionID
-from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery, WordQuery
+from fa_search_bot.subscriptions.query_parser import AndQuery, NotQuery, WordQuery
 from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.tests.util.mock_export_api import MockExportAPI, MockSubmission

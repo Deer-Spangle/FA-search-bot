@@ -1,6 +1,6 @@
 import datetime
 
-from subscriptions.fa_search_bot.query_parser import AndQuery, NotQuery, RatingQuery, WordQuery
+from fa_search_bot.subscriptions.query_parser import AndQuery, NotQuery, RatingQuery, WordQuery
 from fa_search_bot.sites.furaffinity.fa_submission import Rating
 from fa_search_bot.subscriptions.subscription import Subscription
 from fa_search_bot.tests.util.submission_builder import SubmissionBuilder

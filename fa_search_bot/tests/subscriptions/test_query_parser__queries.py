@@ -1,4 +1,4 @@
-from subscriptions.fa_search_bot.query_parser import (
+from fa_search_bot.subscriptions.query_parser import (
     AndQuery,
     ArtistField,
     DescriptionField,

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from telethon.events import NewMessage, StopPropagation
 
 from fa_search_bot.functionalities.functionalities import BotFunctionality
-from subscriptions.fa_search_bot.query_parser import InvalidQueryException
+from fa_search_bot.subscriptions.query_parser import InvalidQueryException
 from fa_search_bot.subscriptions.subscription import Subscription
 
 if TYPE_CHECKING:

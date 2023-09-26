@@ -13,7 +13,7 @@ from prometheus_client import Gauge
 
 from fa_search_bot.subscriptions.runnable import ShutdownError
 from fa_search_bot.subscriptions.utils import FetchQueue
-from subscriptions.fa_search_bot.query_parser import parse_query, AndQuery, NotQuery
+from fa_search_bot.subscriptions.query_parser import parse_query, Query, AndQuery, NotQuery
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher
 from fa_search_bot.subscriptions.media_fetcher import MediaFetcher
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
     from telethon import TelegramClient
 
-    from subscriptions.fa_search_bot.query_parser import Query
     from fa_search_bot.sites.furaffinity.fa_export_api import FAExportAPI
     from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
     from fa_search_bot.submission_cache import SubmissionCache
