@@ -225,7 +225,7 @@ class SendSettings:
 @dataclasses.dataclass
 class UploadedMedia:
     sub_id: SubmissionID
-    media: TypeInputMedia
+    media: Optional[TypeInputMedia]
     settings: SendSettings
 
 
