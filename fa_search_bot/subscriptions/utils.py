@@ -1,7 +1,10 @@
+import dataclasses
+import datetime
+import logging
 from asyncio import Queue, QueueEmpty
-from typing import List, Optional
+from typing import List, Optional, Dict
 
-from prometheus_client import Summary
+from prometheus_client import Summary, Gauge
 
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -11,12 +14,72 @@ time_taken = Summary(
     "Amount of time taken (in seconds) doing various tasks of the subscription watcher",
     labelnames=["runnable", "task"],
 )
+refresh_counter_dict_size = Gauge(
+    "fasearchbot_refreshcounter_dict_size",
+    "Number of submissions being tracked by the refresh counter",
+)
+refresh_counter_max_count = Gauge(
+    "faserchbot_refreshcounter_max_count",
+    "Maximum number of refreshes of any item in the refresh counter"
+)
+
+
+logger = logging.getLogger(__name__)
 
 
 def _latest_submission_in_list(submissions: List[FASubmission]) -> Optional[FASubmission]:
     if not submissions:
         return None
     return max(submissions, key=lambda sub: int(sub.submission_id))
+
+
+@dataclasses.dataclass
+class RefreshEntry:
+    refresh_count: int = 1
+    first_seen: datetime.datetime = dataclasses.field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    latest_seen: datetime.datetime = dataclasses.field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    def observe(self) -> None:
+        self.refresh_count += 1
+        self.latest_seen = datetime.datetime.now(datetime.timezone.utc)
+
+
+class TooManyRefresh(Exception):
+    pass
+
+
+class RefreshCounter:
+    MAX_AGE = datetime.timedelta(minutes=5)
+
+    def __init__(self, refresh_limit: int):
+        self.refresh_limit = refresh_limit
+        self._refresh_dict: Dict[SubmissionID, RefreshEntry] = {}
+        refresh_counter_dict_size.set_function(lambda: len(self._refresh_dict))
+        refresh_counter_max_count.set_function(
+            lambda: max([e.refresh_count for e in self._refresh_dict.values()] + [0])
+        )
+
+    def _clean(self) -> None:
+        old_ids = []
+        for sub_id, entry in self._refresh_dict.items():
+            if entry.latest_seen < (datetime.datetime.now(datetime.timezone.utc) - self.MAX_AGE):
+                old_ids.append(sub_id)
+        for sub_id in old_ids:
+            del self._refresh_dict[sub_id]
+
+    def add(self, sub_id: SubmissionID) -> None:
+        self._clean()
+        if entry := self._refresh_dict.get(sub_id):
+            if entry.refresh_count > self.refresh_limit:
+                logger.warning("Submission %s has been refreshed too many times, raising exception", sub_id)
+                raise TooManyRefresh()
+            entry.observe()
+            return
+        self._refresh_dict[sub_id] = RefreshEntry()
 
 
 class FetchQueue:
@@ -26,6 +89,7 @@ class FetchQueue:
     def __init__(self):
         self._new_queue: Queue[SubmissionID] = Queue()
         self._refresh_queue: Queue[SubmissionID] = Queue()
+        self.refresh_counter = RefreshCounter(refresh_limit=100)
 
     def get_nowait(self) -> SubmissionID:
         try:
@@ -37,6 +101,7 @@ class FetchQueue:
         await self._new_queue.put(sub_id)
 
     async def put_refresh(self, sub_id: SubmissionID) -> None:
+        self.refresh_counter.add(sub_id)
         await self._refresh_queue.put(sub_id)
 
     def qsize(self) -> int:
