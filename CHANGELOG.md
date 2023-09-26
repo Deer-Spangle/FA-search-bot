@@ -9,6 +9,14 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.12] - 2023-09-22
+
+### Fixed
+
+- Media fetcher will now correctly handle http 520 and 403 responses from FA CDN
+- Subscription watcher will now give up if it has been unsuccessful at fetching media for a submission over 100 times.
+- Fixing a bodged refactor and putting the query parser back inside fa_search_bot
+
 ## [1.15.11] - 2023-09-08
 
 ### Fixed
