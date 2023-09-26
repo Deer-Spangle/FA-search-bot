@@ -77,4 +77,6 @@ class SendableFASubmission(Sendable):
         lines.append(self.submission.link)
         if settings.direct_link:
             lines.append(f'<a href="{self.download_url}">Direct download</a>')
+        if settings.no_media:
+            lines.append("(No media)")
         return "\n".join(lines)

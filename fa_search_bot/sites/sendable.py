@@ -212,6 +212,7 @@ class CaptionSettings:
     direct_link: bool = False
     title: bool = False
     author: bool = False
+    no_media: bool = False
 
 
 @dataclasses.dataclass
