@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.13] - 2023-12-14
+
+### Fixed
+
+- Handling http 522 status code when attempting to download media in the media fetcher, and retrying after a short wait
+
 ## [1.15.12] - 2023-09-22
 
 ### Fixed
