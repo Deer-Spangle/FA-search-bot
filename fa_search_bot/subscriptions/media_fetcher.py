@@ -107,4 +107,6 @@ class MediaFetcher(Runnable):
                     await self._wait_while_running(self.CONNECTION_BACKOFF)
                     continue
                 raise e
+            except Exception as e:
+                raise ValueError("Failed to upload media to telegram for submission: %s", sendable.submission_id) from e
         raise ShutdownError("Media fetcher has shutdown while trying to upload media")
