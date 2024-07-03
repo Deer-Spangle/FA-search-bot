@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.14] - 2024-07-03
+
+### Added
+
+- Handle fxraffinity.net links as if they're furaffinity.net ones
+
 ## [1.15.13] - 2023-12-14
 
 ### Fixed
