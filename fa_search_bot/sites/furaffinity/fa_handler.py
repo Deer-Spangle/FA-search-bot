@@ -32,7 +32,7 @@ def _get_image_id_from_submission(submission: FASubmissionShort) -> int:
 
 
 class FAHandler(SiteHandler):
-    FA_SUB_LINK = re.compile(r"furaffinity\.net/view/([0-9]+)", re.I)
+    FA_SUB_LINK = re.compile(r"f[ux]raffinity\.net/view/([0-9]+)", re.I)
     FA_DIRECT_LINK = re.compile(
         r"d2?\.(?:facdn|furaffinity)\.net/art/([^/]+)/(?:|stories/|poetry/|music/)([0-9]+)/([0-9]+)\S+",
         re.I,
