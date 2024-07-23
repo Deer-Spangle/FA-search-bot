@@ -56,7 +56,10 @@ class MediaFetcher(Runnable):
                 uploaded_media = await self.upload_sendable(sendable)
         except DownloadError as e:
             if e.exc.status != 404:
-                raise e
+                raise ValueError(
+                    "Download error while uploading media to telegram for submission: %s",
+                    sendable.submission_id,
+                ) from e
             uploaded_media = await self.handle_deleted(sendable)
             if not uploaded_media:
                 return
@@ -106,10 +109,7 @@ class MediaFetcher(Runnable):
                     )
                     await self._wait_while_running(self.CONNECTION_BACKOFF)
                     continue
-                raise ValueError(
-                    "Download error while uploading media to telegram for submission: %s",
-                    sendable.submission_id,
-                ) from e
+                raise e
             except ServerDisconnectedError as e:
                 logger.warning(
                     "Disconnected from server while uploading %s, trying again in %s",
