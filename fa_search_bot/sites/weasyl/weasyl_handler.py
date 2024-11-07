@@ -9,6 +9,7 @@ from telethon import TelegramClient
 from telethon.tl.custom import InlineBuilder
 from telethon.tl.types import InputBotInlineResultPhoto, TypeInputPeer, InputBotInlineMessageID
 
+from fa_search_bot._version import __VERSION__
 from fa_search_bot.sites.sendable import InlineSendable
 from fa_search_bot.sites.sent_submission import SentSubmission
 from fa_search_bot.sites.site_handler import SiteHandler, NotFound, HandlerException
@@ -118,7 +119,8 @@ class WeasylHandler(SiteHandler):
     async def _get_post_by_id(self, submission_id: str) -> Dict:
         url = f"https://www.weasyl.com/api/submissions/{submission_id}/view"
         headers = {
-            "X-Weasyl-API-Key": self.api_key
+            "X-Weasyl-API-Key": self.api_key,
+            "User-Agent": f"FA-search-bot/{__VERSION__}"
         }
         with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
             with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
