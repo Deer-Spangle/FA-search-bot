@@ -114,7 +114,7 @@ class WeasylHandler(SiteHandler):
         url = f"https://www.weasyl.com/api/submissions/{submission_id}/view"
         headers = {
             "X-Weasyl-API-Key": self.api_key,
-            "User-Agent": f"FA-search-bot/{__VERSION__}"
+            "User-Agent": f"FA-search-bot/{__VERSION__}",
         }
         with api_request_times.labels(endpoint=Endpoint.SUBMISSION.value).time():
             with api_failures.labels(endpoint=Endpoint.SUBMISSION.value).count_exceptions():
