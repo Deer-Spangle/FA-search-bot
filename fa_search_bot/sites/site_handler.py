@@ -58,13 +58,11 @@ class SiteHandler(ABC):
     def filename_regex(self) -> Pattern:
         raise NotImplementedError
 
-    @abstractmethod
     def find_links_in_str(self, haystack: str) -> List[SiteLink]:
-        raise NotImplementedError
+        return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
 
-    @abstractmethod
     def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
-        raise NotImplementedError
+        return [SiteLink(self.site_code, match.group(0)) for match in self.filename_regex.finditer(haystack)]
 
     @abstractmethod
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:

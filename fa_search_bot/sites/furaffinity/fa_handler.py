@@ -60,12 +60,6 @@ class FAHandler(SiteHandler):
     def filename_regex(self) -> Pattern:
         return regex_combine(self.FA_FILES, self._fasearchbot_filename_regex)
 
-    def find_links_in_str(self, haystack: str) -> List[SiteLink]:
-        return [SiteLink(self.site_code, match.group(0)) for match in self.link_regex.finditer(haystack)]
-
-    def find_filenames_in_str(self, haystack: str) -> List[SiteLink]:
-        return [SiteLink(self.site_code, match.group(0)) for match in self.filename_regex.finditer(haystack)]
-
     async def get_submission_id_from_link(self, link: SiteLink) -> Optional[SubmissionID]:
         # Handle submission page link matches
         sub_match = self.FA_SUB_LINK.match(link.link)
