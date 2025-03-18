@@ -101,7 +101,7 @@ class MediaFetcher(Runnable):
                 await self._wait_while_running(self.CONNECTION_BACKOFF)
                 continue
             except DownloadError as e:
-                if e.exc.status in [502, 520, 522, 403]:
+                if e.exc.status in [502, 520, 522, 403, 524]:
                     logger.warning(
                         "Media download failed with %s error. Trying again in %s",
                         e.exc.status,
