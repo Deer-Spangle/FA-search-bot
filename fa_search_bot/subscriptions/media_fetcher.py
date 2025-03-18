@@ -5,7 +5,7 @@ import logging
 from asyncio import QueueEmpty
 from typing import Optional
 
-from aiohttp import ClientPayloadError, ServerDisconnectedError
+from aiohttp import ClientPayloadError, ServerDisconnectedError, ClientOSError
 from prometheus_client import Counter
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
@@ -113,6 +113,15 @@ class MediaFetcher(Runnable):
             except ServerDisconnectedError as e:
                 logger.warning(
                     "Disconnected from server while uploading %s, trying again in %s",
+                    sendable.submission_id,
+                    self.CONNECTION_BACKOFF,
+                    exc_info=e
+                )
+                await self._wait_while_running(self.CONNECTION_BACKOFF)
+                continue
+            except ClientOSError as e:
+                logger.warning(
+                    "Client error while uploading %s, trying again in %s",
                     sendable.submission_id,
                     self.CONNECTION_BACKOFF,
                     exc_info=e
