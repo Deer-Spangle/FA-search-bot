@@ -14,6 +14,7 @@ Changelog for FASearchBot, should include entries for these types of changes:
 ### Fixed
 
 - If FA returns 524 error on download, retry the download
+- Handle ClientOSError exceptions in media fetcher
 
 ## [1.15.15] - 2024-11-07
 
