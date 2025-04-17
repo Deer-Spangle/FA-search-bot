@@ -60,9 +60,7 @@ class Runnable(ABC):
             try:
                 await self.do_process()
             except Exception as e:
-                self.running = False
-                logger.critical("Runnable task %s has failed with exception:", self.class_name, exc_info=e)
-                raise e
+                logger.error("Runnable task %s has failed (will restart) with exception:", self.class_name, exc_info=e)
             # Update metrics
             self.update_processed_metrics()
             # Update heartbeat
