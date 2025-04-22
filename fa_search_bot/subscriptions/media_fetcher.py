@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio import QueueEmpty
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from aiohttp import ClientPayloadError, ServerDisconnectedError, ClientOSError
 from prometheus_client import Counter
@@ -12,8 +12,11 @@ from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia, DownloadError, SendSettings, CaptionSettings
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
-from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken, TooManyRefresh
+
+if TYPE_CHECKING:
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
+
 
 logger = logging.getLogger(__name__)
 

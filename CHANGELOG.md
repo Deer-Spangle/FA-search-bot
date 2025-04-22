@@ -9,7 +9,14 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
-## [1.15.18]
+
+## [1.15.19] - 2025-04-22
+
+### Fixed
+
+- Fix circular import which caused startup failure
+
+## [1.15.18] - 2025-04-22
 
 ### Fixed
 

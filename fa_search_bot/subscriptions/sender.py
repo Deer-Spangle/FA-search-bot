@@ -4,7 +4,7 @@ import asyncio
 import collections
 import datetime
 import logging
-from typing import Union, Dict, List, Optional
+from typing import Union, Dict, List, Optional, TYPE_CHECKING
 
 from prometheus_client import Counter
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError
@@ -13,9 +13,12 @@ from telethon.tl.types import TypeInputPeer
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.subscription import Subscription
-from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken
 from fa_search_bot.subscriptions.wait_pool import SubmissionCheckState
+
+if TYPE_CHECKING:
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
+
 
 logger = logging.getLogger(__name__)
 

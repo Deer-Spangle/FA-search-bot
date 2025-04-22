@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio import QueueEmpty
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from prometheus_client import Counter, Histogram, Gauge
 
@@ -11,8 +11,11 @@ from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, Cloudfla
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
-from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken
+
+if TYPE_CHECKING:
+    from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
+
 
 logger = logging.getLogger(__name__)
 
