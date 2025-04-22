@@ -69,5 +69,9 @@ class WaitPool:
             del self.submission_state[next_state.sub_id]
             return next_state
 
+    async def return_populated_state(self, state: SubmissionCheckState) -> None:
+        async with self._lock:
+            self.submission_state[state.sub_id] = state
+
     def size(self) -> int:
         return len(self.submission_state)

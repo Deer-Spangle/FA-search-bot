@@ -61,6 +61,8 @@ class Runnable(ABC):
                 await self.do_process()
             except Exception as e:
                 logger.error("Runnable task %s has failed (will restart) with exception:", self.class_name, exc_info=e)
+                # Revert the failed attempt, so it may be attempted again
+                await self.revert_last_attempt()
             # Update metrics
             self.update_processed_metrics()
             # Update heartbeat
@@ -68,6 +70,14 @@ class Runnable(ABC):
 
     @abstractmethod
     async def do_process(self) -> None:
+        pass
+
+    @abstractmethod
+    async def revert_last_attempt(self) -> None:
+        """
+        If the processing fails, call this method to try and revert the item which failed to process, such that
+        processing can continue.
+        """
         pass
 
     def stop(self) -> None:

@@ -8,9 +8,11 @@ from typing import Optional
 from aiohttp import ClientPayloadError, ServerDisconnectedError, ClientOSError
 from prometheus_client import Counter
 
+from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia, DownloadError, SendSettings, CaptionSettings
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken, TooManyRefresh
 
 logger = logging.getLogger(__name__)
@@ -30,6 +32,10 @@ cache_misses = cache_results.labels(result="miss")
 class MediaFetcher(Runnable):
     CONNECTION_BACKOFF = 20
 
+    def __init__(self, watcher: "SubscriptionWatcher") -> None:
+        super().__init__(watcher)
+        self.last_processed: Optional[FASubmissionFull] = None
+
     async def do_process(self) -> None:
         try:
             full_data = self.watcher.upload_queue.get_nowait()
@@ -37,6 +43,7 @@ class MediaFetcher(Runnable):
             with time_taken_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
             return
+        self.last_processed = full_data
         sendable = SendableFASubmission(full_data)
         sub_id = sendable.submission_id
         logger.debug("Got %s from queue, uploading media", sub_id)
@@ -131,3 +138,8 @@ class MediaFetcher(Runnable):
             except Exception as e:
                 raise ValueError("Failed to upload media to telegram for submission: %s", sendable.submission_id) from e
         raise ShutdownError("Media fetcher has shutdown while trying to upload media")
+
+    async def revert_last_attempt(self) -> None:
+        if self.last_processed is None:
+            raise ValueError("Cannot revert last attempt, as there was not a previous attempt")
+        await self.watcher.upload_queue.put(self.last_processed)

@@ -4,7 +4,7 @@ import asyncio
 import collections
 import datetime
 import logging
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Optional
 
 from prometheus_client import Counter
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError
@@ -13,6 +13,7 @@ from telethon.tl.types import TypeInputPeer
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.subscriptions.runnable import Runnable
 from fa_search_bot.subscriptions.subscription import Subscription
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken
 from fa_search_bot.subscriptions.wait_pool import SubmissionCheckState
 
@@ -44,6 +45,10 @@ updates_sent_re_upload = total_updates_sent.labels(media_type="re_upload")
 
 class Sender(Runnable):
 
+    def __init__(self, watcher: "SubscriptionWatcher") -> None:
+        super().__init__(watcher)
+        self.last_state: Optional[SubmissionCheckState] = None
+
     async def do_process(self) -> None:
         with time_taken_reading_queue.time():
             next_state = await self.watcher.wait_pool.pop_next_ready_to_send()
@@ -51,6 +56,7 @@ class Sender(Runnable):
             with time_taken_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
             return
+        self.last_state = next_state
         logger.debug("Got submission ready to send: %s", next_state.sub_id)
         # Send out messages
         with time_taken_sending_messages.time():
@@ -124,3 +130,13 @@ class Sender(Runnable):
         )
         self.watcher.submission_cache.save_cache(result)
         return result
+
+    async def revert_last_attempt(self) -> None:
+        """
+        As there's only 1 Sender, we can push the state back into the wait pool if it failed.
+        If there were more than 1 Sender, this would risk posts being out of order, as the other would have grabbed a
+        new post to send. But having more than 1 Sender would present multiple other challenges.
+        """
+        if self.last_state is None:
+            raise ValueError("Can't revert last attempt, as last attempt did not exist")
+        self.watcher.wait_pool.return_populated_state(self.last_state)

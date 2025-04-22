@@ -11,6 +11,7 @@ from fa_search_bot.sites.furaffinity.fa_export_api import PageNotFound, Cloudfla
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
+from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 from fa_search_bot.subscriptions.utils import time_taken
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,10 @@ class DataFetcher(Runnable):
     FETCH_CLOUDFLARE_BACKOFF = 60
     FETCH_EXCEPTION_BACKOFF = 20
 
+    def __init__(self, watcher: "SubscriptionWatcher") -> None:
+        super().__init__(watcher)
+        self.last_sub_id: Optional[SubmissionID] = None
+
     async def do_process(self) -> None:
         try:
             sub_id = self.watcher.fetch_data_queue.get_nowait()
@@ -74,6 +79,7 @@ class DataFetcher(Runnable):
             with time_taken_queue_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
             return
+        self.last_sub_id = sub_id
         # Fetch data
         logger.debug("Got %s from queue, fetching data", sub_id)
         full_result = await self.fetch_data(sub_id)
@@ -137,3 +143,8 @@ class DataFetcher(Runnable):
                     await self._wait_while_running(self.FETCH_EXCEPTION_BACKOFF)
                 continue
         raise ShutdownError("Data fetcher has shutdown while trying to fetch data")
+
+    async def revert_last_attempt(self) -> None:
+        if self.last_sub_id is None:
+            raise ValueError("Could not revert process, as no previous process has happened")
+        await self.watcher.fetch_data_queue.put_refresh(self.last_sub_id)

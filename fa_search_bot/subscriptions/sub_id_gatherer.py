@@ -113,3 +113,6 @@ class SubIDGatherer(Runnable):
                 logger.warning("Failed to get browse or home page, retrying", exc_info=e)
                 await self._wait_while_running(self.BROWSE_RETRY_BACKOFF)
         return None
+
+    async def revert_last_attempt(self) -> None:
+        return
