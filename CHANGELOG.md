@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.21] - 2025-05-08
+
+### Fixed
+
+- Fixed bug where subscription watcher would send 1 submission without progressing further
+- Fixed import error
+
 ## [1.15.20] - 2025-05-08
 
 ### Changed
