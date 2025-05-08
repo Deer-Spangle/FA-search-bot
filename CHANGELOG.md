@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.20] - 2025-05-08
+
+### Changed
+
+- When sender encounters an error, don't ignore it
+- If sender received a FloodWaitError, wait before attempting new send
 
 ## [1.15.19] - 2025-04-22
 
