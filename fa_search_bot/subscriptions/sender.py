@@ -97,10 +97,12 @@ class Sender(Runnable):
     ) -> None:
         send_attempt = 0
         while send_attempt < self.SEND_ATTEMPTS:
+            send_attempt += 1
             logger.info("Sending submission %s to subscription", sendable.submission_id)
             sub_updates.inc()
             try:
                 await self._send_subscription_update(sendable, state, chat, prefix)
+                return
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
                 logger.info("Destination %s is blocked or deleted, pausing subscriptions", chat)
