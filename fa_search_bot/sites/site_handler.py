@@ -5,6 +5,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from fa_search_bot.sites.site_link import SiteLink
+
 
 if TYPE_CHECKING:
     from re import Pattern
@@ -16,7 +18,6 @@ if TYPE_CHECKING:
 
     from fa_search_bot.sites.sendable import InlineSendable
     from fa_search_bot.sites.sent_submission import SentSubmission
-    from fa_search_bot.sites.site_link import SiteLink
     from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)
