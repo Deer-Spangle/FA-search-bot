@@ -7,7 +7,7 @@ import logging
 from typing import Union, Dict, List, Optional, TYPE_CHECKING
 
 from prometheus_client import Counter
-from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError
+from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError, FloodWaitError
 from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
@@ -47,6 +47,8 @@ updates_sent_re_upload = total_updates_sent.labels(media_type="re_upload")
 
 
 class Sender(Runnable):
+    WAIT_BETWEEN_FLOOD_LOGS = datetime.timedelta(60)
+    SEND_ATTEMPTS = 3
 
     def __init__(self, watcher: "SubscriptionWatcher") -> None:
         super().__init__(watcher)
@@ -84,24 +86,43 @@ class Sender(Runnable):
         for dest, subs in destination_map.items():
             queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
+            await self._try_send_subscription_update(sendable, state, dest, prefix)
+
+    async def _try_send_subscription_update(
+        self,
+        sendable: SendableFASubmission,
+        state: SubmissionCheckState,
+        chat: Union[int, TypeInputPeer],
+        prefix: str,
+    ) -> None:
+        send_attempt = 0
+        while send_attempt < self.SEND_ATTEMPTS:
             logger.info("Sending submission %s to subscription", sendable.submission_id)
             sub_updates.inc()
             try:
-                await self._send_subscription_update(sendable, state, dest, prefix)
+                await self._send_subscription_update(sendable, state, chat, prefix)
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
-                logger.info("Destination %s is blocked or deleted, pausing subscriptions", dest)
-                all_subs = [sub for sub in self.watcher.subscriptions if sub.destination == dest]
+                logger.info("Destination %s is blocked or deleted, pausing subscriptions", chat)
+                all_subs = [sub for sub in self.watcher.subscriptions if sub.destination == chat]
                 for sub in all_subs:
                     sub.paused = True
+                return
+            except FloodWaitError as e:
+                seconds = e.seconds
+                logger.warning("Received flood wait error, have to sleep %s seconds", seconds)
+                await self._flood_wait(seconds)
+                logger.info("Flood wait complete, retrying sending submission")
+                continue
             except Exception as e:
                 sub_update_send_failures.inc()
                 logger.error(
                     "Failed to send submission: %s to %s",
                     sendable.submission_id,
-                    dest,
+                    chat,
                     exc_info=e,
                 )
+                raise e
 
     async def _send_subscription_update(
         self,
@@ -143,3 +164,14 @@ class Sender(Runnable):
         if self.last_state is None:
             raise ValueError("Can't revert last attempt, as last attempt did not exist")
         self.watcher.wait_pool.return_populated_state(self.last_state)
+
+    async def _flood_wait(self, seconds: int) -> None:
+        start_time = datetime.datetime.now(tz=datetime.timezone.utc)
+        end_time = start_time + datetime.timedelta(seconds=seconds)
+        remaining_time = end_time - datetime.datetime.now(tz=datetime.timezone.utc)
+        while remaining_time > datetime.timedelta(seconds=0):
+            logger.warning("Waiting for flood warning to expire. %s seconds remain", remaining_time.total_seconds())
+            sleep_batch = min(remaining_time, self.WAIT_BETWEEN_FLOOD_LOGS)
+            await self._wait_while_running(sleep_batch.total_seconds())
+            remaining_time = end_time - datetime.datetime.now(tz=datetime.timezone.utc)
+        logger.info("Flood wait complete")
