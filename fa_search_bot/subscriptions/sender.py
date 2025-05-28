@@ -8,6 +8,7 @@ from typing import Union, Dict, List, Optional, TYPE_CHECKING
 
 from prometheus_client import Counter
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError, FloodWaitError
+from telethon.errors.rpcerrorlist import FilePartMissingError, FilePart0MissingError
 from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
@@ -120,6 +121,12 @@ class Sender(Runnable):
                 await self._flood_wait(seconds)
                 logger.info("Flood wait complete, retrying sending submission")
                 continue
+            except (FilePartMissingError, FilePart0MissingError) as e:
+                logger.warning("Received file part missing error, will reset cache and re-attempt")
+                state.uploaded_media = None
+                state.cache_entry = None
+                self.watcher.wait_pool.return_populated_state(state)
+                continue
             except Exception as e:
                 sub_update_send_failures.inc()
                 logger.error(
@@ -137,6 +144,7 @@ class Sender(Runnable):
         chat: Union[int, TypeInputPeer],
         prefix: str,
     ) -> None:
+        # If this has previously been sent, send again
         if state.cache_entry:
             if await state.cache_entry.try_to_send(self.watcher.client, chat, prefix=prefix):
                 updates_sent_cache.inc()
