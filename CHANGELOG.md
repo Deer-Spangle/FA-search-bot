@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.22] - 2025-05-28
+
+### Fixed
+
+- If subscription sender receives FilePartMissingError from Telegram, reset the media reference and try upload again
+- If the subscription sender has to re-try sending a submission, don't re-send it to places it was successfully sent
+
 ## [1.15.21] - 2025-05-08
 
 ### Fixed
