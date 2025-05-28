@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 from asyncio import Lock
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
+
+from telethon.tl.types import TypeInputPeer
 
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.sendable import UploadedMedia
@@ -16,6 +18,7 @@ class SubmissionCheckState:
     full_data: Optional[FASubmissionFull] = None
     cache_entry: Optional[SentSubmission] = None
     uploaded_media: Optional[UploadedMedia] = None
+    sent_to: list[Union[int, TypeInputPeer]] = dataclasses.field(default_factory=list)
 
     def key(self) -> int:
         return int(self.sub_id.submission_id)

@@ -84,6 +84,9 @@ class Sender(Runnable):
             destination_map[sub.destination].append(sub)
         # Send the submission to each location
         for dest, subs in destination_map.items():
+            if dest in state.sent_to:
+                # Already sent to that destination, skip
+                continue
             queries = ", ".join([f'"{sub.query_str}"' for sub in subs])
             prefix = f"Update on {queries} subscription{'' if len(subs) == 1 else 's'}:"
             await self._try_send_subscription_update(sendable, state, dest, prefix)
@@ -102,6 +105,7 @@ class Sender(Runnable):
             sub_updates.inc()
             try:
                 await self._send_subscription_update(sendable, state, chat, prefix)
+                state.sent_to.append(chat)
                 return
             except (UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError):
                 sub_blocked.inc()
