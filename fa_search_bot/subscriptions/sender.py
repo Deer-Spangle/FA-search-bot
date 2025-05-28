@@ -153,8 +153,9 @@ class Sender(Runnable):
         if not state.uploaded_media:
             cache_entry = self.watcher.submission_cache.load_cache(state.sub_id)
             if cache_entry:
-                if await state.cache_entry.try_to_send(self.watcher.client, chat, prefix=prefix):
+                if await cache_entry.try_to_send(self.watcher.client, chat, prefix=prefix):
                     updates_sent_fresh_cache.inc()
+                    await self.watcher.wait_pool.set_cached(state.sub_id, cache_entry)
                     return
             updates_sent_re_upload.inc()
         else:
@@ -166,6 +167,7 @@ class Sender(Runnable):
             prefix=prefix,
             uploaded_media=state.uploaded_media
         )
+        logger.info("Sent submission %s to %s", state.sub_id, chat)
         self.watcher.submission_cache.save_cache(result)
         return result
 
