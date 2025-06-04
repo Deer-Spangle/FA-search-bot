@@ -9,6 +9,12 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.24] - 2025-06-04
+
+### Fixed
+
+- If the media fetcher dies trying to upload a submission, re-fetch the data before trying to upload it again
+
 ## [1.15.23] - 2025-05-28
 
 ### Fixed

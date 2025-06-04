@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fa-search-bot"
-version = "1.15.23"
+version = "1.15.24"
 description = "Telegram bot which provides FurAffinity integration. With searches, subscriptions and automated embedding"
 authors = ["Deer Spangle <deer@spangle.org.uk>"]
 
