@@ -93,22 +93,27 @@ class SubscriptionWatcher:
         self.api = api
         self.client = client
         self.submission_cache = submission_cache
+
         # Initialise stored data structures
         self.latest_ids: Deque[str] = collections.deque(maxlen=15)
         self.subscriptions: Set[Subscription] = set()
         self.blocklists: Dict[int, Set[str]] = dict()
         self.blocklist_query_cache: Dict[str, Query] = dict()
-        # Initialise tasks and sharing data structure
+
+        # Initialise sharing data structures
         self.wait_pool = WaitPool()
         self.fetch_data_queue: FetchQueue = FetchQueue()
         self.upload_queue: Queue[FASubmissionFull] = Queue()
+
+        # Initialise runners and tasks
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
         self.data_fetchers: List[DataFetcher] = []
         self.media_fetchers: List[MediaFetcher] = []
         self.sender: Optional[Sender] = None
         self.sub_tasks: List[Task] = []
+
+        # Initialise gauges and prometheus metrics
         self.latest_observed_submission: Optional[datetime.datetime] = None
-        # Initialise gauges
         gauge_sub.set_function(lambda: len(self.subscriptions))
         gauge_subs_active.set_function(lambda: len([s for s in self.subscriptions if not s.paused]))
         gauge_sub_destinations.set_function(lambda: len(set(s.destination for s in self.subscriptions)))

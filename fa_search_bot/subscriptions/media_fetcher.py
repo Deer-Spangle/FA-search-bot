@@ -145,4 +145,7 @@ class MediaFetcher(Runnable):
     async def revert_last_attempt(self) -> None:
         if self.last_processed is None:
             raise ValueError("Cannot revert last attempt, as there was not a previous attempt")
-        await self.watcher.upload_queue.put(self.last_processed)
+        # If media failed to send, re-fetch the data, as something may have changed
+        sendable = SendableFASubmission(self.last_processed)
+        sub_id = sendable.submission_id
+        await self.watcher.fetch_data_queue.put_refresh(sub_id)

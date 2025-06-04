@@ -28,6 +28,11 @@ class SubmissionCheckState:
 
 
 class WaitPool:
+    """
+    WaitPool governs the overall progress of the subscription watcher. New IDs are added here, and then populated by the
+    data fetchers and media watchers.
+    The sender is watching for the next item in the pool which is ready to send
+    """
     def __init__(self):
         self.submission_state: Dict[SubmissionID, SubmissionCheckState] = {}
         self._lock = Lock()
