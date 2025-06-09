@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from prometheus_client import Gauge
 
 from fa_search_bot.subscriptions.runnable import ShutdownError
-from fa_search_bot.subscriptions.utils import FetchQueue
+from fa_search_bot.subscriptions.fetch_queue import FetchQueue
 from fa_search_bot.subscriptions.query_parser import parse_query, Query, AndQuery, NotQuery
 from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.data_fetcher import DataFetcher

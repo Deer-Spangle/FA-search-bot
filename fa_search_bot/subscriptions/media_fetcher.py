@@ -12,7 +12,8 @@ from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia, DownloadError, SendSettings, CaptionSettings
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
-from fa_search_bot.subscriptions.utils import time_taken, TooManyRefresh
+from fa_search_bot.subscriptions.utils import time_taken
+from fa_search_bot.subscriptions.fetch_queue import TooManyRefresh
 
 if TYPE_CHECKING:
     from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
