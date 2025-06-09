@@ -83,8 +83,6 @@ class RefreshCounter:
 
 
 class FetchQueue:
-    PRIORITY_NEW_FETCH = 10
-    PRIORITY_REFRESH = 5
 
     def __init__(self):
         self._new_queue: Queue[SubmissionID] = Queue()
