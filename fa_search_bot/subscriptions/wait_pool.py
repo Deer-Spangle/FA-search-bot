@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from asyncio import Lock
+from asyncio import Lock, Queue
 from typing import Optional, Dict, Union
 
 from telethon.tl.types import TypeInputPeer
@@ -35,6 +35,7 @@ class WaitPool:
     """
     def __init__(self):
         self.submission_state: Dict[SubmissionID, SubmissionCheckState] = {}
+        self.upload_queue: Queue[FASubmissionFull] = Queue(500)  # Size limit to prevent data being too stale by the time it comes to upload, especially if catching up on backlog
         self._lock = Lock()
 
     async def add_sub_id(self, sub_id: SubmissionID) -> None:
@@ -47,6 +48,10 @@ class WaitPool:
             if sub_id not in self.submission_state:
                 return
             self.submission_state[sub_id].full_data = full_data
+            await self.upload_queue.put(full_data)
+
+    async def get_next_for_media_upload(self) -> FASubmissionFull:
+        return self.upload_queue.get_nowait()
 
     async def set_cached(self, sub_id: SubmissionID, cache_entry: SentSubmission) -> None:
         async with self._lock:
@@ -83,3 +88,6 @@ class WaitPool:
 
     def size(self) -> int:
         return len(self.submission_state)
+
+    def qsize_upload(self) -> int:
+        return self.upload_queue.qsize()

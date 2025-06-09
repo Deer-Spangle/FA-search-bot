@@ -99,7 +99,6 @@ class DataFetcher(Runnable):
             sub_matches.inc()
             sub_total_matches.inc(len(matching_subscriptions))
             with time_taken_publishing.time():
-                await self.watcher.upload_queue.put(full_result)
                 await self.watcher.wait_pool.set_fetched_data(sub_id, full_result)
         else:
             with time_taken_publishing.time():

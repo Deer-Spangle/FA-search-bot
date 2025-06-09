@@ -6,7 +6,7 @@ import datetime
 import json
 import logging
 import os
-from asyncio import Queue, Task
+from asyncio import Task
 from typing import TYPE_CHECKING
 
 from prometheus_client import Gauge
@@ -103,7 +103,6 @@ class SubscriptionWatcher:
         # Initialise sharing data structures
         self.wait_pool = WaitPool()
         self.fetch_data_queue: FetchQueue = FetchQueue()
-        self.upload_queue: Queue[FASubmissionFull] = Queue(500)  # Size limit to prevent data being too stale by the time it comes to upload, especially if catching up on backlog
 
         # Initialise runners and tasks
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
@@ -124,7 +123,7 @@ class SubscriptionWatcher:
         gauge_wait_pool_size.set_function(lambda: self.wait_pool.size())
         gauge_fetch_queue_new_size.set_function(lambda: self.fetch_data_queue.qsize_new())
         gauge_fetch_queue_refresh_size.set_function(lambda: self.fetch_data_queue.qsize_refresh())
-        gauge_upload_queue_size.set_function(lambda: self.upload_queue.qsize())
+        gauge_upload_queue_size.set_function(lambda: self.wait_pool.qsize_upload())
         gauge_running_data_fetcher_count.set_function(lambda: len([f for f in self.data_fetchers if f.running]))
         gauge_running_media_fetcher_count.set_function(lambda: len([f for f in self.media_fetchers if f.running]))
         gauge_running_task_count.set_function(lambda: len([t for t in self.sub_tasks if not t.done()]))

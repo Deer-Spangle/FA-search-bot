@@ -42,7 +42,7 @@ class MediaFetcher(Runnable):
 
     async def do_process(self) -> None:
         try:
-            full_data = self.watcher.upload_queue.get_nowait()
+            full_data = self.watcher.wait_pool.get_next_for_media_upload()
         except QueueEmpty:
             with time_taken_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
