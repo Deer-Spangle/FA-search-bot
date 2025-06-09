@@ -9,6 +9,13 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.15.25] - 2025-06-09
+
+### Fixed
+
+- Improved logging and reset when SubWatcher sender fails to send submission due to file part missing error
+- Set a cap on the upload queue, to avoid stale data when the media uploader is running slower than the data fetcher while the script is catching up a large backlog
+
 ## [1.15.24] - 2025-06-04
 
 ### Fixed
