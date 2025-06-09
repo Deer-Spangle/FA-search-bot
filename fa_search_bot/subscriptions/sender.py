@@ -6,7 +6,7 @@ import datetime
 import logging
 from typing import Union, Dict, List, Optional, TYPE_CHECKING
 
-from prometheus_client import Counter
+from prometheus_client import Counter, Summary
 from telethon.errors import UserIsBlockedError, InputUserDeactivatedError, ChannelPrivateError, PeerIdInvalidError, FloodWaitError
 from telethon.errors.rpcerrorlist import FilePartMissingError, FilePart0MissingError
 from telethon.tl.types import TypeInputPeer
@@ -31,6 +31,14 @@ sub_updates = Counter("fasearchbot_subscriptionsender_updates_sent_total", "Numb
 sub_blocked = Counter(
     "fasearchbot_subscriptionsender_dest_blocked_total",
     "Number of times a destination has turned out to have blocked or deleted the bot without pausing subs first",
+)
+flood_waits_requested = Summary(
+    "fasearchbot_subscriptionsender_flood_waits_requested",
+    "Summary of the number and duration of flood waits which have been requested by Telegram",
+)
+file_part_missing_errors = Counter(
+    "fasearchbot_subscriptionsender_file_part_missing_errors_total",
+    "Total number of FielPartMissing errors received from Telegram",
 )
 sub_update_send_failures = Counter(
     "fasearchbot_subscriptionsender_updates_failed_total",
@@ -117,11 +125,13 @@ class Sender(Runnable):
                 return
             except FloodWaitError as e:
                 seconds = e.seconds
+                flood_waits_requested.observe(seconds)
                 logger.warning("Received flood wait error, have to sleep %s seconds", seconds)
                 await self._flood_wait(seconds)
                 logger.info("Flood wait complete, retrying sending submission")
                 continue
             except (FilePartMissingError, FilePart0MissingError) as e:
+                file_part_missing_errors.inc()
                 logger.warning(
                     "Received file part missing error for submission %s, will reset cache and re-attempt",
                     sendable.submission_id,
