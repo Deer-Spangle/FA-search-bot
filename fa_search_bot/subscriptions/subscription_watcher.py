@@ -103,7 +103,7 @@ class SubscriptionWatcher:
         # Initialise sharing data structures
         self.wait_pool = WaitPool()
         self.fetch_data_queue: FetchQueue = FetchQueue()
-        self.upload_queue: Queue[FASubmissionFull] = Queue()
+        self.upload_queue: Queue[FASubmissionFull] = Queue(500)  # Size limit to prevent data being too stale by the time it comes to upload, especially if catching up on backlog
 
         # Initialise runners and tasks
         self.sub_id_gatherer: Optional[SubIDGatherer] = None
