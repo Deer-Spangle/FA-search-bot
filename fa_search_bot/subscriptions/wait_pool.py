@@ -42,7 +42,7 @@ class WaitPool:
             state = SubmissionCheckState(sub_id)
             self.submission_state[sub_id] = state
 
-    async def set_fetched(self, sub_id: SubmissionID, full_data: FASubmissionFull) -> None:
+    async def set_fetched_data(self, sub_id: SubmissionID, full_data: FASubmissionFull) -> None:
         async with self._lock:
             if sub_id not in self.submission_state:
                 return
