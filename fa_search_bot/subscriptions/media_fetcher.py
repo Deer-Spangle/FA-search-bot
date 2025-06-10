@@ -83,11 +83,11 @@ class MediaFetcher(Runnable):
         logger.debug("Media for %s disappeared before it could be uploaded, throwing back to the fetch queue", sub_id)
         try:
             await self.watcher.fetch_data_queue.put_refresh(sub_id)
-        except TooManyRefresh:
+        except TooManyRefresh as e:
             logger.warning(
-                "Image could not be fetched for %s after %s refreshes. Sending without media",
+                "Sending submission %s without media. Image could not be fetched after maximum retries: %s",
                 sub_id,
-                self.watcher.fetch_data_queue.refresh_counter.refresh_limit
+                e
             )
             return UploadedMedia(sub_id, None, SendSettings(CaptionSettings(False, True, True, True), False, False))
 

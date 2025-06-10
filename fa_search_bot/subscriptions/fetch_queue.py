@@ -61,7 +61,7 @@ class RefreshCounter:
         if entry := self._refresh_dict.get(sub_id):
             if entry.refresh_count > self.refresh_limit:
                 logger.warning("Submission %s has been refreshed too many times, raising exception", sub_id)
-                raise TooManyRefresh()
+                raise TooManyRefresh(f"Submission {sub_id} has been refreshed too many ({entry.refresh_count} > {self.refresh_limit}) times")
             entry.observe()
             return
         self._refresh_dict[sub_id] = RefreshEntry()
