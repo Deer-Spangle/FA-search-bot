@@ -1,0 +1,18 @@
+# Python things
+__pycache__/
+.venv/
+venv/
+.idea/
+
+# Bot config and state
+fasearchbot.session
+fasearchbot_db.sqlite
+fasearchbot_db*.sqlite
+config.json
+subscriptions.json
+subscriptions*.json
+subscriptions.json*
+
+# Bot logs and sandbox
+logs/
+sandbox/
