@@ -141,7 +141,7 @@ class Sender(Runnable):
                 state.full_data = None
                 self.watcher.wait_pool.return_populated_state(state)
                 await self.watcher.fetch_data_queue.put_refresh(sendable.submission_id)
-                continue
+                return
             except Exception as e:
                 sub_update_send_failures.inc()
                 logger.error(
