@@ -4,6 +4,8 @@ import logging
 from asyncio import Queue, QueueEmpty
 from typing import Dict
 
+from prometheus_client import Gauge
+
 from fa_search_bot.sites.submission_id import SubmissionID
 
 logger = logging.getLogger(__name__)

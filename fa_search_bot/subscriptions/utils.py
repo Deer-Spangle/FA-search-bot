@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from prometheus_client import Summary, Gauge
+from prometheus_client import Summary
 
 from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 
