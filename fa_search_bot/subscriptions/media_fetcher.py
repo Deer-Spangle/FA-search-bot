@@ -8,9 +8,9 @@ from typing import Optional, TYPE_CHECKING
 from aiohttp import ClientPayloadError, ServerDisconnectedError, ClientOSError
 from prometheus_client import Counter
 
-from fa_search_bot.sites.furaffinity.fa_submission import FASubmissionFull
 from fa_search_bot.sites.furaffinity.sendable import SendableFASubmission
 from fa_search_bot.sites.sendable import UploadedMedia, DownloadError, SendSettings, CaptionSettings
+from fa_search_bot.sites.submission_id import SubmissionID
 from fa_search_bot.subscriptions.runnable import Runnable, ShutdownError
 from fa_search_bot.subscriptions.utils import time_taken
 from fa_search_bot.subscriptions.fetch_queue import TooManyRefresh
@@ -38,7 +38,7 @@ class MediaFetcher(Runnable):
 
     def __init__(self, watcher: "SubscriptionWatcher") -> None:
         super().__init__(watcher)
-        self.last_processed: Optional[FASubmissionFull] = None
+        self.last_processed: Optional[SubmissionID] = None
 
     async def do_process(self) -> None:
         try:
@@ -47,9 +47,9 @@ class MediaFetcher(Runnable):
             with time_taken_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
             return
-        self.last_processed = full_data
         sendable = SendableFASubmission(full_data)
         sub_id = sendable.submission_id
+        self.last_processed = sub_id
         logger.debug("Got %s from queue, uploading media", sub_id)
         # Check if cache entry exists
         cache_entry = self.watcher.submission_cache.load_cache(sub_id)
@@ -149,4 +149,4 @@ class MediaFetcher(Runnable):
         # If media failed to send, re-fetch the data, as something may have changed
         sendable = SendableFASubmission(self.last_processed)
         sub_id = sendable.submission_id
-        await self.watcher.fetch_data_queue.put_refresh(sub_id)
+        await self.watcher.fetch_data_queue.put_refresh(self.last_processed)
