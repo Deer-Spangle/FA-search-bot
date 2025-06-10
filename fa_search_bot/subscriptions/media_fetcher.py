@@ -42,7 +42,7 @@ class MediaFetcher(Runnable):
 
     async def do_process(self) -> None:
         try:
-            full_data = self.watcher.wait_pool.get_next_for_media_upload()
+            full_data = await self.watcher.wait_pool.get_next_for_media_upload()
         except QueueEmpty:
             with time_taken_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
@@ -82,7 +82,7 @@ class MediaFetcher(Runnable):
         sub_id = sendable.submission_id
         logger.debug("Media for %s disappeared before it could be uploaded, throwing back to the fetch queue", sub_id)
         try:
-            await self.watcher.fetch_data_queue.put_refresh(sub_id)
+            await self.watcher.wait_pool.revert_data_fetch(sub_id)
         except TooManyRefresh as e:
             logger.warning(
                 "Sending submission %s without media. Image could not be fetched after maximum retries: %s",
@@ -147,6 +147,4 @@ class MediaFetcher(Runnable):
         if self.last_processed is None:
             raise ValueError("Cannot revert last attempt, as there was not a previous attempt")
         # If media failed to send, re-fetch the data, as something may have changed
-        sendable = SendableFASubmission(self.last_processed)
-        sub_id = sendable.submission_id
-        await self.watcher.fetch_data_queue.put_refresh(self.last_processed)
+        await self.watcher.wait_pool.revert_data_fetch(self.last_processed)

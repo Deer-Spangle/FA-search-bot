@@ -136,11 +136,7 @@ class Sender(Runnable):
                     "Received file part missing error for submission %s, will reset cache and re-attempt",
                     sendable.submission_id,
                 )
-                state.uploaded_media = None
-                state.cache_entry = None
-                state.full_data = None
-                self.watcher.wait_pool.return_populated_state(state)
-                await self.watcher.fetch_data_queue.put_refresh(sendable.submission_id)
+                await self.watcher.wait_pool.revert_data_fetch(sendable.submission_id)
                 return
             except Exception as e:
                 sub_update_send_failures.inc()

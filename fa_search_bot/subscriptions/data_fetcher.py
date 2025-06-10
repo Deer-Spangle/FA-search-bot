@@ -77,7 +77,7 @@ class DataFetcher(Runnable):
 
     async def do_process(self) -> None:
         try:
-            sub_id = self.watcher.fetch_data_queue.get_nowait()
+            sub_id = await self.watcher.wait_pool.get_next_for_data_fetch()
         except QueueEmpty:
             with time_taken_queue_waiting.time():
                 await asyncio.sleep(self.QUEUE_BACKOFF)
@@ -149,4 +149,4 @@ class DataFetcher(Runnable):
     async def revert_last_attempt(self) -> None:
         if self.last_sub_id is None:
             raise ValueError("Could not revert process, as no previous process has happened")
-        await self.watcher.fetch_data_queue.put_refresh(self.last_sub_id)
+        await self.watcher.wait_pool.revert_data_fetch(self.last_sub_id)
