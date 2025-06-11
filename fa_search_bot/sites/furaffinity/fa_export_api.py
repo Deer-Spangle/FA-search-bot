@@ -76,11 +76,17 @@ class FAExportAPI:
         self.last_status_check: Optional[datetime.datetime] = None
         self.slow_down_status = False
         self.ignore_status = ignore_status
-        self.session = aiohttp.ClientSession(self.base_url)
+        self._session: Optional[aiohttp.ClientSession] = None
         for endpoint in Endpoint:
             cloudflare_errors.labels(endpoint=endpoint.value)
             api_request_times.labels(endpoint=endpoint.value)
             api_retry_counts.labels(endpoint=endpoint.value)
+
+    @property
+    def session(self) -> aiohttp.ClientSession:
+        if self._session is None:
+            self._session = aiohttp.ClientSession(self.base_url)
+        return self._session
 
     async def _api_request(self, path: str, endpoint_label: Endpoint) -> aiohttp.ClientResponse:
         path = path.lstrip("/")
