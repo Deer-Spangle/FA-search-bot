@@ -135,6 +135,7 @@ class FASearchBot:
     def e6_api(self) -> AsyncYippiClient:
         if self._e6_api is None:
             self._e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
+            self._e6_api.login(self.config.e621.username, self.config.e621.api_key)
         return self._e6_api
 
     @property
@@ -151,7 +152,6 @@ class FASearchBot:
             }
         )
         start_time.set_to_current_time()
-        self.e6_api.login(self.config.e621.username, self.config.e621.api_key)
         self.client.start(bot_token=self.config.telegram.bot_token)
 
         self.functionalities = self.initialise_functionalities()
