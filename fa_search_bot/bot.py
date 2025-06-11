@@ -112,7 +112,7 @@ class FASearchBot:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.api = FAExportAPI(self.config.fa_api_url)
-        self.e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
+        self._e6_api: Optional[AsyncYippiClient] = None
         self.e6_handler = E621Handler(self.e6_api)
         self.client: TelegramClient = TelegramClient(
             "fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash
@@ -130,6 +130,12 @@ class FASearchBot:
     @property
     def bot_key(self) -> str:
         return self.config.telegram.bot_token
+
+    @property
+    def e6_api(self) -> AsyncYippiClient:
+        if self._e6_api is None:
+            self._e6_api = AsyncYippiClient("FA-search-bot", __VERSION__, self.config.e621.username)
+        return self._e6_api
 
     def start(self) -> None:
         start_http_server(self.config.prometheus_port)
