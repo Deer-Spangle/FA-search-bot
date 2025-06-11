@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from asyncio import Lock, Queue
+from asyncio import Lock, Queue, QueueEmpty
 from typing import Optional, Dict, Union
 
 from telethon.tl.types import TypeInputPeer
@@ -17,12 +17,16 @@ from fa_search_bot.subscriptions.fetch_queue import FetchQueue
 class SubmissionCheckState:
     sub_id: SubmissionID
     full_data: Optional[FASubmissionFull] = None
+    media_uploading: bool = False
     cache_entry: Optional[SentSubmission] = None
     uploaded_media: Optional[UploadedMedia] = None
     sent_to: list[Union[int, TypeInputPeer]] = dataclasses.field(default_factory=list)
 
     def key(self) -> int:
         return int(self.sub_id.submission_id)
+
+    def is_ready_for_media_upload(self) -> bool:
+        return self.full_data is not None and not self.is_ready_to_send()
 
     def is_ready_to_send(self) -> bool:
         return self.uploaded_media is not None or self.cache_entry is not None
@@ -37,7 +41,6 @@ class WaitPool:
     def __init__(self):
         self.submission_state: Dict[SubmissionID, SubmissionCheckState] = {}
         self.fetch_data_queue: FetchQueue = FetchQueue()
-        self.upload_queue: Queue[FASubmissionFull] = Queue(500)  # Size limit to prevent data being too stale by the time it comes to upload, especially if catching up on backlog
         self._lock = Lock()
 
     async def add_sub_id(self, sub_id: SubmissionID) -> None:
@@ -54,7 +57,6 @@ class WaitPool:
             if sub_id not in self.submission_state:
                 return
             self.submission_state[sub_id].full_data = full_data
-            await self.upload_queue.put(full_data)
 
     async def revert_data_fetch(self, sub_id: SubmissionID) -> None:
         # This reverts a submission back to before any data was fetched about it, and re-queues it for data fetch
@@ -62,12 +64,19 @@ class WaitPool:
             if sub_id not in self.submission_state:
                 self.submission_state[sub_id] = SubmissionCheckState(sub_id)
             self.submission_state[sub_id].full_data = None
+            self.submission_state[sub_id].media_uploading = False
             self.submission_state[sub_id].cache_entry = None
             self.submission_state[sub_id].uploaded_media = None
             await self.fetch_data_queue.put_refresh(sub_id)
 
     async def get_next_for_media_upload(self) -> FASubmissionFull:
-        return self.upload_queue.get_nowait()
+        async with self._lock:
+            submission_states = [s for s in self.submission_state.values() if s.is_ready_for_media_upload()]
+            if not submission_states:
+                raise QueueEmpty()
+            next_state = min(submission_states, key=lambda state: state.key())
+            next_state.media_uploading = True
+            return next_state.full_data
 
     async def set_cached(self, sub_id: SubmissionID, cache_entry: SentSubmission) -> None:
         async with self._lock:
@@ -112,4 +121,4 @@ class WaitPool:
         return self.fetch_data_queue.qsize_refresh()
 
     def qsize_upload(self) -> int:
-        return self.upload_queue.qsize()
+        return len([s for s in self.submission_state.values() if s.is_ready_for_media_upload()])
