@@ -6,6 +6,7 @@ venv/
 
 # Bot config and state
 fasearchbot.session
+fasearchbot.session-journal
 fasearchbot_db.sqlite
 fasearchbot_db*.sqlite
 config.json
