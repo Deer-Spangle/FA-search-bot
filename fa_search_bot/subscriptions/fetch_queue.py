@@ -15,7 +15,7 @@ refresh_counter_dict_size = Gauge(
     "Number of submissions being tracked by the refresh counter",
 )
 refresh_counter_max_count = Gauge(
-    "faserchbot_refreshcounter_max_count",
+    "fasearchbot_refreshcounter_max_count",
     "Maximum number of refreshes of any item in the refresh counter"
 )
 
