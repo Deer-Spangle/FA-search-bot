@@ -6,14 +6,14 @@ authors = ["Deer Spangle <deer@spangle.org.uk>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-requests = "^2.24.0"
+requests = "^2.32.4"
 python-dateutil = "^2.8.1"
 simple-heartbeat = "^0.1.2"
 docker = "^5.0.3"
 pyparsing = "^3.0.6"
 tomlkit = "^0.7.0"
-telethon = "1.28.5"
-Pillow = "^8.3.2"
+telethon = "^1.40.0"
+Pillow = "^11.2.1"
 yippi = "0.2.0.1"
 prometheus-client = "^0.11.0"
 
