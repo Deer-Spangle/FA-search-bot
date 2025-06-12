@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -41,5 +42,5 @@ if __name__ == "__main__":
     setup_logging()
     config = Config.load_from_file(os.getenv('CONFIG_FILE', 'config.json'))
     bot = FASearchBot(config)
-    bot.start()
-    bot.run()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(bot.run())

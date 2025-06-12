@@ -144,7 +144,7 @@ class FASearchBot:
             self._e6_handler = E621Handler(self.e6_api)
         return self._e6_handler
 
-    def start(self) -> None:
+    async def run(self) -> None:
         start_http_server(self.config.prometheus_port)
         info.info(
             {
@@ -166,11 +166,12 @@ class FASearchBot:
         # Start the sub watcher
         self.subscription_watcher.start_tasks()
 
-    def run(self) -> None:
-        try:
-            self.client.run_until_disconnected()
-        finally:
-            self.close()
+        # Run the bot
+        async with self.client:
+            try:
+                await self.client.run_until_disconnected()
+            finally:
+                self.close()
 
     def close(self) -> None:
         # Shut down sub watcher
