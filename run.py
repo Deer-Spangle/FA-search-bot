@@ -4,6 +4,7 @@ import os
 import sys
 from logging.handlers import TimedRotatingFileHandler
 
+import click
 from prometheus_client import Counter
 
 from fa_search_bot.bot import FASearchBot, Config
@@ -20,7 +21,7 @@ class LogMetricsHandler(logging.Handler):
         log_entries.labels(logger=record.name, level=record.levelname).inc()
 
 
-def setup_logging() -> None:
+def setup_logging(log_level: str = "INFO") -> None:
     os.makedirs("logs", exist_ok=True)
     formatter = logging.Formatter("{asctime}:{levelname}:{name}:{message}", style="{")
 
@@ -35,12 +36,19 @@ def setup_logging() -> None:
     file_handler = TimedRotatingFileHandler("logs/fa_search_bot.log", when="midnight")
     file_handler.setFormatter(formatter)
     fa_logger.addHandler(file_handler)
+    fa_logger.setLevel(log_level.upper())
     fa_logger.addHandler(LogMetricsHandler())
 
 
-if __name__ == "__main__":
-    setup_logging()
+@click.option("--log-level", type=str, help="Log level for the logger", default="INFO")
+@click.pass_context
+def main(ctx: click.Context) -> None:
+    ctx.ensure_object(dict)
+    setup_logging(ctx.obj.get("log-level", "INFO"))
     config = Config.load_from_file(os.getenv('CONFIG_FILE', 'config.json'))
     bot = FASearchBot(config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(bot.run())
+
+if __name__ == "__main__":
+    main()
