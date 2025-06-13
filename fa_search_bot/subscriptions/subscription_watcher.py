@@ -68,13 +68,25 @@ gauge_running_data_fetcher_count = Gauge(
     "fasearchbot_fasubwatcher_running_data_fetcher_count",
     "Number of running data fetcher tasks",
 )
+gauge_expected_data_fetcher_count = Gauge(
+    "fasearchbot_fasubwatcher_expected_data_fetcher_count",
+    "Number of expected data fetcher tasks which should be running",
+)
 gauge_running_media_fetcher_count = Gauge(
     "fasearchbot_fasubwatcher_running_media_fetcher_count",
     "Number of running media fetcher tasks",
 )
+gauge_expected_media_fetcher_count = Gauge(
+    "fasearchbot_fasubwatcher_expected_media_fetcher_count",
+    "Number of expected media fetcher tasks which should be running",
+)
 gauge_running_task_count = Gauge(
     "fasearchbot_fasubwatcher_running_task_count",
     "Number of running tasks",
+)
+gauge_expected_task_count = Gauge(
+    "fasearchbot_fasubwatcher_expected_task_count",
+    "Total number of tasks which are expected to be running",
 )
 latest_sub_posted_at = Gauge(
     "fasearchbot_fasubwatcher_latest_posted_at_unixtime",
@@ -86,8 +98,6 @@ class SubscriptionWatcher:
     BACK_OFF = 20
     FILENAME = "subscriptions.json"
     FILENAME_TEMP = "subscriptions.temp.json"
-    DATA_FETCHER_POOL_SIZE = 2
-    MEDIA_FETCHER_POOL_SIZE = 2
 
     def __init__(
             self,
@@ -131,8 +141,11 @@ class SubscriptionWatcher:
         gauge_fetch_queue_refresh_size.set_function(lambda: self.wait_pool.qsize_fetch_refresh())
         gauge_upload_queue_size.set_function(lambda: self.wait_pool.qsize_upload())
         gauge_running_data_fetcher_count.set_function(lambda: len([f for f in self.data_fetchers if f.running]))
+        gauge_expected_data_fetcher_count.set(self.config.num_data_fetchers)
         gauge_running_media_fetcher_count.set_function(lambda: len([f for f in self.media_fetchers if f.running]))
+        gauge_expected_media_fetcher_count.set(self.config.num_media_uploaders)
         gauge_running_task_count.set_function(lambda: len([t for t in self.sub_tasks if not t.done()]))
+        gauge_expected_task_count.set(2+self.config.num_data_fetchers+self.config.num_media_uploaders)
 
     def start_tasks(self) -> None:
         if self.sub_tasks:
@@ -143,13 +156,13 @@ class SubscriptionWatcher:
         sub_id_gatherer_task = event_loop.create_task(self.sub_id_gatherer.run())
         self.sub_tasks.append(sub_id_gatherer_task)
         # Start the data fetchers
-        for _ in range(self.DATA_FETCHER_POOL_SIZE):
+        for _ in range(self.config.num_data_fetchers):
             data_fetcher = DataFetcher(self)
             self.data_fetchers.append(data_fetcher)
             data_fetcher_task = event_loop.create_task(data_fetcher.run())
             self.sub_tasks.append(data_fetcher_task)
         # Start the media fetchers
-        for _ in range(self.MEDIA_FETCHER_POOL_SIZE):
+        for _ in range(self.config.num_media_uploaders):
             media_fetcher = MediaFetcher(self)
             self.media_fetchers.append(media_fetcher)
             media_fetcher_task = event_loop.create_task(media_fetcher.run())
