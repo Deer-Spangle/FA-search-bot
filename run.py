@@ -7,7 +7,8 @@ from logging.handlers import TimedRotatingFileHandler
 import click
 from prometheus_client import Counter
 
-from fa_search_bot.bot import FASearchBot, Config
+from fa_search_bot.bot import FASearchBot
+from fa_search_bot.config import Config
 
 log_entries = Counter(
     "fasearchbot_log_messages_total",

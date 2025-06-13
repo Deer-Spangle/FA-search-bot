@@ -10,7 +10,8 @@ import pytest
 from pyrogram import Client
 from tgintegration import BotController
 
-from fa_search_bot.bot import Config, FASearchBot
+from fa_search_bot.bot import FASearchBot
+from fa_search_bot.config import Config
 
 if TYPE_CHECKING:
     from pyrogram.types import Chat
