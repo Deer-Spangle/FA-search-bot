@@ -79,11 +79,27 @@ class WeasylConfig:
 
 
 @dataclasses.dataclass
+class SubscriptionWatcherConfig:
+    enabled: bool
+    num_data_fetchers: int
+    num_media_uploaders: int
+
+    @classmethod
+    def from_dict(cls, conf: dict) -> "SubscriptionWatcherConfig":
+        return cls(
+            enabled=conf.get("enabled", True),
+            num_data_fetchers=conf.get("num_data_fetchers", 2),
+            num_media_uploaders=conf.get("num_media_uploaders", 2),
+        )
+
+
+@dataclasses.dataclass
 class Config:
     fa_api_url: str
     telegram: TelegramConfig
     e621: E621Config
     weasyl: Optional[WeasylConfig]
+    subscription_watcher: SubscriptionWatcherConfig
     prometheus_port: Optional[int]
 
     @classmethod
@@ -97,6 +113,7 @@ class Config:
             TelegramConfig.from_dict(conf),
             E621Config.from_dict(conf["e621"]),
             weasyl_config,
+            SubscriptionWatcherConfig.from_dict(conf.get("subscription_watcher", {})),
             conf.get("prometheus_port", 7065),
         )
 
@@ -164,7 +181,8 @@ class FASearchBot:
         # Log every couple seconds so we know the bot is still running
         self.log_task = event_loop.create_task(self.periodic_log())
         # Start the sub watcher
-        self.subscription_watcher.start_tasks()
+        if self.config.subscription_watcher.enabled:
+            self.subscription_watcher.start_tasks()
 
         # Run the bot
         async with self.client:

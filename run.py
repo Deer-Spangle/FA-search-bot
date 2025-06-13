@@ -41,14 +41,23 @@ def setup_logging(log_level: str = "INFO") -> None:
 
 
 @click.option("--log-level", type=str, help="Log level for the logger", default="INFO")
+@click.option("--no-subscriptions", type=bool, default=False, help="Disable subscription watcher")
+@click.option("--sub-watcher-data-fetchers", type=int, default=2, help="Number of DataFetcher tasks which should spin up in the subscription watcher")
+@click.option("--sub-watcher-media-uploaders", type=int, default=2, help="Number of MediaUploader tasks which should spin up in the subscription watcher")
 @click.pass_context
 def main(ctx: click.Context) -> None:
     ctx.ensure_object(dict)
     setup_logging(ctx.obj.get("log-level", "INFO"))
+    # Construct config and ingest flags
     config = Config.load_from_file(os.getenv('CONFIG_FILE', 'config.json'))
+    config.subscription_watcher.enabled = not ctx.obj.get("no-subscriptions")
+    config.subscription_watcher.num_data_fetchers = not ctx.obj.get("sub-watcher-data-fetchers")
+    config.subscription_watcher.num_media_uploaders = not ctx.obj.get("sub-watcher-media-uploaders")
+    # Create and start the bot
     bot = FASearchBot(config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(bot.run())
+
 
 if __name__ == "__main__":
     main()
