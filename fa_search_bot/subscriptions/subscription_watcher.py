@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from prometheus_client import Gauge
 
+from fa_search_bot.config import SubscriptionWatcherConfig
 from fa_search_bot.subscriptions.runnable import ShutdownError
 from fa_search_bot.subscriptions.query_parser import parse_query, Query, AndQuery, NotQuery
 from fa_search_bot.sites.submission_id import SubmissionID
@@ -88,7 +89,14 @@ class SubscriptionWatcher:
     DATA_FETCHER_POOL_SIZE = 2
     MEDIA_FETCHER_POOL_SIZE = 2
 
-    def __init__(self, api: FAExportAPI, client: TelegramClient, submission_cache: SubmissionCache):
+    def __init__(
+            self,
+            config: SubscriptionWatcherConfig,
+            api: FAExportAPI,
+            client: TelegramClient,
+            submission_cache: SubmissionCache,
+    ) -> None:
+        self.config = config
         self.api = api
         self.client = client
         self.submission_cache = submission_cache
@@ -256,6 +264,7 @@ class SubscriptionWatcher:
     @classmethod
     def load_from_json(
         cls,
+        config: SubscriptionWatcherConfig,
         api: FAExportAPI,
         client: TelegramClient,
         submission_cache: SubmissionCache,
@@ -269,19 +278,20 @@ class SubscriptionWatcher:
                 data = json.loads(raw_data)
         except FileNotFoundError:
             logger.info("No subscription config exists, creating a blank one")
-            return cls(api, client, submission_cache)
-        return cls.load_from_json_new_format(data, api, client, submission_cache)
+            return cls(config, api, client, submission_cache)
+        return cls.load_from_json_new_format(data, config, api, client, submission_cache)
 
     @classmethod
     def load_from_json_new_format(
         cls,
         data: Dict,
+        config: SubscriptionWatcherConfig,
         api: FAExportAPI,
         client: TelegramClient,
         submission_cache: SubmissionCache,
     ) -> "SubscriptionWatcher":
         logger.debug("Loading subscription config from file in new format")
-        new_watcher = cls(api, client, submission_cache)
+        new_watcher = cls(config, api, client, submission_cache)
         for old_id in data["latest_ids"]:
             new_watcher.latest_ids.append(old_id)
         subscriptions = set()
