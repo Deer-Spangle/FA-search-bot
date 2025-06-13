@@ -56,8 +56,8 @@ def main(
     # Construct config and ingest flags
     config = Config.load_from_file(os.getenv('CONFIG_FILE', 'config.json'))
     config.subscription_watcher.enabled = not no_subscriptions
-    config.subscription_watcher.num_data_fetchers = not sub_watcher_data_fetchers
-    config.subscription_watcher.num_media_fetchers = not sub_watcher_media_fetchers
+    config.subscription_watcher.num_data_fetchers = sub_watcher_data_fetchers
+    config.subscription_watcher.num_media_fetchers = sub_watcher_media_fetchers
     # Create and start the bot
     bot = FASearchBot(config)
     loop = asyncio.get_event_loop()
