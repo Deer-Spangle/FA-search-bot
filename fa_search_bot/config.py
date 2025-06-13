@@ -39,14 +39,14 @@ class WeasylConfig:
 class SubscriptionWatcherConfig:
     enabled: bool
     num_data_fetchers: int
-    num_media_uploaders: int
+    num_media_fetchers: int
 
     @classmethod
     def from_dict(cls, conf: dict) -> "SubscriptionWatcherConfig":
         return cls(
             enabled=conf.get("enabled", True),
             num_data_fetchers=conf.get("num_data_fetchers", 2),
-            num_media_uploaders=conf.get("num_media_uploaders", 2),
+            num_media_fetchers=conf.get("num_media_fetchers", 2),
         )
 
 

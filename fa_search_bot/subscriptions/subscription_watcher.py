@@ -143,9 +143,9 @@ class SubscriptionWatcher:
         gauge_running_data_fetcher_count.set_function(lambda: len([f for f in self.data_fetchers if f.running]))
         gauge_expected_data_fetcher_count.set(self.config.num_data_fetchers)
         gauge_running_media_fetcher_count.set_function(lambda: len([f for f in self.media_fetchers if f.running]))
-        gauge_expected_media_fetcher_count.set(self.config.num_media_uploaders)
+        gauge_expected_media_fetcher_count.set(self.config.num_media_fetchers)
         gauge_running_task_count.set_function(lambda: len([t for t in self.sub_tasks if not t.done()]))
-        gauge_expected_task_count.set(2+self.config.num_data_fetchers+self.config.num_media_uploaders)
+        gauge_expected_task_count.set(2 + self.config.num_data_fetchers + self.config.num_media_fetchers)
 
     def start_tasks(self) -> None:
         if self.sub_tasks:
@@ -162,7 +162,7 @@ class SubscriptionWatcher:
             data_fetcher_task = event_loop.create_task(data_fetcher.run())
             self.sub_tasks.append(data_fetcher_task)
         # Start the media fetchers
-        for _ in range(self.config.num_media_uploaders):
+        for _ in range(self.config.num_media_fetchers):
             media_fetcher = MediaFetcher(self)
             self.media_fetchers.append(media_fetcher)
             media_fetcher_task = event_loop.create_task(media_fetcher.run())
