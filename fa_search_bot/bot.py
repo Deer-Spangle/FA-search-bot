@@ -38,7 +38,7 @@ from fa_search_bot.subscriptions.subscription_watcher import SubscriptionWatcher
 
 if TYPE_CHECKING:
     from asyncio import Task
-    from typing import Dict, List, Optional
+    from typing import Optional
 
     from fa_search_bot.functionalities.functionalities import BotFunctionality
 
@@ -55,7 +55,7 @@ class TelegramConfig:
     bot_token: str
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> "TelegramConfig":
+    def from_dict(cls, conf: dict) -> "TelegramConfig":
         return cls(conf["telegram_api_id"], conf["telegram_api_hash"], conf["bot_key"])
 
 
@@ -65,7 +65,7 @@ class E621Config:
     api_key: str
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> "E621Config":
+    def from_dict(cls, conf: dict) -> "E621Config":
         return cls(conf["username"], conf["api_key"])
 
 
@@ -74,7 +74,7 @@ class WeasylConfig:
     api_key: str
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> "WeasylConfig":
+    def from_dict(cls, conf: dict) -> "WeasylConfig":
         return cls(conf["api_key"])
 
 
@@ -87,7 +87,7 @@ class Config:
     prometheus_port: Optional[int]
 
     @classmethod
-    def from_dict(cls, conf: Dict) -> "Config":
+    def from_dict(cls, conf: dict) -> "Config":
         weasyl_data = conf.get("weasyl")
         weasyl_config = None
         if weasyl_data:
@@ -118,7 +118,7 @@ class FASearchBot:
             "fasearchbot", self.config.telegram.api_id, self.config.telegram.api_hash
         )
         self.alive = False
-        self.functionalities: List[BotFunctionality] = []
+        self.functionalities: list[BotFunctionality] = []
         self.db = Database()
         self.submission_cache = SubmissionCache(self.db)
         self.subscription_watcher: SubscriptionWatcher = SubscriptionWatcher.load_from_json(
@@ -206,7 +206,7 @@ class FASearchBot:
                 self.alive = False
         logger.info("Shutting down")
 
-    def initialise_functionalities(self) -> List[BotFunctionality]:
+    def initialise_functionalities(self) -> list[BotFunctionality]:
         fa_handler = FAHandler(self.api)
         handlers = [fa_handler, self.e6_handler]
         if self.config.weasyl:
