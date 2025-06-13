@@ -20,15 +20,24 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Time usage metrics
-time_taken_queue_waiting = time_taken.labels(task="waiting for new events in queue", runnable="DataFetcher")
-time_taken_submission_api = time_taken.labels(task="fetching submission data", runnable="DataFetcher")
-time_taken_checking_matches = time_taken.labels(
-    task="checking whether submission matches subscriptions",
-    runnable="DataFetcher",
+time_taken_queue_waiting = time_taken.labels(
+    task="waiting for new events in queue", runnable="DataFetcher", task_type="waiting"
 )
-time_taken_publishing = time_taken.labels(task="publishing results to queues", runnable="DataFetcher")
-time_taken_cloudflare_backoff = time_taken.labels(task="waiting after cloudflare error", runnable="DataFetcher")
-time_taken_error_backoff = time_taken.labels(task="waiting after unknown error", runnable="DataFetcher")
+time_taken_submission_api = time_taken.labels(
+    task="fetching submission data", runnable="DataFetcher", task_type="active"
+)
+time_taken_checking_matches = time_taken.labels(
+    task="checking whether submission matches subscriptions", runnable="DataFetcher", task_type="active",
+)
+time_taken_publishing = time_taken.labels(
+    task="publishing results to queues", runnable="DataFetcher", task_type="waiting"
+)
+time_taken_cloudflare_backoff = time_taken.labels(
+    task="waiting after cloudflare error", runnable="DataFetcher", task_type="waiting"
+)
+time_taken_error_backoff = time_taken.labels(
+    task="waiting after unknown error", runnable="DataFetcher", task_type="waiting"
+)
 # Fetch attempt metrics
 counter_fetch_attempts = Counter(
     "fasearchbot_datafetcher_fetch_attempt_count",

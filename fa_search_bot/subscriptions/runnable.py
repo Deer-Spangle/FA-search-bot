@@ -49,7 +49,9 @@ class Runnable(ABC):
         self.running = False
         self.heartbeat_expiry = datetime.datetime.now()
         self.class_name = self.__class__.__name__
-        self.time_taken_updating_heartbeat = time_taken.labels(task="updating heartbeat", runnable=self.class_name)
+        self.time_taken_updating_heartbeat = time_taken.labels(
+            task="updating heartbeat", runnable=self.class_name, task_type="active",
+        )
         self.runnable_latest_processed = latest_processed_time.labels(runnable=self.class_name)
         self.runnable_processed_count = total_processed_count.labels(runnable=self.class_name)
 

@@ -23,10 +23,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-time_taken_reading_queue = time_taken.labels(task="reading wait-pool for new data", runnable="Sender")
-time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="Sender")
-time_taken_sending_messages = time_taken.labels(task="sending messages to subscriptions", runnable="Sender")
-time_taken_saving_config = time_taken.labels(task="updating configuration", runnable="Sender")
+time_taken_reading_queue = time_taken.labels(
+    task="reading wait-pool for new data", runnable="Sender", task_type="active"
+)
+time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="Sender", task_type="waiting")
+time_taken_sending_messages = time_taken.labels(
+    task="sending messages to subscriptions", runnable="Sender", task_type="active"
+)
+time_taken_saving_config = time_taken.labels(task="updating configuration", runnable="Sender", task_type="active")
 sub_updates = Counter("fasearchbot_subscriptionsender_updates_sent_total", "Number of subscription updates sent")
 sub_blocked = Counter(
     "fasearchbot_subscriptionsender_dest_blocked_total",

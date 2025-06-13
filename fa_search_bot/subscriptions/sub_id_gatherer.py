@@ -16,9 +16,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-time_taken_listing_api = time_taken.labels(task="listing submissions to check", runnable="SubIDGatherer")
-time_taken_waiting = time_taken.labels(task="waiting before re-checking", runnable="SubIDGatherer")
-time_taken_publishing = time_taken.labels(task="publishing results to queues", runnable="SubIDGatherer")
+time_taken_listing_api = time_taken.labels(
+    task="listing submissions to check", runnable="SubIDGatherer", task_type="active"
+)
+time_taken_waiting = time_taken.labels(task="waiting before re-checking", runnable="SubIDGatherer", task_type="waiting")
+time_taken_publishing = time_taken.labels(
+    task="publishing results to queues", runnable="SubIDGatherer", task_type="active"
+)
 counter_browse_requests = Counter(
     "fasearchbot_subidgatherer_browse_page_request_count",
     "Number of times the browse page has been requested by the submission ID gatherer",

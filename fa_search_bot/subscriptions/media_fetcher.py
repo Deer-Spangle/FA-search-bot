@@ -21,9 +21,15 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-time_taken_waiting = time_taken.labels(task="waiting for new events in queue", runnable="MediaFetcher")
-time_taken_uploading = time_taken.labels(task="uploading media to telegram", runnable="MediaFetcher")
-time_taken_publishing = time_taken.labels(task="publishing results to queues", runnable="MediaFetcher")
+time_taken_waiting = time_taken.labels(
+    task="waiting for new events in queue", runnable="MediaFetcher", task_type="waiting"
+)
+time_taken_uploading = time_taken.labels(
+    task="uploading media to telegram", runnable="MediaFetcher", task_type="active"
+)
+time_taken_publishing = time_taken.labels(
+    task="publishing results to queues", runnable="MediaFetcher", task_type="waiting"
+)
 cache_results = Counter(
     "fasearchbot_mediafetcher_cache_fetch_count",
     "Count of how many times the media fetcher checked the cache for submission media",

@@ -7,7 +7,7 @@ from fa_search_bot.sites.furaffinity.fa_submission import FASubmission
 time_taken = Summary(
     "fasearchbot_fasubwatcher_time_taken",
     "Amount of time taken (in seconds) doing various tasks of the subscription watcher",
-    labelnames=["runnable", "task"],
+    labelnames=["runnable", "task", "task_type"],
 )
 
 
