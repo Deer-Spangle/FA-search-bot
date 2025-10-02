@@ -9,6 +9,11 @@ Changelog for FASearchBot, should include entries for these types of changes:
 - `Fixed` for any bug fixes.
 - `Security` in case of vulnerabilities. Format inspired by https://keepachangelog.com/en/1.0.0/
 
+## [1.16.1] - 2025-10-02
+
+### Fixed
+- Fixed handling of swf files, which do not have preview image URLs
+
 ## [1.16.0] - 2025-08-01
 
 ### Changed
