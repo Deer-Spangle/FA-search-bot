@@ -636,6 +636,10 @@ class Sendable(InlineSendable):
         # Handle files telegram can't handle
         sendable_other.labels(site_code=self.site_id).inc()
         settings.caption.direct_link = True
+        # Some submissions, notably ".swf" submissions, do not have preview image URLs, so just go right to thumbnail
+        if self.preview_image_url is None:
+            return await _download_file(self.thumbnail_url), settings
+        # Otherwise, try the preview image, then the thumbnail
         try:
             return await _download_file(self.preview_image_url), settings
         except DownloadError as e:
